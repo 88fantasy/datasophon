@@ -20,56 +20,45 @@
  * SOFTWARE.
  */
 
-package com.datasophon.common.model;
+package com.datasophon.api.hook;
 
-import java.util.List;
+import com.datasophon.common.enums.CommandType;
+
+import java.util.HashMap;
 import java.util.Map;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ReflectUtil;
 import lombok.Data;
 
 @Data
-public class ServiceInfo {
+public class ServiceHookContext {
 
-    @NotBlank(message = "name字段不能为空")
-    private String name;
+    private String serviceName;
 
-    private String label;
+    private Integer clusterId;
 
-    @NotBlank(message = "version字段不能为空")
-    private String version;
+    private CommandType commandType;
 
-    private String description;
+    private String commandId;
 
-    @NotEmpty(message = "roles字段不能为空")
-    private List<ServiceRoleInfo> roles;
+    private Map<String, Object> params;
 
-    private List<HookConfig> serviceHooks;
+    public <T> T getParamsAs(Class<T> clazz) {
+        if (params == null) {
+            return ReflectUtil.newInstance(clazz);
+        }
+        return BeanUtil.toBean(params, clazz);
+    }
 
-    private List<ServiceConfig> parameters;
-
-    @NotNull(message = "dependencies字段不能为空")
-    private List<String> dependencies;
-
-    private ConfigWriter configWriter;
-
-    /**
-     * 创建解压目录
-     */
-    private Boolean createDecompressDir;
-
-    private Map<String, ArchInfo> arch;
-
-    private ExternalLink externalLink;
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    private Integer sortNum;
-
-    private String type;
-
+    public Map<String, Object> toConditionMap() {
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put("serviceName", serviceName);
+        conditionMap.put("commandType", commandType);
+        conditionMap.put("clusterId", clusterId);
+        if (params != null) {
+            conditionMap.putAll(params);
+        }
+        return conditionMap;
+    }
 }

@@ -32,8 +32,8 @@ import com.datasophon.api.dag.DAGListener;
 import com.datasophon.api.dag.NodeTask;
 import com.datasophon.api.dag.RepoDAG;
 import com.datasophon.api.dag.model.NodeDefinition;
-import com.datasophon.api.dag.repo.DAGRepository;
 import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.hook.ServiceHookDispatcher;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.handler.service.ServiceStatusHandler;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
@@ -50,6 +50,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.dag.DAGExecCommand;
 import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.enums.HookType;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -107,6 +108,7 @@ public class DAGExecutor {
     private final ClusterServiceCommandService commandService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
+    private final ServiceHookDispatcher serviceHookDispatcher;
 
     /**
      * 异步执行物理集群 DAG 任务（替代原 {@code DAGExecActor.tell(cmd)}）。
@@ -159,11 +161,18 @@ public class DAGExecutor {
     private RepoDAG createMultiServiceDAG(DAGExecCommand cmd) {
         String dagId = cmd.getDagId();
         log.info("DAGExecutor 开始执行任务，id:{}", dagId);
-        DAGRepository repository = dagService;
-        RepoDAG dag = new RepoDAG(repository);
+        RepoDAG dag = new RepoDAG(dagService);
         dag.init(dagId, false);
 
         dag.registerListener(new DAGListener() {
+            @Override
+            public void onNodeSuccess(NodeDefinition node, String result) {
+                ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
+                if (INSTALL_SERVICE.equals(serviceNode.getCommandType())) {
+                    serviceHookDispatcher.dispatch(serviceNode, HookType.POST_INSTALL);
+                }
+            }
+
             @Override
             public void onNodeFail(NodeDefinition node, Throwable throwable) {
                 boolean ignore = throwable instanceof ServiceRoleExecException && throwable.getCause() == null;
@@ -267,7 +276,7 @@ public class DAGExecutor {
             }
 
             if (result == null || result.isSuccess()) {
-                ServiceRoleType type = roles.get(0).getRoleType();
+                ServiceRoleType type = roles.getFirst().getRoleType();
                 log.info("执行{}{}成功, 共{}个角色, 类型为{}",
                         serviceNode.getCommandType().getCommandName(Constants.CN),
                         serviceNode.getServiceName(), roles.size(), type.getName());
@@ -340,28 +349,21 @@ public class DAGExecutor {
         CommandType type = serviceRoleInfo.getCommandType();
         log.info("开始{}服务{}的{}角色", type.getCommandName(Constants.CN), serviceRoleInfo.getParentName(), serviceRoleInfo.getName());
 
-        ExecResult execResult;
-        switch (type) {
-            case INSTALL_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startInstallService(serviceRoleInfo));
-                break;
-            case START_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startService(serviceRoleInfo, needReConfig));
-                break;
-            case STOP_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.stopService(serviceRoleInfo));
-                break;
-            case RESTART_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.restartService(serviceRoleInfo, needReConfig));
-                break;
-            case UPGRADE_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.upgradeService(serviceRoleInfo));
-                break;
-            default:
-                throw new BusinessException(String.format("unknown cmd type: %s of srv %s in host %s{}",
-                        serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
-                        serviceRoleInfo.getName(), serviceRoleInfo.getHostname()));
-        }
+        ExecResult execResult = switch (type) {
+            case INSTALL_SERVICE ->
+                doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startInstallService(serviceRoleInfo));
+            case START_SERVICE ->
+                doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startService(serviceRoleInfo, needReConfig));
+            case STOP_SERVICE ->
+                doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.stopService(serviceRoleInfo));
+            case RESTART_SERVICE ->
+                doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.restartService(serviceRoleInfo, needReConfig));
+            case UPGRADE_SERVICE ->
+                doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.upgradeService(serviceRoleInfo));
+            default -> throw new BusinessException(String.format("unknown cmd type: %s of srv %s in host %s{}",
+                    serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
+                    serviceRoleInfo.getName(), serviceRoleInfo.getHostname()));
+        };
 
         log.info("完成{}服务{}的{}角色, 执行结果：{}, 信息：{}",
                 type.getCommandName(Constants.CN), serviceRoleInfo.getParentName(), serviceRoleInfo.getName(),
@@ -440,20 +442,14 @@ public class DAGExecutor {
 
     private Runnable getCommandPostAction(ServiceRoleInfo serviceRoleInfo) {
         CommandType type = serviceRoleInfo.getCommandType();
-        switch (type) {
-            case INSTALL_SERVICE:
-            case UPGRADE_SERVICE:
-                return () -> ServiceCommandUtils.saveServiceInstallInfo(serviceRoleInfo);
-            case START_SERVICE:
-            case RESTART_SERVICE:
-                return () -> updateServiceRoleState(serviceRoleInfo, ServiceRoleState.RUNNING);
-            case STOP_SERVICE:
-                return () -> updateServiceRoleState(serviceRoleInfo, ServiceRoleState.STOP);
-            default:
-                throw new BusinessException(String.format("unknown cmd type: %s of srv %s in host %s{}",
-                        serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
-                        serviceRoleInfo.getName(), serviceRoleInfo.getHostname()));
-        }
+        return switch (type) {
+            case INSTALL_SERVICE, UPGRADE_SERVICE -> () -> ServiceCommandUtils.saveServiceInstallInfo(serviceRoleInfo);
+            case START_SERVICE, RESTART_SERVICE -> () -> updateServiceRoleState(serviceRoleInfo, ServiceRoleState.RUNNING);
+            case STOP_SERVICE -> () -> updateServiceRoleState(serviceRoleInfo, ServiceRoleState.STOP);
+            default -> throw new BusinessException(String.format("unknown cmd type: %s of srv %s in host %s{}",
+                    serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
+                    serviceRoleInfo.getName(), serviceRoleInfo.getHostname()));
+        };
     }
 
     private void updateServiceRoleState(ServiceRoleInfo role, ServiceRoleState state) {

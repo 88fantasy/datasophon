@@ -20,56 +20,11 @@
  * SOFTWARE.
  */
 
-package com.datasophon.common.model;
+package com.datasophon.api.hook;
 
-import java.util.List;
-import java.util.Map;
+public interface ServiceHook {
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+    String getType();
 
-@Data
-public class ServiceInfo {
-
-    @NotBlank(message = "name字段不能为空")
-    private String name;
-
-    private String label;
-
-    @NotBlank(message = "version字段不能为空")
-    private String version;
-
-    private String description;
-
-    @NotEmpty(message = "roles字段不能为空")
-    private List<ServiceRoleInfo> roles;
-
-    private List<HookConfig> serviceHooks;
-
-    private List<ServiceConfig> parameters;
-
-    @NotNull(message = "dependencies字段不能为空")
-    private List<String> dependencies;
-
-    private ConfigWriter configWriter;
-
-    /**
-     * 创建解压目录
-     */
-    private Boolean createDecompressDir;
-
-    private Map<String, ArchInfo> arch;
-
-    private ExternalLink externalLink;
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    private Integer sortNum;
-
-    private String type;
-
+    void invoke(ServiceHookContext context) throws Exception;
 }

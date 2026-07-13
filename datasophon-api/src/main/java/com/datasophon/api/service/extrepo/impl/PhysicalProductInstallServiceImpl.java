@@ -371,6 +371,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             serviceNode.setMasterRoles(masterRoles);
             serviceNode.setWorkerRoles(workerRoles);
             serviceNode.setClientRoles(clientRoles);
+            serviceNode.setServiceHooks(serviceInfo.getServiceHooks());
 
             NodeDefinitionEntity node = new NodeDefinitionEntity();
             node.setNodeName(info.getName());

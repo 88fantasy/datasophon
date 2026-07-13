@@ -27,54 +27,58 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-import cn.hutool.core.io.IoUtil;
-
 class OtelSchemaApplierTest {
-    
+
     @Test
     void injectsDistinctRuntimePasswordsWithoutLeavingPlaceholders() {
         String sql = "collector='CHANGE_ME_AT_A3_COLLECTOR'; reader='CHANGE_ME_AT_A3_READER'";
-        
+
         String rendered = OtelSchemaApplier.renderSql(
                 sql, new OtelCredentials("collector-secret", "reader-secret"));
-        
+
         assertThat(rendered)
                 .contains("collector='collector-secret'")
                 .contains("reader='reader-secret'")
                 .doesNotContain("CHANGE_ME_AT_A3");
     }
-    
+
     @Test
     void ignoresAlreadyExistingCreateJobOnly() {
         JdbcClient jdbc = mock(JdbcClient.class);
         JdbcClient.StatementSpec statement = mock(JdbcClient.StatementSpec.class);
         when(jdbc.sql("CREATE JOB test")).thenReturn(statement);
         when(statement.update()).thenThrow(new DataAccessResourceFailureException("job already exists"));
-        
+
         assertThatCode(() -> OtelSchemaApplier.executeStatement(jdbc, "CREATE JOB test"))
                 .doesNotThrowAnyException();
     }
-    
+
     @Test
     void databaseSchemaAlignsExistingOtelUserPasswords() {
-        String sql = readResource("observability/doris/V1__otel_database.sql");
+        String sql = readResource("sql/V1__otel_database.sql");
         String rendered = OtelSchemaApplier.renderSql(
                 sql, new OtelCredentials("collector-secret", "reader-secret"));
-        
+
         assertThat(rendered)
                 .contains("ALTER USER 'otel_collector' IDENTIFIED BY 'collector-secret'")
                 .contains("ALTER USER 'otel_reader' IDENTIFIED BY 'reader-secret'");
     }
-    
+
+    /** {@code OtelSchema.DDL_RESOURCES} 中的相对路径对应本地 {@code package/raw/meta/datacluster-physical/DORIS/} 下的文件。 */
     private static String readResource(String res) {
-        var in = OtelSchemaApplierTest.class.getClassLoader().getResourceAsStream(res);
-        assertThat(in).as("resource %s", res).isNotNull();
-        return IoUtil.read(in, StandardCharsets.UTF_8);
+        Path path = Path.of("..", "package", "raw", "meta", "datacluster-physical", OtelSchema.SERVICE_NAME, res);
+        try {
+            return Files.readString(path);
+        } catch (IOException e) {
+            throw new IllegalStateException("DDL 资源缺失: " + res, e);
+        }
     }
 }

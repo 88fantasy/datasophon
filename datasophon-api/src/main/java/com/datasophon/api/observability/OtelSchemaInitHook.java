@@ -20,56 +20,30 @@
  * SOFTWARE.
  */
 
-package com.datasophon.common.model;
+package com.datasophon.api.observability;
 
-import java.util.List;
-import java.util.Map;
+import com.datasophon.api.hook.ServiceHook;
+import com.datasophon.api.hook.ServiceHookContext;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import org.springframework.stereotype.Component;
 
-@Data
-public class ServiceInfo {
+import lombok.RequiredArgsConstructor;
 
-    @NotBlank(message = "name字段不能为空")
-    private String name;
+@Component
+@RequiredArgsConstructor
+public class OtelSchemaInitHook implements ServiceHook {
 
-    private String label;
+    private final OtelSchemaOrchestrator orchestrator;
 
-    @NotBlank(message = "version字段不能为空")
-    private String version;
+    @Override
+    public String getType() {
+        return "otelSchemaInit";
+    }
 
-    private String description;
-
-    @NotEmpty(message = "roles字段不能为空")
-    private List<ServiceRoleInfo> roles;
-
-    private List<HookConfig> serviceHooks;
-
-    private List<ServiceConfig> parameters;
-
-    @NotNull(message = "dependencies字段不能为空")
-    private List<String> dependencies;
-
-    private ConfigWriter configWriter;
-
-    /**
-     * 创建解压目录
-     */
-    private Boolean createDecompressDir;
-
-    private Map<String, ArchInfo> arch;
-
-    private ExternalLink externalLink;
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    private Integer sortNum;
-
-    private String type;
-
+    @Override
+    public void invoke(ServiceHookContext context) {
+        if (context.getClusterId() != null) {
+            orchestrator.applyIfReady(context.getClusterId());
+        }
+    }
 }

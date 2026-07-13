@@ -22,7 +22,11 @@
 
 package com.datasophon.api.observability;
 
-import java.nio.charset.StandardCharsets;
+import com.datasophon.common.storage.MetaStorage;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.storage.vo.ServiceMetaItem;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,16 +35,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-import cn.hutool.core.io.IoUtil;
-
 /** 把自管 otel schema 幂等应用到 Doris（MySQL 协议）。运行期需真实 Doris 连接。 */
 public final class OtelSchemaApplier {
-    
+
     private static final Logger log = LoggerFactory.getLogger(OtelSchemaApplier.class);
-    
+
     private OtelSchemaApplier() {
     }
-    
+
     /**
      * 按 DDL_RESOURCES 顺序逐语句执行。
      *
@@ -57,12 +59,12 @@ public final class OtelSchemaApplier {
             log.info("otel schema applied: {}", res);
         }
     }
-    
+
     static String renderSql(String sql, OtelCredentials credentials) {
         return sql.replace("CHANGE_ME_AT_A3_COLLECTOR", credentials.collectorPassword())
                 .replace("CHANGE_ME_AT_A3_READER", credentials.readerPassword());
     }
-    
+
     static void executeStatement(JdbcClient doris, String statement) {
         try {
             doris.sql(statement).update();
@@ -74,7 +76,7 @@ public final class OtelSchemaApplier {
             throw e;
         }
     }
-    
+
     private static boolean isAlreadyExists(Throwable error) {
         for (Throwable current = error; current != null; current = current.getCause()) {
             String message = current.getMessage();
@@ -87,7 +89,7 @@ public final class OtelSchemaApplier {
         }
         return false;
     }
-    
+
     static List<String> splitStatements(String sql) {
         List<String> out = new ArrayList<>();
         for (String raw : sql.split(";")) {
@@ -98,7 +100,7 @@ public final class OtelSchemaApplier {
         }
         return out;
     }
-    
+
     private static String stripComments(String s) {
         StringBuilder sb = new StringBuilder();
         for (String line : s.split("\n")) {
@@ -109,12 +111,20 @@ public final class OtelSchemaApplier {
         }
         return sb.toString();
     }
-    
+
     private static String readResource(String res) {
-        var in = OtelSchemaApplier.class.getClassLoader().getResourceAsStream(res);
-        if (in == null) {
-            throw new IllegalStateException("DDL 资源缺失: " + res);
+        ServiceMetaItem item = new ServiceMetaItem();
+        item.setType(MetaStorage.PHYSICAL);
+        item.setFramework(OtelSchema.FRAMEWORK);
+        item.setServiceName(OtelSchema.SERVICE_NAME);
+        try {
+            String content = StorageUtils.getMetaStorage().getResourceAsString(item, res, true);
+            if (content == null) {
+                throw new IllegalStateException("DDL 资源缺失: " + res);
+            }
+            return content;
+        } catch (IOException e) {
+            throw new IllegalStateException("读取 DDL 资源失败: " + res, e);
         }
-        return IoUtil.read(in, StandardCharsets.UTF_8);
     }
 }

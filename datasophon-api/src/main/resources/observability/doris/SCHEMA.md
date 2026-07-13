@@ -1,5 +1,7 @@
 # otel Doris Schema — vendoring 说明
 
+> **文件位置变更(2026-07-12)**：`V1__otel_database.sql` / `V1__otel_tables.sql` / `V1__otel_views.sql` 三个 SQL 文件已从本目录迁移到 `package/raw/meta/datacluster-physical/DORIS/sql/`，随 DORIS 服务 DDL 一起经 `datasophon-cli upload registry` 上传到 Nexus raw 仓库；运行时由 `OtelSchemaApplier` 通过 `MetaStorage.getResourceAsString`（而非 classpath）读取。本目录只保留说明文档。触发方式见 `apply-verify.md`。
+
 ## 版本
 
 | 属性 | 值 |

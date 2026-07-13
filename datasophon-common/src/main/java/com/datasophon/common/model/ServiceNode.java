@@ -23,23 +23,32 @@
 package com.datasophon.common.model;
 
 import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.enums.HookType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Data;
 
 @Data
 public class ServiceNode {
-    
+
     private String serviceName;
     private List<ServiceRoleInfo> masterRoles;
-    
+
     private List<ServiceRoleInfo> workerRoles;
-    
+
     private List<ServiceRoleInfo> clientRoles;
-    
+
+    private List<HookConfig> serviceHooks;
+
     private String commandId;
-    
+
     private CommandType commandType;
-    
+
+    public List<HookConfig> getMatchedServiceHooks(HookType type) {
+        List<HookConfig> hooks = serviceHooks == null ? new ArrayList<>(0) : serviceHooks;
+        return hooks.stream().filter(hook -> type.equals(hook.getType())).toList();
+    }
+
 }
