@@ -12,7 +12,7 @@ import (
 
 // stubCfg/stubCtx 来自 plan_test.go（相同包，直接复用）
 
-// buildBinPackage/buildTar/buildJdk8/buildJdk21：
+// buildBinPackage/buildJdk8/buildJdk21：
 // stubCtx.LocalIP="127.0.0.1"，与 node1/node2 的 IP 均不同，
 // 所以 workerHostSlice 不排除任何节点，2 个 worker。
 
@@ -30,6 +30,18 @@ func TestBuildTar_WorkerCount(t *testing.T) {
 	actions, err := buildTar(allNodes)(ctx)
 	require.NoError(t, err)
 	assert.Len(t, actions, 2)
+}
+
+func TestBuildTar_IncludesLocalNode(t *testing.T) {
+	cfg := stubCfg()
+	ctx := stubCtx(cfg, t.TempDir())
+	ctx.LocalIP = "10.0.0.1"
+	ctx.ProductPkgsPath = t.TempDir() + "/pkg"
+
+	actions, err := buildTar(allNodes)(ctx)
+	require.NoError(t, err)
+	require.Len(t, actions, 2)
+	assert.Equal(t, ctx.ProductPkgsPath, actions[0].Handler.(*initcmd.InitTar).ProductPackagesPath)
 }
 
 func TestBuildJdk8_WorkerCountAndRegistry(t *testing.T) {

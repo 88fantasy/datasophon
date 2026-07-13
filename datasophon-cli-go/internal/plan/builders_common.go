@@ -24,13 +24,15 @@ func buildBinPackage(sel nodeSelector) BuildFunc {
 	}
 }
 
-// buildTar 安装 tar（worker 节点）。
+// buildTar 安装 tar（所有节点，控制节点也需要解压 Registry 包）。
 func buildTar(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
-		t := &initcmd.InitTar{PackagePath: ctx.PackagesPath}
+		t := &initcmd.InitTar{
+			PackagePath:         ctx.PackagesPath,
+			ProductPackagesPath: ctx.ProductPkgsPath,
+		}
 		nodes := sel(ctx)
-		workers := workerHostSlice(nodes, ctx.LocalIP)
-		return hostsToActions(workers, t), nil
+		return hostsToActions(hostsToPtr(nodes), t), nil
 	}
 }
 
