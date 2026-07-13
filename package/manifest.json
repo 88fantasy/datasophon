@@ -170,6 +170,26 @@
     "status": "public"
   },
   {
+    "service": "MYSQL",
+    "arch": "x86_64",
+    "packageName": "mysql-8.0.46-1.el8.x86_64.rpm-bundle.tar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.46-1.el8.x86_64.rpm-bundle.tar",
+    "status": "public",
+    "repoType": "base",
+    "note": "CLI 基础设施 bundle（非 Datasophon 服务，无 service_ddl.json），对应 cluster-sample.yml packages.mysql.x86_64；rpm 平铺包无顶层目录，decompressPackageName 不适用"
+  },
+  {
+    "service": "MYSQL",
+    "arch": "aarch64",
+    "packageName": "mysql-8.0.46-1.el8.aarch64.rpm-bundle.tar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.46-1.el8.aarch64.rpm-bundle.tar",
+    "status": "public",
+    "repoType": "base",
+    "note": "同上，对应 packages.mysql.aarch64"
+  },
+  {
     "service": "NACOS",
     "arch": "common",
     "packageName": "nacos-server-3.2.2.tar.gz",
@@ -177,6 +197,26 @@
     "downloadUrl": "https://github.com/alibaba/nacos/releases/download/3.2.2/nacos-server-3.2.2.tar.gz",
     "status": "public",
     "note": "注意：Nacos 官方包实际解压目录为 nacos/（无版本号），需 verify 步确认并修正"
+  },
+  {
+    "service": "NEXUS",
+    "arch": "x86_64",
+    "packageName": "nexus-3.94.0-12-linux-x86_64.tar.gz",
+    "decompressPackageName": null,
+    "downloadUrl": "https://download.sonatype.com/nexus/3/nexus-3.94.0-12-linux-x86_64.tar.gz",
+    "status": "public",
+    "repoType": "base",
+    "note": "CLI 基础设施 bundle（非 Datasophon 服务，无 service_ddl.json），对应 cluster-sample.yml packages.nexus.x86_64"
+  },
+  {
+    "service": "NEXUS",
+    "arch": "aarch64",
+    "packageName": "nexus-3.94.0-12-linux-aarch_64.tar.gz",
+    "decompressPackageName": null,
+    "downloadUrl": "https://download.sonatype.com/nexus/3/nexus-3.94.0-12-linux-aarch_64.tar.gz",
+    "status": "public",
+    "repoType": "base",
+    "note": "同上，对应 packages.nexus.aarch64"
   },
   {
     "service": "NGINX",
@@ -203,6 +243,26 @@
     "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.156.0/otelcol-contrib_0.156.0_linux_arm64.tar.gz",
     "status": "public",
     "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.156.0/ 目录"
+  },
+  {
+    "service": "RUSTFS",
+    "arch": "x86_64",
+    "packageName": "rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
+    "decompressPackageName": null,
+    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.8/rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
+    "status": "public",
+    "repoType": "base",
+    "note": "RustFS 官方至今无 GA 1.0.0（全部 tag 均为 alpha/beta），当前最新 1.0.0-beta.8；发布格式为 .zip 而非 .tar.gz，与 rustfs.go 硬编码的 tar xvz 解压不兼容，需另行改造 CLI 后才可直接使用（跟踪为独立任务，本次只负责下载到位）"
+  },
+  {
+    "service": "RUSTFS",
+    "arch": "aarch64",
+    "packageName": "rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+    "decompressPackageName": null,
+    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.8/rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+    "status": "public",
+    "repoType": "base",
+    "note": "同上，对应 packages.rustfs.aarch64"
   },
   {
     "service": "VALKEY",
