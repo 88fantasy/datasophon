@@ -29,7 +29,7 @@ datasophon-cli [--dry-run] create cluster apply [flags]
 | `--type`                   | `-t` | string | —       | **是** | 集群类型：`hadoop`（Hadoop 大数据集群）或 `kubernetes`（K8s 集群）。CLI 值优先于 `cluster-sample.yml` 中的 `global.cluster-type` 字段 |
 | `--datasophonPath`         | `-p` | string | —       | 是     | datasophon 根目录绝对路径（须以 `/` 开头且目录存在）。配置文件从 `<datasophonPath>/datasophon-init/config/cluster-sample.yml` 读取    |
 | `--installPath`            | 无    | string | —       | 是     | 组件安装根目录绝对路径，不存在时自动创建                                                                                        |
-| `--productPackagesPath`    | `-n` | string | —       | 是     | 组件安装包目录路径                                                                                                   |
+| `--productPackagesPath`    | `-n` | string | —       | 是     | `package/` 根目录绝对路径（须含 `base/` 与 `raw/` 子目录）                                                                  |
 | `--initPathOverwriteForce` | 无    | bool   | `false` | 否     | 是否覆盖已存在的 `datasophon-init` 目录（重新初始化时使用）                                                                     |
 | `--yes`                    | `-y` | bool   | `false` | 否     | 跳过交互确认，plan 完成后直接执行 apply                                                                                   |
 | `--plan-only`              | 无    | bool   | `false` | 否     | 等价于 `create cluster plan`（只生成计划，不执行）                                                                        |
@@ -51,7 +51,7 @@ create cluster（无参数）
 取消后计划文件已保存，可随时执行 `apply` 恢复：
 
 ```bash
-datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/install -n /data/datasophon/datasophon-init/packages
+datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/install -n /data/install_datasophon/package
 ```
 
 ### 断点续跑
@@ -80,7 +80,7 @@ datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/insta
 | `global.kubernetes.enable` | 控制所有 `k8s-*` 步骤是否激活（需同时 `global.cluster-type: kubernetes`）                |
 | `global.mysql.enable`      | 控制 `init-mysql` / `init-mysql-app-db` 步骤是否激活                              |
 | `global.ntpServer.enable`  | 控制 NTP 步骤是否激活                                                             |
-| `global.packages.*`        | 各组件安装包文件名，与 `<datasophonPath>/datasophon-init/packages/` 下文件名对应           |
+| `global.packages.*`        | 各组件安装包文件名，与 `<productPackagesPath>/base/` 下文件名对应                          |
 
 详见 [配置文件参考](../../config-reference.md)。
 
@@ -92,7 +92,7 @@ datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/insta
 datasophon-cli --dry-run create cluster -t hadoop \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 ### 生产环境：plan 后审阅再 apply
@@ -102,7 +102,7 @@ datasophon-cli --dry-run create cluster -t hadoop \
 datasophon-cli create cluster plan -t hadoop \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 
 # Step 2: 审阅计划内容（可选）
 cat /data/datasophon/datasophon-init/state/initALL.plan.json
@@ -111,7 +111,7 @@ cat /data/datasophon/datasophon-init/state/initALL.plan.json
 datasophon-cli create cluster apply -t hadoop \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 ### K8s 集群初始化
@@ -120,7 +120,7 @@ datasophon-cli create cluster apply -t hadoop \
 datasophon-cli create cluster -t kubernetes -y \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 ### 跳过确认一键执行
@@ -129,7 +129,7 @@ datasophon-cli create cluster -t kubernetes -y \
 datasophon-cli create cluster -t hadoop -y \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 ## 退出码 / 常见错误
@@ -150,4 +150,3 @@ datasophon-cli create cluster -t hadoop -y \
 - [`create config`](./config.md) — 生成初始配置文件
 - [DAG 步骤表](../../reference/init-all-dag.md) — initALL 33 步详解
 - [退出码与断点续跑](../../reference/exit-codes.md)
-

@@ -21,12 +21,14 @@ datasophon-cli --dry-run <command> [subcommand] [flags]
 datasophon-cli --dry-run create cluster \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 
 # 预检单步 init
 datasophon-cli --dry-run init firewall \
   -c /data/datasophon/datasophon-init/config/cluster-sample.yml
 ```
+
+> `--productPackagesPath` 须指向 `package/` 根目录：其中 `base/` 存放 nexus、mysql、rustfs 等 CLI 基础设施包，`raw/{meta,packages}` 存放将上传至 Nexus 的服务包。
 
 > `--dry-run` 是开始任何生产变更前的**强烈推荐**步骤。
 
@@ -88,4 +90,3 @@ datasophon-cli init jdk21 \
 
 > 大多数 init 子命令也有自己的专用 flag，详见各命令页。
 > init 公共 flag 优先级低于子命令自有 flag；命令行传入的值会覆盖配置文件中的对应字段。
-
