@@ -9,15 +9,25 @@ import (
 )
 
 // applyRegistry 把 Registry 配置写入 TaskBase。
-func applyRegistry(tb *initcmd.TaskBase, registry *config.Registry) {
+// RegistryIP 用节点 IP 而非 hostname：下载/上传制品这些 HTTP 请求在 init-all-host
+// （配置 /etc/hosts）之前就会执行，此时 hostname 尚不可解析，必须直连 IP。
+func applyRegistry(tb *initcmd.TaskBase, registry *config.Registry, globalNodes map[string]*config.Host) {
 	if registry == nil || !registry.Enable {
 		return
 	}
 	tb.EnableRegistry = true
-	tb.RegistryIP = registry.Node
+	tb.RegistryIP = resolveIP(globalNodes, registry.Node)
 	tb.RegistryPort = registry.Config.WebPort
 	tb.RegistryUsername = registry.Config.User
 	tb.RegistryPassword = registry.Config.Password
+}
+
+// resolveIP 把 hostname 解析为配置里记录的 IP；查不到时原样返回 hostname 兜底。
+func resolveIP(globalNodes map[string]*config.Host, hostname string) string {
+	if node, ok := globalNodes[hostname]; ok {
+		return node.IP
+	}
+	return hostname
 }
 
 // applyConfig 把配置文件路径写入 TaskBase。

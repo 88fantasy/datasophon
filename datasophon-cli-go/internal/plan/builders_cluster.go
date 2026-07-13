@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/upload"
@@ -117,10 +118,11 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 			slog.Error("安装包不存在", "path", tarPath)
 			return errors.New("rustfs 安装包不存在")
 		}
-		exec.ExecShell(fmt.Sprintf("tar xvz -f %s -C %s", tarPath, t.InstallPath))
-		exec.ExecShell(fmt.Sprintf("mv %s/rustfs-* %s", t.InstallPath, home))
-		exec.ExecShell(fmt.Sprintf("mkdir -p %s", dataPath))
-		exec.ExecShell(fmt.Sprintf("mkdir -p %s", logsPath))
+		// rustfs 官方发布物是 .zip，包内只有裸 rustfs 二进制（无版本号顶层目录，
+		// 与 tar.gz 发布物的目录结构不同），直接解压到 home 即为 home/rustfs，无需 mv。
+		exec.ExecShell(fmt.Sprintf("mkdir -p %s", home))
+		exec.ExecShell(fmt.Sprintf("unzip -o %s -d %s", tarPath, home))
+		exec.ExecShell(fmt.Sprintf("chmod +x %s/rustfs", home))
 	}
 
 	if !t.checkStart(exec) {
@@ -151,12 +153,23 @@ func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool
 		"%s/rustfs --address %s:%s --console-enable --console-address %s:%s"+
 			" --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
 		home, t.WebHost, t.APIPort, t.WebHost, t.WebPort,
-		t.Username, t.Password, data, logs,
+		shellQuote(t.Username), shellQuote(t.Password), data, logs,
 	)
+	lines := []string{
+		fmt.Sprintf("mkdir -p %s", shellQuote(data)),
+		fmt.Sprintf("mkdir -p %s", shellQuote(logs)),
+		startCmd,
+	}
 	startPath := fmt.Sprintf("%s/start.sh", home)
-	exec.WriteLines([]string{startCmd}, startPath)
+	exec.WriteLines(lines, startPath)
 	r := exec.ExecShell(fmt.Sprintf("bash %s", startPath))
 	return r.Success
+}
+
+// shellQuote 用单引号包裹并转义值中的单引号，避免像 rustfs 密码中出现的
+// `#`（shell 注释起始符）等特殊字符截断命令。
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }
 
 // buildRustfs 安装 rustfs（单节点）。
@@ -175,7 +188,7 @@ func buildRustfs(ctx *BuildContext) ([]Action, error) {
 		InstallPath: ctx.InstallPath,
 		X86Tar:      ctx.Cfg.Packages.Rustfs.X86_64,
 		Aarch64Tar:  ctx.Cfg.Packages.Rustfs.Aarch64,
-		WebHost:     rs.Nodes[0],
+		WebHost:     node.IP,
 		WebPort:     rs.Config.WebPort,
 		APIPort:     rs.Config.APIPort,
 		Username:    rs.Config.User,
@@ -198,7 +211,7 @@ func buildRegistry(ctx *BuildContext) ([]Action, error) {
 		Repositories:   reg.Config.Repositories,
 		X86Tar:         ctx.Cfg.Packages.Nexus.X86_64,
 		Aarch64Tar:     ctx.Cfg.Packages.Nexus.Aarch64,
-		WebHost:        reg.Node,
+		WebHost:        node.IP,
 		WebPort:        reg.Config.WebPort,
 		Username:       reg.Config.User,
 		Password:       reg.Config.Password,
@@ -212,14 +225,14 @@ func buildRegistryUpload(ctx *BuildContext) ([]Action, error) {
 	reg := ctx.Cfg.Registry
 	t := &upload.UploadRegistry{
 		ProductPackagesPath:   ctx.ProductPkgsPath,
-		WebHost:               reg.Node,
+		WebHost:               resolveIP(ctx.GlobalNodes, reg.Node),
 		WebPort:               reg.Config.WebPort,
 		Username:              reg.Config.User,
 		Password:              reg.Config.Password,
 		DisableUploadRegistry: reg.DisableUpload,
 		DockerHTTPPort:        reg.Config.DockerHTTPPort,
 	}
-	applyRegistry(&t.TaskBase, &reg)
+	applyRegistry(&t.TaskBase, &reg, ctx.GlobalNodes)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
@@ -239,7 +252,7 @@ func buildContainerd(ctx *BuildContext) ([]Action, error) {
 		CniArmTar:        ctx.Cfg.Packages.Cni.Aarch64,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
@@ -255,7 +268,7 @@ func buildDocker(ctx *BuildContext) ([]Action, error) {
 		KubernetesForce:  ctx.Cfg.Kubernetes.Force,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
@@ -268,7 +281,7 @@ func buildOfflineServer(ctx *BuildContext) ([]Action, error) {
 		ServerPort:  ys.ListenPort,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	node, err := requireNode(ctx.GlobalNodes, ys.Node)
 	if err != nil {
 		return nil, fmt.Errorf("yumServer 节点: %w", err)
@@ -310,7 +323,7 @@ func buildMysql(ctx *BuildContext) ([]Action, error) {
 	}
 	if ctx.Cfg.Registry.Enable {
 		t.EnableRegistry = true
-		t.RegistryIP = ctx.Cfg.Registry.Node
+		t.RegistryIP = resolveIP(ctx.GlobalNodes, ctx.Cfg.Registry.Node)
 		t.RegistryPort = ctx.Cfg.Registry.Config.WebPort
 		t.RegistryUsername = ctx.Cfg.Registry.Config.User
 		t.RegistryPassword = ctx.Cfg.Registry.Config.Password
@@ -393,7 +406,7 @@ func buildK8sBaseServices(ctx *BuildContext) ([]Action, error) {
 		SSHPasswd:        ctx.LocalHost.Password,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	masterNode, err := requireNode(ctx.GlobalNodes, bs.Masters[0])
 	if err != nil {
 		return nil, fmt.Errorf("第一个 master 节点: %w", err)
@@ -412,7 +425,7 @@ func buildK8sKuboard(ctx *BuildContext) ([]Action, error) {
 		Etcds:            kb.EtcdNodes,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	node, err := requireNode(ctx.GlobalNodes, kb.Node)
 	if err != nil {
 		return nil, fmt.Errorf("kuboard 节点: %w", err)
@@ -428,7 +441,7 @@ func buildK8sRegistryConf(ctx *BuildContext) ([]Action, error) {
 		DockerHTTPPort:   ctx.Cfg.Registry.Config.DockerHTTPPort,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 
 	var k8sNodes []*config.Host
 	for _, h := range bs.Masters {
@@ -454,7 +467,7 @@ func buildKubectl(ctx *BuildContext) ([]Action, error) {
 		Aarch64Tar:       ctx.Cfg.Packages.Kubectl.Aarch64,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
@@ -468,7 +481,7 @@ func buildHelm(ctx *BuildContext) ([]Action, error) {
 		Aarch64Tar:       ctx.Cfg.Packages.Helm.Aarch64,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
@@ -482,6 +495,6 @@ func buildHelmify(ctx *BuildContext) ([]Action, error) {
 		Aarch64Tar:       ctx.Cfg.Packages.Helmify.Aarch64,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 	return singleHostAction(ctx.LocalHost, t), nil
 }

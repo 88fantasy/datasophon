@@ -186,7 +186,9 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 		repoDir := filepath.Join(t.ProductPackagesPath, entry.Name())
 		switch repoType {
 		case "yum", "apt":
-			// <arch>/<os>/*.file
+			// <arch>/<os>/**（递归遍历，含 repodata/ 等子目录——yum 仓库的
+			// repomd.xml/primary.xml.gz 等索引元数据就存在这些子目录里，
+			// 缺失时 yum makecache 会因找不到 repodata/repomd.xml 而失败）
 			archEntries, _ := os.ReadDir(repoDir)
 			for _, archEntry := range archEntries {
 				if !archEntry.IsDir() {
@@ -199,23 +201,30 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 						continue
 					}
 					osDir := filepath.Join(archDir, osEntry.Name())
-					// directory 格式：arch/os，与 Java NexusFileUtils 对齐
-					dir := archEntry.Name() + "/" + osEntry.Name()
-					files, _ := os.ReadDir(osDir)
-					for _, f := range files {
-						if f.IsDir() {
-							continue
+					// directory 基础前缀格式：arch/os，与 Java NexusFileUtils 对齐；
+					// 子目录（如 repodata）以相对路径追加在后面。
+					baseDir := archEntry.Name() + "/" + osEntry.Name()
+					_ = filepath.Walk(osDir, func(path string, info os.FileInfo, err error) error {
+						if err != nil || info.IsDir() {
+							return nil
 						}
-						ok := t.uploadFile(baseURL, repoType, filepath.Join(osDir, f.Name()), dir, false)
+						rel, _ := filepath.Rel(osDir, path)
+						relDir := filepath.ToSlash(filepath.Dir(rel))
+						dir := baseDir
+						if relDir != "." {
+							dir = baseDir + "/" + relDir
+						}
+						ok := t.uploadFile(baseURL, repoType, path, dir, false)
 						if ok {
 							success++
 							if t.IsSuccessDelete {
-								_ = os.Remove(filepath.Join(osDir, f.Name()))
+								_ = os.Remove(path)
 							}
 						} else {
 							fail++
 						}
-					}
+						return nil
+					})
 				}
 			}
 		case "raw":

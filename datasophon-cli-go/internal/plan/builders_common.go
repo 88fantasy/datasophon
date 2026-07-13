@@ -17,7 +17,7 @@ func buildBinPackage(sel nodeSelector) BuildFunc {
 			InstallPath:            ctx.InstallPath,
 			InitPathOverwriteForce: ctx.InitPathOverwriteForce,
 		}
-		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)
 		return hostsToActions(workers, t), nil
@@ -40,7 +40,7 @@ func buildTar(sel nodeSelector) BuildFunc {
 func buildJdk8(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
 		t := &initcmd.InitJdk8{PackagePath: ctx.PackagesPath, InstallPath: ctx.InstallPath}
-		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)
 		return hostsToActions(workers, t), nil
@@ -51,7 +51,7 @@ func buildJdk8(sel nodeSelector) BuildFunc {
 func buildJdk21(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
 		t := &initcmd.InitJdk21{PackagePath: ctx.PackagesPath, InstallPath: ctx.InstallPath}
-		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry, ctx.GlobalNodes)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)
 		return hostsToActions(workers, t), nil
@@ -64,14 +64,14 @@ func buildOfflineNodes(sel nodeSelector) BuildFunc {
 		ys := ctx.Cfg.YumServer
 		reg := ctx.Cfg.Registry
 		t := &initcmd.InitOfflineSlave{
-			ServerIP:   ys.Node,
+			ServerIP:   resolveIP(ctx.GlobalNodes, ys.Node),
 			ServerPort: ys.ListenPort,
 		}
 		applyConfig(&t.TaskBase, ctx.ConfigYaml)
 		if reg.Enable {
-			t.ServerIP = reg.Node
+			t.ServerIP = resolveIP(ctx.GlobalNodes, reg.Node)
 			t.ServerPort = reg.Config.WebPort
-			applyRegistry(&t.TaskBase, &reg)
+			applyRegistry(&t.TaskBase, &reg, ctx.GlobalNodes)
 		}
 		nodes := sel(ctx)
 		return hostsToActions(hostsToPtr(nodes), t), nil

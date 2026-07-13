@@ -108,25 +108,33 @@ func TestApplyRegistry_EnableTrue(t *testing.T) {
 			Password: "secret",
 		},
 	}
-	applyRegistry(tb, reg)
+	globalNodes := map[string]*config.Host{"reg-host": {Hostname: "reg-host", IP: "10.0.0.9"}}
+	applyRegistry(tb, reg, globalNodes)
 	assert.True(t, tb.EnableRegistry)
-	assert.Equal(t, "reg-host", tb.RegistryIP)
+	assert.Equal(t, "10.0.0.9", tb.RegistryIP) // 解析为 IP，而非 hostname，避免 init-all-host 之前 DNS 不可用
 	assert.Equal(t, "8081", tb.RegistryPort)
 	assert.Equal(t, "admin", tb.RegistryUsername)
 	assert.Equal(t, "secret", tb.RegistryPassword)
 }
 
+func TestApplyRegistry_UnknownNodeFallsBackToHostname(t *testing.T) {
+	tb := &initcmd.TaskBase{}
+	reg := &config.Registry{Enable: true, Node: "reg-host"}
+	applyRegistry(tb, reg, map[string]*config.Host{})
+	assert.Equal(t, "reg-host", tb.RegistryIP)
+}
+
 func TestApplyRegistry_EnableFalse(t *testing.T) {
 	tb := &initcmd.TaskBase{}
 	reg := &config.Registry{Enable: false, Node: "reg-host"}
-	applyRegistry(tb, reg)
+	applyRegistry(tb, reg, nil)
 	assert.False(t, tb.EnableRegistry)
 	assert.Empty(t, tb.RegistryIP)
 }
 
 func TestApplyRegistry_Nil(t *testing.T) {
 	tb := &initcmd.TaskBase{}
-	applyRegistry(tb, nil)
+	applyRegistry(tb, nil, nil)
 	assert.False(t, tb.EnableRegistry)
 	assert.Empty(t, tb.RegistryIP)
 }

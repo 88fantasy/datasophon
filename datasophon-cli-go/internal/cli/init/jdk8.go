@@ -92,7 +92,9 @@ func (t *InitJdk8) doRun(exec executor.Executor) error {
 	exec.ExecShell("echo 'source /etc/profile' >>~/.bash_profile")
 	exec.ExecShell("echo 'source /etc/profile' >>~/.bashrc")
 
-	// 安装 bcprov
+	// 安装 bcprov（可选增强：放宽 TLS1.0/1.1 算法限制，非 JDK8 核心功能所需，
+	// 下载失败仅警告、不阻塞整体安装——没有 bcprov 时也不做 TLS 配置，避免
+	// java.security 里禁用列表被改动但缺少对应算法实现）。
 	slog.Info("配置 BCPROV")
 	javaBcprovDir := fmt.Sprintf("%s/jre/lib/ext/", javaHome)
 	javaBcprovJarName := "bcprov-jdk15on-1.68.jar"
@@ -100,16 +102,17 @@ func (t *InitJdk8) doRun(exec executor.Executor) error {
 	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
 		javaBcprovJarName, javaBcprovJar, true); err != nil {
-		return err
-	}
-	exec.ExecShell(fmt.Sprintf("cp -a %s %s", javaBcprovJar, javaBcprovDir))
-	slog.Info("BCPROV 安装完成")
+		slog.Warn("BCPROV 下载失败，跳过 TLS 算法放宽", "err", err)
+	} else {
+		exec.ExecShell(fmt.Sprintf("cp -a %s %s", javaBcprovJar, javaBcprovDir))
+		slog.Info("BCPROV 安装完成")
 
-	// 修改 TLS 配置
-	exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1//' %s/jre/lib/security/java.security", javaHome))
-	exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1,//' %s/jre/lib/security/java.security", javaHome))
-	exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1.1//' %s/jre/lib/security/java.security", javaHome))
-	exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1.1,//' %s/jre/lib/security/java.security", javaHome))
+		// 修改 TLS 配置
+		exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1//' %s/jre/lib/security/java.security", javaHome))
+		exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1,//' %s/jre/lib/security/java.security", javaHome))
+		exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1.1//' %s/jre/lib/security/java.security", javaHome))
+		exec.ExecShell(fmt.Sprintf("sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1.1,//' %s/jre/lib/security/java.security", javaHome))
+	}
 
 	exec.ExecShell("source /root/.bash_profile")
 	exec.ExecShell("source /root/.bashrc")
