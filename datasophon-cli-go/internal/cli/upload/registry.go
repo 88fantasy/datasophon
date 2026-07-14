@@ -232,9 +232,6 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				if err != nil || info.IsDir() {
 					return nil
 				}
-				if strings.HasSuffix(path, ".md5") {
-					return nil // sidecar 文件本身不上传
-				}
 				rel, _ := filepath.Rel(repoDir, path)
 				dir := filepath.ToSlash(filepath.Dir(rel))
 				if dir == "." {
