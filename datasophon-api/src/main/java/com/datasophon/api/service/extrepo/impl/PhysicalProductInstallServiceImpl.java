@@ -73,6 +73,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -182,6 +183,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     }
 
     @Override
+    @Transactional
     public InstallResult deploy(DeploymentDTO dto) {
         DeploymentModel model = doParseDeploymentFile(dto);
         List<DeploySrvModel> apps = getTargetApps(model);
@@ -597,6 +599,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     }
 
     @Override
+    @Transactional
     public String generateAndExecSrvInstCmd(Integer clusterId, CommandType commandType, List<Integer> serviceInstanceIds) {
         List<Integer> serviceFrameworkIds = new ArrayList<>();
         List<String> commandIds = new ArrayList<>();
@@ -662,6 +665,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     }
 
     @Override
+    @Transactional
     public String generateAndExecSrvRoleCmd(Integer clusterId, CommandType commandType, Integer instId, List<Integer> roleInstIds) {
         if (Arrays.asList(CommandType.UPGRADE_SERVICE, CommandType.INSTALL_SERVICE).contains(commandType)) {
             throw new UnsupportedOperationException(String.format("command %s is not support", commandType));
