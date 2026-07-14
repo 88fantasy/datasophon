@@ -241,8 +241,15 @@ public class InstallServiceHandler {
             return ExecResult.success();
         }
 
-        logger.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
         String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getNormalPkgDir();
+        if (appLinkHome.equals(appHome)) {
+            // 服务名与 decompressPackageName 同名（如 NACOS 解压目录本身就叫 nacos）时，
+            // 软链目标和软链路径是同一个目录，无需也不能再建一次软链
+            logger.info("服务{} {}解压目录与软链目录一致({})，跳过创建软链...", command.getServiceName(), command.getServiceRoleName(), appHome);
+            return ExecResult.success();
+        }
+
+        logger.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
         return doCreateLink(appLinkHome, appHome);
     }
 

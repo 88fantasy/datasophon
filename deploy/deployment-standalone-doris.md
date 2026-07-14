@@ -575,10 +575,32 @@ datasophon-cli create cluster apply \
 - HTTP：Jetty `8080` 监听，`curl http://127.0.0.1:8080/ddh/` 返回 200 及登录页 HTML。
 - 登录：`POST /ddh/api/login`（`admin`/默认密码，特殊字符需 `--data-urlencode`）返回 `"msg":"登录成功"` 及有效 `sessionId`，证明 DB 读写、鉴权链路均正常，不只是端口起来。
 
-**新发现的遗留问题（不阻塞 Phase 7，需后续单独跟进）**：
-- 启动日志出现一条 `ERROR`：`LoadServiceMeta` 加载 `datacluster-physical/NACOS` 时报 `服务名称NACOS不能和解压文件名nacos一致（忽略大小写）`，该服务的 ddl 元数据未能加载进内存。是预置校验规则与 NACOS 服务包命名的冲突，与本次部署改动无关；因为阶段 A 服务范围（§1.3）不含 NACOS，暂不阻塞后续 Worker/OTel Collector 集群初始化，留待专项修复。
+**新发现的遗留问题（不阻塞 Phase 7，已于 §7.5 修复）**：
+- 启动日志出现一条 `ERROR`：`LoadServiceMeta` 加载 `datacluster-physical/NACOS` 时报 `服务名称NACOS不能和解压文件名nacos一致（忽略大小写）`，该服务的 ddl 元数据未能加载进内存。是预置校验规则与 NACOS 服务包命名的冲突，与本次部署改动无关；当时因阶段 A 尚未进入 NACOS 的实际导入环节，暂不阻塞 Worker/OTel Collector 集群初始化，留待专项修复——**但 §1.3 明确 NACOS 属于阶段 A 计入验收范围**，该问题必须在 Phase 9 导入"基础依赖批"（含 NACOS）之前解决，不能长期搁置。
 
 **Phase 7 结论**：控制面（MySQL 连接/迁移、HTTP 8080、gRPC 18081、登录鉴权）健康检查全部通过，满足 §8 "只有控制面健康后才能从前端执行集群初始化" 的前置条件。Phase 8（前端配置五节点、安装 Worker + OTel Collector）待人工批准后开始。
+
+### 7.5 NACOS ddl 加载失败根因与修复（2026-07-14）
+
+在准备 Phase 9 "基础依赖批"（`ZOOKEEPER`/`VALKEY`/`ELASTICSEARCH`/`NACOS`）前复查 §7.4 遗留问题，确认代码侧问题仍未修复（`package/raw/meta/datacluster-physical/NACOS/service_ddl.json` 的 `decompressPackageName` 仍是字面量 `"nacos"`），逐层定位根因：
+
+- **`DdlMetaServiceImpl.loadServicePhysicalDdl`**（`datasophon-api/.../service/ddl/impl/DdlMetaServiceImpl.java`）在 ddl 加载时硬性校验"服务名与 `decompressPackageName` 忽略大小写不能相同"，不同直接抛 `IllegalStateException`，注释标注 `@see ServiceInstallHandler#createLink`。
+- 顺藤摸瓜到 `InstallServiceHandler.createLink`（`datasophon-worker/.../handler/InstallServiceHandler.java`）：软链路径 = `INSTALL_PATH/lowercase(serviceName)`（`PkgInstallPathUtils.getLinkDirName`），软链目标 = `INSTALL_PATH/decompressPackageName`（`PkgInstallPathUtils.getInstallHomeName`）。NACOS 官方 tar 包解压后目录本来就叫 `nacos`，和服务名小写完全相同，两条路径会解析成同一个真实目录，若不拦截会在安装期执行 `ln -s /data/nacos /data/nacos`（自引用），`doCreateLink` 发现目标已存在且不是软链会直接抛异常。ddl 加载时的校验只是把这个必然会在安装期爆炸的场景提前到加载期拦下，校验规则本身没有错，但代价是让 NACOS 永远无法安装。
+
+**修复方案**：不放宽校验本身允许的风险，而是让根因处的 `createLink` 安全处理这个场景——当软链路径与软链目标解析为同一个目录时，说明解压出来的目录已经就是"对外路径"，无需再建一次软链，直接跳过并返回成功；随之在 `DdlMetaServiceImpl` 移除此前的预防性拦截（不再需要，运行期已安全）。改动范围：
+
+- `datasophon-worker/src/main/java/com/datasophon/worker/handler/InstallServiceHandler.java` `createLink()`：新增 `appLinkHome.equals(appHome)` 分支，跳过建软链。
+- `datasophon-api/src/main/java/com/datasophon/api/service/ddl/impl/DdlMetaServiceImpl.java` `loadServicePhysicalDdl()`：删除对应的 `IllegalStateException` 抛出，改为注释说明。
+
+**验证**：`JAVA_HOME=<GraalVM 21.0.7> ./mvnw -pl datasophon-worker,datasophon-api -am compile -s ~/.m2/setting.xml` 编译通过；`./mvnw -pl datasophon-worker -am test` 31 个用例全绿（含 `WorkerCommandGrpcServiceTest`/`DownloadStrategyTest` 等）。`datasophon-api` 无既有单测覆盖 `DdlMetaServiceImpl`，未新增（该模块常规测试需真实 MySQL，未在本次改动范围内跑集成测试）。
+
+**现场部署验证（2026-07-14 14:41，ddh-01）**：`JAVA_HOME=<GraalVM 21.0.7> ./mvnw clean package -DskipTests -s ~/.m2/setting.xml -pl datasophon-api -am` 重新打包 `datasophon-manager-3.0-SNAPSHOT.tar.gz`，scp 到 ddh-01 并 md5 校验一致；旧版本整体备份为 `/data/datasophon-api/datasophon-manager-3.0-SNAPSHOT.backup-20260714-nacosfix`（未删除任何数据），`conf/api.local.properties`（真实密码）原样复制到新目录并 diff 确认一致。重启后日志实测：
+
+- `DdlMetaServiceImpl` 打出 `arch:{common=ArchInfo(packageName=nacos-server-3.2.2.tar.gz, decompressPackageName=nacos)}` 及 `put datacluster-physical NACOS service info into cache`，NACOS ddl 不再报错，服务元数据已进内存——问题解除。
+- Jetty `8080`、gRPC `18081` 正常监听，`curl http://127.0.0.1:8080/ddh/` 返回 `200`；`WorkerRegistryPrewarmer` 预热 5 个主机（`port=18082`）；`ping host: ddh-01～05 success` 全部正常；前端 v2 登录（`admin`）成功，证明重启未破坏 Phase 7/8 已验证的控制面链路。
+- 日志中反复出现 `check host ... metrics from otel error, cause: No running DorisFE for cluster 1` 是 `OtelAlertScheduler` 在评估 Doris 相关指标告警但 Doris 尚未安装导致的预期噪音，与本次修复无关，Phase 9 导入 Doris 批后应自然消失。
+
+至此 NACOS ddl 加载问题已在代码和现场两个层面确认修复，Phase 9 "基础依赖批"（含 NACOS）的前置阻塞已解除。
 
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
