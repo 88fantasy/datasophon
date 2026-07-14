@@ -20,57 +20,34 @@
  * SOFTWARE.
  */
 
-package com.datasophon.common.model;
+package com.datasophon.api.service.extrepo.impl;
 
-import java.io.Serializable;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
+
+import java.util.ArrayList;
 import java.util.List;
 
-import lombok.Data;
+import org.junit.jupiter.api.Test;
 
-@Data
-public class ServiceConfig implements Serializable {
+class PhysicalProductInstallServiceImplTest {
 
-    private String originalName;
+    @Test
+    void sortsRolesWithMissingSortNumberLast() {
+        FrameServiceRoleEntity unranked = new FrameServiceRoleEntity()
+                .setServiceRoleName("DorisFE");
+        FrameServiceRoleEntity second = new FrameServiceRoleEntity()
+                .setServiceRoleName("Second")
+                .setSortNum(2);
+        FrameServiceRoleEntity first = new FrameServiceRoleEntity()
+                .setServiceRoleName("First")
+                .setSortNum(1);
+        List<FrameServiceRoleEntity> roles = new ArrayList<>(List.of(unranked, second, first));
 
-    private String name;
+        PhysicalProductInstallServiceImpl.sortServiceRoles(roles);
 
-    private Object value;
-
-    private String label;
-
-    private String key;
-
-    private String description;
-
-    private boolean required;
-
-    private boolean enabled = true;
-
-    private String type;
-
-    private boolean configurableInWizard;
-
-    private Object defaultValue;
-
-    private Long minValue;
-
-    private Long maxValue;
-
-    private String unit;
-
-    private boolean hidden;
-
-    private List<String> selectValue;
-
-    private String configType;
-
-    private boolean configWithKerberos;
-
-    private boolean configWithRack;
-
-    private boolean configWithHA;
-
-    private String separator;
-
-    private Boolean register;
+        assertThat(roles).extracting(FrameServiceRoleEntity::getServiceRoleName)
+                .containsExactly("First", "Second", "DorisFE");
+    }
 }

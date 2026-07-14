@@ -258,7 +258,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         // 保存commandHost的相关数据
         List<ClusterServiceCommandHostEntity> hostEntityList = new ArrayList<>();
         List<FrameServiceRoleEntity> serviceRoleList = frameServiceRoleService.getServiceRoleList(cluster.getId(), Collections.singletonList(frameService.getId()), null);
-        serviceRoleList.sort(Comparator.comparing(FrameServiceRoleEntity::getSortNum));
+        sortServiceRoles(serviceRoleList);
         Set<String> hostnames = new HashSet<>();
         for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
             hostnames.addAll(serviceRoleHostMap.getOrDefault(serviceRole.getServiceRoleName(), new ArrayList<>(0)));
@@ -304,6 +304,11 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
                 cmd.getServiceName(), hostCommandList.size());
 
         return cmd.getCommandId();
+    }
+
+    static void sortServiceRoles(List<FrameServiceRoleEntity> serviceRoleList) {
+        serviceRoleList.sort(Comparator.comparing(FrameServiceRoleEntity::getSortNum,
+                Comparator.nullsLast(Comparator.naturalOrder())));
     }
 
     private String saveDAG(Integer clusterId, String serviceActionName, List<String> commandIds, DAG<String, DAGNode, Integer> dag,

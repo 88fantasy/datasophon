@@ -54,6 +54,23 @@ class ServiceInstallServiceImplTest {
     }
 
     @Test
+    void enablesDdlParametersByDefaultUnlessExplicitlyDisabled() {
+        FrameServiceEntity frameService = new FrameServiceEntity();
+        frameService.setServiceJson("""
+                {"parameters":[
+                  {"name":"shownByDefault"},
+                  {"name":"explicitlyHidden","enabled":false}
+                ]}
+                """);
+
+        assertThat(ServiceInstallServiceImpl.resolveFrameServiceConfigs(frameService, Map.of()))
+                .extracting(ServiceConfig::getName, ServiceConfig::isEnabled)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("shownByDefault", true),
+                        org.assertj.core.groups.Tuple.tuple("explicitlyHidden", false));
+    }
+
+    @Test
     void mergesCurrentValuesIntoLoadedConfigFileTemplate() {
         Generators generator = new Generators();
         generator.setFilename("otelcol.yaml");
