@@ -21,8 +21,6 @@ import (
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
 )
 
-const registryNexusEula = "Use of Sonatype Nexus Repository - Community Edition is governed by the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula. By returning the value from 'accepted:false' to 'accepted:true', you acknowledge that you have read and agree to the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula."
-
 // registryTask 安装 Sonatype Nexus 制品库并初始化仓库。
 type registryTask struct {
 	EnableRegistry bool
@@ -99,9 +97,13 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 	if t.checkStart(exec) {
 		if exec.Exists(passwordPath).Success {
 			oldPassword := strings.TrimSpace(exec.GetFileString(passwordPath).Output)
-			t.changePassword(baseURL, oldPassword)
+			if !t.changePassword(baseURL, oldPassword) {
+				return errors.New("nexus 修改管理员密码失败")
+			}
 		}
-		t.systemEula(baseURL)
+		if !t.systemEula(baseURL) {
+			return errors.New("nexus 接受 EULA 失败")
+		}
 		t.repoCreateByList(baseURL)
 		slog.Info("nexus 安装成功", "path", home)
 		return nil
@@ -147,12 +149,32 @@ func (t *registryTask) changePassword(baseURL, oldPassword string) bool {
 	return false
 }
 
+// systemEula 接受 Nexus EULA。disclaimer 文本先从服务端 GET 获取再原样回传，
+// 不用本地硬编码文本——Nexus 按逐字节比较校验 disclaimer，硬编码文本一旦跟服务端
+// 存储的版本有字符差异（例如引号是直引号还是弯引号）就会被判定为 Invalid EULA disclaimer。
 func (t *registryTask) systemEula(baseURL string) bool {
-	type eulaReq struct {
+	type eulaState struct {
 		Accepted   bool   `json:"accepted"`
 		Disclaimer string `json:"disclaimer"`
 	}
-	payload, _ := json.Marshal(eulaReq{Accepted: true, Disclaimer: registryNexusEula})
+
+	getResp, err := registryHTTPGet(baseURL, "/service/rest/v1/system/eula", t.Username, t.Password)
+	if err != nil {
+		slog.Error("获取 eula 状态失败", "err", err)
+		return false
+	}
+	defer getResp.Body.Close()
+	var state eulaState
+	if err := json.NewDecoder(getResp.Body).Decode(&state); err != nil {
+		slog.Error("解析 eula 状态失败", "err", err)
+		return false
+	}
+	if state.Accepted {
+		slog.Info("eula 已接受，跳过")
+		return true
+	}
+
+	payload, _ := json.Marshal(eulaState{Accepted: true, Disclaimer: state.Disclaimer})
 	resp, err := registryHTTPPost(baseURL, "/service/rest/v1/system/eula",
 		t.Username, t.Password, "application/json", bytes.NewReader(payload))
 	if err != nil {
@@ -247,6 +269,15 @@ func (t *registryTask) realmsDocker(baseURL string) bool {
 	}
 	slog.Error("realms 配置失败", "status", resp.StatusCode)
 	return false
+}
+
+func registryHTTPGet(baseURL, path, username, password string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, baseURL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(username, password)
+	return http.DefaultClient.Do(req)
 }
 
 func registryHTTPPost(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
@@ -368,7 +399,7 @@ func (c *createRegistryCmd) runFromConfig() error {
 		Repositories:   reg.Config.Repositories,
 		X86Tar:         cfg.Packages.Nexus.X86_64,
 		Aarch64Tar:     cfg.Packages.Nexus.Aarch64,
-		WebHost:        reg.Node,
+		WebHost:        node.IP,
 		WebPort:        reg.Config.WebPort,
 		Username:       reg.Config.User,
 		Password:       reg.Config.Password,

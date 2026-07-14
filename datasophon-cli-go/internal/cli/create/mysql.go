@@ -97,7 +97,9 @@ func (t *mysqlTask) installUbuntu(exec executor.Executor, httpRootPath, mysqlSer
 	}
 	exec.ExecShell(fmt.Sprintf("apt localinstall %s/*.rpm -y", httpRootPath))
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
-		t.rootUserConf(exec)
+		if err := t.rootUserConf(exec); err != nil {
+			return err
+		}
 		exec.ExecShell("mv /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.bak")
 		exec.WriteLines(t.mysqldConf(), "/etc/mysql/mysql.conf.d/mysqld.cnf")
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
@@ -135,16 +137,28 @@ func (t *mysqlTask) installCentos(exec executor.Executor, osType osinfo.OsType, 
 		tmpPasswd := strings.TrimSpace(exec.ExecShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").Output)
 		slog.Info("临时密码已获取，开始修改密码")
 		oldCnf := "/tmp/.dsph_mysql_old.cnf"
-		exec.WriteLines([]string{"[client]", "password=" + tmpPasswd}, oldCnf)
+		// cnf 文件里密码必须加引号：MySQL 客户端的配置文件解析器把不加引号的 # 当注释起始符，
+		// 密码含 # 时会被截断，导致后续用这个 cnf 连接时密码错误（Access denied）。
+		exec.WriteLines([]string{"[client]", "password=\"" + tmpPasswd + "\""}, oldCnf)
 		exec.ExecShell(fmt.Sprintf("chmod 600 %s", oldCnf))
 		newSqlPath := "/tmp/.dsph_mysql_init.sql"
 		exec.WriteLines([]string{
 			fmt.Sprintf("ALTER USER 'root'@'localhost' IDENTIFIED BY '%s';", t.Password),
 		}, newSqlPath)
 		exec.ExecShell(fmt.Sprintf("chmod 600 %s", newSqlPath))
-		exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot < %s", oldCnf, newSqlPath))
+		// --connect-expired-password：临时密码首次登录时 MySQL 强制要求先修改密码才允许执行
+		// 任何 SQL，缺少这个选项会导致这条 ALTER USER 被拒绝执行、root 密码从未真正改变，
+		// 但原先不检查返回值，后续步骤仍会照常执行并报告"安装成功"。
+		// 注意 --defaults-extra-file 必须是第一个参数，放在其他选项之后会被 MySQL 客户端
+		// 误判成普通变量赋值而报 "unknown variable" 错误。
+		ir := exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s --connect-expired-password -uroot < %s", oldCnf, newSqlPath))
 		exec.ExecShell(fmt.Sprintf("rm -f %s %s", oldCnf, newSqlPath))
-		t.rootUserConf(exec)
+		if !ir.Success {
+			return fmt.Errorf("修改 root 初始密码失败: %s", ir.ErrOutput)
+		}
+		if err := t.rootUserConf(exec); err != nil {
+			return err
+		}
 		exec.ExecShell("mv /etc/my.cnf /etc/my.cnf.bak")
 		exec.WriteLines(t.mysqldConf(), "/etc/my.cnf")
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
@@ -167,9 +181,9 @@ func (t *mysqlTask) mysqlLib(exec executor.Executor, name, checkCmd, installCmd 
 	}
 }
 
-func (t *mysqlTask) rootUserConf(exec executor.Executor) {
+func (t *mysqlTask) rootUserConf(exec executor.Executor) error {
 	newCnf := "/tmp/.dsph_mysql_new.cnf"
-	exec.WriteLines([]string{"[client]", "password=" + t.Password}, newCnf)
+	exec.WriteLines([]string{"[client]", "password=\"" + t.Password + "\""}, newCnf)
 	exec.ExecShell(fmt.Sprintf("chmod 600 %s", newCnf))
 	sqlPath := "/tmp/.dsph_mysql_conf.sql"
 	exec.WriteLines([]string{
@@ -180,8 +194,12 @@ func (t *mysqlTask) rootUserConf(exec executor.Executor) {
 		"FLUSH PRIVILEGES;",
 	}, sqlPath)
 	exec.ExecShell(fmt.Sprintf("chmod 600 %s", sqlPath))
-	exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot -P%d < %s", newCnf, t.Port, sqlPath))
+	r := exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot -P%d < %s", newCnf, t.Port, sqlPath))
 	exec.ExecShell(fmt.Sprintf("rm -f %s %s", newCnf, sqlPath))
+	if !r.Success {
+		return fmt.Errorf("配置 root 用户权限失败: %s", r.ErrOutput)
+	}
+	return nil
 }
 
 func (t *mysqlTask) mysqldConf() []string {

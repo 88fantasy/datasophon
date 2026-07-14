@@ -65,10 +65,11 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 			slog.Error("安装包不存在", "path", tarPath)
 			return errors.New("rustfs 安装包不存在")
 		}
-		exec.ExecShell(fmt.Sprintf("tar xvz -f %s -C %s", tarPath, t.InstallPath))
-		exec.ExecShell(fmt.Sprintf("mv %s/rustfs-* %s", t.InstallPath, home))
-		exec.ExecShell(fmt.Sprintf("mkdir -p %s", dataPath))
-		exec.ExecShell(fmt.Sprintf("mkdir -p %s", logsPath))
+		// rustfs 官方发布物是 .zip（包内是裸 rustfs 二进制，无版本号顶层目录，
+		// 与 tar.gz 发布物的目录结构不同），直接解压到 home 即为 home/rustfs，无需 mv。
+		exec.ExecShell(fmt.Sprintf("mkdir -p %s", home))
+		exec.ExecShell(fmt.Sprintf("unzip -o %s -d %s", tarPath, home))
+		exec.ExecShell(fmt.Sprintf("chmod +x %s/rustfs", home))
 	}
 
 	alreadyRunning := t.checkStart(exec)
@@ -104,13 +105,18 @@ func (t *rustfsTask) checkStart(exec executor.Executor) bool {
 }
 
 func (t *rustfsTask) writeStartScript(exec executor.Executor, home, data, logs string) {
+	// Username/Password 用 shellSingleQuote 转义：密码里的 # 等 shell 元字符若不加引号，
+	// 会被 bash 当注释截断整行命令（含后台符 &），导致进程同步阻塞且不产生日志。
 	startCmd := fmt.Sprintf(
 		"%s/rustfs --address %s:%s --console-enable --console-address %s:%s"+
 			" --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
 		home, t.WebHost, t.APIPort, t.WebHost, t.WebPort,
-		t.Username, t.Password, data, logs,
+		shellSingleQuote(t.Username), shellSingleQuote(t.Password), data, logs,
 	)
-	var lines []string
+	lines := []string{
+		fmt.Sprintf("mkdir -p %s", shellSingleQuote(data)),
+		fmt.Sprintf("mkdir -p %s", shellSingleQuote(logs)),
+	}
 	if t.ObsEndpoint != "" {
 		// rustfs-obs crate 读取的环境变量，metrics 走 OTLP/HTTP 上报到本节点 OTel Collector。
 		// shellSingleQuote 防止 endpoint 中意外出现的 shell 元字符（空格/;/$()）被 bash 解释执行。
