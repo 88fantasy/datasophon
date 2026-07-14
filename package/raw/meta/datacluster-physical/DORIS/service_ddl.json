@@ -233,15 +233,39 @@
       "register": true
     },
     {
+      "name": "otel_collector_password",
+      "value": "",
+      "description": "Doris otel_collector 账号(OTel Collector 写入用)的密码，留空则自动生成随机密码",
+      "label": "OTel Collector 写入密码",
+      "hidden": false,
+      "required": false,
+      "type": "password",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "name": "otel_reader_password",
+      "value": "",
+      "description": "Doris otel_reader 账号(平台查询 Doris 指标用)的密码，留空则自动生成随机密码",
+      "label": "OTel Reader 查询密码",
+      "hidden": false,
+      "required": false,
+      "type": "password",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
       "name": "http_port",
       "key": "http_port",
-      "value": "18030",
+      "value": "8030",
       "description": "FE节点上前端界面的端口",
       "label": "FE节点上前端界面的端口",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "18030",
+      "defaultValue": "8030",
       "configurableInWizard": true,
       "register": true
     },
@@ -370,13 +394,13 @@
     },
     {
       "name": "webserver_port",
-      "value": "18040",
+      "value": "8040",
       "description": "BE WebServer端口",
       "label": "BE WebServer端口",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "18040",
+      "defaultValue": "8040",
       "configurableInWizard": true,
       "register": false
     },

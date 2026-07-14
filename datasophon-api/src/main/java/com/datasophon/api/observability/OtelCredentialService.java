@@ -26,6 +26,8 @@ import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.dao.entity.ClusterVariable;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -33,28 +35,39 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class OtelCredentialService {
-    
+
     static final String SERVICE_NAME = "OTELCOLLECTOR";
     static final String COLLECTOR_PASSWORD = "dorisCollectorPassword";
     static final String READER_PASSWORD = "dorisReaderPassword";
-    
+
+    static final String DORIS_SERVICE_NAME = "DORIS";
+    static final String DORIS_COLLECTOR_PASSWORD = "otel_collector_password";
+    static final String DORIS_READER_PASSWORD = "otel_reader_password";
+
     private final ClusterVariableService variableService;
     private final SecureRandom random = new SecureRandom();
-    
+
     public OtelCredentialService(ClusterVariableService variableService) {
         this.variableService = variableService;
     }
-    
+
     public synchronized OtelCredentials getOrCreate(Integer clusterId) {
-        String collector = getOrCreate(clusterId, COLLECTOR_PASSWORD);
-        String reader = getOrCreate(clusterId, READER_PASSWORD);
+        String collector = getOrCreate(clusterId, COLLECTOR_PASSWORD, DORIS_COLLECTOR_PASSWORD);
+        String reader = getOrCreate(clusterId, READER_PASSWORD, DORIS_READER_PASSWORD);
         return new OtelCredentials(collector, reader);
     }
-    
-    private String getOrCreate(Integer clusterId, String name) {
-        ClusterVariable existing = variableService.getVariableByVariableName(clusterId, SERVICE_NAME, name);
+
+    private String getOrCreate(Integer clusterId, String otelVariableName, String dorisVariableName) {
+        // 优先使用用户在 DORIS 服务配置里指定的密码
+        ClusterVariable userConfigured = variableService.getVariableByVariableName(clusterId, DORIS_SERVICE_NAME, dorisVariableName);
+        if (userConfigured != null && StringUtils.isNotBlank(userConfigured.getVariableValue())) {
+            GlobalVariables.putValue(clusterId, SERVICE_NAME, otelVariableName, userConfigured.getVariableValue());
+            return userConfigured.getVariableValue();
+        }
+
+        ClusterVariable existing = variableService.getVariableByVariableName(clusterId, SERVICE_NAME, otelVariableName);
         if (existing != null) {
-            GlobalVariables.putValue(clusterId, SERVICE_NAME, name, existing.getVariableValue());
+            GlobalVariables.putValue(clusterId, SERVICE_NAME, otelVariableName, existing.getVariableValue());
             return existing.getVariableValue();
         }
         byte[] bytes = new byte[24];
@@ -63,10 +76,10 @@ public class OtelCredentialService {
         ClusterVariable variable = new ClusterVariable();
         variable.setClusterId(clusterId);
         variable.setServiceName(SERVICE_NAME);
-        variable.setVariableName(name);
+        variable.setVariableName(otelVariableName);
         variable.setVariableValue(password);
         variableService.save(variable);
-        GlobalVariables.putValue(clusterId, SERVICE_NAME, name, password);
+        GlobalVariables.putValue(clusterId, SERVICE_NAME, otelVariableName, password);
         return password;
     }
 }

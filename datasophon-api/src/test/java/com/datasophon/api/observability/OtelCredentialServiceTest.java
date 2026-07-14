@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class OtelCredentialServiceTest {
-    
+
     @Test
     void generatesDistinctClusterCredentialsAndPersistsThem() {
         ClusterVariableService variables = mock(ClusterVariableService.class);
@@ -42,9 +42,9 @@ class OtelCredentialServiceTest {
         when(variables.getVariableByVariableName(7, "OTELCOLLECTOR", "dorisReaderPassword"))
                 .thenReturn(null);
         OtelCredentialService service = new OtelCredentialService(variables);
-        
+
         OtelCredentials credentials = service.getOrCreate(7);
-        
+
         assertThat(credentials.collectorPassword()).hasSize(32);
         assertThat(credentials.readerPassword()).hasSize(32).isNotEqualTo(credentials.collectorPassword());
         ArgumentCaptor<ClusterVariable> saved = ArgumentCaptor.forClass(ClusterVariable.class);
@@ -53,7 +53,7 @@ class OtelCredentialServiceTest {
         assertThat(saved.getAllValues()).extracting(ClusterVariable::getVariableValue)
                 .doesNotContain("CHANGE_ME_AT_A3");
     }
-    
+
     @Test
     void reusesPersistedCredentials() {
         ClusterVariableService variables = mock(ClusterVariableService.class);
@@ -61,13 +61,46 @@ class OtelCredentialServiceTest {
                 .thenReturn(variable("collector-secret"));
         when(variables.getVariableByVariableName(7, "OTELCOLLECTOR", "dorisReaderPassword"))
                 .thenReturn(variable("reader-secret"));
-        
+
         OtelCredentials credentials = new OtelCredentialService(variables).getOrCreate(7);
-        
+
         assertThat(credentials).isEqualTo(new OtelCredentials("collector-secret", "reader-secret"));
         org.mockito.Mockito.verify(variables, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
     }
-    
+
+    @Test
+    void prefersUserConfiguredDorisPasswordOverGeneratedOne() {
+        ClusterVariableService variables = mock(ClusterVariableService.class);
+        when(variables.getVariableByVariableName(7, "DORIS", "otel_collector_password"))
+                .thenReturn(variable("user-collector-pwd"));
+        when(variables.getVariableByVariableName(7, "DORIS", "otel_reader_password"))
+                .thenReturn(variable("user-reader-pwd"));
+
+        OtelCredentials credentials = new OtelCredentialService(variables).getOrCreate(7);
+
+        assertThat(credentials).isEqualTo(new OtelCredentials("user-collector-pwd", "user-reader-pwd"));
+        org.mockito.Mockito.verify(variables, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void blankDorisPasswordFallsBackToGeneratedCredential() {
+        ClusterVariableService variables = mock(ClusterVariableService.class);
+        when(variables.getVariableByVariableName(7, "DORIS", "otel_collector_password"))
+                .thenReturn(variable(""));
+        when(variables.getVariableByVariableName(7, "DORIS", "otel_reader_password"))
+                .thenReturn(null);
+        when(variables.getVariableByVariableName(7, "OTELCOLLECTOR", "dorisCollectorPassword"))
+                .thenReturn(null);
+        when(variables.getVariableByVariableName(7, "OTELCOLLECTOR", "dorisReaderPassword"))
+                .thenReturn(null);
+
+        OtelCredentials credentials = new OtelCredentialService(variables).getOrCreate(7);
+
+        assertThat(credentials.collectorPassword()).hasSize(32);
+        assertThat(credentials.readerPassword()).hasSize(32);
+        org.mockito.Mockito.verify(variables, org.mockito.Mockito.times(2)).save(org.mockito.ArgumentMatchers.any());
+    }
+
     private static ClusterVariable variable(String value) {
         ClusterVariable variable = new ClusterVariable();
         variable.setVariableValue(value);
