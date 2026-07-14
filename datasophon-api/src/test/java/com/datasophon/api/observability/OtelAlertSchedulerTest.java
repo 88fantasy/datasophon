@@ -183,7 +183,7 @@ class OtelAlertSchedulerTest {
 
     private static OtelAlertScheduler scheduler(AtomicReference<List<NodeOtelMetrics>> metrics,
                                                 List<String> alerts) {
-        OtelMonitorService monitor = new OtelMonitorService(null, null) {
+        OtelMonitorService monitor = new OtelMonitorService(null, null, null) {
             @Override
             public List<NodeOtelMetrics> collectAll(Integer clusterId) {
                 return metrics.get();
@@ -208,7 +208,7 @@ class OtelAlertSchedulerTest {
 
     private static OtelAlertScheduler scheduler(MutableMetricQueryService query, List<String> alerts,
                                                 List<ClusterAlertQuota> quotas) {
-        OtelMonitorService monitor = new OtelMonitorService(null, null);
+        OtelMonitorService monitor = new OtelMonitorService(null, null, null);
         ClusterInfoService clusters = clusters();
         ClusterAlertHistoryService history = proxy(ClusterAlertHistoryService.class, (method, args) -> {
             if ("saveAlertHistory".equals(method)) {

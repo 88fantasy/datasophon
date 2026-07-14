@@ -23,7 +23,15 @@ start() {
   fi
   env_file=$current_path/config/otelcol.env
   if [ -f "$env_file" ]; then
-    set -a; . "$env_file"; set +a
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        AWS_ACCESS_KEY_ID=*|AWS_SECRET_ACCESS_KEY=*|OTEL_DORIS_USER=*|OTEL_DORIS_PASSWORD=*)
+          key=${line%%=*}
+          value=${line#*=}
+          export "$key=$value"
+          ;;
+      esac
+    done < "$env_file"
   fi
   echo "starting otelcol, logging to $log"
   nohup $bin --config=$conf > $log 2>&1 &

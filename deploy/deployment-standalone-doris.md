@@ -62,9 +62,9 @@
 | 3 | 网络、时间、磁盘与离线包预检 | PASSED WITH DEVIATIONS | 数据盘、JDK17、架构与包校验 | manifest（§6 现场记录；阶段 A 服务包/JDK17/CLI 基础设施 bundle 延后） |
 | 4 | CLI 配置生成与五节点审阅 | PASSED | 严格解析、引用、权限、敏感信息检查 | 脱敏配置 hash（§7.2.1） |
 | 5 | CLI plan 生成与人工审批 | PASSED | 批准特定 plan hash 后才可 apply | plan hash / clusterHash（§7.2.4 最终批准，`25ad4ff34cff4283`；`os`/`config`/`soft` 经 §7.2.3 代码核查确认非真实阻塞项） |
-| 6 | CLI apply 基础环境初始化 | BLOCKED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复（Codex 实现+Claude 审核）已现场验证通过，5 节点全部装上 tar，`apply` 越过该步；衍生新阻塞——`init-rustfs` 用 tar 解压 `.zip` 必然失败，是已知缺口首次真实暴露，待决定修复方式） |
-| 7 | 基础环境、RustFS 与 API 健康 | BLOCKED | 批准从前端创建集群 | 连接与健康检查 |
-| 8 | 前端集群初始化：Worker 与 OTel Collector | BLOCKED | 五个节点检查均通过后才可导入服务 DAG | 初始化记录、注册与心跳证据 |
+| 6 | CLI apply 基础环境初始化 | PASSED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复已现场验证通过；§7.2.7：连续 8 层修复后 34 个 Step 全部跑完（24 completed + 10 skipped + 0 failed）；§7.2.8：远端服务健康检查发现并修复 MySQL 密码链路 3 处新 bug，Nexus/RustFS/MySQL/NTP 四项实测可正常访问，Gate 6 完成） |
+| 7 | 基础环境、RustFS 与 API 健康 | PASSED | 已批准从前端创建集群 | 连接与健康检查（§7.4：ddh-01 补装 JDK21、`datasophon-api` 已部署启动，DB 迁移至 2.2.3、HTTP 8080、gRPC 18081、登录鉴权均验证通过；NACOS ddl 元数据加载报错为遗留问题，不阻塞） |
+| 8 | 前端集群初始化：Worker 与 OTel Collector | PASSED | 五个节点检查均通过后才可导入服务 DAG | §8.1：五节点 Worker/Collector 正常、导出队列清零、RustFS 已写入 445 个对象，前端集群状态为“正在运行” |
 | 9 | 前端导入阶段 A 服务 DAG | BLOCKED | 每批角色和参数审批 | DAG 记录 |
 | 10 | 阶段 A 业务与故障演练 | BLOCKED | 每次停止实例前单独审批 | SQL / 健康 / 演练报告 |
 | 11 | 阶段 A 证据归档与结论 | BLOCKED | PASS / 偏差 / FAIL 审核 | 脱敏归档包 |
@@ -557,6 +557,29 @@ datasophon-cli create cluster apply \
 
 续跑粒度是 Step：`completed`/`skipped` 跳过，`pending`/`failed`/`running` 重跑；多节点 Step 内已经成功的 Action 也可能再次执行。不得手工改 plan 状态绕过失败。
 
+### 7.4 Phase 7：部署 datasophon-api 到 ddh-01（2026-07-14）
+
+`datasophon-cli-go` 目前不管控 `datasophon-api` 本身（§1.2 描述的"CLI 创建/启动 datasophon-api"是目标态，实际尚未实现），沿用 `deployment-standalone.md` 记录的手动模式：从 `datasophon-assembly` 产出的 tar.gz 在控制节点解压启动。
+
+**发现的新阻塞——ddh-01 缺 JDK**：`init-jdk8`/`init-jdk21` 两步在 Gate 6 apply 中只覆盖了 4 个 worker 节点（`workerHostSlice` 排除本地节点），ddh-01 上除 Nexus 自带的内嵌 JRE 外没有任何系统 JDK，而 `datasophon-api` 编译目标是 Java 21（Spring Boot 3.4.5）。修复方式：直接复用已有的 `datasophon-cli init jdk21` 独立子命令在 ddh-01 本机执行（`--packagePath /data/install_datasophon/package/raw/packages --installPath /data`），该目录下已有此前为其余 4 节点上传准备的 `OpenJDK21U-jdk_x64_linux_hotspot_21.0.11_10.tar.gz`，无需下载，直接解压到 `/data/jdk-21.0.11+10` 并软链 `/usr/local/jdk21`。此步只是复用现成 CLI 命令补齐 ddh-01 的运行时依赖，不是新代码。
+
+**构建与部署**：
+1. `JAVA_HOME=<GraalVM 21.0.7> ./mvnw clean package -DskipTests -s ~/.m2/setting.xml -pl datasophon-api -am`（自动带出 `datasophon-ui-v2` 前端构建），产出 `datasophon-api/target/datasophon-manager-3.0-SNAPSHOT.tar.gz`（约 131MB，含前端 `static/`）。
+2. scp 到 `ddh-01:/data/datasophon-api/`，md5 校验一致后解压。
+3. 写入 `conf/api.local.properties`（`.gitignore` 已覆盖，未提交）：`mysql.ip=127.0.0.1`、`mysql.username=datasophon`、`mysql.password`/`mysql.database=datasophon`（复用 Gate 6 已创建的应用账号，无需新开账号）、`nexus.password`、`rustfs.secret_key`（分别对应现场真实密码，覆盖 `conf/api.properties` 里的默认占位值）。
+4. `JAVA_HOME=/usr/local/jdk21 bash bin/datasophon-api.sh start`（脚本自带 pid 管理，未额外包装 systemd，与项目现有工具链一致）。
+
+**验证结果**：
+- `DatabaseMigration`：从空库一路跑到最新版本 `2.2.3`，`Migration success` 逐条打印，无失败。
+- gRPC：`GrpcServerLifecycle` 日志确认 `18081` 监听，`WorkerRegistryService`/`MasterCallbackService`/健康检查/反射服务全部注册。
+- HTTP：Jetty `8080` 监听，`curl http://127.0.0.1:8080/ddh/` 返回 200 及登录页 HTML。
+- 登录：`POST /ddh/api/login`（`admin`/默认密码，特殊字符需 `--data-urlencode`）返回 `"msg":"登录成功"` 及有效 `sessionId`，证明 DB 读写、鉴权链路均正常，不只是端口起来。
+
+**新发现的遗留问题（不阻塞 Phase 7，需后续单独跟进）**：
+- 启动日志出现一条 `ERROR`：`LoadServiceMeta` 加载 `datacluster-physical/NACOS` 时报 `服务名称NACOS不能和解压文件名nacos一致（忽略大小写）`，该服务的 ddl 元数据未能加载进内存。是预置校验规则与 NACOS 服务包命名的冲突，与本次部署改动无关；因为阶段 A 服务范围（§1.3）不含 NACOS，暂不阻塞后续 Worker/OTel Collector 集群初始化，留待专项修复。
+
+**Phase 7 结论**：控制面（MySQL 连接/迁移、HTTP 8080、gRPC 18081、登录鉴权）健康检查全部通过，满足 §8 "只有控制面健康后才能从前端执行集群初始化" 的前置条件。Phase 8（前端配置五节点、安装 Worker + OTel Collector）待人工批准后开始。
+
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
 基础环境验收：hostname 和 hosts、节点 SSH、NTP、Nexus、MySQL、RustFS S3、plan 状态、数据盘与 JDK17 可用。确认无 Kubernetes 业务组件及 Hadoop 业务进程。
@@ -577,6 +600,21 @@ CLI 创建并启动 `datasophon-api` 后，验证 MySQL 连接、迁移、HTTP `
 - 拟承载 Doris FE 的节点具备 `JAVA_HOME17`。
 
 任何节点的 Worker 或 OTel Collector 初始化未通过，均不得导入阶段 A 的服务 DAG。
+
+### 8.1 Phase 8 现场执行结果（2026-07-14）
+
+从前端为 `test` 物理集群配置 `ddh-01`～`ddh-05` 后，按“主机信息 → 环境校验 → Worker 分发 → Collector 安装 → 健康检查”执行初始化。节点通信、Worker 注册和 Collector 自监控均使用节点 IP，不使用 hostname 作为网络地址。
+
+现场修复了初始化链路中实际暴露的缺口：Worker Nexus 配置与包 MD5、复杂配置映射的 gRPC 序列化、安装结果回写、OTELCOLLECTOR 参数启用、远程空模板回退到 Worker 内置模板、多架构解压目录解析、含特殊字符的环境变量安全加载，以及 RustFS `otel-bootstrap` bucket 创建。健康门禁按当前运行态检查“进程存活、存在成功导出、导出队列清零、接收失败为零”；历史累计发送失败仍保留用于监控，但不再导致恢复后的节点永久无法完成初始化。
+
+`2026-07-14T12:41:24+08:00` 最终验收：
+
+- 五个节点的 Worker `18082/TCP` 与 Collector `8888/TCP` 全部监听，Collector 控制脚本状态均为 running；Worker 注册 IP 与节点清单一致。
+- 五个节点的 Collector 成功发送计数分别为 `16825`、`16492`、`16104`、`16548`、`16102`，导出队列均为 `0`，receiver failed 均为 `0`，进程 uptime 均超过 9 分钟。
+- RustFS `otel-bootstrap` 中已产生 `445` 个对象；修复完成后五节点日志均无新增导出错误。
+- 前端集群卡片从“待初始化”切换为“正在运行”，配置按钮转为禁用，证明后端只在五节点 Worker 与 Collector 全部通过健康门禁后更新集群状态。
+
+**Phase 8 结论**：五节点 Worker 与 OTel Collector 初始化及真实 S3 导出验证全部通过，可以进入 Phase 9 的单批次人工审批；本记录不代表已批准导入任何阶段 A 服务 DAG。
 
 ## 9. Phase 9：通过前端导入阶段 A 服务 DAG
 

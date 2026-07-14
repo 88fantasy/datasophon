@@ -40,7 +40,6 @@ import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostCommandEntity;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostEntity;
-import com.datasophon.dao.enums.ClusterState;
 import com.datasophon.dao.enums.CommandState;
 
 import org.apache.commons.lang3.StringUtils;
@@ -175,11 +174,6 @@ public class ServiceCommandService {
             }
 
             if (command.getCommandType() == 1) {
-                if (ClusterState.NEED_CONFIG.equals(clusterInfo.getClusterState())) {
-                    clusterInfo.setClusterState(ClusterState.RUNNING);
-                    clusterInfoService.updateById(clusterInfo);
-                }
-
                 if (HDFS.equalsIgnoreCase(serviceName)) {
                     HdfsEcCommand hdfsEcCommand = new HdfsEcCommand();
                     hdfsEcCommand.setServiceInstanceId(command.getServiceInstanceId());

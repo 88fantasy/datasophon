@@ -29,6 +29,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.ServiceRoleState;
 
@@ -40,8 +42,10 @@ class OtelMonitorServiceTest {
 
     private final ClusterServiceRoleInstanceService roleInstanceService =
             mock(ClusterServiceRoleInstanceService.class);
+    private final ClusterHostService clusterHostService = mock(ClusterHostService.class);
     private final OtelSelfMetricsClient metricsClient = mock(OtelSelfMetricsClient.class);
-    private final OtelMonitorService service = new OtelMonitorService(roleInstanceService, metricsClient);
+    private final OtelMonitorService service =
+            new OtelMonitorService(roleInstanceService, clusterHostService, metricsClient);
 
     @Test
     void collectsOnlyRunningCollectorInstances() {
@@ -50,12 +54,14 @@ class OtelMonitorServiceTest {
         OtelSelfMetrics metrics = new OtelSelfMetrics(1, 10, 20, 0, 0, 0, 60, 0);
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
                 .thenReturn(List.of(running, stopped));
-        when(metricsClient.fetch("worker-1")).thenReturn(metrics);
+        when(clusterHostService.getHostListByClusterId(7))
+                .thenReturn(List.of(host("worker-1", "192.168.10.131"), host("worker-2", "192.168.10.132")));
+        when(metricsClient.fetch("192.168.10.131")).thenReturn(metrics);
 
         List<NodeOtelMetrics> result = service.collectAll(7);
 
         assertThat(result).containsExactly(new NodeOtelMetrics("worker-1", true, null, metrics));
-        verify(metricsClient).fetch("worker-1");
+        verify(metricsClient).fetch("192.168.10.131");
     }
 
     @Test
@@ -65,8 +71,10 @@ class OtelMonitorServiceTest {
         OtelSelfMetrics metrics = new OtelSelfMetrics(0, 10, 20, 0, 0, 0, 60, 0);
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
                 .thenReturn(List.of(failed, healthy));
-        when(metricsClient.fetch("worker-1")).thenThrow(new IllegalStateException("connection refused"));
-        when(metricsClient.fetch("worker-2")).thenReturn(metrics);
+        when(clusterHostService.getHostListByClusterId(7))
+                .thenReturn(List.of(host("worker-1", "192.168.10.131"), host("worker-2", "192.168.10.132")));
+        when(metricsClient.fetch("192.168.10.131")).thenThrow(new IllegalStateException("connection refused"));
+        when(metricsClient.fetch("192.168.10.132")).thenReturn(metrics);
 
         List<NodeOtelMetrics> result = service.collectAll(7);
 
@@ -81,6 +89,7 @@ class OtelMonitorServiceTest {
     void returnsEmptyWhenNoCollectorInstancesExist() {
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
                 .thenReturn(List.of());
+        when(clusterHostService.getHostListByClusterId(7)).thenReturn(List.of());
         
         assertThat(service.collectAll(7)).isEmpty();
         verifyNoInteractions(metricsClient);
@@ -91,5 +100,12 @@ class OtelMonitorServiceTest {
         role.setHostname(hostname);
         role.setServiceRoleState(state);
         return role;
+    }
+
+    private static ClusterHostDO host(String hostname, String ip) {
+        ClusterHostDO host = new ClusterHostDO();
+        host.setHostname(hostname);
+        host.setIp(ip);
+        return host;
     }
 }

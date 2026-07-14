@@ -24,6 +24,7 @@ import { deleteCluster, listClusters } from '@/services/cluster';
 import AuthModal from './AuthModal';
 import BuildOrEditModal from './BuildOrEditModal';
 import ConfigModalK8s from './ConfigModalK8s';
+import ConfigModalPhysical from './ConfigModalPhysical';
 import ImportManifestModal from './ImportManifestModal';
 import ImportPackageModal from './ImportPackageModal';
 
@@ -36,7 +37,7 @@ const STATE_COLOR: Record<string, string> = {
   启动中: 'processing',
 };
 
-type ModalKey = 'package' | 'manifest' | 'k8sConfig';
+type ModalKey = 'package' | 'manifest' | 'k8sConfig' | 'physicalConfig';
 
 interface OpenState {
   modal: ModalKey | null;
@@ -178,6 +179,7 @@ const ColonyManage: React.FC = () => {
             disabled={isPhysical && isRunning}
             onClick={() => {
               if (isK8s) openModal('k8sConfig', cluster);
+              if (isPhysical) openModal('physicalConfig', cluster);
             }}
           >
             配置
@@ -236,6 +238,17 @@ const ColonyManage: React.FC = () => {
       )}
       {openState.cluster && openState.modal === 'k8sConfig' && (
         <ConfigModalK8s
+          cluster={openState.cluster}
+          open
+          onClose={closeModal}
+          onSuccess={() => {
+            closeModal();
+            refresh();
+          }}
+        />
+      )}
+      {openState.cluster && openState.modal === 'physicalConfig' && (
+        <ConfigModalPhysical
           cluster={openState.cluster}
           open
           onClose={closeModal}

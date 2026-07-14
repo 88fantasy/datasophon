@@ -20,54 +20,41 @@
  * SOFTWARE.
  */
 
-package com.datasophon.common.command;
+package com.datasophon.api.dto.v2;
 
-import com.datasophon.common.enums.ServiceRoleType;
-import com.datasophon.common.model.Generators;
-import com.datasophon.common.model.HookConfig;
-import com.datasophon.common.model.RunAs;
-import com.datasophon.common.model.ServiceConfig;
-
-import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
-public class InstallServiceRoleCommand extends BaseCommand implements Serializable {
+public class PhysicalClusterInitializationResponse {
 
-    private static final long serialVersionUID = -521810628281824531L;
+    private InitializationPhase phase;
+    private String dagId;
+    private boolean completed;
+    private boolean canRetry;
+    private List<NodeStatus> nodes = new ArrayList<>();
 
-    @JsonIgnore
-    private Map<Generators, List<ServiceConfig>> cofigFileMap;
+    public enum InitializationPhase {
+        READY,
+        COLLECTOR_INSTALLING,
+        VERIFYING,
+        FAILED,
+        COMPLETED
+    }
 
-    private Long deliveryId;
-
-    private Integer normalSize;
-
-    private String packageMd5;
-
-    /**
-     * 创建解压目录
-     */
-    private Boolean createDecompressDir;
-
-    /**
-     * 规范化后的文件夹名称
-     */
-    private String normalPkgDir;
-
-    private RunAs runAs;
-
-    private ServiceRoleType serviceRoleType;
-
-    private Map<String, String> variables;
-
-    private List<HookConfig> hooks;
-
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NodeStatus {
+        private String hostname;
+        private String ip;
+        private boolean workerHealthy;
+        private boolean collectorInstalled;
+        private boolean collectorHealthy;
+        private String message;
+    }
 }
