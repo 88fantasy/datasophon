@@ -1,12 +1,6 @@
-import { history, useParams } from '@umijs/max';
+import { useParams } from '@umijs/max';
 import { Button, Dropdown, Spin, Tabs } from 'antd';
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
 import { listK8sResourceTypes } from '@/services/k8s';
@@ -96,27 +90,6 @@ const ServiceInstance: React.FC = () => {
     };
   }, [webUis]);
 
-  const onTabChange = useCallback(
-    (key: string) => {
-      const base = `/cluster/${numericClusterId}/service/${numericInstanceId}`;
-      switch (key) {
-        case 'overview':
-          history.push(`${base}/overview`);
-          break;
-        case 'instance':
-          history.push(`${base}/instance`);
-          break;
-        case 'setting':
-          history.push(`${base}/setting`);
-          break;
-        case 'queue':
-          history.push(`${base}/queue`);
-          break;
-      }
-    },
-    [numericClusterId, numericInstanceId],
-  );
-
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 120 }}>
@@ -150,11 +123,7 @@ const ServiceInstance: React.FC = () => {
 
   // ── 物理集群实例页（原有逻辑不变）─────────────────────────────────
   return (
-    <Tabs
-      tabBarExtraContent={tabBarExtraContent}
-      defaultActiveKey="instance"
-      onChange={onTabChange}
-    >
+    <Tabs tabBarExtraContent={tabBarExtraContent} defaultActiveKey="instance">
       {serviceInfo?.dashboardUrl && (
         <Tabs.TabPane tab="概览" key="overview">
           <iframe
