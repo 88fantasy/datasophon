@@ -60,8 +60,12 @@ const Index = (props: any) => {
     setLogState({ open: true, loading: true, text: '', title });
     try {
       const res = await request<any>(
-        '/ddh/api/cluster/service/command/host/command/getHostCommandLog',
-        { method: 'GET', params: { clusterId: clId, hostCommandId } },
+        '/cluster/service/command/host/command/getHostCommandLog',
+        {
+          method: 'GET',
+          params: { clusterId: clId, hostCommandId },
+          baseURL: '/ddh/api',
+        },
       );
       const text: string =
         typeof res === 'string'
