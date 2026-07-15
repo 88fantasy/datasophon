@@ -405,7 +405,8 @@ const ClusterLayout: React.FC = () => {
               style={{
                 padding: '8px 12px',
                 borderBottom: '1px solid #f0f0f0',
-                display: 'flex',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                 gap: 6,
               }}
             >
@@ -425,13 +426,18 @@ const ClusterLayout: React.FC = () => {
                   ],
                 }}
               >
-                <Button size="small" icon={<UploadOutlined />}>
+                <Button
+                  size="small"
+                  icon={<UploadOutlined />}
+                  style={{ width: '100%', paddingInline: 6, fontSize: 12 }}
+                >
                   上传部署
                 </Button>
               </Dropdown>
               <Button
                 size="small"
                 icon={<PlusOutlined />}
+                style={{ width: '100%', paddingInline: 6, fontSize: 12 }}
                 onClick={() => setAddServiceModalOpen(true)}
               >
                 添加服务

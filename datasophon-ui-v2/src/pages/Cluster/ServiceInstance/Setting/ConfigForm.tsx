@@ -18,7 +18,8 @@ import {
   ProFormSwitch,
   ProFormText,
 } from '@ant-design/pro-components';
-import { theme } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { theme, Tooltip } from 'antd';
 import React from 'react';
 
 import { invokeMapShowMultiply } from './configTransform';
@@ -41,19 +42,21 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
   const { token } = theme.useToken();
 
   const renderItem = (item: ConfigField): React.ReactNode => {
-    // 双行 label：上方显示中文 label，下方小字显示配置 key（name）
-    const label: React.ReactNode = item.name ? (
-      <div className="text-left">
-        {item.label}
-        <div
-          className="text-[12px] text-left"
-          style={{ color: token.colorTextTertiary }}
-        >
-          {item.name}
-        </div>
-      </div>
-    ) : (
-      item.label
+    // 配置名称、key 和说明图标固定为同一行，避免说明图标插在名称与 key 之间。
+    const label: React.ReactNode = (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap">
+        <span>{item.label}</span>
+        {item.name && (
+          <span className="text-[12px]" style={{ color: token.colorTextTertiary }}>
+            {item.name}
+          </span>
+        )}
+        {item.description && (
+          <Tooltip title={item.description}>
+            <QuestionCircleOutlined style={{ color: token.colorTextTertiary }} />
+          </Tooltip>
+        )}
+      </span>
     );
 
     const fieldName = namePrefix
@@ -61,7 +64,6 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
       : item.name;
 
     const commonProps = {
-      tooltip: item.description,
       label,
       name: fieldName,
       initialValue: item.value ?? item.defaultValue,
