@@ -1,10 +1,14 @@
-import { useParams } from '@umijs/max';
-import { Button, Dropdown, Spin, Tabs } from 'antd';
+import { history, useParams } from '@umijs/max';
+import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
 import { listK8sResourceTypes } from '@/services/k8s';
-import { getServiceInstance, getServiceWebUis } from '@/services/service';
+import {
+  deleteServiceInstance,
+  getServiceInstance,
+  getServiceWebUis,
+} from '@/services/service';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';
@@ -30,6 +34,7 @@ const ServiceInstance: React.FC = () => {
   const [k8sResourceTypes, setK8sResourceTypes] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,23 +77,50 @@ const ServiceInstance: React.FC = () => {
     };
   }, [numericClusterId, numericInstanceId, isK8s]);
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteServiceInstance(numericClusterId, numericInstanceId);
+      message.success('服务已删除');
+      history.replace(`/cluster/${numericClusterId}/service`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const tabBarExtraContent = useMemo(() => {
-    if (!webUis?.length) return undefined;
-    const items = webUis.map((val) => ({
-      key: val.name,
-      label: val.name,
-      onClick: () => window.open(val.webUrl),
-    }));
+    const webUiButton = webUis?.length ? (
+      <Dropdown
+        menu={{
+          items: webUis.map((val) => ({
+            key: val.name,
+            label: val.name,
+            onClick: () => window.open(val.webUrl),
+          })),
+        }}
+      >
+        <Button variant="filled" color="default">
+          WebUI
+        </Button>
+      </Dropdown>
+    ) : null;
     return {
       right: (
-        <Dropdown menu={{ items }}>
-          <Button variant="filled" color="default">
-            WebUI
-          </Button>
-        </Dropdown>
+        <Space>
+          {webUiButton}
+          <Popconfirm
+            title={`确认删除服务「${serviceInfo?.serviceName ?? ''}」？`}
+            description="需先停止全部角色实例，删除后无法恢复"
+            onConfirm={handleDelete}
+          >
+            <Button danger loading={deleting}>
+              删除服务
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     };
-  }, [webUis]);
+  }, [webUis, serviceInfo, deleting, numericClusterId, numericInstanceId]);
 
   if (loading) {
     return (

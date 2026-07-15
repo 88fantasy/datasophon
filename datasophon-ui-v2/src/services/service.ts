@@ -16,6 +16,14 @@ export async function getServiceInstance(clusterId: number, instanceId: number) 
   );
 }
 
+/** 删除服务实例（需先停止全部角色实例） */
+export async function deleteServiceInstance(clusterId: number, instanceId: number) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}`,
+    { method: 'DELETE' },
+  );
+}
+
 /** 服务角色实例列表（分页） */
 export async function listServiceRoleInstances(
   clusterId: number,
