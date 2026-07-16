@@ -29,7 +29,7 @@ datasophon-cli [--dry-run] create cluster apply [flags]
 | `--type`                   | `-t` | string | —       | **是** | 集群类型：`hadoop`（Hadoop 大数据集群）或 `kubernetes`（K8s 集群）。CLI 值优先于 `cluster-sample.yml` 中的 `global.cluster-type` 字段 |
 | `--datasophonPath`         | `-p` | string | —       | 是     | datasophon 根目录绝对路径（须以 `/` 开头且目录存在）。配置文件从 `<datasophonPath>/datasophon-init/config/cluster-sample.yml` 读取    |
 | `--installPath`            | 无    | string | —       | 是     | 组件安装根目录绝对路径，不存在时自动创建                                                                                        |
-| `--productPackagesPath`    | `-n` | string | —       | 是     | `package/` 根目录绝对路径（须含 `base/` 与 `raw/` 子目录）                                                                  |
+| `--productPackagesPath`    | `-n` | string | —       | 是     | `package/` 根目录绝对路径（须含 `base/` 与 `raw/` 子目录）                                                                 |
 | `--initPathOverwriteForce` | 无    | bool   | `false` | 否     | 是否覆盖已存在的 `datasophon-init` 目录（重新初始化时使用）                                                                     |
 | `--yes`                    | `-y` | bool   | `false` | 否     | 跳过交互确认，plan 完成后直接执行 apply                                                                                   |
 | `--plan-only`              | 无    | bool   | `false` | 否     | 等价于 `create cluster plan`（只生成计划，不执行）                                                                        |
@@ -150,3 +150,4 @@ datasophon-cli create cluster -t hadoop -y \
 - [`create config`](./config.md) — 生成初始配置文件
 - [DAG 步骤表](../../reference/init-all-dag.md) — initALL 33 步详解
 - [退出码与断点续跑](../../reference/exit-codes.md)
+

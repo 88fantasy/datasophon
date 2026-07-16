@@ -15,10 +15,10 @@ datasophon-cli [--dry-run] init tar \
 
 ## 参数 / Flags
 
-|      flag       |  简写  |   类型   |  默认  | 必填 |           说明           |
-|-----------------|------|--------|------|----|------------------------|
-| `--packagePath` | `-p` | string | `""` | 否  | 兼容保留参数，当前不参与 tar 安装 |
-| `--productPackagesPath` | — | string | `""` | 否 | 离线源根目录；tar 缺失时从 `yum/<arch>/<os>/` 安装本地 rpm/deb 包 |
+|          flag           |  简写  |   类型   |  默认  | 必填 |                        说明                         |
+|-------------------------|------|--------|------|----|---------------------------------------------------|
+| `--packagePath`         | `-p` | string | `""` | 否  | 兼容保留参数，当前不参与 tar 安装                               |
+| `--productPackagesPath` | —    | string | `""` | 否  | 离线源根目录；tar 缺失时从 `yum/<arch>/<os>/` 安装本地 rpm/deb 包 |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../../global-flags.md)
@@ -46,12 +46,13 @@ datasophon-cli init tar \
 
 ## 退出码 / 常见错误
 
-|             情况              |      说明       |
-|-----------------------------|---------------|
-| tar 已存在                     | 直接返回成功，不做任何操作 |
-| tar 不存在且未指定 `--productPackagesPath` | 报错退出          |
-| tar 不存在且离线源中无安装包 | 报错并提示应放置 rpm/deb 包的目录 |
+|                 情况                  |          说明           |
+|-------------------------------------|-----------------------|
+| tar 已存在                             | 直接返回成功，不做任何操作         |
+| tar 不存在且未指定 `--productPackagesPath` | 报错退出                  |
+| tar 不存在且离线源中无安装包                    | 报错并提示应放置 rpm/deb 包的目录 |
 
 ## 相关命令
 
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+
