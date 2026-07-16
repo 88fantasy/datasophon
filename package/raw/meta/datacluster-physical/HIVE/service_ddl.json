@@ -295,7 +295,6 @@
     {
       "enabled": true,
       "name": "javax.jdo.option.ConnectionDriverName",
-      "value": "com.mysql.cj.jdbc.Driver",
       "description": "",
       "label": "jdbc链接驱动类名",
       "hidden": false,
@@ -308,7 +307,6 @@
     {
       "enabled": true,
       "name": "javax.jdo.option.ConnectionUserName",
-      "value": "hive",
       "description": "",
       "label": "数据库用户名",
       "hidden": false,
@@ -321,7 +319,6 @@
     {
       "enabled": true,
       "name": "javax.jdo.option.ConnectionPassword",
-      "value": "fI5sQ4yQ4fP5",
       "description": "",
       "label": "数据库密码",
       "hidden": false,
@@ -334,7 +331,6 @@
     {
       "enabled": true,
       "name": "javax.jdo.option.ConnectionURL",
-      "value": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true",
       "description": "",
       "label": "数据库链接地址",
       "hidden": false,
@@ -347,7 +343,6 @@
     {
       "enabled": true,
       "name": "hive.server2.enable.doAs",
-      "value": "false",
       "description": "",
       "label": "启用doAs",
       "hidden": false,
@@ -360,7 +355,6 @@
     {
       "enabled": true,
       "name": "hive.metastore.schema.verification",
-      "value": "true",
       "description": "",
       "label": "是否验证schema",
       "hidden": false,
@@ -373,7 +367,6 @@
     {
       "enabled": true,
       "name": "hive.metastore.warehouse.dir",
-      "value": "/user/hive/warehouse",
       "description": "",
       "label": "hive默认hdfs数据存储目录",
       "hidden": false,
@@ -386,7 +379,6 @@
     {
       "enabled": true,
       "name": "hive.metastore.port",
-      "value": "9083",
       "description": "",
       "label": "hive metastore服务端口",
       "hidden": false,
@@ -399,7 +391,6 @@
     {
       "enabled": true,
       "name": "hive.metastore.uris",
-      "value": "thrift://${HIVE.HiveMetaStore.__host__}:9083",
       "description": "",
       "label": "hive metastore服务地址",
       "hidden": false,
@@ -412,7 +403,6 @@
     {
       "enabled": true,
       "name": "hive.server2.map.fair.scheduler.queue",
-      "value": "false",
       "description": "",
       "label": "HiveServer2是否使用公平调度队列",
       "hidden": false,
@@ -425,7 +415,6 @@
     {
       "enabled": true,
       "name": "enableKerberos",
-      "value": false,
       "description": "启用Kerberos认证",
       "label": "启用Kerberos认证",
       "hidden": false,
@@ -438,7 +427,6 @@
     {
       "enabled": true,
       "name": "mapreduce.framework.name",
-      "value": "yarn",
       "description": "MapReduce作业是在哪种运行时框架下执行的",
       "label": "mr执行引擎",
       "hidden": false,
@@ -456,7 +444,6 @@
     {
       "enabled": true,
       "name": "hive.execution.engine",
-      "value": "mr",
       "description": "Hive执行引擎",
       "label": "Hive执行引擎",
       "hidden": false,
@@ -474,7 +461,6 @@
     {
       "enabled": true,
       "name": "hive.merge.mapfiles",
-      "value": true,
       "description": "在 map-only 作业结束时合并小文件。如启用，将创建 map-only 作业以合并目标表/分区中的文件",
       "label": "启用(Map-Only)小文件合并",
       "hidden": false,
@@ -488,7 +474,6 @@
     {
       "enabled": true,
       "name": "hive.merge.mapredfiles",
-      "value": true,
       "description": "在 map-reduce 作业结束时合并小文件。如启用，将创建 map-only 作业以合并目标表/分区中的文件",
       "label": "启用(Map-Reduce)小文件合并",
       "hidden": false,
@@ -502,7 +487,6 @@
     {
       "enabled": true,
       "name": "hive.merge.size.per.task",
-      "value": "268435456",
       "description": "合并后所需的文件大小。应大于 hive.merge.smallfiles.avgsize",
       "label": "合并后所需的文件大小",
       "hidden": false,
@@ -516,7 +500,6 @@
     {
       "enabled": true,
       "name": "hive.merge.smallfiles.avgsize",
-      "value": "104857600",
       "description": "当作业的平均输出文件大小小于此属性的值时，Hive 将启动额外的 map-only 作业来将输出文件合并成大文件。仅当 hive.merge.mapfiles 为 true 对map-only 作业执行，当 hive.merge.mapredfiles 为 true 时对 map-reduce 作业执行，以及当 hive.merge.sparkfiles 为 true 时对 Spark 作业执行",
       "label": "小文件平均大小合并阈值",
       "hidden": false,
@@ -530,7 +513,6 @@
     {
       "enabled": true,
       "name": "hive.exec.submit.local.task.via.child",
-      "value": false,
       "description": "决定本地任务（通常是mapjoin的哈希表生成阶段）是否在单独的JVM中运行",
       "label": "本地任务是否单独启动进程",
       "hidden": false,
@@ -544,7 +526,6 @@
     {
       "enabled": false,
       "name": "hive.server2.authentication",
-      "value": "simple",
       "description": "",
       "label": "hive认证方式",
       "hidden": true,
@@ -558,7 +539,6 @@
     {
       "enabled": false,
       "name": "hive.server2.authentication.kerberos.principal",
-      "value": "hive/${ROOT.VosManager.__host__}@${realm}",
       "description": "HiveServer2服务的Kerberos主体",
       "label": "HiveServer2服务的Kerberos主体",
       "hidden": true,
@@ -572,7 +552,6 @@
     {
       "enabled": false,
       "name": "hive.server2.authentication.kerberos.keytab",
-      "value": "/etc/security/keytab/hive.service.keytab",
       "description": "HiveServer2服务的Kerberos密钥文件",
       "label": "HiveServer2服务的Kerberos密钥文件",
       "hidden": true,
@@ -586,7 +565,6 @@
     {
       "enabled": false,
       "name": "hive.metastore.sasl.enabled",
-      "value": true,
       "description": "Metastore启动认证",
       "label": "Metastore启动认证",
       "hidden": true,
@@ -599,7 +577,6 @@
     {
       "enabled": false,
       "name": "hive.metastore.kerberos.principal",
-      "value": "hive/_HOST@${realm}",
       "description": "Metastore Kerberos主体",
       "label": "Metastore Kerberos主体",
       "hidden": true,
@@ -613,7 +590,6 @@
     {
       "enabled": false,
       "name": "hive.metastore.kerberos.keytab.file",
-      "value": "/etc/security/keytab/hive.service.keytab",
       "description": "Metastore Kerberos密钥文件",
       "label": "Metastore Kerberos密钥文件",
       "hidden": true,
@@ -627,7 +603,6 @@
     {
       "enabled": false,
       "name": "hive.server2.support.dynamic.service.discovery",
-      "value": true,
       "description": "",
       "label": "开启HiveServer2动态发现",
       "hidden": true,
@@ -641,7 +616,6 @@
     {
       "enabled": false,
       "name": "hive.server2.zookeeper.namespace",
-      "value": "hiveserver2",
       "description": "",
       "label": "HiveServer2在zk命名空间",
       "hidden": true,
@@ -655,7 +629,6 @@
     {
       "enabled": false,
       "name": "hive.zookeeper.quorum",
-      "value": "${ZOOKEEPER.zkUrls}",
       "description": "",
       "label": "zk地址",
       "hidden": true,
@@ -669,7 +642,6 @@
     {
       "enabled": false,
       "name": "hive.zookeeper.client.port",
-      "value": "2181",
       "description": "",
       "label": "zk端口",
       "hidden": true,
@@ -683,7 +655,6 @@
     {
       "enabled": true,
       "name": "hive.server2.thrift.bind.host",
-      "value": "${ROOT.VosManager.__host__}",
       "description": "",
       "label": "hive.server2.thrift.bind.host",
       "hidden": true,
@@ -697,7 +668,6 @@
     {
       "enabled": true,
       "name": "hive.server2.thrift.port",
-      "value": "10000",
       "description": "",
       "label": "hiveserver2 thrift端口",
       "hidden": true,
@@ -715,7 +685,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "11000",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "11000"
@@ -727,7 +696,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "12000",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "12000"
@@ -735,7 +703,6 @@
     {
       "enabled": true,
       "name": "hiveHeapSize",
-      "value": "8192",
       "description": "Hive最大堆内存,单位MB",
       "label": "Hive最大堆内存(MB)",
       "hidden": false,
@@ -749,7 +716,6 @@
     {
       "enabled": false,
       "name": "rangerAdminUrl",
-      "value": "",
       "description": "",
       "label": "Ranger访问地址",
       "hidden": true,
@@ -763,7 +729,6 @@
     {
       "enabled": true,
       "name": "hadoopHome",
-      "value": "${HADOOP_HOME}",
       "description": "Hadoop的安装目录",
       "label": "HADOOP_HOME",
       "hidden": false,
@@ -777,7 +742,6 @@
     {
       "enabled": true,
       "name": "hiveHome",
-      "value": "${ROOT.HIVE.INSTALL_PATH}",
       "description": "Hive的安装目录",
       "label": "HIVE_HOME",
       "hidden": false,
@@ -791,7 +755,6 @@
     {
       "enabled": true,
       "name": "custom.hive.site.xml",
-      "value": [],
       "description": "自定义配置",
       "label": "自定义配置hive-site.xml",
       "hidden": false,
@@ -805,7 +768,6 @@
     {
       "enabled": true,
       "name": "custom.hive.env.sh",
-      "value": [],
       "description": "自定义配置",
       "label": "自定义配置hive-env.sh",
       "hidden": false,

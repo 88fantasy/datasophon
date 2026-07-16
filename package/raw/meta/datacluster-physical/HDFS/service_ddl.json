@@ -484,7 +484,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "nameservice1",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "nameservice1",
@@ -496,7 +495,6 @@
       "description": "NameNode地址",
       "required": true,
       "type": "input",
-      "value": "hdfs://${HDFS.dfs.nameservices}",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "hdfs://${HDFS.dfs.nameservices}"
@@ -508,7 +506,6 @@
       "configType": "path",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/data/tmp/hadoop"
@@ -519,7 +516,6 @@
       "description": "配置HDFS网页登录使用的静态用户",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "admin"
@@ -530,7 +526,6 @@
       "description": "配置hive允许通过代理访问的主机节点",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -541,7 +536,6 @@
       "description": "配置hive允许通过代理用户所属组",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -552,7 +546,6 @@
       "description": "配置hive允许通过代理的用户",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -563,7 +556,6 @@
       "description": "配置kyuubi允许通过代理访问的主机节点",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -574,7 +566,6 @@
       "description": "配置kyuubi允许通过代理用户所属组",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -585,7 +576,6 @@
       "description": "配置kyuubi允许通过代理的用户",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -596,7 +586,6 @@
       "description": "配置httpfs允许通过代理访问的主机节点",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -607,7 +596,6 @@
       "description": "配置httpfs允许通过代理用户所属组",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -618,7 +606,6 @@
       "description": "配置httpfs允许通过代理的用户",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -629,7 +616,6 @@
       "description": "配置hue允许通过代理访问的主机节点",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -640,7 +626,6 @@
       "description": "配置hue允许通过代理用户所属组",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "*"
@@ -652,7 +637,6 @@
       "configName": "dfs.replication",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "3"
@@ -665,12 +649,11 @@
       "required": true,
       "separator": ",",
       "type": "multiple",
-      "value": [
-        "/data/dfs/nn"
-      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": [
+        "/data/dfs/nn"
+      ]
     },
     {
       "name": "dfs.namenode.checkpoint.dir",
@@ -679,7 +662,6 @@
       "configType": "path",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/data/dfs/snn"
@@ -691,7 +673,6 @@
       "configName": "dfs.blocksize",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "268435456"
@@ -705,7 +686,6 @@
       "minValue": 0,
       "maxValue": 128,
       "type": "slider",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "16"
@@ -718,12 +698,11 @@
       "required": true,
       "separator": ",",
       "type": "multiple",
-      "value": [
-        "/data/dfs/dn"
-      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": [
+        "/data/dfs/dn"
+      ]
     },
     {
       "name": "namenodeJmxPort",
@@ -732,7 +711,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "27001",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "27001"
@@ -744,7 +722,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "27002",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "27002"
@@ -756,7 +733,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "27003",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "27003"
@@ -768,7 +744,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "27004",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "27004"
@@ -782,7 +757,6 @@
       "minValue": 0,
       "maxValue": 256,
       "type": "slider",
-      "value": "",
       "unit": "GB",
       "configurableInWizard": true,
       "hidden": false,
@@ -797,7 +771,6 @@
       "minValue": 0,
       "maxValue": 256,
       "type": "slider",
-      "value": "",
       "unit": "GB",
       "configurableInWizard": true,
       "hidden": false,
@@ -810,7 +783,6 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "register": true,
@@ -823,7 +795,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${ZOOKEEPER.zkUrls}"
@@ -835,7 +806,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${ZOOKEEPER.zkUrls}"
@@ -847,7 +817,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "true"
@@ -859,7 +828,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "nn1,nn2",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "nn1,nn2"
@@ -871,7 +839,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${HDFS.nn1}:8020",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${HDFS.nn1}:8020"
@@ -883,7 +850,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${HDFS.nn2}:8020",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${HDFS.nn2}:8020"
@@ -895,7 +861,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${HDFS.nn1}:9870",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${HDFS.nn1}:9870"
@@ -907,7 +872,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${HDFS.nn2}:9870",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${HDFS.nn2}:9870"
@@ -919,7 +883,6 @@
       "required": true,
       "configType": "ha",
       "type": "input",
-      "value": "qjournal://${HDFS.journalNode1}:8485;${HDFS.journalNode2}:8485;${HDFS.journalNode3}:8485/meta",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "qjournal://${HDFS.journalNode1}:8485;${HDFS.journalNode2}:8485;${HDFS.journalNode3}:8485/meta"
@@ -931,7 +894,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "shell(/bin/true)"
@@ -943,7 +905,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/root/.ssh/id_rsa"
@@ -955,7 +916,6 @@
       "configType": "path",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/data/dfs/jn"
@@ -967,7 +927,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "0.0.0.0:1026"
@@ -979,7 +938,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "0.0.0.0:1025"
@@ -991,7 +949,6 @@
       "required": false,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "1440"
@@ -1003,7 +960,6 @@
       "required": false,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "3600"
@@ -1015,7 +971,6 @@
       "configType": "ha",
       "required": true,
       "type": "switch",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": true
@@ -1026,7 +981,6 @@
       "description": "开启机架感知",
       "required": false,
       "type": "switch",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": false
@@ -1037,7 +991,6 @@
       "description": "开启Kerberos认证",
       "required": false,
       "type": "switch",
-      "value": false,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": false
@@ -1049,7 +1002,6 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
@@ -1061,7 +1013,6 @@
       "configType": "permission",
       "required": false,
       "type": "switch",
-      "value": true,
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": true
@@ -1073,7 +1024,6 @@
       "configType": "permission",
       "required": false,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1085,7 +1035,6 @@
       "required": false,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1096,7 +1045,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}/etc/hadoop/whitelist"
@@ -1107,7 +1055,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}/etc/hadoop/blacklist"
@@ -1120,7 +1067,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "simple",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "simple"
@@ -1133,7 +1079,6 @@
       "required": false,
       "configType": "kb",
       "type": "switch",
-      "value": false,
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": false
@@ -1146,7 +1091,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "MIT",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "MIT"
@@ -1160,7 +1104,6 @@
       "configType": "kb",
       "separator": "\n",
       "type": "multiple",
-      "value": [],
       "hidden": true,
       "defaultValue": []
     },
@@ -1172,7 +1115,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "authentication",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "authentication"
@@ -1185,7 +1127,6 @@
       "required": false,
       "configType": "kb",
       "type": "switch",
-      "value": true,
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": true
@@ -1198,7 +1139,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1211,7 +1151,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1224,7 +1163,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1237,7 +1175,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1250,7 +1187,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1263,7 +1199,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1276,7 +1211,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": ""
@@ -1289,7 +1223,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "authentication",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "authentication"
@@ -1302,7 +1235,6 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "HTTP_ONLY",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "HTTP_ONLY"
@@ -1314,7 +1246,6 @@
       "required": false,
       "configType": "rack",
       "type": "input",
-      "value": "",
       "configWithRack": true,
       "hidden": true,
       "defaultValue": ""
@@ -1326,7 +1257,6 @@
       "required": false,
       "configType": "rack",
       "type": "input",
-      "value": "org.apache.hadoop.net.TableMapping",
       "configWithRack": true,
       "hidden": true,
       "defaultValue": "org.apache.hadoop.net.TableMapping"
@@ -1338,7 +1268,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "${HADOOP_HOME}",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}"
@@ -1350,10 +1279,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     },
     {
       "name": "custom.httpfs.site.xml",
@@ -1362,10 +1290,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     },
     {
       "name": "custom.hdfs.site.xml",
@@ -1374,10 +1301,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     },
     {
       "name": "custom.hadoop.env.sh",
@@ -1386,10 +1312,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     }
   ]
 }

@@ -87,7 +87,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "$(${HADOOP_HOME}/bin/hadoop classpath)"
@@ -99,7 +98,6 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}/etc/hadoop"
@@ -111,7 +109,6 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}/etc/hadoop"
@@ -123,17 +120,16 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": [
         {
           "SPARK_CLASSPATH": "${ROOT.VosManager.INSTALL_PATH}/spark3/carbonlib/*"
         },
         {
           "HIVE_HOME": "${ROOT.VosManager.INSTALL_PATH}/hive"
         }
-      ],
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": []
+      ]
     },
     {
       "name": "custom.spark.defaults.conf",
@@ -142,7 +138,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": [
         {
           "spark.sql.hive.metastore.jars": "/data/install_datasophon/hive/lib/*"
         },
@@ -194,10 +192,7 @@
         {
           "spark.sql.catalog.doris_catalog.doris.password": "${DORIS.root_password}"
         }
-      ],
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": []
+      ]
     }
   ],
   "arch": {

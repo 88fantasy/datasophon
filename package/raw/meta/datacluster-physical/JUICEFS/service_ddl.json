@@ -99,7 +99,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "9567",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9567"
@@ -111,7 +110,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "mysql://juicefs:juicefs@(${ROOT.Mysql.__hostIp__}:3306)/juicefs"
@@ -123,12 +121,6 @@
       "required": true,
       "type": "multipleWithMap",
       "configType": "map",
-      "value": [
-        {
-          "path": "/data/install_datasophon/juicefs/appweb",
-          "log": "appweb"
-        }
-      ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [
@@ -145,7 +137,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "s3",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "s3"
@@ -157,7 +148,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}/appweb",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}/appweb"
@@ -169,7 +159,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "${ROOT.Rustfs.access_key}",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${ROOT.Rustfs.access_key}"
@@ -181,7 +170,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "${ROOT.Rustfs.secret_key}",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${ROOT.Rustfs.secret_key}"
@@ -193,7 +181,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "appweb",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "appweb"

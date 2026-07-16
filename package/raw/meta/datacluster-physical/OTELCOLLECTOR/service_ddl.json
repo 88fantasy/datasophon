@@ -27,22 +27,30 @@
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["start"]
+        "args": [
+          "start"
+        ]
       },
       "stopRunner": {
         "timeout": "600",
         "program": "control.sh",
-        "args": ["stop"]
+        "args": [
+          "stop"
+        ]
       },
       "statusRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["status"]
+        "args": [
+          "status"
+        ]
       },
       "restartRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["restart"]
+        "args": [
+          "restart"
+        ]
       },
       "hooks": [
         {
@@ -104,7 +112,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "8888",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "8888"
@@ -117,7 +124,6 @@
       "enabled": true,
       "configType": "map",
       "type": "textarea",
-      "value": "",
       "defaultValue": "",
       "configurableInWizard": false,
       "hidden": true
@@ -130,7 +136,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "${host}",
       "defaultValue": "${host}",
       "configurableInWizard": false,
       "hidden": true
@@ -142,9 +147,11 @@
       "enabled": true,
       "configType": "map",
       "type": "select",
-      "value": "s3",
       "defaultValue": "s3",
-      "selectValue": ["s3", "doris"],
+      "selectValue": [
+        "s3",
+        "doris"
+      ],
       "configurableInWizard": true,
       "hidden": false
     },
@@ -155,7 +162,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "defaultValue": "",
       "configurableInWizard": false,
       "hidden": true
@@ -167,7 +173,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "otel",
       "defaultValue": "otel",
       "configurableInWizard": false,
       "hidden": true
@@ -179,7 +184,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "otel_collector",
       "defaultValue": "otel_collector",
       "configurableInWizard": false,
       "hidden": true
@@ -191,7 +195,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "defaultValue": "",
       "configurableInWizard": false,
       "hidden": true
@@ -203,7 +206,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}",
       "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}",
       "configurableInWizard": true,
       "hidden": false
@@ -215,7 +217,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "otel-bootstrap",
       "defaultValue": "otel-bootstrap",
       "configurableInWizard": true,
       "hidden": false
@@ -227,7 +228,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "node",
       "defaultValue": "node",
       "configurableInWizard": false,
       "hidden": false
@@ -239,7 +239,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "us-east-1",
       "defaultValue": "us-east-1",
       "configurableInWizard": false,
       "hidden": true
@@ -251,7 +250,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "512",
       "defaultValue": "512",
       "configurableInWizard": true,
       "hidden": false
@@ -263,7 +261,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "8192",
       "defaultValue": "8192",
       "configurableInWizard": true,
       "hidden": false
@@ -275,7 +272,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "/data/otelcol/storage",
       "defaultValue": "/data/otelcol/storage",
       "configurableInWizard": false,
       "hidden": false
@@ -287,7 +283,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "${ROOT.Rustfs.access_key}",
       "defaultValue": "${ROOT.Rustfs.access_key}",
       "configurableInWizard": false,
       "hidden": true
@@ -299,7 +294,6 @@
       "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "${ROOT.Rustfs.secret_key}",
       "defaultValue": "${ROOT.Rustfs.secret_key}",
       "configurableInWizard": false,
       "hidden": true

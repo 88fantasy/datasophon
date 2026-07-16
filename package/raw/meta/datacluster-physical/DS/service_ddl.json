@@ -319,7 +319,6 @@
     {
       "enabled": true,
       "name": "databaseUrl",
-      "value": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/dolphinscheduler?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false",
       "description": "",
       "label": "DolphinScheduler数据库地址",
       "hidden": false,
@@ -333,7 +332,6 @@
     {
       "enabled": true,
       "name": "username",
-      "value": "dolphinscheduler",
       "description": "",
       "label": "DolphinScheduler数据库用户名",
       "hidden": false,
@@ -347,7 +345,6 @@
     {
       "enabled": true,
       "name": "password",
-      "value": "fI5sQ4yQ4fP5",
       "description": "",
       "label": "DolphinScheduler数据库密码",
       "hidden": false,
@@ -361,7 +358,6 @@
     {
       "enabled": true,
       "name": "zkUrls",
-      "value": "${ZOOKEEPER.zkUrls}",
       "description": "",
       "label": "ZK地址",
       "hidden": false,
@@ -375,7 +371,6 @@
     {
       "enabled": true,
       "name": "apiServerPort",
-      "value": "12345",
       "description": "ApiServer server.port（Web UI/OpenAPI 及 /actuator/prometheus 共用端口）",
       "label": "ApiServer端口",
       "hidden": false,
@@ -389,7 +384,6 @@
     {
       "enabled": true,
       "name": "masterServerPort",
-      "value": "5679",
       "description": "MasterServer server.port（/actuator/prometheus 暴露端口）",
       "label": "MasterServer端口",
       "hidden": false,
@@ -403,7 +397,6 @@
     {
       "enabled": true,
       "name": "workerServerPort",
-      "value": "1235",
       "description": "WorkerServer server.port（/actuator/prometheus 暴露端口）",
       "label": "WorkerServer端口",
       "hidden": false,
@@ -417,7 +410,6 @@
     {
       "enabled": true,
       "name": "alertServerPort",
-      "value": "50053",
       "description": "AlertServer server.port（/actuator/prometheus 暴露端口）",
       "label": "AlertServer端口",
       "hidden": false,
@@ -431,7 +423,6 @@
     {
       "enabled": true,
       "name": "data.basedir.path",
-      "value": "/tmp/dolphinscheduler",
       "description": "",
       "label": "data.basedir.path",
       "hidden": false,
@@ -444,7 +435,6 @@
     {
       "enabled": true,
       "name": "resource.storage.type",
-      "value": "S3",
       "description": "",
       "label": "resource.storage.type",
       "hidden": false,
@@ -457,7 +447,6 @@
     {
       "enabled": true,
       "name": "resource.storage.upload.base.path",
-      "value": "/dolphinscheduler",
       "description": "",
       "label": "resource.storage.upload.base.path",
       "hidden": false,
@@ -470,7 +459,6 @@
     {
       "enabled": true,
       "name": "resource.aws.access.key.id",
-      "value": "${MINIO.minioAccessKey}",
       "description": "",
       "label": "resource.aws.access.key.id",
       "hidden": false,
@@ -483,7 +471,6 @@
     {
       "enabled": true,
       "name": "resource.aws.secret.access.key",
-      "value": "${MINIO.minioSecretKey}",
       "description": "",
       "label": "resource.aws.secret.access.key",
       "hidden": false,
@@ -496,7 +483,6 @@
     {
       "enabled": true,
       "name": "resource.aws.region",
-      "value": "dolphinscheduler",
       "description": "MinIO 兼容模式下填写桶名（官方 AWS 填写实际 region）",
       "label": "resource.aws.region",
       "hidden": false,
@@ -509,7 +495,6 @@
     {
       "enabled": true,
       "name": "resource.aws.s3.bucket.name",
-      "value": "dolphinscheduler",
       "description": "S3 存储桶名称",
       "label": "resource.aws.s3.bucket.name",
       "hidden": false,
@@ -522,7 +507,6 @@
     {
       "enabled": true,
       "name": "resource.aws.s3.endpoint",
-      "value": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
       "description": "",
       "label": "resource.aws.s3.endpoint",
       "hidden": false,
@@ -535,7 +519,6 @@
     {
       "enabled": true,
       "name": "resource.hdfs.root.user",
-      "value": "hdfs",
       "description": "",
       "label": "resource.hdfs.root.user",
       "hidden": false,
@@ -548,7 +531,6 @@
     {
       "enabled": true,
       "name": "resource.hdfs.fs.defaultFS",
-      "value": "hdfs://${HDFS.dfs.nameservices}",
       "description": "",
       "label": "resource.hdfs.fs.defaultFS",
       "hidden": false,
@@ -561,7 +543,6 @@
     {
       "enabled": true,
       "name": "resource.manager.httpaddress.port",
-      "value": "8088",
       "description": "",
       "label": "resource.manager.httpaddress.port",
       "hidden": false,
@@ -574,7 +555,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.ha.rm.ids",
-      "value": "${YARN.rmHost}",
       "description": "",
       "label": "yarn.resourcemanager.ha.rm.ids",
       "hidden": false,
@@ -587,7 +567,6 @@
     {
       "enabled": true,
       "name": "yarn.application.status.address",
-      "value": "http://ds1:%s/ws/v1/cluster/apps/%s",
       "description": "",
       "label": "yarn.application.status.address",
       "hidden": false,
@@ -600,7 +579,6 @@
     {
       "enabled": true,
       "name": "yarn.job.history.status.address",
-      "value": "http://${YARN.HistoryServer.__host__}:19888/ws/v1/history/mapreduce/jobs/%s",
       "description": "",
       "label": "yarn.job.history.status.address",
       "hidden": false,
@@ -613,7 +591,6 @@
     {
       "enabled": true,
       "name": "datasource.encryption.enable",
-      "value": "false",
       "description": "",
       "label": "datasource.encryption.enable",
       "hidden": false,
@@ -626,7 +603,6 @@
     {
       "enabled": true,
       "name": "datasource.encryption.salt",
-      "value": "!@#$%^&*",
       "description": "",
       "label": "datasource.encryption.salt",
       "hidden": false,
@@ -639,7 +615,6 @@
     {
       "enabled": true,
       "name": "data-quality.jar.name",
-      "value": "dolphinscheduler-data-quality-3.4.1.jar",
       "description": "",
       "label": "data-quality.jar.name",
       "hidden": false,
@@ -652,7 +627,6 @@
     {
       "enabled": true,
       "name": "support.hive.oneSession",
-      "value": "false",
       "description": "",
       "label": "support.hive.oneSession",
       "hidden": false,
@@ -665,7 +639,6 @@
     {
       "enabled": true,
       "name": "sudo.enable",
-      "value": "true",
       "description": "",
       "label": "sudo.enable",
       "hidden": false,
@@ -678,7 +651,6 @@
     {
       "enabled": true,
       "name": "setTaskDirToTenant.enable",
-      "value": "false",
       "description": "",
       "label": "setTaskDirToTenant.enable",
       "hidden": false,
@@ -691,7 +663,6 @@
     {
       "enabled": true,
       "name": "development.state",
-      "value": "false",
       "description": "",
       "label": "development.state",
       "hidden": false,
@@ -704,7 +675,6 @@
     {
       "enabled": true,
       "name": "alert.rpc.port",
-      "value": "50052",
       "description": "",
       "label": "alert.rpc.port",
       "hidden": false,
@@ -717,7 +687,6 @@
     {
       "enabled": true,
       "name": "conda.path",
-      "value": "/opt/anaconda3/etc/profile.d/conda.sh",
       "description": "",
       "label": "conda.path",
       "hidden": false,
@@ -730,7 +699,6 @@
     {
       "enabled": true,
       "name": "task.resource.limit.state",
-      "value": "false",
       "description": "",
       "label": "task.resource.limit.state",
       "hidden": false,
@@ -743,7 +711,6 @@
     {
       "enabled": true,
       "name": "ml.mlflow.preset_repository",
-      "value": "https://github.com/apache/dolphinscheduler-mlflow",
       "description": "",
       "label": "ml.mlflow.preset_repository",
       "hidden": false,
@@ -756,7 +723,6 @@
     {
       "enabled": true,
       "name": "custom.common.properties",
-      "value": [],
       "description": "自定义配置",
       "label": "自定义配置common.properties",
       "hidden": false,

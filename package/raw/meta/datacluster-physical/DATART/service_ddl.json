@@ -84,10 +84,9 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "8080",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "8989",
+      "defaultValue": "8080",
       "register": true
     },
     {
@@ -97,7 +96,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${ROOT.Mysql.__hostIp__}"
@@ -109,7 +107,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${ROOT.Mysql.__port__}"
@@ -121,7 +118,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "datart",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "datart"
@@ -133,7 +129,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "fI5sQ4yQ4fP5",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "fI5sQ4yQ4fP5"

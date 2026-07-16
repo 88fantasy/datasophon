@@ -118,12 +118,11 @@
       "required": true,
       "type": "multiple",
       "separator": ",",
-      "value": [
-        "/data/kafka-logs"
-      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": [
+        "/data/kafka-logs"
+      ]
     },
     {
       "name": "kafkaJmxPort",
@@ -132,7 +131,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "9991",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9991"
@@ -146,7 +144,6 @@
       "minValue": 0,
       "maxValue": 24,
       "type": "slider",
-      "value": "",
       "unit": "GB",
       "configurableInWizard": true,
       "hidden": false,
@@ -158,7 +155,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "8"
@@ -169,7 +165,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "3"
@@ -180,7 +175,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "168"
@@ -191,10 +185,9 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "${ZOOKEEPER.zkUrls}/kafka",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "${ZOOKEEPER.zkUrls}/kafka"
     },
     {
       "name": "default.replication.factor",
@@ -202,7 +195,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "2"
@@ -213,7 +205,6 @@
       "description": "",
       "required": true,
       "type": "switch",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": false
@@ -224,7 +215,6 @@
       "description": "是否允许落后较多的副本参加leader选举",
       "required": true,
       "type": "switch",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": false
@@ -235,7 +225,6 @@
       "description": "设置它的值为true表示允许Kafka定期地对一些Topic分区进行Leader重选举",
       "required": true,
       "type": "switch",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": true
@@ -246,7 +235,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "10000120"
@@ -257,7 +245,6 @@
       "description": "kafka接收单个消息size的最大限制,默认为1M左右 message.max.bytes必须小于等于replica.fetch.max.bytes",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "10485760"
@@ -268,7 +255,6 @@
       "description": "server用来处理网络请求的网络线程数目；一般你不需要更改这个属性。",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "3"
@@ -279,7 +265,6 @@
       "description": "server用来处理请求的I/O线程的数目；这个线程数目至少要等于硬盘的个数。",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "12"
@@ -290,7 +275,6 @@
       "description": "副本拉取线程数，这个参数占总核数的50%的 1/3",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "12"
@@ -301,7 +285,6 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "20000"
@@ -312,7 +295,6 @@
       "description": "在网络线程停止读取新请求之前，可以排队等待I/O线程处理的最大请求个数。",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "500"
@@ -323,7 +305,6 @@
       "description": "socket接收服务的缓存区大小",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "1024000"
@@ -334,7 +315,6 @@
       "description": "socket发送服务的缓存区大小",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "1024000"
@@ -345,7 +325,6 @@
       "description": "socket每次请求的最大字节数",
       "required": true,
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "102857600"
@@ -356,7 +335,6 @@
       "description": "开启Kerberos认证",
       "required": false,
       "type": "switch",
-      "value": false,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": false
@@ -369,7 +347,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "SASL_PLAINTEXT://${host}:9092",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "SASL_PLAINTEXT://${host}:9092"
@@ -382,7 +359,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "SASL_PLAINTEXT://${host}:9092",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "SASL_PLAINTEXT://${host}:9092"
@@ -395,7 +371,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "SASL_PLAINTEXT",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "SASL_PLAINTEXT"
@@ -408,7 +383,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "GSSAPI",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "GSSAPI"
@@ -421,7 +395,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "GSSAPI",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "GSSAPI"
@@ -434,7 +407,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "kafka",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "kafka"
@@ -447,7 +419,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "/etc/krb5.conf",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "/etc/krb5.conf"
@@ -460,7 +431,6 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "${ROOT.KAFKA.INSTALL_PATH}/config/kafka-jaas.conf",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${ROOT.KAFKA.INSTALL_PATH}/config/kafka-jaas.conf"
@@ -473,7 +443,6 @@
       "configWithKerberos": true,
       "required": true,
       "type": "input",
-      "value": "${host}",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${host}"
@@ -486,7 +455,6 @@
       "configWithKerberos": true,
       "required": true,
       "type": "input",
-      "value": "${realm}",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${realm}"
@@ -498,10 +466,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     }
   ],
   "arch": {

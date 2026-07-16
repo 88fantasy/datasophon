@@ -198,7 +198,6 @@
   "parameters": [
     {
       "name": "jobmanager.memory.process.size",
-      "value": "1600m",
       "description": "",
       "label": "jobmanager进程内存大小",
       "hidden": false,
@@ -210,7 +209,6 @@
     },
     {
       "name": "taskmanager.memory.process.size",
-      "value": "1728m",
       "description": "",
       "label": "taskmanager进程内存大小",
       "hidden": false,
@@ -222,7 +220,6 @@
     },
     {
       "name": "state.backend",
-      "value": "rocksdb",
       "description": "",
       "label": "状态持久化",
       "hidden": false,
@@ -234,7 +231,6 @@
     },
     {
       "name": "state.checkpoints.dir",
-      "value": "s3://public/capacity/basic/ustream/flink/checkpoints/",
       "description": "",
       "label": "状态检查点持久化目录",
       "hidden": false,
@@ -246,7 +242,6 @@
     },
     {
       "name": "state.savepoints.dir",
-      "value": "s3://public/capacity/basic/ustream/flink/savepoints/",
       "description": "",
       "label": "状态保存点持久化目录",
       "hidden": false,
@@ -258,7 +253,6 @@
     },
     {
       "name": "state.backend.incremental",
-      "value": true,
       "description": "",
       "label": "开启增量快照",
       "hidden": false,
@@ -270,7 +264,6 @@
     },
     {
       "name": "jobmanager.archive.fs.dir",
-      "value": "s3://public/capacity/basic/ustream/flink/completed-jobs/",
       "description": "",
       "label": "作业存档目录",
       "hidden": false,
@@ -282,7 +275,6 @@
     },
     {
       "name": "historyserver.web.port",
-      "value": "8082",
       "description": "",
       "label": "HistoryServer页面端口",
       "hidden": false,
@@ -294,7 +286,6 @@
     },
     {
       "name": "historyserver.archive.fs.dir",
-      "value": "s3://public/capacity/basic/ustream/flink/completed-jobs/",
       "description": "",
       "label": "监视目录列表(以逗号分隔的)",
       "hidden": false,
@@ -306,7 +297,6 @@
     },
     {
       "name": "historyserver.web.tmpdir",
-      "value": "/tmp/flink-web-history",
       "description": "",
       "label": "HistoryServer临时目录",
       "hidden": false,
@@ -318,7 +308,6 @@
     },
     {
       "name": "classloader.check-leaked-classloader",
-      "value": false,
       "description": "禁用classloader.check",
       "label": "禁用classloader.check",
       "hidden": false,
@@ -330,7 +319,6 @@
     },
     {
       "name": "fs.allowed-fallback-filesystems",
-      "value": "s3",
       "description": "",
       "label": "保存点模式",
       "hidden": false,
@@ -342,7 +330,6 @@
     },
     {
       "name": "s3.access-key",
-      "value": "${MINIO.minioAccessKey}",
       "description": "",
       "label": "S3帐号",
       "hidden": false,
@@ -354,7 +341,6 @@
     },
     {
       "name": "s3.secret-key",
-      "value": "${MINIO.minioSecretKey}",
       "description": "",
       "label": "S3密钥",
       "hidden": false,
@@ -366,7 +352,6 @@
     },
     {
       "name": "s3.endpoint",
-      "value": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
       "description": "",
       "label": "S3地址",
       "hidden": false,
@@ -378,7 +363,6 @@
     },
     {
       "name": "s3.path.style.access",
-      "value": true,
       "description": "",
       "label": "启用路径样式",
       "hidden": false,
@@ -390,7 +374,6 @@
     },
     {
       "name": "custom.flink.conf.yaml",
-      "value": [],
       "description": "自定义配置",
       "label": "自定义配置flink-conf.yaml",
       "hidden": false,

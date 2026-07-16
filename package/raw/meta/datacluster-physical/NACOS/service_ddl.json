@@ -99,7 +99,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "8848",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "8848"
@@ -111,7 +110,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "8080",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "8080",
@@ -124,7 +122,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/nacos?characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
@@ -136,7 +133,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "nacos"
@@ -148,7 +144,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "fI5sQ4yQ4fP5"
@@ -160,7 +155,6 @@
       "required": true,
       "configType": "map",
       "type": "switch",
-      "value": true,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": true
@@ -172,7 +166,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "a73d81760ee6fe6a0c2482e0b79a409ce810ec969b6cf5e27bb81d822449b9ea",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "a73d81760ee6fe6a0c2482e0b79a409ce810ec969b6cf5e27bb81d822449b9ea"
@@ -184,7 +177,6 @@
       "required": true,
       "configType": "map",
       "type": "switch",
-      "value": true,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": true
@@ -196,7 +188,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "nacos"
@@ -208,7 +199,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "Td3DM4gAEebqkwrgJtcg",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "Td3DM4gAEebqkwrgJtcg"

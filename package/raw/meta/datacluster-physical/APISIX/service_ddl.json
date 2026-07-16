@@ -93,7 +93,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": 9080,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": 9080
@@ -106,7 +105,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "/get",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/get"
@@ -119,7 +117,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "127.0.0.1",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "127.0.0.1"
@@ -132,7 +129,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": 8080,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": 8080
@@ -145,7 +141,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "${ip}",
       "configurableInWizard": false,
       "hidden": false,
       "defaultValue": "${ip}"
@@ -158,7 +153,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": 9091,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": 9091
