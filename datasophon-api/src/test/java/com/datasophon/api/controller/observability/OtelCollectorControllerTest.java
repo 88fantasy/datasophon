@@ -55,7 +55,8 @@ class OtelCollectorControllerTest {
     @Test
     void forwardsUiParametersToNodePush() {
         AtomicReference<Map<String, String>> captured = new AtomicReference<>();
-        OtelCollectorConfigService configService = new OtelCollectorConfigService(null, null, null) {
+        OtelCollectorConfigService configService =
+                new OtelCollectorConfigService(null, null, null, null, null, null) {
             @Override
             public ExecResult pushNodeConfig(Integer clusterId, String hostname, Map<String, String> params) {
                 captured.set(params);
@@ -122,7 +123,7 @@ class OtelCollectorControllerTest {
     }
     
     private static OtelCollectorConfigService newConfigService() {
-        return new OtelCollectorConfigService(null, null, null);
+        return new OtelCollectorConfigService(null, null, null, null, null, null);
     }
     
     private static List<String> mappingValues(Class<?> controllerClass) {

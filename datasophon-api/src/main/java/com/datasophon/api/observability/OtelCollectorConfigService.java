@@ -23,6 +23,9 @@
 package com.datasophon.api.observability;
 
 import com.datasophon.api.master.transport.WorkerCallAdapter;
+import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
+import com.datasophon.api.service.ClusterServiceInstanceService;
+import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
@@ -32,6 +35,9 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
+import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
+import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +47,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+
+import cn.hutool.crypto.SecureUtil;
 
 /** OTELCOLLECTOR 配置下发主干：按节点重生成配置(otelcol.yaml + otelcol.env)→ 推送 → 重启。 */
 @Service
@@ -56,13 +67,22 @@ public class OtelCollectorConfigService {
     private final WorkerCallAdapter workerCallAdapter;
     private final ServiceInstallService installService;
     private final OtelScrapeConfigBuilder scrapeConfigBuilder;
-    
+    private final ClusterServiceInstanceService serviceInstanceService;
+    private final ClusterServiceInstanceRoleGroupService roleGroupService;
+    private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
+
     public OtelCollectorConfigService(WorkerCallAdapter workerCallAdapter,
                                       ServiceInstallService installService,
-                                      OtelScrapeConfigBuilder scrapeConfigBuilder) {
+                                      OtelScrapeConfigBuilder scrapeConfigBuilder,
+                                      ClusterServiceInstanceService serviceInstanceService,
+                                      ClusterServiceInstanceRoleGroupService roleGroupService,
+                                      ClusterServiceRoleGroupConfigService roleGroupConfigService) {
         this.workerCallAdapter = workerCallAdapter;
         this.installService = installService;
         this.scrapeConfigBuilder = scrapeConfigBuilder;
+        this.serviceInstanceService = serviceInstanceService;
+        this.roleGroupService = roleGroupService;
+        this.roleGroupConfigService = roleGroupConfigService;
     }
     
     /**
@@ -110,7 +130,58 @@ public class OtelCollectorConfigService {
         op.setServiceRoleName(ROLE_NAME);
         op.setCommandType(CommandType.RESTART_SERVICE);
         op.setRestartRunner(restartRunner());
-        return workerCallAdapter.restartServiceRole(hostname, op);
+        ExecResult restarted = workerCallAdapter.restartServiceRole(hostname, op);
+        if (restarted != null && restarted.getExecResult()) {
+            persistConfig(clusterId, params);
+        }
+        return restarted;
+    }
+
+    /**
+     * 这条推送路径直接下发给 Worker、绕开了配置向导的保存动作，不会自动回写数据库；不补上这一步的话，
+     * 配置 Tab 和后续正常的重新配置/重启都会读到旧值，把这次切换悄悄覆盖回去。只回写调用方显式传入的
+     * params(如 exporterMode/doris* 连接信息)，不落 effectiveParams 里按节点计算出来的
+     * localScrapeJobsYaml/nodeHostname，避免把单节点的临时值污染成全组共享的声明式配置。
+     */
+    private void persistConfig(Integer clusterId, Map<String, String> params) {
+        if (params == null || params.isEmpty()) {
+            return;
+        }
+        ClusterServiceInstanceEntity serviceInstance =
+                serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterId, SERVICE_NAME);
+        if (serviceInstance == null) {
+            return;
+        }
+        ClusterServiceInstanceRoleGroup roleGroup =
+                roleGroupService.getDefaultRoleGroupByServiceInstanceId(serviceInstance.getId());
+        if (roleGroup == null) {
+            return;
+        }
+        ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroup.getId());
+        if (config == null) {
+            return;
+        }
+        List<ServiceConfig> configs = JSONArray.parseArray(config.getConfigJson(), ServiceConfig.class);
+        Map<String, ServiceConfig> byName = new HashMap<>();
+        for (ServiceConfig existing : configs) {
+            byName.put(existing.getName(), existing);
+        }
+        for (Map.Entry<String, String> e : params.entrySet()) {
+            ServiceConfig existing = byName.get(e.getKey());
+            if (existing != null) {
+                existing.setValue(e.getValue());
+            } else {
+                ServiceConfig created = new ServiceConfig();
+                created.setName(e.getKey());
+                created.setValue(e.getValue());
+                created.setConfigType("map");
+                configs.add(created);
+            }
+        }
+        String configJson = JSONObject.toJSONString(configs);
+        config.setConfigJson(configJson);
+        config.setConfigJsonMd5(SecureUtil.md5(configJson));
+        roleGroupConfigService.updateById(config);
     }
 
     /**
