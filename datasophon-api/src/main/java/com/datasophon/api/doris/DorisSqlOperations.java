@@ -20,11 +20,12 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.observability;
+package com.datasophon.api.doris;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
+public interface DorisSqlOperations {
 
-public interface DorisJdbcClientFactory {
-    
-    JdbcClient create(Integer clusterId);
+    boolean canConnect(String feHost, int port, String password);
+
+    void resetRootAndAdminPassword(String feHost, int port, String currentPassword,
+                                   String newPassword) throws Exception;
 }

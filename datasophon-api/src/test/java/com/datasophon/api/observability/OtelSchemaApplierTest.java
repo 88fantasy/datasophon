@@ -24,15 +24,24 @@ package com.datasophon.api.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataAccessResourceFailureException;
+import org.mockito.InOrder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 class OtelSchemaApplierTest {
@@ -51,14 +60,46 @@ class OtelSchemaApplierTest {
     }
 
     @Test
-    void ignoresAlreadyExistingCreateJobOnly() {
-        JdbcClient jdbc = mock(JdbcClient.class);
-        JdbcClient.StatementSpec statement = mock(JdbcClient.StatementSpec.class);
-        when(jdbc.sql("CREATE JOB test")).thenReturn(statement);
-        when(statement.update()).thenThrow(new DataAccessResourceFailureException("job already exists"));
+    void createJobSwitchesToOtelDatabaseOnTheSameConnectionBeforeCreating() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
 
-        assertThatCode(() -> OtelSchemaApplier.executeStatement(jdbc, "CREATE JOB test"))
+        OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test");
+
+        InOrder order = inOrder(connection, jdbcStatement);
+        order.verify(connection).setCatalog(OtelSchema.DATABASE);
+        order.verify(jdbcStatement).execute("CREATE JOB test");
+        verify(dataSource, times(1)).getConnection();
+    }
+
+    @Test
+    void ignoresAlreadyExistingCreateJobOnly() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
+        when(jdbcStatement.execute("CREATE JOB test")).thenThrow(new SQLException("job already exists"));
+
+        assertThatCode(() -> OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test"))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void rethrowsCreateJobFailuresThatAreNotAlreadyExists() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
+        when(jdbcStatement.execute("CREATE JOB test")).thenThrow(new SQLException("Unknown database ''"));
+
+        assertThatThrownBy(() -> OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("CREATE JOB");
     }
 
     @Test

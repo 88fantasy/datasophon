@@ -30,24 +30,25 @@ import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.util.List;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
+import javax.sql.DataSource;
+
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DefaultDorisJdbcClientFactory implements DorisJdbcClientFactory {
-    
+public class DefaultDorisDataSourceFactory implements DorisDataSourceFactory {
+
     private final ClusterServiceRoleInstanceService roleService;
     private final ClusterVariableService variableService;
-    
-    public DefaultDorisJdbcClientFactory(ClusterServiceRoleInstanceService roleService,
+
+    public DefaultDorisDataSourceFactory(ClusterServiceRoleInstanceService roleService,
                                          ClusterVariableService variableService) {
         this.roleService = roleService;
         this.variableService = variableService;
     }
-    
+
     @Override
-    public JdbcClient create(Integer clusterId) {
+    public DataSource create(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> frontends = roleService
                 .getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, "DorisFE")
                 .stream()
@@ -65,7 +66,7 @@ public class DefaultDorisJdbcClientFactory implements DorisJdbcClientFactory {
                 + "/?useUnicode=true&characterEncoding=utf8&useSSL=false");
         dataSource.setUsername("root");
         dataSource.setPassword(password);
-        return JdbcClient.create(dataSource);
+        return dataSource;
     }
     
     private String variable(Integer clusterId, String name, String defaultValue) {

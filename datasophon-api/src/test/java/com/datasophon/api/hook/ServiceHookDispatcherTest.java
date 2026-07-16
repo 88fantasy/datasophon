@@ -100,6 +100,33 @@ class ServiceHookDispatcherTest {
         assertEquals(1, hook.invocations);
     }
 
+    @Test
+    void skipsUnreadyHookAndContinuesWithNextHook() {
+        RecordingHook unready = hook("unready");
+        unready.ready = false;
+        RecordingHook ready = hook("ready");
+        ServiceHookDispatcher dispatcher = dispatcher(unready, ready);
+        ServiceNode node = node(hookConfig(HookType.POST_INSTALL, "unready", null));
+        node.setServiceHooks(List.of(
+                hookConfig(HookType.POST_INSTALL, "unready", null),
+                hookConfig(HookType.POST_INSTALL, "ready", null)));
+
+        dispatcher.dispatch(node, HookType.POST_INSTALL);
+
+        assertEquals(0, unready.invocations);
+        assertEquals(1, ready.invocations);
+    }
+
+    @Test
+    void invokesHookUsingDefaultReadinessImplementation() {
+        DefaultReadyHook hook = new DefaultReadyHook();
+        ServiceHookDispatcher dispatcher = dispatcher(hook);
+
+        dispatcher.dispatch(node(hookConfig(HookType.POST_INSTALL, "defaultReady", null)), HookType.POST_INSTALL);
+
+        assertEquals(1, hook.invocations);
+    }
+
     private ServiceHookDispatcher dispatcher(ServiceHook... hooks) {
         ServiceHookDispatcher dispatcher = new ServiceHookDispatcher(List.of(hooks));
         dispatcher.initialize();
@@ -141,6 +168,7 @@ class ServiceHookDispatcherTest {
         private int invocations;
         private ServiceHookContext context;
         private boolean throwException;
+        private boolean ready = true;
 
         private RecordingHook(String type) {
             this.type = type;
@@ -152,12 +180,32 @@ class ServiceHookDispatcherTest {
         }
 
         @Override
+        public boolean isReady(ServiceHookContext hookContext) {
+            return ready;
+        }
+
+        @Override
         public void invoke(ServiceHookContext hookContext) {
             invocations++;
             context = hookContext;
             if (throwException) {
                 throw new IllegalStateException("failed");
             }
+        }
+    }
+
+    private static class DefaultReadyHook implements ServiceHook {
+
+        private int invocations;
+
+        @Override
+        public String getType() {
+            return "defaultReady";
+        }
+
+        @Override
+        public void invoke(ServiceHookContext context) {
+            invocations++;
         }
     }
 }

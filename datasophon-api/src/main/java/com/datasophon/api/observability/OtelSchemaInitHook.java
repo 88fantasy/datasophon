@@ -22,8 +22,11 @@
 
 package com.datasophon.api.observability;
 
+import com.datasophon.api.doris.DorisReadinessService;
 import com.datasophon.api.hook.ServiceHook;
 import com.datasophon.api.hook.ServiceHookContext;
+
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -35,9 +38,17 @@ public class OtelSchemaInitHook implements ServiceHook {
 
     private final OtelSchemaOrchestrator orchestrator;
 
+    private final DorisReadinessService readinessService;
+
     @Override
     public String getType() {
         return "otelSchemaInit";
+    }
+
+    @Override
+    public boolean isReady(ServiceHookContext context) {
+        return context.getClusterId() != null && readinessService.waitUntilClusterReady(context.getClusterId(),
+                maxAttempts(context), intervalMs(context));
     }
 
     @Override
@@ -45,5 +56,28 @@ public class OtelSchemaInitHook implements ServiceHook {
         if (context.getClusterId() != null) {
             orchestrator.applyIfReady(context.getClusterId());
         }
+    }
+
+    private int maxAttempts(ServiceHookContext context) {
+        return numberParam(context.getParams(), "maxAttempts", 24).intValue();
+    }
+
+    private long intervalMs(ServiceHookContext context) {
+        return numberParam(context.getParams(), "intervalMs", 5000L).longValue();
+    }
+
+    private Number numberParam(Map<String, Object> params, String name, Number defaultValue) {
+        Object value = params == null ? null : params.get(name);
+        if (value instanceof Number number) {
+            return number;
+        }
+        if (value instanceof String string && !string.isBlank()) {
+            try {
+                return Long.parseLong(string);
+            } catch (NumberFormatException ignored) {
+                // 使用默认值，避免无效 DDL 参数中断后续 hook。
+            }
+        }
+        return defaultValue;
     }
 }

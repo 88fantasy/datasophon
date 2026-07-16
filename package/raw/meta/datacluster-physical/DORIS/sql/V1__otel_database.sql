@@ -6,14 +6,14 @@
 CREATE DATABASE IF NOT EXISTS otel;
 
 -- 2. 独立 Workload Group，让可观测负载与业务负载相互隔离，配额按部署调整
---    cpu_share=10 是 CPU 竞争时的相对权重（非硬上限；默认 512，越小越让路）
---    memory_limit=20% 是软上限，配合 enable_memory_overcommit=true 空闲时可超占
+--    Doris 4.x 起 cpu_share/memory_limit/enable_memory_overcommit 已不是 CREATE 时可配置项
+--    （SHOW WORKLOAD GROUPS 已验证仅接受 min/max_cpu_percent、min/max_memory_percent 百分比模型）
+--    max_cpu_percent=20 / max_memory_percent=20 为硬上限，避免可观测负载挤占业务查询资源
 --    注：仅 CREATE 资源组不生效——账号必须 GRANT USAGE_PRIV 且设 default_workload_group 才会进入本组（见 5/6）
 CREATE WORKLOAD GROUP IF NOT EXISTS otel_wg
 PROPERTIES (
-  "cpu_share" = "10",
-  "memory_limit" = "20%",
-  "enable_memory_overcommit" = "true"
+  "max_cpu_percent" = "20",
+  "max_memory_percent" = "20"
 );
 
 -- 3. 采集账号：仅 Stream Load 所需 LOAD 权限（无 CREATE/DROP/DELETE）

@@ -20,7 +20,19 @@
   "serviceHooks": [
     {
       "type": "POST_INSTALL",
-      "action": "otelSchemaInit"
+      "action": "dorisRootPasswordInit",
+      "params": {
+        "maxAttempts": 24,
+        "intervalMs": 5000
+      }
+    },
+    {
+      "type": "POST_INSTALL",
+      "action": "otelSchemaInit",
+      "params": {
+        "maxAttempts": 24,
+        "intervalMs": 5000
+      }
     }
   ],
   "roles": [
@@ -139,6 +151,15 @@
           "params": {
             "line": 2,
             "text": "ulimit -c 0 -n 655350",
+            "source": "be/bin/start_be.sh"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_HOME=$JAVA_HOME17",
             "source": "be/bin/start_be.sh"
           }
         }

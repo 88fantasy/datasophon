@@ -78,6 +78,11 @@ public class ServiceHookDispatcher {
                     log.warn("未知 serviceHook action: {}", config.getAction());
                     continue;
                 }
+                if (!hook.isReady(context)) {
+                    log.warn("serviceHook 未就绪,跳过 service={} action={} type={}",
+                            node.getServiceName(), config.getAction(), type);
+                    continue;
+                }
                 hook.invoke(context);
             } catch (Exception e) {
                 log.warn("服务级 hook 执行失败 service={} action={} type={}，不影响 DAG 状态",

@@ -27,12 +27,16 @@ import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /** 把自管 otel schema 幂等应用到 Doris（MySQL 协议）。运行期需真实 Doris 连接。 */
@@ -50,11 +54,12 @@ public final class OtelSchemaApplier {
      * （Doris 不支持 IF NOT EXISTS、DROP JOB 不支持 IF EXISTS），重复 apply 时忽略该作业的
      * already-exists 错误；其他异常仍向上抛出。
      */
-    public static void apply(JdbcClient doris, OtelCredentials credentials) {
+    public static void apply(DataSource dataSource, OtelCredentials credentials) {
+        JdbcClient doris = JdbcClient.create(dataSource);
         for (String res : OtelSchema.DDL_RESOURCES) {
             String sql = renderSql(readResource(res), credentials);
             for (String stmt : splitStatements(sql)) {
-                executeStatement(doris, stmt);
+                executeStatement(doris, dataSource, stmt);
             }
             log.info("otel schema applied: {}", res);
         }
@@ -65,15 +70,31 @@ public final class OtelSchemaApplier {
                 .replace("CHANGE_ME_AT_A3_READER", credentials.readerPassword());
     }
 
-    static void executeStatement(JdbcClient doris, String statement) {
-        try {
-            doris.sql(statement).update();
-        } catch (DataAccessException e) {
-            if (statement.stripLeading().startsWith("CREATE JOB") && isAlreadyExists(e)) {
+    static void executeStatement(JdbcClient doris, DataSource dataSource, String statement) {
+        if (statement.stripLeading().startsWith("CREATE JOB")) {
+            executeCreateJob(dataSource, statement);
+            return;
+        }
+        doris.sql(statement).update();
+    }
+
+    /**
+     * CREATE JOB 依赖 session 级别的当前数据库（Doris 无 db 前缀免 USE 的写法），必须和切库操作在同一条
+     * 物理连接上执行；上面通用路径的 {@code doris.sql(...).update()} 每次调用都从非连接池的 DataSource 新开
+     * 一条连接，session 状态不会跨调用保留，因此这里绕开 JdbcClient，直接控制同一个 {@link Connection}。
+     */
+    private static void executeCreateJob(DataSource dataSource, String statement) {
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setCatalog(OtelSchema.DATABASE);
+            try (Statement jdbcStatement = connection.createStatement()) {
+                jdbcStatement.execute(statement);
+            }
+        } catch (SQLException e) {
+            if (isAlreadyExists(e)) {
                 log.info("otel traces graph job already exists, skip create");
                 return;
             }
-            throw e;
+            throw new IllegalStateException("CREATE JOB 执行失败: " + statement, e);
         }
     }
 

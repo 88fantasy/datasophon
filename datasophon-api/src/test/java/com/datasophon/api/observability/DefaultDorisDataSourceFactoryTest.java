@@ -20,20 +20,19 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.hook;
+package com.datasophon.api.observability;
 
-public interface ServiceHook {
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-    String getType();
+import org.junit.jupiter.api.Test;
 
-    /**
-     * 判断 hook 是否已满足执行条件。
-     *
-     * @return {@code true} 时执行 hook；默认保持既有 hook 的行为不变
-     */
-    default boolean isReady(ServiceHookContext context) {
-        return true;
+class DefaultDorisDataSourceFactoryTest {
+
+    @Test
+    void rejectsMissingRootPassword() {
+        assertThatThrownBy(() -> DefaultDorisDataSourceFactory.requireValue(null,
+                "Doris root_password is not configured for cluster 7"))
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("Doris root_password is not configured for cluster 7");
     }
-
-    void invoke(ServiceHookContext context) throws Exception;
 }

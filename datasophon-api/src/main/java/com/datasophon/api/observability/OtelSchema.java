@@ -33,6 +33,9 @@ public final class OtelSchema {
 
     public static final String VERSION = "v1";
 
+    /** otel 库名;CREATE JOB 依赖 session 当前数据库,执行前须显式切换到此库。 */
+    public static final String DATABASE = "otel";
+
     /** DDL_RESOURCES 在 Nexus raw 仓库中的宿主服务，对应 {@code package/raw/meta/datacluster-physical/DORIS/}。 */
     public static final String FRAMEWORK = "datacluster-physical";
 
