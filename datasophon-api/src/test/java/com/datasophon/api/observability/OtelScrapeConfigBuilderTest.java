@@ -75,12 +75,12 @@ class OtelScrapeConfigBuilderTest {
         
         String yaml = builder.build(7, "worker-1");
         
-        assertThat(yaml).contains("    - job_name: 'NameNode'");
-        assertThat(yaml).contains("      metrics_path: '/metrics'");
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:9101']");
-        assertThat(yaml).contains("          labels: {job: 'NameNode', instance: 'worker-1:9101'}");
-        assertThat(yaml).contains("    - job_name: 'DataNode'");
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:9102']");
+        assertThat(yaml).contains("        - job_name: 'NameNode'");
+        assertThat(yaml).contains("          metrics_path: '/metrics'");
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:9101']");
+        assertThat(yaml).contains("              labels: {job: 'NameNode', instance: 'worker-1:9101'}");
+        assertThat(yaml).contains("        - job_name: 'DataNode'");
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:9102']");
     }
     
     @Test
@@ -167,10 +167,10 @@ class OtelScrapeConfigBuilderTest {
         
         String yaml = builder.build(11, "worker-5");
         
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:28030']");
-        assertThat(yaml).contains("          labels: {job: 'DorisFE', instance: 'worker-5:28030', group: 'fe'}");
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:18848']");
-        assertThat(yaml).contains("          labels: {job: 'NacosServer', instance: 'worker-5:18848'}");
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:28030']");
+        assertThat(yaml).contains("              labels: {job: 'DorisFE', instance: 'worker-5:28030', group: 'fe'}");
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:18848']");
+        assertThat(yaml).contains("              labels: {job: 'NacosServer', instance: 'worker-5:18848'}");
     }
     
     @Test
@@ -186,7 +186,7 @@ class OtelScrapeConfigBuilderTest {
         String yaml = builder.build(12, "worker-6");
         
         // 没有上一版本可退（configVersion 缺省为 null），只能退回 ddl defaultValue。
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:18030']");
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:18030']");
     }
     
     @Test
@@ -207,7 +207,7 @@ class OtelScrapeConfigBuilderTest {
         String yaml = builder.build(17, "worker-11");
         
         // 退回上一版本里的端口（38030），既不是待生效的新值（28030），也不是 ddl 默认值（18030）。
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:38030']");
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:38030']");
     }
     
     @Test
@@ -220,8 +220,8 @@ class OtelScrapeConfigBuilderTest {
                 .thenReturn(List.of(role("DORIS", "DorisFE", ServiceRoleState.RUNNING, 104, NeedRestart.NO)));
         
         String yaml = builder.build(13, "worker-7");
-        
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:18030']");
+
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:18030']");
     }
     
     @Test
@@ -235,8 +235,8 @@ class OtelScrapeConfigBuilderTest {
                 .thenReturn(List.of(role("DORIS", "DorisFE", ServiceRoleState.RUNNING, 105, NeedRestart.NO)));
         
         String yaml = builder.build(14, "worker-8");
-        
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:28030']");
+
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:28030']");
     }
     
     @Test

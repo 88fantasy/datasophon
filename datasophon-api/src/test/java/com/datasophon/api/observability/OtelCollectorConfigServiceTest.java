@@ -22,6 +22,7 @@
 
 package com.datasophon.api.observability;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.when;
 
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ServiceInstallService;
+import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.model.Generators;
@@ -47,6 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 class OtelCollectorConfigServiceTest {
@@ -86,6 +89,37 @@ class OtelCollectorConfigServiceTest {
         o.verify(adapter).restartServiceRole(eq("app1"), any(ServiceRoleOperateCommand.class));
     }
     
+    /**
+     * decompressPackageName 缺失时 Worker 会把配置写到字面量 "null" 目录，不落到 otelcol 实际安装目录，
+     * 生产环境曾因此实测复现。
+     */
+    @Test
+    void builds_command_with_decompress_package_name_from_package_utils() {
+        PackageUtils.putServicePackageName(OtelSchema.FRAMEWORK, "OTELCOLLECTOR", "otelcol-contrib_0.156.0");
+
+        GenerateServiceConfigCommand cmd = service(null).buildConfigCommand(1, "app1", new HashMap<>());
+
+        assertEquals("otelcol-contrib_0.156.0", cmd.getDecompressPackageName());
+    }
+
+    /** {@code control.sh} 只认 start/stop/status/restart，restartRunner 缺失会让 Worker 侧空指针。 */
+    @Test
+    void push_sets_restart_runner_so_worker_does_not_npe() {
+        WorkerCallAdapter adapter = mock(WorkerCallAdapter.class);
+        when(adapter.configureServiceRole(eq("app1"), any())).thenReturn(ok());
+        when(adapter.restartServiceRole(eq("app1"), any())).thenReturn(ok());
+
+        OtelCollectorConfigService svc = service(adapter);
+        svc.pushNodeConfig(1, "app1", new HashMap<>());
+
+        ArgumentCaptor<ServiceRoleOperateCommand> captor =
+                ArgumentCaptor.forClass(ServiceRoleOperateCommand.class);
+        verify(adapter).restartServiceRole(eq("app1"), captor.capture());
+        assertThat(captor.getValue().getRestartRunner()).isNotNull();
+        assertThat(captor.getValue().getRestartRunner().getProgram()).isEqualTo("control.sh");
+        assertThat(captor.getValue().getRestartRunner().getArgs()).containsExactly("restart");
+    }
+
     @Test
     void push_does_not_restart_when_configure_fails() {
         WorkerCallAdapter adapter = mock(WorkerCallAdapter.class);

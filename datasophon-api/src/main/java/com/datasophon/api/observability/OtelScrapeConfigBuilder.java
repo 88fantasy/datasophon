@@ -211,12 +211,14 @@ public class OtelScrapeConfigBuilder {
     
     private static void appendJob(StringBuilder yaml, String jobName, String metricsPath,
                                   String target, String instance, String group) {
-        yaml.append("    - job_name: '").append(quote(jobName)).append("'\n")
-                .append("      scrape_interval: 15s\n")
-                .append("      metrics_path: '").append(quote(metricsPath)).append("'\n")
-                .append("      static_configs:\n")
-                .append("        - targets: ['").append(quote(target)).append("']\n")
-                .append("          labels: {job: '").append(quote(jobName))
+        // otelcol.ftl 把 ${localScrapeJobsYaml} 嵌在 "scrape_configs:"(6 空格缩进)下一行、不带任何
+        // 前导空白，因此这里的列表项要按 prometheus/self 块同款的 8 空格起始自行携带完整缩进。
+        yaml.append("        - job_name: '").append(quote(jobName)).append("'\n")
+                .append("          scrape_interval: 15s\n")
+                .append("          metrics_path: '").append(quote(metricsPath)).append("'\n")
+                .append("          static_configs:\n")
+                .append("            - targets: ['").append(quote(target)).append("']\n")
+                .append("              labels: {job: '").append(quote(jobName))
                 .append("', instance: '").append(quote(instance)).append("'");
         if (StringUtils.isNotBlank(group)) {
             yaml.append(", group: '").append(quote(group)).append("'");

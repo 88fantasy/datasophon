@@ -24,11 +24,13 @@ package com.datasophon.api.observability;
 
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ServiceInstallService;
+import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 
 import java.util.ArrayList;
@@ -77,7 +79,18 @@ public class OtelCollectorConfigService {
         cmd.setServiceName(SERVICE_NAME);
         cmd.setServiceRoleName(ROLE_NAME);
         cmd.setCofigFileMap(fileMap);
+        cmd.setDecompressPackageName(decompressPackageName());
         return cmd;
+    }
+
+    /**
+     * Worker 侧按 decompressPackageName 拼出配置文件真实写入路径(见 PkgInstallPathUtils.getInstallHome)，
+     * 缺失时会写到 install.path 下字面量 "null" 目录，不落到 otelcol 实际运行的安装目录。
+     * PackageUtils 是 LoadServiceMeta 加载阶段为每个服务(不分 arch)填入的代表性解压目录名缓存，
+     * 与其他服务共用同一份已验证的解析结果，不重复实现按架构解析逻辑。
+     */
+    private static String decompressPackageName() {
+        return PackageUtils.getServiceDcPackageName(OtelSchema.FRAMEWORK, SERVICE_NAME);
     }
     
     /**
@@ -96,7 +109,20 @@ public class OtelCollectorConfigService {
         op.setServiceName(SERVICE_NAME);
         op.setServiceRoleName(ROLE_NAME);
         op.setCommandType(CommandType.RESTART_SERVICE);
+        op.setRestartRunner(restartRunner());
         return workerCallAdapter.restartServiceRole(hostname, op);
+    }
+
+    /**
+     * service_ddl.json 里 control.sh 的 stopRunner(600s) + startRunner(60s)
+     * 之和，对应 control.sh restart 内部 stop; sleep 2s; start 的完整耗时。
+     */
+    private static ServiceRoleRunner restartRunner() {
+        ServiceRoleRunner runner = new ServiceRoleRunner();
+        runner.setProgram("control.sh");
+        runner.setArgs(List.of("restart"));
+        runner.setTimeout("660");
+        return runner;
     }
     
     private Map<String, String> effectiveParams(Integer clusterId, String hostname, Map<String, String> params) {

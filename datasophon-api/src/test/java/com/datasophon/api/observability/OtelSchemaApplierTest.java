@@ -88,6 +88,21 @@ class OtelSchemaApplierTest {
                 .doesNotThrowAnyException();
     }
 
+    /** Doris 4.0.6 实测的真实措辞是 "job name exist"(不含 "already"),曾一度漏判导致重复 apply 报错。 */
+    @Test
+    void ignoresDorisActualJobNameExistWording() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
+        when(jdbcStatement.execute("CREATE JOB test"))
+                .thenThrow(new SQLException("job name exist, jobName:otel:otel_traces_graph_job"));
+
+        assertThatCode(() -> OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test"))
+                .doesNotThrowAnyException();
+    }
+
     @Test
     void rethrowsCreateJobFailuresThatAreNotAlreadyExists() throws SQLException {
         DataSource dataSource = mock(DataSource.class);
