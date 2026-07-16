@@ -199,13 +199,15 @@ function groupByToString(groupBy?: string[]): string | undefined {
 
 /** 查询指定指标的 instant 快照（对应 Prometheus /api/v1/query） */
 export function queryDorisInstant(params: DorisInstantParams) {
-  const { filters, filtersNe, filtersRegex, filtersNotRegex, ...rest } = params;
+  const { job, filters, filtersNe, filtersRegex, filtersNotRegex, ...rest } =
+    params;
   return request<ApiResponse<PrometheusVector>>(
     '/observability/otel/metrics/query',
     {
       method: 'GET',
       params: {
         ...rest,
+        ...(job === undefined ? {} : { job }),
         filters: filtersToString(filters),
         filtersNe: filtersToString(filtersNe),
         filtersRegex: filtersToString(filtersRegex),
@@ -224,6 +226,7 @@ export function queryDorisRange(params: DorisRangeParams) {
     filtersNotRegex,
     groupBy,
     rateWindow,
+    job,
     ...rest
   } = params;
   return request<ApiResponse<PrometheusMatrix>>(
@@ -232,6 +235,7 @@ export function queryDorisRange(params: DorisRangeParams) {
       method: 'GET',
       params: {
         ...rest,
+        ...(job === undefined ? {} : { job }),
         rateWindow,
         filters: filtersToString(filters),
         filtersNe: filtersToString(filtersNe),
@@ -253,7 +257,7 @@ export function fetchDorisLabels(metric: string, clusterId = 1, job?: string) {
     }>
   >('/observability/otel/metrics/labels', {
     method: 'GET',
-    params: { metric, clusterId, job },
+    params: { metric, clusterId, ...(job === undefined ? {} : { job }) },
   });
 }
 

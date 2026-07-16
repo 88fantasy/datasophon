@@ -12,6 +12,7 @@ export type { RefreshInterval, TimeRange };
 export type DorisRateInterval = '1m' | '2m' | '5m' | '10m';
 
 interface DorisDashboardToolbarProps {
+  hideClusterSelect?: boolean;
   cluster: string;
   clusters: string[];
   onClusterChange: (value: string) => void;
@@ -38,6 +39,7 @@ const RATE_OPTIONS: Array<{ label: string; value: DorisRateInterval }> = [
 ];
 
 const DorisDashboardToolbar: FC<DorisDashboardToolbarProps> = ({
+  hideClusterSelect = false,
   cluster,
   clusters,
   onClusterChange,
@@ -66,16 +68,20 @@ const DorisDashboardToolbar: FC<DorisDashboardToolbarProps> = ({
       onRefreshIntervalChange={onRefreshIntervalChange}
       onRefresh={onRefresh}
     >
-      <Select
-        value={cluster}
-        onChange={onClusterChange}
-        options={(clusters.length > 0 ? clusters : [cluster]).map((value) => ({
-          label: value,
-          value,
-        }))}
-        style={{ minWidth: 180 }}
-        aria-label={t('pages.dorisMonitor.toolbar.cluster')}
-      />
+      {!hideClusterSelect && (
+        <Select
+          value={cluster}
+          onChange={onClusterChange}
+          options={(clusters.length > 0 ? clusters : [cluster]).map(
+            (value) => ({
+              label: value,
+              value,
+            }),
+          )}
+          style={{ minWidth: 180 }}
+          aria-label={t('pages.dorisMonitor.toolbar.cluster')}
+        />
+      )}
       <Select
         mode="multiple"
         placeholder={t('pages.dorisMonitor.toolbar.feInstance')}

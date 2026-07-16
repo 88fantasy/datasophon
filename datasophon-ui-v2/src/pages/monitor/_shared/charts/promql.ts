@@ -109,22 +109,39 @@ export function matrixToSeries(
  * query 若声明了 groupBy，同一 query 可能返回多条按 groupBy 值区分的原始 series
  * （如按 op 分组的 S3 操作），仅用 query 级 label 会把它们压扁成一条同名线
  * （Codex 复审发现，ApisixMonitor/RustfsMonitor 均受影响）。故额外把每条原始
- * series 自带的非保留 label（排除 instance/job，复用 {@link RESERVED_LABELS}）
- * 拼进 series 名消歧；同一 query 下只有一条原始 series（无 groupBy）时不存在
- * 额外 label，行为与此前完全一致。
+ * series 自带的非保留 label 拼进 series 名消歧。若这些 label 仍不足以区分多条
+ * 原始 series（典型场景是同一指标来自多个实例），再追加 instance/job，避免图表把
+ * 不同实例的首尾采样点连接为一条斜线；同一 query 下只有一条原始 series 时，行为
+ * 与此前完全一致。
  */
 export function mergeNamedSeries(
   parts: Array<{ label: string; matrix: PrometheusMatrix }>,
 ): TimeSeriesPoint[] {
   const points: TimeSeriesPoint[] = [];
   for (const { label, matrix } of parts) {
-    for (const item of matrix.result) {
-      const extraLabelValues = Object.entries(item.metric)
+    const extraLabelValues = matrix.result.map((item) =>
+      Object.entries(item.metric)
         .filter(([key]) => !RESERVED_LABELS.has(key))
-        .map(([, value]) => value);
-      const series = extraLabelValues.length
-        ? `${label} (${extraLabelValues.join(', ')})`
-        : label;
+        .map(([, value]) => value),
+    );
+    const duplicateExtraLabels = new Set(
+      extraLabelValues
+        .map((values) => values.join(','))
+        .filter(
+          (key, index, keys) => keys.indexOf(key) !== index,
+        ),
+    );
+
+    for (const [index, item] of matrix.result.entries()) {
+      const values = extraLabelValues[index];
+      if (duplicateExtraLabels.has(values.join(','))) {
+        values.push(
+          ...[item.metric.instance, item.metric.job].filter(
+            (value): value is string => Boolean(value),
+          ),
+        );
+      }
+      const series = values.length ? `${label} (${values.join(', ')})` : label;
       for (const [ts, val] of item.values) {
         points.push({
           time: ts * 1000,
