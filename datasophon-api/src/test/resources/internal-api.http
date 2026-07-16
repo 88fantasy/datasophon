@@ -1,0 +1,3 @@
+### Refresh all service metadata from the configured MetaStorage
+POST {{baseUrl}}/ddh/internal/meta/refresh
+

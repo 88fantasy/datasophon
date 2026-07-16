@@ -53,46 +53,61 @@ import cn.hutool.core.collection.CollUtil;
 
 @Component
 public class LoadServiceMeta implements ApplicationRunner {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(LoadServiceMeta.class);
-    
+
     @Autowired
     private FrameInfoService frameInfoService;
-    
+
     @Autowired
     private ClusterVariableService variableService;
-    
+
     @Autowired
     private ClusterInfoService clusterInfoService;
-    
+
     @Autowired
     private DdlMetaService ddlMetaService;
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void run(ApplicationArguments args) {
+        reloadAllMeta();
+    }
+
+    /**
+     * 从已启用的元数据存储全量重新加载服务定义。
+     *
+     * @return 本次加载的统计与单服务错误信息；无可用存储时返回跳过结果
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public MetaReloadResult reloadAllMeta() {
+        MetaReloadResult result = new MetaReloadResult();
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         loadGlobalVariables(clusters);
-        
+
         Map<String, FrameInfoEntity> frameworkCache = new HashMap<>();
-        
+
         MetaStorage metaStorage;
         try {
             metaStorage = StorageUtils.getMetaStorage();
         } catch (IllegalStateException e) {
             logger.warn("No MetaStorage available, skipping service meta load: {}", e.getMessage());
-            return;
+            result.setMetaStorageAvailable(false);
+            return result;
         }
         List<ServiceMetaItem> physicalDdlItems = metaStorage.listService(MetaStorage.PHYSICAL);
         Map<String, List<ServiceMetaItem>> groupedPhysicalMap = physicalDdlItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
         groupedPhysicalMap.forEach((frameCode, items) -> {
             FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c -> frameInfoService.saveFrameIfAbsent(frameCode));
             for (ServiceMetaItem item : items) {
+                result.setPhysicalTotal(result.getPhysicalTotal() + 1);
                 try {
                     String serviceDdl = metaStorage.getServiceDdL(item);
                     ddlMetaService.loadServicePhysicalDdl(clusters, frameInfo, item.getServiceName(), serviceDdl);
+                    result.setPhysicalLoaded(result.getPhysicalLoaded() + 1);
                 } catch (Exception e) {
                     logger.error("invalid service ddl file: {} {}", frameCode, item.getServiceName(), e);
+                    result.getErrors().add(formatError(frameCode, item.getServiceName(), e));
                 }
             }
         });
@@ -101,16 +116,24 @@ public class LoadServiceMeta implements ApplicationRunner {
         groupedK8sMap.forEach((frameCode, items) -> {
             FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c -> frameInfoService.saveFrameIfAbsent(frameCode));
             for (ServiceMetaItem item : items) {
+                result.setK8sTotal(result.getK8sTotal() + 1);
                 try {
                     String serviceDdl = metaStorage.getServiceDdL(item);
                     ddlMetaService.loadServiceK8sDdl(frameInfo, item.getServiceName(), serviceDdl);
+                    result.setK8sLoaded(result.getK8sLoaded() + 1);
                 } catch (Exception e) {
                     logger.error("invalid service ddl file: {} {}", frameCode, item.getServiceName(), e);
+                    result.getErrors().add(formatError(frameCode, item.getServiceName(), e));
                 }
             }
         });
+        return result;
     }
-    
+
+    private String formatError(String frameCode, String serviceName, Exception exception) {
+        return frameCode + "/" + serviceName + ": " + exception.getMessage();
+    }
+
     public void loadGlobalVariables(List<ClusterInfoEntity> clusters) {
         if (CollUtil.isNotEmpty(clusters)) {
             for (ClusterInfoEntity cluster : clusters) {
@@ -125,5 +148,5 @@ public class LoadServiceMeta implements ApplicationRunner {
             }
         }
     }
-    
+
 }
