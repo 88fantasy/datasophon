@@ -26,6 +26,10 @@ import { invokeMapShowMultiply } from './configTransform';
 
 type ConfigField = DATASOPHON.ConfigField;
 
+/** value 为空字符串或 null/undefined 时视为"未配置"，需要回退到 defaultValue；
+ *  false/0 是合法的显式配置值，不能被当作"空"。 */
+const isEmptyValue = (value: unknown): boolean => value === '' || value == null;
+
 interface ConfigFormProps {
   /** 经 invokeHandleTemplateData 转换后的配置项列表 */
   templateData: ConfigField[];
@@ -66,7 +70,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
     const commonProps = {
       label,
       name: fieldName,
-      initialValue: item.value ?? item.defaultValue,
+      initialValue: isEmptyValue(item.value) ? item.defaultValue : item.value,
     };
 
     const requiredRule = {
