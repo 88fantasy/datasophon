@@ -95,7 +95,6 @@ export function useDorisMonitorDashboard({
         if (cancelled) return;
         setFeInstances(feRes?.data?.instances ?? []);
         setBeInstances(beRes?.data?.instances ?? []);
-        // jobs 对应集群名称（otelcol 配置的 job_name=doris）
         setClusters(feRes?.data?.jobs ?? []);
       })
       .catch(() => {
@@ -123,13 +122,10 @@ export function useDorisMonitorDashboard({
         ? variables.beInstance || '.+'
         : '.+';
 
-  const job = variables.cluster || 'doris';
-
   const data = useDorisDashboardData({
     panelDescriptors: PANEL_QUERIES,
     panelIds,
     instance,
-    job,
     timeRange,
     clusterId,
     refreshKey,

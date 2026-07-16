@@ -3,6 +3,7 @@ import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
+import DorisDashboard from '@/pages/monitor/DorisMonitor';
 import { listK8sResourceTypes } from '@/services/k8s';
 import {
   deleteServiceInstance,
@@ -181,6 +182,11 @@ const ServiceInstance: React.FC = () => {
       {serviceInfo?.serviceName === 'YARN' && (
         <Tabs.TabPane tab="资源配置" key="queue">
           <QueueTab clusterId={numericClusterId} />
+        </Tabs.TabPane>
+      )}
+      {serviceInfo?.serviceName === 'DORIS' && (
+        <Tabs.TabPane tab="监控" key="monitor">
+          <DorisDashboard clusterId={numericClusterId} embedded />
         </Tabs.TabPane>
       )}
     </Tabs>

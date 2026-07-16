@@ -65,12 +65,6 @@ export default [
         component: './monitor/DolphinSchedulerMonitor',
       },
       {
-        path: '/monitor/doris',
-        name: 'doris-monitor',
-        icon: 'database',
-        component: './monitor/DorisMonitor',
-      },
-      {
         path: '/monitor/mysql',
         name: 'mysql-monitor',
         icon: 'database',
