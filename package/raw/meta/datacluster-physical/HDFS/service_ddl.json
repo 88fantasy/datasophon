@@ -826,7 +826,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${zkUrls}"
+      "defaultValue": "${ZOOKEEPER.zkUrls}"
     },
     {
       "name": "hadoop.zk.address",
@@ -871,10 +871,10 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${nn1}:8020",
+      "value": "${HDFS.nn1}:8020",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "${nn1}:8020"
+      "defaultValue": "${HDFS.nn1}:8020"
     },
     {
       "name": "dfs.namenode.rpc-address.${HDFS.dfs.nameservices}.nn2",
@@ -883,10 +883,10 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${nn2}:8020",
+      "value": "${HDFS.nn2}:8020",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "${nn2}:8020"
+      "defaultValue": "${HDFS.nn2}:8020"
     },
     {
       "name": "dfs.namenode.http-address.${HDFS.dfs.nameservices}.nn1",
@@ -895,10 +895,10 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${nn1}:9870",
+      "value": "${HDFS.nn1}:9870",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "${nn1}:9870"
+      "defaultValue": "${HDFS.nn1}:9870"
     },
     {
       "name": "dfs.namenode.http-address.${HDFS.dfs.nameservices}.nn2",
@@ -907,10 +907,10 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value": "${nn2}:9870",
+      "value": "${HDFS.nn2}:9870",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "${nn2}:9870"
+      "defaultValue": "${HDFS.nn2}:9870"
     },
     {
       "name": "dfs.namenode.shared.edits.dir",
@@ -919,10 +919,10 @@
       "required": true,
       "configType": "ha",
       "type": "input",
-      "value": "qjournal://${journalNode1}:8485;${journalNode2}:8485;${journalNode3}:8485/meta",
+      "value": "qjournal://${HDFS.journalNode1}:8485;${HDFS.journalNode2}:8485;${HDFS.journalNode3}:8485/meta",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "qjournal://${journalNode1}:8485;${journalNode2}:8485;${journalNode3}:8485/meta"
+      "defaultValue": "qjournal://${HDFS.journalNode1}:8485;${HDFS.journalNode2}:8485;${HDFS.journalNode3}:8485/meta"
     },
     {
       "name": "dfs.ha.fencing.methods",

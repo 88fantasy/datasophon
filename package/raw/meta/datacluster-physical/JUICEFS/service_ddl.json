@@ -114,7 +114,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "mysql://juicefs:juicefs@(${apiIp}:3306)/juicefs"
+      "defaultValue": "mysql://juicefs:juicefs@(${ROOT.Mysql.__hostIp__}:3306)/juicefs"
     },
     {
       "name": "juicefsMounts",
@@ -157,10 +157,10 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "http://${minioHost}:${minioApiPort}/appweb",
+      "value": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}/appweb",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://${minioHost}:${minioApiPort}/appweb"
+      "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}/appweb"
     },
     {
       "name": "juicefsAccessKey",
@@ -169,10 +169,10 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "${minioAccessKey}",
+      "value": "${ROOT.Rustfs.access_key}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${minioAccessKey}"
+      "defaultValue": "${ROOT.Rustfs.access_key}"
     },
     {
       "name": "juicefsSecretKey",
@@ -181,10 +181,10 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "${minioSecretKey}",
+      "value": "${ROOT.Rustfs.secret_key}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${minioSecretKey}"
+      "defaultValue": "${ROOT.Rustfs.secret_key}"
     },
     {
       "name": "juicefsFileSystemName",

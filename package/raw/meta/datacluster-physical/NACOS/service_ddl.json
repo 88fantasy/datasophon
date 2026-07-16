@@ -45,7 +45,7 @@
       "externalLink": {
         "name": "Nacos UI",
         "label": "Nacos UI",
-        "url": "http://${host}:${nacosServerPort}/nacos/"
+        "url": "http://${host}:${NACOS.nacosConsolePort}/"
       },
       "hooks": [
         {
@@ -78,6 +78,7 @@
         "templateName": "nacos-standalone.ftl",
         "includeParams": [
           "nacosServerPort",
+          "nacosConsolePort",
           "nacosDbUrl",
           "nacosDbUser",
           "nacosDbPwd",
@@ -104,6 +105,19 @@
       "defaultValue": "8848"
     },
     {
+      "name": "nacosConsolePort",
+      "label": "控制台端口",
+      "description": "控制台端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "8080",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "8080",
+      "register": true
+    },
+    {
       "name": "nacosDbUrl",
       "label": "第一个数据库的URL",
       "description": "第一个数据库的URL",
@@ -113,7 +127,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${mysqlHostPort}/nacos?characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/nacos?characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
     },
     {
       "name": "nacosDbUser",

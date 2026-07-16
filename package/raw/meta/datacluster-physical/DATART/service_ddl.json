@@ -54,7 +54,7 @@
       "externalLink": {
         "name": "Datart UI",
         "label": "Datart UI",
-        "url": "http://${host}:${datartServerPort}/datart"
+        "url": "http://${host}:${DATART.datartServerPort}/datart"
       }
     }
   ],
@@ -87,7 +87,8 @@
       "value": "8080",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "8989"
+      "defaultValue": "8989",
+      "register": true
     },
     {
       "name": "datartMysqlHost",
@@ -99,7 +100,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${mysqlHost}"
+      "defaultValue": "${ROOT.Mysql.__hostIp__}"
     },
     {
       "name": "datartMysqlPort",
@@ -111,7 +112,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${mysqlPort}"
+      "defaultValue": "${ROOT.Mysql.__port__}"
     },
     {
       "name": "datartMysqlUsername",

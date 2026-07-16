@@ -1,3 +1,6 @@
+nacos.server.main.port=${nacosServerPort}
+nacos.console.port=${nacosConsolePort}
+
 spring.sql.init.platform=mysql
 db.num=1
 db.url.0=${nacosDbUrl}

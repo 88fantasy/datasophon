@@ -191,7 +191,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "${zkUrls}/kafka",
+      "value": "${ZOOKEEPER.zkUrls}/kafka",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
@@ -460,10 +460,10 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "${KAFKA_HOME}/config/kafka-jaas.conf",
+      "value": "${ROOT.KAFKA.INSTALL_PATH}/config/kafka-jaas.conf",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "${KAFKA_HOME}/config/kafka-jaas.conf"
+      "defaultValue": "${ROOT.KAFKA.INSTALL_PATH}/config/kafka-jaas.conf"
     },
     {
       "name": "kafkaHost",

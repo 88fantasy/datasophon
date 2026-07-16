@@ -154,10 +154,10 @@
       "description": "zookeeper服务信息",
       "required": true,
       "type": "input",
-      "value": "${zkUrls}",
+      "value": "${ZOOKEEPER.zkUrls}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${zkUrls}"
+      "defaultValue": "${ZOOKEEPER.zkUrls}"
     },
     {
       "name": "kyuubi.ha.namespace",
