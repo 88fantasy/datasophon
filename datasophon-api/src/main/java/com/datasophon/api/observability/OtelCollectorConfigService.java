@@ -56,14 +56,14 @@ import cn.hutool.crypto.SecureUtil;
 /** OTELCOLLECTOR 配置下发主干：按节点重生成配置(otelcol.yaml + otelcol.env)→ 推送 → 重启。 */
 @Service
 public class OtelCollectorConfigService {
-    
+
     private static final Logger log = LoggerFactory.getLogger(OtelCollectorConfigService.class);
-    
+
     static final String SERVICE_NAME = "OTELCOLLECTOR";
     static final String ROLE_NAME = "OtelCollector";
     static final String LOCAL_SCRAPE_JOBS_YAML = "localScrapeJobsYaml";
     static final String NODE_HOSTNAME = "nodeHostname";
-    
+
     private final WorkerCallAdapter workerCallAdapter;
     private final ServiceInstallService installService;
     private final OtelScrapeConfigBuilder scrapeConfigBuilder;
@@ -84,7 +84,7 @@ public class OtelCollectorConfigService {
         this.roleGroupService = roleGroupService;
         this.roleGroupConfigService = roleGroupConfigService;
     }
-    
+
     /**
      * 为指定节点构建 OTELCOLLECTOR 的 GenerateServiceConfigCommand，含 otelcol.yaml 和 otelcol.env 双 generator。
      */
@@ -93,7 +93,7 @@ public class OtelCollectorConfigService {
         Map<Generators, List<ServiceConfig>> fileMap = new HashMap<>();
         fileMap.put(generator("otelcol.yaml", "otelcol.ftl"), toConfigs(params));
         fileMap.put(generator("otelcol.env", "otelcol-env.ftl"), toConfigs(params));
-        
+
         GenerateServiceConfigCommand cmd = new GenerateServiceConfigCommand();
         cmd.setClusterId(clusterId);
         cmd.setServiceName(SERVICE_NAME);
@@ -112,7 +112,7 @@ public class OtelCollectorConfigService {
     private static String decompressPackageName() {
         return PackageUtils.getServiceDcPackageName(OtelSchema.FRAMEWORK, SERVICE_NAME);
     }
-    
+
     /**
      * 下发配置并重启节点上的 otelcol：先 configure，成功后才 restart；configure 失败则短路返回。
      */
@@ -195,7 +195,7 @@ public class OtelCollectorConfigService {
         runner.setTimeout("660");
         return runner;
     }
-    
+
     private Map<String, String> effectiveParams(Integer clusterId, String hostname, Map<String, String> params) {
         Map<String, String> effective = serviceParams(clusterId);
         if (params != null) {
@@ -207,7 +207,7 @@ public class OtelCollectorConfigService {
         effective.put(NODE_HOSTNAME, hostname);
         return effective;
     }
-    
+
     private Map<String, String> serviceParams(Integer clusterId) {
         Map<String, String> params = new HashMap<>();
         try {
@@ -222,7 +222,7 @@ public class OtelCollectorConfigService {
         }
         return params;
     }
-    
+
     private static Generators generator(String filename, String template) {
         Generators g = new Generators();
         g.setFilename(filename);
@@ -231,7 +231,7 @@ public class OtelCollectorConfigService {
         g.setTemplateName(template);
         return g;
     }
-    
+
     private static List<ServiceConfig> toConfigs(Map<String, String> params) {
         List<ServiceConfig> list = new ArrayList<>();
         for (Map.Entry<String, String> e : params.entrySet()) {

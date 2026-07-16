@@ -32,7 +32,7 @@ class DefaultDorisDataSourceFactoryTest {
     void rejectsMissingRootPassword() {
         assertThatThrownBy(() -> DefaultDorisDataSourceFactory.requireValue(null,
                 "Doris root_password is not configured for cluster 7"))
-                        .isInstanceOf(IllegalStateException.class)
-                        .hasMessage("Doris root_password is not configured for cluster 7");
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Doris root_password is not configured for cluster 7");
     }
 }

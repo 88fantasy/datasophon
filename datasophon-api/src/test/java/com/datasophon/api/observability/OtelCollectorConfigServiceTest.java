@@ -63,18 +63,18 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 
 class OtelCollectorConfigServiceTest {
-    
+
     @Test
     void builds_command_with_two_generators() {
         Map<String, String> params = new HashMap<>();
         params.put("s3Endpoint", "http://mw1:9040");
         GenerateServiceConfigCommand cmd =
                 service(null).buildConfigCommand(1, "app1", params);
-        
+
         assertEquals("OTELCOLLECTOR", cmd.getServiceName());
         assertEquals("OtelCollector", cmd.getServiceRoleName());
         assertEquals(Integer.valueOf(1), cmd.getClusterId());
-        
+
         // 双 generator 不得塌缩:Generators.equals 以 filename 为键，碰撞会让两条塌成一条
         assertEquals(2, cmd.getCofigFileMap().size(), "应有 2 个独立 generator(otelcol.yaml + otelcol.env)");
         Set<String> files = cmd.getCofigFileMap().keySet().stream()
@@ -83,22 +83,22 @@ class OtelCollectorConfigServiceTest {
         assertTrue(files.contains("otelcol.yaml"), "缺 otelcol.yaml generator");
         assertTrue(files.contains("otelcol.env"), "缺 otelcol.env generator(凭据)");
     }
-    
+
     @Test
     void push_configures_then_restarts_in_order() {
         WorkerCallAdapter adapter = mock(WorkerCallAdapter.class);
         when(adapter.configureServiceRole(eq("app1"), any())).thenReturn(ok());
         when(adapter.restartServiceRole(eq("app1"), any())).thenReturn(ok());
-        
+
         OtelCollectorConfigService svc = service(adapter);
         ExecResult r = svc.pushNodeConfig(1, "app1", new HashMap<>());
-        
+
         assertTrue(r.getExecResult());
         InOrder o = inOrder(adapter);
         o.verify(adapter).configureServiceRole(eq("app1"), any(GenerateServiceConfigCommand.class));
         o.verify(adapter).restartServiceRole(eq("app1"), any(ServiceRoleOperateCommand.class));
     }
-    
+
     /**
      * decompressPackageName 缺失时 Worker 会把配置写到字面量 "null" 目录，不落到 otelcol 实际安装目录，
      * 生产环境曾因此实测复现。
@@ -134,26 +134,26 @@ class OtelCollectorConfigServiceTest {
     void push_does_not_restart_when_configure_fails() {
         WorkerCallAdapter adapter = mock(WorkerCallAdapter.class);
         when(adapter.configureServiceRole(eq("app1"), any())).thenReturn(fail());
-        
+
         OtelCollectorConfigService svc = service(adapter);
         ExecResult r = svc.pushNodeConfig(1, "app1", new HashMap<>());
-        
+
         assertFalse(r.getExecResult());
         verify(adapter, never()).restartServiceRole(any(), any());
     }
-    
+
     private static ExecResult ok() {
         ExecResult e = new ExecResult();
         e.setExecResult(true);
         return e;
     }
-    
+
     private static ExecResult fail() {
         ExecResult e = new ExecResult();
         e.setExecResult(false);
         return e;
     }
-    
+
     private static OtelCollectorConfigService service(WorkerCallAdapter adapter) {
         ServiceInstallService installService = mock(ServiceInstallService.class);
         when(installService.getServiceConfigOption(any(), any())).thenReturn(List.of());

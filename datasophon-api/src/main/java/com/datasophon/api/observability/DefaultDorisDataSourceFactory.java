@@ -68,12 +68,12 @@ public class DefaultDorisDataSourceFactory implements DorisDataSourceFactory {
         dataSource.setPassword(password);
         return dataSource;
     }
-    
+
     private String variable(Integer clusterId, String name, String defaultValue) {
         ClusterVariable value = variableService.getVariableByVariableName(clusterId, "DORIS", name);
         return value == null ? defaultValue : value.getVariableValue();
     }
-    
+
     static String requireValue(String value, String message) {
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(message);
