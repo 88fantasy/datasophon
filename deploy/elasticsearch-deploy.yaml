@@ -1,0 +1,11 @@
+app:
+  - name: ELASTICSEARCH
+    version: 9.4.3
+    deployType: physical
+    roles:
+      - name: ElasticSearch
+        deployHosts:
+          - ddh-02
+      - name: EsExporter
+        deployHosts:
+          - ddh-02

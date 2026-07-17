@@ -63,9 +63,9 @@
 | 4 | CLI 配置生成与五节点审阅 | PASSED | 严格解析、引用、权限、敏感信息检查 | 脱敏配置 hash（§7.2.1） |
 | 5 | CLI plan 生成与人工审批 | PASSED | 批准特定 plan hash 后才可 apply | plan hash / clusterHash（§7.2.4 最终批准，`25ad4ff34cff4283`；`os`/`config`/`soft` 经 §7.2.3 代码核查确认非真实阻塞项） |
 | 6 | CLI apply 基础环境初始化 | PASSED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复已现场验证通过；§7.2.7：连续 8 层修复后 34 个 Step 全部跑完（24 completed + 10 skipped + 0 failed）；§7.2.8：远端服务健康检查发现并修复 MySQL 密码链路 3 处新 bug，Nexus/RustFS/MySQL/NTP 四项实测可正常访问，Gate 6 完成） |
-| 7 | 基础环境、RustFS 与 API 健康 | PASSED | 已批准从前端创建集群 | 连接与健康检查（§7.4：ddh-01 补装 JDK21、`datasophon-api` 已部署启动，DB 迁移至 2.2.3、HTTP 8080、gRPC 18081、登录鉴权均验证通过；NACOS ddl 元数据加载报错为遗留问题，不阻塞） |
+| 7 | 基础环境、RustFS 与 API 健康 | PASSED | 已批准从前端创建集群 | 连接与健康检查（§7.4：ddh-01 补装 JDK21、`datasophon-api` 已部署启动，DB 迁移至 2.2.3、HTTP 8080、gRPC 18081、登录鉴权均验证通过；NACOS ddl 元数据加载报错为遗留问题，不阻塞；§7.5：NACOS ddl 根因修复并现场验证；§7.6：18 服务 DDL value/defaultValue 清理 + `/internal/meta/refresh` 端点现场部署，2026-07-17 验证通过，另发现线上有 11 轮未提交修复被本次部署覆盖，详见 §7.6） |
 | 8 | 前端集群初始化：Worker 与 OTel Collector | PASSED | 五个节点检查均通过后才可导入服务 DAG | §8.1：五节点 Worker/Collector 正常、导出队列清零、RustFS 已写入 445 个对象，前端集群状态为“正在运行” |
-| 9 | 前端导入阶段 A 服务 DAG | BLOCKED | 每批角色和参数审批 | DAG 记录 |
+| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；尚未走正式批次审批流程，`ZOOKEEPER`/`VALKEY` 及批量导入待续 |
 | 10 | 阶段 A 业务与故障演练 | BLOCKED | 每次停止实例前单独审批 | SQL / 健康 / 演练报告 |
 | 11 | 阶段 A 证据归档与结论 | BLOCKED | PASS / 偏差 / FAIL 审核 | 脱敏归档包 |
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
@@ -601,6 +601,43 @@ datasophon-cli create cluster apply \
 - 日志中反复出现 `check host ... metrics from otel error, cause: No running DorisFE for cluster 1` 是 `OtelAlertScheduler` 在评估 Doris 相关指标告警但 Doris 尚未安装导致的预期噪音，与本次修复无关，Phase 9 导入 Doris 批后应自然消失。
 
 至此 NACOS ddl 加载问题已在代码和现场两个层面确认修复，Phase 9 "基础依赖批"（含 NACOS）的前置阻塞已解除。
+
+### 7.6 DDL 占位符/value-defaultValue 清理 + `/internal/meta/refresh` 现场部署（2026-07-16～17）
+
+详细过程见 `docs/session-handoff-ddl-value-defaultvalue-2026-07-16.md`，本节只记录写回 Epic 主文档的结论。
+
+**代码侧**（分支 `verify/cli-go-five-node-bootstrap`，4 个提交）：审计全部 18 个服务的 DDL，修复裸占位符引用（`${xxx}` 缺服务名前缀或引用了从未注册的变量，含 NACOS/DATART/HDFS/KAFKA/KYUUBI/JUICEFS/ZOOKEEPER 共 7 个服务，JUICEFS 的 MinIO 占位符实际连的是 RustFS 已按 `${ROOT.Rustfs.*}` 改正）；修复前端 `ConfigForm.tsx` 的 `value` 为空字符串时 `??` 回退失效导致 `defaultValue` 从未生效的 bug；合并 432 个参数中 339 个（78%）`value`/`defaultValue` 完全相同的冗余，删除 `parameters[].value` 字段（DORIS 的 `fe_priority_networks`/`be_priority_networks` 因是特定环境网段，例外保留原 `defaultValue`）。复核确认 NGINX `nginxModules` 少的 `--with-http_geoip_module`/`--with-http_image_filter_module=dynamic` 两个编译参数**不是漏项**：CLI 的 `library.go` 从未安装 `GeoIP-devel`/`gd-devel`，补回会导致 `./configure` 直接失败，且全部 nginx 配置模板都用不到这两个模块。
+
+**现场部署（2026-07-17，ddh-01）**：
+- 用 `datasophon-cli upload registry --productPackagesPath package --webHost 192.168.10.131 --webPort 8081 -u admin -p <真实密码> --dockerHttpPort 8083 --enableRegistry` 从本机直接上传到 ddh-01 真实 Nexus，44/44 文件成功、0 失败，覆盖全部 18 个服务改过的 `service_ddl.json`。
+- `JAVA_HOME=<GraalVM 21.0.7> ./mvnw clean package -DskipTests -s ~/.m2/setting.xml -pl datasophon-api -am` 重新打包（含本次 DDL 修复代码 + §7.5 之后新增的 `/internal/meta/refresh` 端点），scp 到 ddh-01 并 md5 校验一致；备份现有运行目录为 `datasophon-manager-3.0-SNAPSHOT.bak-20260717064715-before-ddlmerge-metarefresh`，保留真实 `conf/api.local.properties` 后替换重启。
+- 验证：HTTP `8080`→200、gRPC `18081` 正常监听、**`POST /internal/meta/refresh`→200** 且日志证实端点触发后重新从 Nexus 下载全部 18 服务 DDL 并刷新内存缓存（日志可见 NGINX `decompressPackageName=nginx-1.30.3` 等新值生效）；`WorkerRegistryPrewarmer` 预热 5 主机；无 ERROR/Exception；`admin` 登录成功；ddh-02～05 的 TCP `22`/`18082`（Worker gRPC）全部可达（ping 仍受该云环境已知的 ICMP 误诊问题影响，以 TCP 判断为准）。
+
+**重要发现——线上实际进度可能超出本文档记载**：部署前核对 ddh-01 的 `datasophon-manager-3.0-SNAPSHOT.bak-*` 备份目录，发现 2026-07-15～16 期间线上至少经历过 11 轮独立重启修复（`svcdelete`/`dorishook`/`otelloghook`/`sqlfix`/`jobfix`/`alreadyexistsfix`/`decompressfix`/`restartrunnerfix`/`pkgutilsfix`/`scrapeindentfix`/`persistfix`），命名高度像是导入服务 DAG 时遇到的真实报错修复，但在本分支及全仓库 git 历史（含 stash、reflog、dangling commits）里完全找不到对应源码，只以编译字节码形式存在于线上——经用户确认是另一个并行会话（可能是 Codex）所做、尚未提交。**本次重新打包部署已覆盖这批未提交修复（用户明确授权）**，旧 jar 完整保留在 `datasophon-manager-3.0-SNAPSHOT.bak-20260717064715-before-ddlmerge-metarefresh/`，如需要可取回。下一个 session 若要继续 Phase 9，应先跟那个并行会话同步真实现场进度（本文档第 68 行 Phase 9 状态仍标 `BLOCKED` 是本文档已知信息的保守记录，不代表现场没有更早的实际尝试），避免重复排查已解决的问题，也避免误判 Phase 9 尚未开始。
+
+### 7.7 单服务试装验证：NACOS 与 ELASTICSEARCH（2026-07-17）
+
+在正式启动 Phase 9 "基础依赖批"（`ZOOKEEPER`/`VALKEY`/`ELASTICSEARCH`/`NACOS`）批量导入前，先从前端逐个单独试装 NACOS、ELASTICSEARCH 两个服务，验证 §7.6 部署的 DDL 与代码基线在真实安装路径上是否可用。属于 Phase 9 前置探索，不构成 §9 所述的正式批次审批流程。
+
+**NACOS 单装**：首次安装报错，现场连服务器排查后确认并修复 3 个独立 bug：
+
+1. **Worker jar 版本偏差**：ddh-02 部署的 `datasophon-worker` jar（MD5 `ebde...`,2026-07-14 12:22 打包）落后于 `9a283af0`（NACOS 自引用软链跳过修复，2026-07-14 14:51 合入）；其余四节点 jar 已是修复后版本。现场用 ddh-01 上的正确 jar 覆盖 ddh-02（旧 jar 备份至 `lib.bak-20260717/`），重启 Worker 后解决。
+2. **`${ROOT.Mysql.mysqlHostPort}` 广播地址错误**：`GlobalVariables.genDefaultGlobalVariables()` 从 Master 自身的 `spring.datasource.url` 派生这个全局变量（`mysql.ip=127.0.0.1`），广播给远程节点后远程 NACOS 用 `127.0.0.1` 连自己的本机 MySQL 端口，实际不存在，报 `Connection refused`。这是配置问题，非代码 bug：修改 ddh-01 的 `conf/api.local.properties` 里 `mysql.ip=127.0.0.1` → `mysql.ip=192.168.10.131`（改前备份），重启 `datasophon-api` 后全部已存在集群自动生效（`LoadServiceMeta.loadGlobalVariables()` 每次 API 启动都会为所有集群重新计算，无需 DB 回填）。
+3. **12 个服务 DDL 缺失 `type` 字段**：NACOS 装成功（DB 里 `service_state=2`/`role_state=1` 均为 RUNNING）但前端侧边栏"中间件"分组不显示。根因是 `t_ddh_frame_service.type` 为 NULL——前端 `Cluster/Layout/index.tsx` 的 `groupedServices` 按 `svc.catalog || 'OTHER'` 分组，`catalogOrder` 只渲染 `ENVIRONMENT`/`MIDDLEWARE`/`APPLICATION` 三档，`OTHER` 桶被静默丢弃，不报错也不提示。核查全部 18 个服务 DDL，发现 NACOS/APISIX/DATART/HDFS/JUICEFS/KAFKA/KYUUBI/NGINX/OTELCOLLECTOR/SPARK3/VALKEY/ZOOKEEPER 共 12 个从未写过 `type` 字段。按用户确认的分类补齐（`DATART`→`APPLICATION`、`OTELCOLLECTOR`→`ENVIRONMENT`、其余 10 个→`MIDDLEWARE`），`datasophon-cli upload registry` 重新上传（44/44 成功）+ `POST /ddh/internal/meta/refresh`（18/18 加载）后，NACOS 立即出现在侧边栏。`catalog` 是 `@TableField(exist = false)` 瞬态字段、每次请求现算，不涉及历史实例回填。
+
+NACOS 三项修复后重装成功，前后端均验证通过。
+
+**ELASTICSEARCH 单装**：ElasticSearch 主角色报 `IllegalArgumentException: unknown setting [node.master]`（外加 `transport.tcp.compress`/`transport.tcp.port`/`discovery.zen.minimum_master_nodes` 三个同类异常，作为 suppressed exception 附带抛出），ES 进程启动即崩。根因是 `service_ddl.json` 混用了 ES 7.0 前后两代 discovery 配置：DDL 声明的版本是 `9.4.3`，但 `node.master`/`transport.tcp.port`/`transport.tcp.compress`/`discovery.zen.minimum_master_nodes` 是 Zen1 时代（ES 7.0 前）的设置，在 9.4.3 上直接被判定为非法配置。修复（`package/raw/meta/datacluster-physical/ELASTICSEARCH/service_ddl.json`，`configWriter.generators[0].includeParams` 与 `parameters` 两处同步改）：
+
+- 删除 `node.master`：ES 8+ 在 `node.roles` 未显式设置时默认即为全角色（含 master），与旧版 `node.master:true` 语义等价,无需替换。
+- 删除 `discovery.zen.minimum_master_nodes`：Zen1 遗留概念,已被同一份 DDL 里已有的 `discovery.seed_hosts`+`cluster.initial_master_nodes`（Zen2）完全取代。
+- `transport.tcp.port` → `transport.port`、`transport.tcp.compress` → `transport.compress`：ES 7.0 纯改名，语义不变。
+
+重新上传（44/44）+ meta refresh（18/18）后 ElasticSearch 角色装成功，验证：进程稳定运行（`ps aux` 确认）；监听 `${host}:9200`（HTTP）与 `9300`（transport）——注意 `network.host=${host}` 绑定的是节点真实 IP 而非 `127.0.0.1`，探测需用节点自身地址；`http://<host>:9200/_cluster/health` 返回结构化 `401`（xpack security 正常拦截未认证请求，非崩溃/超时，证明服务健康）；DB 里 `service_role_state=1`（RUNNING）。另确认 `xpack.security.http.ssl` 默认关闭、只有 `xpack.security.transport.ssl`（9300 节点间通信）为 TLS，探测 9200 应使用 `http://` 而非 `https://`。
+
+`EsExporter` 角色安装失败，是**已知未处理问题**，性质与前述几项不同——不是配置错误而是**资产缺失**：`elasticsearch-exporter/control_es_exporter.sh` 硬编码调用同目录下的 `elasticsearch_exporter` 二进制，但这是 Prometheus 社区第三方工具，Elastic 官方 tarball 从不携带；对比同一份 DDL 里 `ElasticSearch` 角色用 `POST_INSTALL`/`download` hook（`templateId` 引用已上传模板）拉取证书和 `control_es.sh` 的写法，`EsExporter` 角色的 `hooks` 是空数组 `[]`——从一开始打包这份 DDL 时就漏了"额外下载 exporter 二进制"这一步。本地仓库和 Nexus 均无此二进制，需另外从 `prometheus-community/elasticsearch_exporter` 拿对应架构的 Release 并搞清楚 DataSophon 的 `templateId` 资源上传机制才能补全，工作量明显超出本次探索范围，已记录暂不处理，不阻塞 ElasticSearch 主角色的可用性。
+
+**附带的运维事故（与部署代码无关，记录仅为教训）**：为重新上传修复后的 DDL，先后触发 Nexus 3.94 内置的 `AuthRateLimiterServiceImpl`（按用户名 `user::admin` 计数、纯内存态、指数退避 30s→900s 封顶，失败或被拒尝试会继续累加退避，只有真正认证成功才清零）连续 429，一度耗时约 40 分钟排查：起因是探测时误用了本机 dev Nexus 的密码（`admin123`），而 ddh-01 生产 Nexus 密码不同；期间浏览器打开的 Nexus 管理界面 tab 后台自动重试登录，与 CLI/curl 探测互相"续杯"退避计时器，越查越锁得久。最终用正确密码 + 重启 Nexus（清空内存态计数器，`/data/nexusDir/nexus/bin/nexus restart` 须用绝对路径，相对路径下 `realpath "$0"` 解析失败会导致 restart 的 start 阶段静默不生效）解决，未造成任何数据丢失。
 
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
