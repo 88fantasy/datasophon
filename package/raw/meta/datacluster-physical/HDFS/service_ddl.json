@@ -1,5 +1,6 @@
 {
   "name": "HDFS",
+  "type": "MIDDLEWARE",
   "label": "HDFS",
   "description": "分布式大数据存储",
   "version": "3.5.0",

@@ -1,5 +1,6 @@
 {
   "name": "SPARK3",
+  "type": "MIDDLEWARE",
   "label": "Spark3",
   "description": "分布式计算系统",
   "version": "3.5.8",

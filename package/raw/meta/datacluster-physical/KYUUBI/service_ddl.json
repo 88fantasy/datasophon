@@ -1,5 +1,6 @@
 {
   "name": "KYUUBI",
+  "type": "MIDDLEWARE",
   "label": "Kyuubi",
   "description": "统一多租户JDBC网关",
   "version": "1.11.1",

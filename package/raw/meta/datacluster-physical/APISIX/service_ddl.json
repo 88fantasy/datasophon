@@ -1,5 +1,6 @@
 {
   "name": "APISIX",
+  "type": "MIDDLEWARE",
   "label": "Apisix",
   "description": "高性能分布式Api网关",
   "version": "3.17.0",

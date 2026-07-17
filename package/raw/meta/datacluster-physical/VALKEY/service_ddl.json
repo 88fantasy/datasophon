@@ -1,5 +1,6 @@
 {
   "name": "VALKEY",
+  "type": "MIDDLEWARE",
   "label": "Valkey",
   "description": "开源的高性能键值对存储系统(Redis 的 BSD-3 开源分叉)",
   "version": "8.1.8",

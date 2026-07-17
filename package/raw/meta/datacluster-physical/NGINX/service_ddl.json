@@ -1,5 +1,6 @@
 {
   "name": "NGINX",
+  "type": "MIDDLEWARE",
   "label": "Nginx",
   "description": "Nginx网关",
   "version": "1.30.3",

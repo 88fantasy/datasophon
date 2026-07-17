@@ -1,5 +1,6 @@
 {
   "name": "OTELCOLLECTOR",
+  "type": "ENVIRONMENT",
   "label": "OpenTelemetry Collector",
   "description": "统一可观测采集器(metrics/logs/traces)",
   "version": "0.156.0",

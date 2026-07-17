@@ -1,5 +1,6 @@
 {
   "name": "DATART",
+  "type": "APPLICATION",
   "label": "Datart",
   "description": "数艺",
   "version": "3.6.1",
