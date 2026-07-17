@@ -29,7 +29,7 @@ const RoleListModal: React.FC<Props> = ({ clusterId, hostname, trigger }) => {
       trigger={trigger}
       width={600}
       submitter={false}
-      modalProps={{ destroyOnClose: true, footer: false }}
+      modalProps={{ destroyOnHidden: true, footer: false }}
     >
       {roles.length > 0 ? (
         <div>

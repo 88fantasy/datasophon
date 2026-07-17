@@ -26,7 +26,7 @@ const ResetPasswordModal: React.FC<Props> = ({ trigger, user }) => {
       title={`重置密码 — ${user.username}`}
       trigger={trigger}
       onFinish={handleFinish}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
       width={400}
     >
       <ProFormText.Password

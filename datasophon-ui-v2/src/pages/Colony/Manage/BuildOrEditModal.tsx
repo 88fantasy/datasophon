@@ -62,7 +62,7 @@ const BuildOrEditModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
           : { archType: 'physical' }
       }
       onFinish={handleFinish}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
       width={480}
     >
       <ProFormText
