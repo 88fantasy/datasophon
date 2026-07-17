@@ -143,13 +143,11 @@
         "includeParams": [
           "cluster.name",
           "node.name",
-          "node.master",
           "network.host",
           "http.port",
-          "transport.tcp.port",
-          "transport.tcp.compress",
+          "transport.port",
+          "transport.compress",
           "discovery.seed_hosts",
-          "discovery.zen.minimum_master_nodes",
           "cluster.initial_master_nodes",
           "http.cors.enabled",
           "http.cors.allow-origin",
@@ -208,17 +206,6 @@
       "register": false
     },
     {
-      "name": "node.master",
-      "description": "是不是有资格竞选主节点",
-      "label": "是否竞选主节点",
-      "hidden": false,
-      "required": true,
-      "type": "switch",
-      "defaultValue": true,
-      "configurableInWizard": true,
-      "register": false
-    },
-    {
       "name": "network.host",
       "description": "",
       "label": "节点地址",
@@ -241,7 +228,7 @@
       "register": false
     },
     {
-      "name": "transport.tcp.port",
+      "name": "transport.port",
       "description": "",
       "label": "集群通信端口",
       "hidden": false,
@@ -252,7 +239,7 @@
       "register": false
     },
     {
-      "name": "transport.tcp.compress",
+      "name": "transport.compress",
       "description": "设置是否压缩tcp传输时的数据，默认为false，不压缩",
       "label": "数据传输是否压缩",
       "hidden": false,
@@ -271,17 +258,6 @@
       "required": true,
       "type": "input",
       "defaultValue": "${ELASTICSEARCH.seedHosts}",
-      "configurableInWizard": true,
-      "register": false
-    },
-    {
-      "name": "discovery.zen.minimum_master_nodes",
-      "description": "",
-      "label": "discovery.zen.minimum_master_nodes",
-      "hidden": false,
-      "required": true,
-      "type": "input",
-      "defaultValue": "2",
       "configurableInWizard": true,
       "register": false
     },
