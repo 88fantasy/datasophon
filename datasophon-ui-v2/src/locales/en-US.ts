@@ -5,6 +5,7 @@ import dorisMonitor from './en-US/dorisMonitor';
 import globalHeader from './en-US/globalHeader';
 import juicefsMonitor from './en-US/juicefsMonitor';
 import menu from './en-US/menu';
+import nacosMonitor from './en-US/nacosMonitor';
 import network from './en-US/network';
 import nginxMonitor from './en-US/nginxMonitor';
 import pages from './en-US/pages';
@@ -32,6 +33,7 @@ export default {
   ...zookeeperMonitor,
   ...dolphinSchedulerMonitor,
   ...dorisMonitor,
+  ...nacosMonitor,
   ...nginxMonitor,
   ...valkeyMonitor,
   ...apisixMonitor,

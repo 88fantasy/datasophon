@@ -77,14 +77,14 @@ public class OtelMetricsQueryService {
      * {@code FLOOR(...) AS bucket}（时间分桶）别名冲突。
      */
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
-            Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
+            Set.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
                     "area", "result", "status", "level", "cause");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
-            List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
+            List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",

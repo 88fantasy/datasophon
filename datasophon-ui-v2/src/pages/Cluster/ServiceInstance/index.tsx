@@ -5,6 +5,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
 import DorisDashboard from '@/pages/monitor/DorisMonitor';
+import NacosDashboard from '@/pages/monitor/NacosMonitor';
 import { listK8sResourceTypes } from '@/services/k8s';
 import {
   deleteServiceInstance,
@@ -210,6 +211,13 @@ const ServiceInstance: React.FC = () => {
       key: 'monitor',
       label: '监控',
       children: <DorisDashboard clusterId={numericClusterId} embedded />,
+    });
+  }
+  if (serviceInfo?.serviceName === 'NACOS') {
+    items.push({
+      key: 'monitor',
+      label: '监控',
+      children: <NacosDashboard clusterId={numericClusterId} />,
     });
   }
 
