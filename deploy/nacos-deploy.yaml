@@ -1,0 +1,8 @@
+app:
+  - name: NACOS
+    version: 3.2.2
+    deployType: physical
+    roles:
+      - name: NacosServer
+        deployHosts:
+          - ddh-02
