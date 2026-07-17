@@ -133,6 +133,17 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_includeNacosModuleDimension() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("module", "name", "type", "status");
+        String sql = OtelMetricsQueryService.buildRangeGaugeSql(
+                false, false, Map.of("module", "naming", "name", "serviceCount"), null,
+                List.of("type"), "otel_metrics_gauge");
+        assertThat(sql).contains("attributes['module']");
+        assertThat(sql).contains("attributes['name']");
+        assertThat(sql).contains("attributes['type']");
+    }
+
+    @Test
     void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
         String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("gc", "G1 Young Generation"), null,
