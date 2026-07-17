@@ -265,7 +265,7 @@ const Index = (props: any) => {
         onCancel={() => setLogState((p) => ({ ...p, open: false }))}
         footer={null}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         {logState.loading ? (
           <div

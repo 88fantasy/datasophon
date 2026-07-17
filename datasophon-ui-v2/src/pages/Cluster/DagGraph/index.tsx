@@ -359,7 +359,7 @@ const DagGraphPage: React.FC = () => {
         onCancel={() => setScheduleLog((p) => ({ ...p, open: false }))}
         footer={null}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         {scheduleLog.loading ? (
           <div

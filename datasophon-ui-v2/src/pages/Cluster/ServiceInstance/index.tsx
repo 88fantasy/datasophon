@@ -1,4 +1,5 @@
 import { history, useParams } from '@umijs/max';
+import type { TabsProps } from 'antd';
 import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
@@ -133,63 +134,91 @@ const ServiceInstance: React.FC = () => {
 
   // ── K8s 实例页：资源 Tab（动态）+ 配置 Tab ─────────────────────────
   if (isK8s) {
-    return (
-      <Tabs defaultActiveKey={k8sResourceTypes[0] ?? 'setting'}>
-        {k8sResourceTypes.map((rt) => (
-          <Tabs.TabPane tab={RESOURCE_TYPE_LABELS[rt] ?? rt} key={rt}>
-            <K8sResource
-              clusterId={numericClusterId}
-              instanceId={numericInstanceId}
-              resourceType={rt}
-            />
-          </Tabs.TabPane>
-        ))}
-        <Tabs.TabPane tab="配置" key="setting">
+    const k8sItems: TabsProps['items'] = [
+      ...k8sResourceTypes.map((rt) => ({
+        key: rt,
+        label: RESOURCE_TYPE_LABELS[rt] ?? rt,
+        children: (
+          <K8sResource
+            clusterId={numericClusterId}
+            instanceId={numericInstanceId}
+            resourceType={rt}
+          />
+        ),
+      })),
+      {
+        key: 'setting',
+        label: '配置',
+        children: (
           <SettingTab
             clusterId={numericClusterId}
             instanceId={numericInstanceId}
           />
-        </Tabs.TabPane>
-      </Tabs>
+        ),
+      },
+    ];
+    return (
+      <Tabs
+        defaultActiveKey={k8sResourceTypes[0] ?? 'setting'}
+        items={k8sItems}
+      />
     );
   }
 
   // ── 物理集群实例页（原有逻辑不变）─────────────────────────────────
+  const items: NonNullable<TabsProps['items']> = [];
+  if (serviceInfo?.dashboardUrl) {
+    items.push({
+      key: 'overview',
+      label: '概览',
+      children: (
+        <iframe
+          className="w-full"
+          style={{ height: '72vh', border: 'none' }}
+          src={serviceInfo.dashboardUrl}
+          title="概览"
+        />
+      ),
+    });
+  }
+  items.push({
+    key: 'instance',
+    label: '实例',
+    children: (
+      <InstanceTab
+        clusterId={numericClusterId}
+        instanceId={numericInstanceId}
+      />
+    ),
+  });
+  items.push({
+    key: 'setting',
+    label: '配置',
+    children: (
+      <SettingTab clusterId={numericClusterId} instanceId={numericInstanceId} />
+    ),
+  });
+  if (serviceInfo?.serviceName === 'YARN') {
+    items.push({
+      key: 'queue',
+      label: '资源配置',
+      children: <QueueTab clusterId={numericClusterId} />,
+    });
+  }
+  if (serviceInfo?.serviceName === 'DORIS') {
+    items.push({
+      key: 'monitor',
+      label: '监控',
+      children: <DorisDashboard clusterId={numericClusterId} embedded />,
+    });
+  }
+
   return (
-    <Tabs tabBarExtraContent={tabBarExtraContent} defaultActiveKey="instance">
-      {serviceInfo?.dashboardUrl && (
-        <Tabs.TabPane tab="概览" key="overview">
-          <iframe
-            className="w-full"
-            style={{ height: '72vh', border: 'none' }}
-            src={serviceInfo.dashboardUrl}
-            title="概览"
-          />
-        </Tabs.TabPane>
-      )}
-      <Tabs.TabPane tab="实例" key="instance">
-        <InstanceTab
-          clusterId={numericClusterId}
-          instanceId={numericInstanceId}
-        />
-      </Tabs.TabPane>
-      <Tabs.TabPane tab="配置" key="setting">
-        <SettingTab
-          clusterId={numericClusterId}
-          instanceId={numericInstanceId}
-        />
-      </Tabs.TabPane>
-      {serviceInfo?.serviceName === 'YARN' && (
-        <Tabs.TabPane tab="资源配置" key="queue">
-          <QueueTab clusterId={numericClusterId} />
-        </Tabs.TabPane>
-      )}
-      {serviceInfo?.serviceName === 'DORIS' && (
-        <Tabs.TabPane tab="监控" key="monitor">
-          <DorisDashboard clusterId={numericClusterId} embedded />
-        </Tabs.TabPane>
-      )}
-    </Tabs>
+    <Tabs
+      tabBarExtraContent={tabBarExtraContent}
+      defaultActiveKey="instance"
+      items={items}
+    />
   );
 };
 

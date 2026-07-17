@@ -542,7 +542,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
                 type="info"
                 showIcon
                 style={{ marginBottom: 12 }}
-                message="No cross-service calls found in this time range. If edges are expected, check the Doris job otel_traces_graph_job."
+                title="No cross-service calls found in this time range. If edges are expected, check the Doris job otel_traces_graph_job."
               />
             )}
             <div ref={containerRef} style={{ height: 560 }} />

@@ -445,7 +445,7 @@ const UploadPackageModal: React.FC<Props> = ({ open, onClose }) => {
       footer={null}
       title="上传部署包"
       width={640}
-      destroyOnClose
+      destroyOnHidden
       afterClose={() => setCurrentStep(0)}
     >
       <StepsForm

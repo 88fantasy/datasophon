@@ -169,7 +169,7 @@ const AddServiceModal: React.FC<Props> = ({ open, onClose }) => {
       footer={null}
       title="添加服务"
       width={960}
-      destroyOnClose
+      destroyOnHidden
       afterClose={() => {
         setCurrentStep(0);
         setManifest(null);
