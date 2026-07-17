@@ -212,16 +212,17 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
 
     /**
-     * @deprecated 解决完HADOOP_HOME后，可以去掉该方法的调用
+     * @deprecated HDFS 的 {@code ${HADOOP_HOME}} 分支解决完后，可以去掉该分支的调用
      */
     @Deprecated
     private void putServiceHomeToVariable(String frameCode, List<ClusterInfoEntity> clusters, String serviceName, String decompressPackageName) {
         for (ClusterInfoEntity cluster : clusters) {
             Integer clusterId = cluster.getId();
             if (cluster.getClusterFrame().equals(frameCode)) {
+                String installPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName;
+                GlobalVariables.putValue(clusterId, "ROOT." + serviceName + ".INSTALL_PATH", installPath);
                 if (HDFS.equals(serviceName)) {
-                    serviceName = HADOOP;
-                    GlobalVariables.putValue(clusterId, serviceName + "_HOME", Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                    GlobalVariables.putValue(clusterId, HADOOP + "_HOME", installPath);
                 }
             }
         }

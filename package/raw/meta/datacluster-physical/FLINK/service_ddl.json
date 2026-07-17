@@ -155,9 +155,9 @@
           "action": "s3Sync",
           "params": {
             "bucket": "public",
-            "endpoint": "http://${MINIO.MinioServer.__host__}:${MINIO.minioApiPort}/",
-            "accessKey": "${MINIO.minioAccessKey}",
-            "secretKey": "${MINIO.minioSecretKey}",
+            "endpoint": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}/",
+            "accessKey": "${ROOT.Rustfs.access_key}",
+            "secretKey": "${ROOT.Rustfs.secret_key}",
             "resourcePath": "minio/"
           }
         }
@@ -335,7 +335,7 @@
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "${MINIO.minioAccessKey}",
+      "defaultValue": "${ROOT.Rustfs.access_key}",
       "configurableInWizard": true,
       "register": false
     },
@@ -346,7 +346,7 @@
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "${MINIO.minioSecretKey}",
+      "defaultValue": "${ROOT.Rustfs.secret_key}",
       "configurableInWizard": true,
       "register": false
     },
@@ -357,7 +357,7 @@
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
+      "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}",
       "configurableInWizard": true,
       "register": false
     },

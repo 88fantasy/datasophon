@@ -30,9 +30,13 @@ export SPRING_CACHE_TYPE=${r"${SPRING_CACHE_TYPE:-none}"}
 export SPRING_JACKSON_TIME_ZONE=${r"${SPRING_JACKSON_TIME_ZONE:-UTC}"}
 export MASTER_FETCH_COMMAND_NUM=${r"${MASTER_FETCH_COMMAND_NUM:-10}"}
 
-# Registry center configuration, determines the type and link of the registry center
-export REGISTRY_TYPE=${r"${REGISTRY_TYPE"}:-zookeeper}
-export REGISTRY_ZOOKEEPER_CONNECT_STRING=${r"${REGISTRY_ZOOKEEPER_CONNECT_STRING"}:-${zkUrls}}
+# Registry center configuration：使用 MySQL(与 DS 元数据库同一实例)作为注册中心，
+# 不再依赖独立 ZooKeeper 集群（dolphinscheduler-registry-jdbc，DS 3.2+ 内置支持）。
+export REGISTRY_TYPE=${r"${REGISTRY_TYPE"}:-jdbc}
+export REGISTRY_HIKARI_CONFIG_JDBC_URL=${r"${REGISTRY_HIKARI_CONFIG_JDBC_URL"}:-${databaseUrl}}
+export REGISTRY_HIKARI_CONFIG_USERNAME=${r"${REGISTRY_HIKARI_CONFIG_USERNAME"}:-${username}}
+export REGISTRY_HIKARI_CONFIG_PASSWORD=${r"${REGISTRY_HIKARI_CONFIG_PASSWORD"}:-${password}}
+export REGISTRY_HIKARI_CONFIG_DRIVER_CLASS_NAME=${r"${REGISTRY_HIKARI_CONFIG_DRIVER_CLASS_NAME"}:-com.mysql.cj.jdbc.Driver}
 
 # Tasks related configurations, need to change the configuration if you use the related tasks.
 export HADOOP_HOME=${r"${HADOOP_HOME"}:-/data/install_datasophon/hadoop}

@@ -45,10 +45,15 @@
 | 阶段 | 服务 | 是否计入本次验收 |
 | --- | --- | --- |
 | 集群初始化 | `OTELCOLLECTOR`，由前端为每个节点安装；CLI 部署 RustFS 作为其 S3 兼容存储 | 是 |
-| 阶段 A DAG | `DORIS`、`VALKEY`、`ZOOKEEPER`、`ELASTICSEARCH`、`APISIX`、`NACOS` | 是 |
-| 阶段 B | `KYUUBI`、`DS`、`SPARK3`、`HIVE`、`HDFS`、`YARN` 等 | 否，另行立项 |
+| 阶段 A DAG | `DORIS`、`VALKEY`、`ELASTICSEARCH`、`NACOS`、`DS`（见下方说明） | 是 |
+| 阶段 A 已知问题搁置 | `APISIX`（源码包与安装策略代码结构不匹配，见 §7.9） | 否，已记录暂不处理 |
+| 阶段 B | `KYUUBI`、`SPARK3`、`HIVE`、`HDFS`、`YARN` 等 | 否，另行立项 |
 
-`DS` 的依赖闭包会引入 `SPARK3 → HIVE → HDFS → ZOOKEEPER`；Kyuubi/DS 的默认运行参数也依赖 YARN。因此它们不能被表述为“无 Hadoop”阶段 A 的组成部分。
+`DS` 原依赖闭包会引入 `SPARK3 → HIVE → HDFS → ZOOKEEPER`；Kyuubi 的默认运行参数依赖 YARN，仍不能表述为"无 Hadoop"阶段 A 的组成部分。
+
+**`ZOOKEEPER` 已从阶段 A 移除（2026-07-17 决定）**：DolphinScheduler 改用 MySQL 作为注册中心（`registry.type=jdbc`），不再依赖独立 ZooKeeper 集群。
+
+**`DS` 已从阶段 B 移入阶段 A（2026-07-17 决定，见 §7.9）**：`service_ddl.json` 的 `dependencies` 清空为 `[]`，移除 `SPARK3`、`ZOOKEEPER` 硬依赖；注册中心切到 MySQL/JDBC 后，DS 核心四角色（ApiServer/MasterServer/WorkerServer/AlertServer）不再需要 Spark/Hive/HDFS/ZooKeeper 任何一环即可安装运行，Spark/Hive 相关任务插件仍可选，未装不影响核心调度功能。不影响阶段 B 未来因 `SPARK3 → HIVE → HDFS` 依赖闭环可能引入的 ZooKeeper（另行立项时再评估，与本次注册中心选型无关）。
 
 ## 2. Epic 进度跟踪
 
@@ -65,7 +70,7 @@
 | 6 | CLI apply 基础环境初始化 | PASSED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复已现场验证通过；§7.2.7：连续 8 层修复后 34 个 Step 全部跑完（24 completed + 10 skipped + 0 failed）；§7.2.8：远端服务健康检查发现并修复 MySQL 密码链路 3 处新 bug，Nexus/RustFS/MySQL/NTP 四项实测可正常访问，Gate 6 完成） |
 | 7 | 基础环境、RustFS 与 API 健康 | PASSED | 已批准从前端创建集群 | 连接与健康检查（§7.4：ddh-01 补装 JDK21、`datasophon-api` 已部署启动，DB 迁移至 2.2.3、HTTP 8080、gRPC 18081、登录鉴权均验证通过；NACOS ddl 元数据加载报错为遗留问题，不阻塞；§7.5：NACOS ddl 根因修复并现场验证；§7.6：18 服务 DDL value/defaultValue 清理 + `/internal/meta/refresh` 端点现场部署，2026-07-17 验证通过，另发现线上有 11 轮未提交修复被本次部署覆盖，详见 §7.6） |
 | 8 | 前端集群初始化：Worker 与 OTel Collector | PASSED | 五个节点检查均通过后才可导入服务 DAG | §8.1：五节点 Worker/Collector 正常、导出队列清零、RustFS 已写入 445 个对象，前端集群状态为“正在运行” |
-| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；尚未走正式批次审批流程，`ZOOKEEPER`/`VALKEY` 及批量导入待续 |
+| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；§7.8：VALKEY 单装失败，`ValkeyMaster` 预编译包与 openEuler OpenSSL 主版本不兼容（缺 `libssl.so.3`），upstream 无该发行版预编译包，已记录暂不处理；§7.9：APISIX 安装策略代码与源码包结构不匹配，已记录暂不处理；DS 移入阶段 A，`dependencies` 清空、注册中心切到 MySQL/JDBC；§7.10：现场安装验证，连续修复 5 个真实 bug（MINIO→RustFS 占位符、`INSTALL_PATH` 变量注册通用化、YARN 缺前缀、mysql 驱动缺失、`ServiceHandler` 状态检查退出码平台级 bug），`ApiServer`/`MasterServer`/`AlertServer` 三角色验证运行正常；`WorkerServer` 因 S3 存储插件不随官方发行包分发，一度记录为已知问题；§7.11：从 Maven Central 补全插件后仍崩溃，反编译定位到 S3 相关 property key 命名与官方 3.4.1 实际约定不符（`resource.aws.*` vs 官方 `aws.s3.*`），修复后 DS 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer`×3）全部验证真实稳定运行，S3 存储插件问题解除，不再是已知问题；`ZOOKEEPER` 已从基础依赖批移除（DolphinScheduler 改用 MySQL 注册中心，不再需要，见 §1.3）；DORIS 已安装完成并验证通过；尚未走正式批次审批流程，批量导入待续 |
 | 10 | 阶段 A 业务与故障演练 | BLOCKED | 每次停止实例前单独审批 | SQL / 健康 / 演练报告 |
 | 11 | 阶段 A 证据归档与结论 | BLOCKED | PASS / 偏差 / FAIL 审核 | 脱敏归档包 |
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
@@ -153,7 +158,7 @@ JAVA_HOME=/Users/pro/Library/Java/JavaVirtualMachines/graalvm-jdk-21.0.7/Content
 | 节点 | 基础设施/控制面 | Doris |
 | --- | --- | --- |
 | `ddh-01`（`192.168.10.131`） | API/Master、Nexus、MySQL、NTP Server、RustFS、Worker、OTel Collector | 单 FE，不部署 BE |
-| `ddh-02`（`192.168.10.132`） | Worker、OTel Collector、NTP Client；阶段 A 中间件（`VALKEY`/`ZOOKEEPER`/`ELASTICSEARCH`/`NACOS`/`APISIX`）主要承载节点 | 不部署 Doris |
+| `ddh-02`（`192.168.10.132`） | Worker、OTel Collector、NTP Client；阶段 A 中间件（`VALKEY`/`ELASTICSEARCH`/`NACOS`/`APISIX`）主要承载节点 | 不部署 Doris |
 | `ddh-03`（`192.168.10.133`） | Worker、OTel Collector、NTP Client | BE |
 | `ddh-04`（`192.168.10.134`） | Worker、OTel Collector、NTP Client | BE |
 | `ddh-05`（`192.168.10.135`） | Worker、OTel Collector、NTP Client | BE |
@@ -639,6 +644,81 @@ NACOS 三项修复后重装成功，前后端均验证通过。
 
 **附带的运维事故（与部署代码无关，记录仅为教训）**：为重新上传修复后的 DDL，先后触发 Nexus 3.94 内置的 `AuthRateLimiterServiceImpl`（按用户名 `user::admin` 计数、纯内存态、指数退避 30s→900s 封顶，失败或被拒尝试会继续累加退避，只有真正认证成功才清零）连续 429，一度耗时约 40 分钟排查：起因是探测时误用了本机 dev Nexus 的密码（`admin123`），而 ddh-01 生产 Nexus 密码不同；期间浏览器打开的 Nexus 管理界面 tab 后台自动重试登录，与 CLI/curl 探测互相"续杯"退避计时器，越查越锁得久。最终用正确密码 + 重启 Nexus（清空内存态计数器，`/data/nexusDir/nexus/bin/nexus restart` 须用绝对路径，相对路径下 `realpath "$0"` 解析失败会导致 restart 的 start 阶段静默不生效）解决，未造成任何数据丢失。
 
+### 7.8 VALKEY 单装失败：预编译包与 openEuler 发行版 OpenSSL 主版本不兼容（2026-07-17）
+
+前端从 ddh-02 单装 VALKEY，`ValkeyMaster` 角色安装成功但启动失败，20 次状态重试耗尽后 `command_state=3`（失败）；`ValkeyExporter` 角色因主角色已失败，命令提前结束，从未真正尝试执行。
+
+现场日志（`ddh-02:/data/install_datasophon/datasophon-worker/logs/VALKEY/ValkeyMaster.log`）显示确切报错：
+
+```
+/data/install_datasophon/valkey-8.1.8-jammy-x86_64/bin/valkey-server: error while loading shared libraries: libssl.so.3: cannot open shared object file: No such file or directory
+```
+
+根因是**预编译二进制与目标发行版的 OpenSSL 主版本不兼容**，不是 DDL 或代码 bug：Nexus 上的包名 `valkey-8.1.8-jammy-x86_64.tar.gz` 里的 "jammy" 即 Ubuntu 22.04 代号，该二进制在 OpenSSL 3.x 环境下编译，链接了 `libssl.so.3`/`libcrypto.so.3`；而目标节点 ddh-02 是 openEuler 22.03 LTS-SP3，系统自带 OpenSSL 1.1.1wa（`libssl.so.1.1`），`ldd` 确认两个符号均 `not found`。
+
+排查确认以下几条路径均不可行，问题无法通过换包/补库快速绕开：
+
+- **Valkey upstream 从未发布过 openEuler/RHEL 系预编译包**：`valkey.io/download/` 上 8.1.8 版本只有 `jammy`/`noble`（Ubuntu 22.04/24.04）两种 x86_64/arm64 组合，且两者都基于 OpenSSL 3.x，换 `noble` 同样会踩 `libssl.so.3` 缺失。
+- **openEuler 离线 yum 源（Nexus 代理，`repository/yum/x86_64/openEuler-22.03-LTS-SP3/`）里没有 OpenSSL 3.x 兼容库**，也没有 `redis`/`valkey` 本身的 RPM——搜到的唯一相关项是 `pcp-pmda-redis-5.3.7-3.oe2203sp3.x86_64.rpm`，这是 Performance Co-Pilot 的 Redis 监控插件，不含 `redis-server`，且依赖已有 Redis 实例先跑起来才有意义。
+- ddh-02 本地 `openssl-devel` 已安装（`1.1.1wa-2.oe2203sp3`），具备源码编译 Valkey 的前置条件，但编译本身超出本次单装验证范围。
+
+用户确认此问题记录后暂不处理，与 `EsExporter` 缺二进制资产同属"需要引入额外资产/构建步骤才能解决"的已知问题，不阻塞前置探索的其余部分。后续可选方案（未执行）：① 在 openEuler 22.03 机器上从源码编译 Valkey，链接系统自带 OpenSSL 1.1.1；② 从 Ubuntu 22.04 环境提取 `libssl.so.3`/`libcrypto.so.3` 并通过 `LD_LIBRARY_PATH` 让现有 jammy 二进制运行（需同步改造 `control_valkey.sh` 注入该变量）。
+
+### 7.9 APISIX 安装可行性排查（已知问题，暂不处理）与 DolphinScheduler 注册中心解耦（2026-07-17）
+
+**APISIX**：在正式安装前排查了 `service_ddl.json` 声明的包 `apache-apisix-3.17.0-src.tgz`（`downloadUrl` 为 Apache 官方源码发布地址，Nexus 上实测 525KB，纯 Lua 源码，不含任何编译产物）与 Worker 侧 `ApisixHandlerStrategy.java:57-61` 的实际安装逻辑——后者硬编码去 `<解压目录>/<arch>/<os_desc>/` 找预编译 `*.rpm` 并 `yum localinstall`，与前者下载的纯源码包结构完全对不上，`ls` 检查会在任何操作系统上都直接失败，不是 openEuler 特有问题。进一步核查 APISIX 3.17.0 官方 `utils/install-dependencies.sh` 发现完整依赖链条更复杂：① 编译工具链/C 库（`gcc`/`pcre-devel`/`openresty-zlib-devel` 等，部分包来自 OpenResty 官方 yum 源）；② OpenResty 本体（APISIX 使用 `api7/apisix-build-tools` 维护的定制版 `apisix-runtime`，目前只发布 EL8/EL9 与 Debian bookworm 预编译包，无 openEuler 专属构建，兼容性未知）；③ LuaRocks（源码编译，需联网拉取）；④ etcd（本次走 Standalone 配置中心模式，已在 Phase 1 完成模板适配，不需要）。前三层均需要访问 `openresty.org`/GitHub 等外部主机，与本环境离线特性冲突；且脚本自身的发行版探测逻辑不识别 openEuler，会直接报 "Non-supported distribution" 退出。综合判断：APISIX 现有安装策略代码需要重写，且依赖链需要提前在联网环境构建产物后离线搬入，工作量超出本次探索范围，用户确认暂不处理，性质与 `EsExporter`/`VALKEY` 缺资产问题同类，均已记录、均不阻塞其余服务。
+
+**DolphinScheduler（DS）注册中心解耦**：原 `service_ddl.json` 声明 `dependencies: ["SPARK3", "ZOOKEEPER"]`（`SPARK3` 在参数里从未被实际引用，纯 DAG 顺序声明；`ZOOKEEPER` 通过 `zkUrls` 参数 `${ZOOKEEPER.zkUrls}` 跨服务占位符注入 `dolphinscheduler_env.sh` 的 `REGISTRY_ZOOKEEPER_CONNECT_STRING`）——这正是 §1.3 里把 DS 划入"阶段 B"（因 Spark→Hive→HDFS→ZooKeeper 依赖闭环，不符合"无 Hadoop"定位）的直接原因。核实 DS 3.4.1 源码（`dolphinscheduler-registry-jdbc` 模块）确认官方自带 MySQL/JDBC 注册中心实现（`registry.type=jdbc`，`3.2+` 版本内置，无需额外插件），且所需的 4 张表（`t_ds_jdbc_registry_data`/`_lock`/`_client_heartbeat`/`_data_change_event`）已包含在标准 `dolphinscheduler_mysql.sql` 建表脚本里，无需额外建表步骤。据此改造：
+
+- `service_ddl.json`：`dependencies` 清空为 `[]`（移除 `SPARK3`、`ZOOKEEPER`）；删除 `zkUrls` 参数及其在 `dolphinscheduler_env.sh` generator 的 `includeParams` 引用。
+- `dolphinscheduler_env.ftl`：注册中心配置块从 `REGISTRY_TYPE=zookeeper` + `REGISTRY_ZOOKEEPER_CONNECT_STRING` 改为 `REGISTRY_TYPE=jdbc` + 四个 `REGISTRY_HIKARI_CONFIG_*` 环境变量（`JDBC_URL`/`USERNAME`/`PASSWORD`/`DRIVER_CLASS_NAME`），直接复用 DS 自身已有的 `databaseUrl`/`username`/`password` 参数（同一个 MySQL 实例、同一个 `dolphinscheduler` 库），不新增连接配置。Spring Boot 环境变量宽松绑定规则（下划线可匹配 `.`/`-` 任意组合）与现有 `REGISTRY_ZOOKEEPER_CONNECT_STRING` 沿用同一套机制，非新发明。
+- 同步更新 `DolphinschedulerEnvTemplateTest.java` 断言（新增 `REGISTRY_TYPE=jdbc`/`REGISTRY_HIKARI_CONFIG_*` 断言、确认不再输出 `REGISTRY_ZOOKEEPER_CONNECT_STRING`），测试通过。
+
+移除 `SPARK3`/`ZOOKEEPER` 依赖后，DS 不再需要 Spark/Hive/HDFS/ZooKeeper 任何一环即可安装启动（Spark/Hive 等仍是可选任务插件，未装不影响 API/Master/Worker/Alert 四个核心角色运行），`resource.hdfs.*`/`yarn.*` 等可选资源存储参数原样保留、未做改动（只在用户后续启用对应任务类型时才生效）。
+
+### 7.10 DolphinScheduler 现场安装：5 个真实 bug 的排查与修复 + S3 存储插件缺失（已知问题）（2026-07-17）
+
+从前端发起 DS 安装（`ApiServer`/`MasterServer`/`AlertServer` → ddh-02，`WorkerServer` × 3 → ddh-03/04/05），过程中连续暴露 5 个真实 bug，逐一定位修复：
+
+1. **`DS`/`FLINK` 的 `service_ddl.json` 残留 `${MINIO.*}` 占位符**：项目对象存储组件早已从 MinIO 改名为 RustFS（`GlobalVariables` 里注册的是 `ROOT.Rustfs.*`），但这两份 DDL 是改名前的历史遗留，引用了从未注册过的 `MINIO` 命名空间，会静默失败（原样把 `${MINIO.xxx}` 字面量写进配置文件）。已改为 `${ROOT.Rustfs.access_key}`/`${ROOT.Rustfs.secret_key}`/`${ROOT.Rustfs.__hostIp__}`/`${ROOT.Rustfs.__port__}`。
+2. **`HIVE`/`JUICEFS`/`KAFKA`/`ZOOKEEPER` 引用 `${ROOT.<SERVICE>.INSTALL_PATH}` 无法解析**：`DdlMetaServiceImpl.putServiceHomeToVariable()` 原来只对 `HDFS` 特判生成 `${HADOOP_HOME}`，其余服务从未生成过"自己安装路径"这个变量。已把该方法通用化，对所有服务生成 `${ROOT.<服务名>.INSTALL_PATH}`（HDFS 的 `${HADOOP_HOME}` 兼容分支保留不变），一次性解决根因，避免以后新服务再踩同样的坑。
+3. **`YARN` 的 `${dfs.nameservices}` 缺 `HDFS.` 前缀**：HDFS 自己该参数 `register=true`，本应写 `${HDFS.dfs.nameservices}`，YARN 引用时漏了服务名前缀，只影响 Node Label 存储目录这个非核心功能。已修正。
+4. **DS 缺少 MySQL JDBC 驱动**：DolphinScheduler 官方发行包出于 GPL 协议原因不自带 `mysql-connector`，`tools/bin/upgrade-schema.sh`（数据库 schema 初始化，只有 `MasterServer` 触发）和四个组件自身运行都需要。已给 `ApiServer`/`MasterServer`/`WorkerServer`/`AlertServer` 各自的 `libs/` 目录、以及额外的 `tools/libs/` 目录（`MasterServer` 专用）都加了 `POST_INSTALL link` hook，软链复用 `datasophon-worker` 自带的 `lib/mysql-connector-j-8.2.0.jar`，`source` 用 `${ROOT.VosManager.INSTALL_PATH}` 变量而非写死路径。
+5. **平台级 bug：`ServiceHandler.start()` 对所有服务通用的"是否已运行"判断依赖状态检查脚本的退出码，但 DS 官方 `bin/dolphinscheduler-daemon.sh` 的 `(status)` 分支没有任何 `exit` 语句**（脚本退出码恒为 0，取决于最后一条 `echo` 命令），导致无论服务真实是否在跑，都被误判"已运行，无需启动"，真正的 `start` 命令从未被执行——DS 曾经历过一轮"DAG 全部执行成功、DB 状态全部 RUNNING，但五节点上一个真实 Java 进程都没有"的完全假成功。DDL 自带的 `bin/control_ds.sh` 包装脚本本意是修正这个问题，但自身也有 bug（`execStatus()` 里 `[[ $status=="STOP" ]]` 缺空格，导致字符串比较失效、结果恒为"运行中"）。最终选择成本最低的方案：不改 `control_ds.sh`（避免涉及 `templateId` 模板重新上传机制的额外复杂度），改用已有的 `append_line` hook 直接给官方脚本的 `(status)` 分支打两行补丁——在 `get_server_running_status` 之后保存原始状态到 `__ds_real_state`，在打印状态之后追加 `if [[ "$__ds_real_state" == "RUNNING" ]]; then exit 0; else exit 1; fi`。本地用两种真实场景（无 pid 文件 / 真实存活 bash 进程）模拟验证退出码分别为 1/0，符合预期。
+
+修复后现场重装验证：`ApiServer`/`MasterServer`/`AlertServer` 真实 Java 进程稳定运行（`ps -ef` 确认），DB 状态与真实情况一致。`WorkerServer` 这次也真正执行了启动流程（不再被误跳过），但因缺少 S3 存储插件在 Spring 容器初始化阶段失败退出：
+
+```
+No qualifying bean of type 'org.apache.dolphinscheduler.plugin.storage.api.StorageOperator' available
+```
+
+排查确认：`common.properties` 里 `resource.storage.type=S3` 及 RustFS 的 `access_key`/`secret_key`/`endpoint` 全部生成正确（间接验证了 bug 1 的修复彻底生效），但解压后的 `plugins/storage-plugins/` 目录是空的——查证 `archive.apache.org` 官方发布目录只有 `-bin.tar.gz`（核心二进制）和 `-src.tar.gz`（源码），**S3 存储插件不作为独立制品分发**，要用只能从源码自行编译或另寻预编译来源，工作量与不确定性明显超出本次现场排查范围。用户确认记录为已知问题、暂不处理，性质与 `EsExporter`/`VALKEY` 缺资产问题同类。由于本集群"无 Hadoop"定位下 S3/RustFS 是唯一可用存储类型（HDFS 不在部署范围内），此问题不解决则 `WorkerServer` 无法执行任何任务，但不影响 `ApiServer`/`MasterServer`/`AlertServer` 三个角色的运行。
+
+### 7.11 DolphinScheduler S3 插件补全后仍崩溃：property key 命名不匹配根因与修复（2026-07-18）
+
+§7.10 记录的 S3 插件缺失问题后续用户改变主意要求继续攻克：在 **Maven Central** 找到官方发布的 `org.apache.dolphinscheduler:dolphinscheduler-storage-s3:3.4.1` `-shade.jar`（自包含依赖的胖 jar，136KB，SHA1 已核实，`unzip -l` 确认内含 `S3StorageOperator.class` 及 SPI 声明），存入 `package/raw/meta/datacluster-physical/DS/plugin/`，给 DS 四个角色都加了 `POST_INSTALL download` hook 指向共享的 `plugins/storage-plugins/` 目录（与 mysql 驱动不同——这个目录是所有组件共享的顶层 classpath，只需下载一份，不用像 mysql 驱动那样每组件各自软链）。上传 Nexus + meta refresh 后，前端重新发起 DS 安装，界面显示"安装成功"。
+
+**现场验证发现界面提示不可靠，五节点存在真实进程**：`ps -ef` 确认 ddh-02 只有 `MasterServer`/`AlertServer` 真实运行，`ApiServer` 和 ddh-03/04/05 三台 `WorkerServer` 全部启动即崩溃退出——又一次"控制面认为成功、数据面未必存活"的假成功，但机制和 §7.10 第 5 个 bug（脚本退出码恒为 0 导致 start 命令被跳过）不同：这次进程**确实尝试启动过**，是 Spring 依赖注入阶段失败退出。
+
+两边日志报的是同一条异常链：`StorageOperator` bean 实例化失败 → `SdkClientException: Unable to execute HTTP request: s3` → `UnknownHostException: s3`——S3 client 试图连接一个字面量主机名 `s3`，不是配置里写的 RustFS 真实地址。排查过程：
+
+1. `javap -p -c` 反编译插件 jar 中的 `S3StorageOperator.class`，定位真正构建 S3 client 的是 `org.apache.dolphinscheduler.authentication.aws.AmazonS3ClientFactory.createAmazonS3Client(Map)`——这个类不在插件 jar 里，而是 DS 官方发行包自带的 `dolphinscheduler-aws-authentication-3.4.1.jar`（从 ddh-02 实际部署目录 scp 下来核实版本号与插件一致，排除"插件版本与主版本不匹配"的猜测）。
+2. 反编译 `AmazonS3ClientFactory`：从传入的 `Map<String,String>` 里取 `"region"`/`"endpoint"` 两个 key 构建 client。再反编译上游 `S3StorageOperatorFactory.getS3StorageProperties()`：`bucketName` 读取 `PropertyUtils.getString("aws.s3.bucket.name")`，其余配置读取 `PropertyUtils.getByPrefix("aws.s3.", "")`（精确前缀匹配并剥离前缀）。
+3. 而 `DS/service_ddl.json` 生成的 `common.properties` 里，这几项全部带了 `resource.` 前缀（`resource.aws.access.key.id`/`resource.aws.secret.access.key`/`resource.aws.region`/`resource.aws.s3.bucket.name`/`resource.aws.s3.endpoint`）——是照着同一份文件里 OSS（`resource.alibaba.cloud.oss.*`）、Azure（`resource.azure.*`）的命名习惯写的，但 S3 这一项官方代码不吃这个前缀。`PropertyUtils.getByPrefix("aws.s3.", "")` 精确前缀匹配不到任何 key，拿到空 Map，`endpoint`/`region`/凭证全部取不到值，S3 client 构造时退化用了某个残留字符串当主机名，解析失败。
+4. 用官方 GitHub `3.4.1-release` tag 交叉核实：`deploy/kubernetes/dolphinscheduler/README.md` 明确写着 S3 配置项**不带 `resource.` 前缀**，直接是 `aws.s3.access.key.id`/`aws.s3.access.key.secret`（注意子段顺序也和我们写的 `secret.access.key` 不同）/`aws.s3.bucket.name`/`aws.s3.endpoint`/`aws.s3.region`——这是 DolphinScheduler 官方自己的命名不统一（S3 插件相比 OSS/Azure 少了 `resource.` 前缀），不是版本问题。
+5. 另确认 `resource.aws.region` 原值 `dolphinscheduler` 也是错的：`Regions.fromName(region)` 在 `createAmazonS3Client` 里无条件调用，要求严格匹配 AWS SDK 的 `Regions` 枚举名，任意字符串都会直接抛 `IllegalArgumentException`。
+6. 顺带发现一处独立笔误：`s3Sync` hook（两个角色各一处）的 `"bucket"` 字段绑定到了 `${DS.resource.aws.region}`（region 变量），应为 bucket 名变量。
+
+**修复**（`package/raw/meta/datacluster-physical/DS/service_ddl.json`，分支 `verify/cli-go-five-node-bootstrap`）：5 个 `parameters` 的 `name`/`label` 从 `resource.aws.*` 改为 `aws.s3.*`（含子段重排 `access.key.secret`），`region` 默认值从 `dolphinscheduler` 改为合法值 `us-east-1`（S3 兼容存储走自定义 endpoint，该值只用于满足 SDK 参数校验，不影响实际连接目标）；`configWriter.generators[common.properties].includeParams` 同步改名；两处 `s3Sync` hook 的 `${DS.xxx}` 变量引用同步改名，并修正 `bucket` 字段指向正确的 bucket 名变量。
+
+**现场部署与验证**：`datasophon-cli upload registry` 重新上传（46/46 成功，0 失败）+ `POST /internal/meta/refresh`（200，ddh-01 日志确认 DS 全部 4 个角色重新加载进内存缓存，无报错）。优雅停止 ddh-02 上残留的真实 `MasterServer`/`AlertServer` 进程后，从前端删除 DS 服务实例（官方级联清理）重新安装。验证结果：
+
+- `ps -ef` 确认六个真实进程全部稳定运行超过 1 分钟以上，CPU 已从启动期的 99% 回落稳态：`ApiServer`/`MasterServer`/`AlertServer`（ddh-02）、`WorkerServer`（ddh-03/04/05）。
+- `ApiServer`/`WorkerServer` 日志均打出 `S3StorageOperator:[215] - bucketName: dolphinscheduler has been found, the current regionName is us-east-1`——此前反复崩溃的那一步现在直接通过。
+- `ApiServer` 日志确认 `Started ApiApplicationServer in 27.59 seconds`，Jetty 监听 `12345`；`WorkerServer` 日志确认 `Started WorkerServer in 12.545 seconds`，且已成功注册到 registry center（`Worker node: 192.168.10.133:1234 registry ... successfully`，验证了 §7.9 的 MySQL/JDBC 注册中心解耦此前已生效）。
+
+至此 DolphinScheduler 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer` × 3）全部验证为真实稳定运行，S3 存储插件问题彻底解决，不再是已知问题清单的一员。
+
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
 基础环境验收：hostname 和 hosts、节点 SSH、NTP、Nexus、MySQL、RustFS S3、plan 状态、数据盘与 JDK17 可用。确认无 Kubernetes 业务组件及 Hadoop 业务进程。
@@ -679,9 +759,10 @@ CLI 创建并启动 `datasophon-api` 后，验证 MySQL 连接、迁移、HTTP `
 
 只有前端显示五节点 Worker 与 OTel Collector 集群初始化均通过后，才可从前端导入服务 DAG。每批导入前单独记录角色表、参数脱敏 hash、DAG ID、开始/结束时间与验收证据；失败即停止当前批，不进入后续批。
 
-1. **基础依赖批**：`ZOOKEEPER`、`VALKEY`、`ELASTICSEARCH`、`NACOS`。Nacos 使用 CLI 预建 MySQL DB/账号，但仍须按产品流程确认 schema 初始化。
-2. **Doris 批**：`DORIS`。确认 3 FE、批准数量的 BE、网络优先级、目录与内存限制；从第一个 FE 初始化并让其余 FE 通过 `<master>:9010` 加入。
-3. **网关批**：`APISIX` Standalone。仅在 Gate 1 所有现场验证通过、Nexus 元数据 hash 已核对后导入。
+1. **基础依赖批**：`VALKEY`、`ELASTICSEARCH`、`NACOS`（`ZOOKEEPER` 已移除，见 §1.3）。Nacos 使用 CLI 预建 MySQL DB/账号，但仍须按产品流程确认 schema 初始化。
+2. **Doris 批**：`DORIS`。确认 3 FE、批准数量的 BE、网络优先级、目录与内存限制；从第一个 FE 初始化并让其余 FE 通过 `<master>:9010` 加入。已安装完成，前端验证通过。
+3. **调度批**：`DS`（DolphinScheduler），MySQL/JDBC 注册中心模式，`dependencies` 已清空，见 §7.9、§1.3。
+4. ~~**网关批**：`APISIX` Standalone~~——已知问题（安装策略代码与源码包结构不匹配，见 §7.9），暂不处理，不列入本轮导入批次。
 
 OTel Collector 不在本阶段重复导入或安装；它是 Phase 8 的每节点集群初始化交付物。
 
@@ -703,7 +784,6 @@ SHOW BACKENDS;
 - RustFS / OTel：确认五个节点的 OTel Collector 能按集群初始化配置向预期 bucket 写入或读取实际流水线数据。
 - APISIX：在无 etcd 条件下启动，最小路由返回 upstream 响应，`9091` 可抓取指标。
 - Valkey：认证读写。
-- ZooKeeper：quorum 健康。
 - Elasticsearch：集群健康及索引读写。
 - Nacos：注册、查询与持久化。
 

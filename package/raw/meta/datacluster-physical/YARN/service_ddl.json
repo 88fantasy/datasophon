@@ -325,7 +325,7 @@
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "hdfs://${dfs.nameservices}/user/yarn/nodeLabels",
+      "defaultValue": "hdfs://${HDFS.dfs.nameservices}/user/yarn/nodeLabels",
       "configurableInWizard": true,
       "register": false
     },

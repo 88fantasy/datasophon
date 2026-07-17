@@ -6,10 +6,7 @@
   "sortNum": 30,
   "version": "3.4.1",
   "createDecompressDir": false,
-  "dependencies": [
-    "SPARK3",
-    "ZOOKEEPER"
-  ],
+  "dependencies": [],
   "roles": [
     {
       "name": "ApiServer",
@@ -68,6 +65,41 @@
             "from": "script/control_ds.sh",
             "templateId": "2003753396534054913"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
+            "target": "api-server/libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 130,
+            "text": "    __ds_real_state=$state"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 139,
+            "text": "    if [[ \"$__ds_real_state\" == \"RUNNING\" ]]; then exit 0; else exit 1; fi"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
+          }
         }
       ]
     },
@@ -123,6 +155,49 @@
             "md5": "069991e599422ce2264d7cb7964e9394",
             "from": "script/control_ds.sh",
             "templateId": "2003753368964894722"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
+            "target": "master-server/libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
+            "target": "tools/libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 130,
+            "text": "    __ds_real_state=$state"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 139,
+            "text": "    if [[ \"$__ds_real_state\" == \"RUNNING\" ]]; then exit 0; else exit 1; fi"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
           }
         }
       ]
@@ -182,13 +257,48 @@
           }
         },
         {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
+            "target": "worker-server/libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 130,
+            "text": "    __ds_real_state=$state"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 139,
+            "text": "    if [[ \"$__ds_real_state\" == \"RUNNING\" ]]; then exit 0; else exit 1; fi"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
+          }
+        },
+        {
           "type": "PRE_INSTALL",
           "action": "s3Sync",
           "params": {
-            "bucket": "${DS.resource.aws.region}",
-            "endpoint": "${DS.resource.aws.s3.endpoint}",
-            "accessKey": "${DS.resource.aws.access.key.id}",
-            "secretKey": "${DS.resource.aws.secret.access.key}"
+            "bucket": "${DS.aws.s3.bucket.name}",
+            "endpoint": "${DS.aws.s3.endpoint}",
+            "accessKey": "${DS.aws.s3.access.key.id}",
+            "secretKey": "${DS.aws.s3.access.key.secret}"
           }
         }
       ]
@@ -198,7 +308,7 @@
       "label": "AlertServer",
       "sortNum": 3,
       "roleType": "master",
-      "cardinality": "1",
+      "cardinality": "0+",
       "logFile": "alert-server/logs/dolphinscheduler-alert.log",
       "serverPorts": [],
       "jmxPortParam": "alertServerPort",
@@ -248,13 +358,48 @@
           }
         },
         {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
+            "target": "alert-server/libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 130,
+            "text": "    __ds_real_state=$state"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/dolphinscheduler-daemon.sh",
+            "line": 139,
+            "text": "    if [[ \"$__ds_real_state\" == \"RUNNING\" ]]; then exit 0; else exit 1; fi"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
+          }
+        },
+        {
           "type": "PRE_INSTALL",
           "action": "s3Sync",
           "params": {
-            "bucket": "${DS.resource.aws.region}",
-            "endpoint": "${DS.resource.aws.s3.endpoint}",
-            "accessKey": "${DS.resource.aws.access.key.id}",
-            "secretKey": "${DS.resource.aws.secret.access.key}"
+            "bucket": "${DS.aws.s3.bucket.name}",
+            "endpoint": "${DS.aws.s3.endpoint}",
+            "accessKey": "${DS.aws.s3.access.key.id}",
+            "secretKey": "${DS.aws.s3.access.key.secret}"
           }
         }
       ]
@@ -273,7 +418,6 @@
           "databaseUrl",
           "username",
           "password",
-          "zkUrls",
           "apiServerPort",
           "masterServerPort",
           "workerServerPort",
@@ -288,11 +432,11 @@
           "data.basedir.path",
           "resource.storage.type",
           "resource.storage.upload.base.path",
-          "resource.aws.access.key.id",
-          "resource.aws.secret.access.key",
-          "resource.aws.region",
-          "resource.aws.s3.bucket.name",
-          "resource.aws.s3.endpoint",
+          "aws.s3.access.key.id",
+          "aws.s3.access.key.secret",
+          "aws.s3.region",
+          "aws.s3.bucket.name",
+          "aws.s3.endpoint",
           "resource.hdfs.root.user",
           "resource.hdfs.fs.defaultFS",
           "resource.manager.httpaddress.port",
@@ -354,19 +498,6 @@
       "defaultValue": "fI5sQ4yQ4fP5",
       "configurableInWizard": true,
       "register": false
-    },
-    {
-      "enabled": true,
-      "name": "zkUrls",
-      "description": "",
-      "label": "ZK地址",
-      "hidden": false,
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "defaultValue": "${ZOOKEEPER.zkUrls}",
-      "configurableInWizard": true,
-      "register": true
     },
     {
       "enabled": true,
@@ -458,45 +589,45 @@
     },
     {
       "enabled": true,
-      "name": "resource.aws.access.key.id",
+      "name": "aws.s3.access.key.id",
       "description": "",
-      "label": "resource.aws.access.key.id",
+      "label": "aws.s3.access.key.id",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "${MINIO.minioAccessKey}",
+      "defaultValue": "${ROOT.Rustfs.access_key}",
       "configurableInWizard": true,
       "register": false
     },
     {
       "enabled": true,
-      "name": "resource.aws.secret.access.key",
+      "name": "aws.s3.access.key.secret",
       "description": "",
-      "label": "resource.aws.secret.access.key",
+      "label": "aws.s3.access.key.secret",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "${MINIO.minioSecretKey}",
+      "defaultValue": "${ROOT.Rustfs.secret_key}",
       "configurableInWizard": true,
       "register": false
     },
     {
       "enabled": true,
-      "name": "resource.aws.region",
-      "description": "MinIO 兼容模式下填写桶名（官方 AWS 填写实际 region）",
-      "label": "resource.aws.region",
+      "name": "aws.s3.region",
+      "description": "AWS SDK 强校验 region 需为合法枚举名，S3 兼容存储走自定义 endpoint 时该值不影响实际连接，任意合法值即可",
+      "label": "aws.s3.region",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "dolphinscheduler",
+      "defaultValue": "us-east-1",
       "configurableInWizard": true,
       "register": false
     },
     {
       "enabled": true,
-      "name": "resource.aws.s3.bucket.name",
+      "name": "aws.s3.bucket.name",
       "description": "S3 存储桶名称",
-      "label": "resource.aws.s3.bucket.name",
+      "label": "aws.s3.bucket.name",
       "hidden": false,
       "required": true,
       "type": "input",
@@ -506,13 +637,13 @@
     },
     {
       "enabled": true,
-      "name": "resource.aws.s3.endpoint",
+      "name": "aws.s3.endpoint",
       "description": "",
-      "label": "resource.aws.s3.endpoint",
+      "label": "aws.s3.endpoint",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
+      "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}",
       "configurableInWizard": true,
       "register": false
     },
