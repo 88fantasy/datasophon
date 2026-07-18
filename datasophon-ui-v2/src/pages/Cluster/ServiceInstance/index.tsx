@@ -7,6 +7,7 @@ import ClusterContext from '@/context/ClusterContext';
 import ApisixDashboard from '@/pages/monitor/ApisixMonitor';
 import DorisDashboard from '@/pages/monitor/DorisMonitor';
 import NacosDashboard from '@/pages/monitor/NacosMonitor';
+import ValkeyDashboard from '@/pages/monitor/ValkeyMonitor';
 import { listK8sResourceTypes } from '@/services/k8s';
 import {
   deleteServiceInstance,
@@ -170,11 +171,17 @@ const ServiceInstance: React.FC = () => {
   // ── 物理集群实例页（原有逻辑不变）─────────────────────────────────
   const items: NonNullable<TabsProps['items']> = [];
   const isApisix = serviceInfo?.serviceName === 'APISIX';
-  if (isApisix) {
+  const isValkey = serviceInfo?.serviceName === 'VALKEY';
+  const hasPrimaryMonitor = isApisix || isValkey;
+  if (hasPrimaryMonitor) {
     items.push({
       key: 'monitor',
       label: '监控',
-      children: <ApisixDashboard clusterId={numericClusterId} />,
+      children: isApisix ? (
+        <ApisixDashboard clusterId={numericClusterId} />
+      ) : (
+        <ValkeyDashboard clusterId={numericClusterId} />
+      ),
     });
   }
   if (serviceInfo?.dashboardUrl) {
@@ -234,7 +241,7 @@ const ServiceInstance: React.FC = () => {
     <Tabs
       key={`${numericInstanceId}-${serviceInfo?.serviceName ?? ''}`}
       tabBarExtraContent={tabBarExtraContent}
-      defaultActiveKey={isApisix ? 'monitor' : 'instance'}
+      defaultActiveKey={hasPrimaryMonitor ? 'monitor' : 'instance'}
       items={items}
     />
   );

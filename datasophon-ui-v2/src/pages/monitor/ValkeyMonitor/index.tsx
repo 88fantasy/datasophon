@@ -67,7 +67,11 @@ const valkeyKeyTtlColors = {
   Evicted: CHART_COLORS.error,
 };
 
-const ValkeyDashboard: FC = () => {
+export interface ValkeyDashboardProps {
+  clusterId: number;
+}
+
+const ValkeyDashboard: FC<ValkeyDashboardProps> = ({ clusterId }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -95,7 +99,7 @@ const ValkeyDashboard: FC = () => {
   const { instant, series, instances, loading } = useValkeyDashboard({
     variables,
     timeRange,
-    clusterId: 1,
+    clusterId,
     refreshKey,
   });
 
@@ -107,7 +111,13 @@ const ValkeyDashboard: FC = () => {
       ? CHART_COLORS.primary
       : colorByThreshold(instant.memoryUsagePct, [80, 95]);
   const memoryPctFormatter =
-    instant.memoryUsagePct < 0 ? () => 'unlimited' : pctFormatter;
+    instant.memoryUsagePct < 0
+      ? () =>
+          t(
+            'pages.valkeyMonitor.panel.memoryLimitNotConfigured',
+            'Memory limit not configured',
+          )
+      : pctFormatter;
 
   return (
     <MonitorDashboardLayout

@@ -144,6 +144,25 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_andLabels_includeValkeyDimensions() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("cmd", "db");
+        assertThat(OtelMetricsQueryService.LABEL_ATTR_KEYS).contains("cmd", "db");
+
+        String commandSql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, null, null, List.of("cmd"), "otel_metrics_sum");
+        String databaseSql = OtelMetricsQueryService.buildRangeGaugeSql(
+                false, false, null, null, List.of("db"), "otel_metrics_gauge");
+        String labelsSql = OtelMetricsQueryService.buildLabelsSql(true);
+
+        assertThat(commandSql).contains("attributes['cmd']").contains("PARTITION BY instance, job, cmd");
+        assertThat(databaseSql).contains("attributes['db']").contains("AS db");
+        assertThat(labelsSql)
+                .contains("CAST(attributes['cmd'] AS STRING) AS cmd")
+                .contains("CAST(attributes['db'] AS STRING) AS db")
+                .contains("service_name REGEXP :job");
+    }
+
+    @Test
     void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
         String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("gc", "G1 Young Generation"), null,

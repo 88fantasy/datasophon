@@ -81,14 +81,16 @@ public class OtelMetricsQueryService {
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause");
+                    "area", "result", "status", "level", "cause", "cmd", "db");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause");
+                    "area", "result", "status", "level", "cause", "cmd", "db");
+
+    static final List<String> LABEL_ATTR_KEYS = List.of("vol_name", "mp", "method", "cmd", "db");
 
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;
@@ -332,26 +334,7 @@ public class OtelMetricsQueryService {
 
     public LabelsResult queryLabels(Integer clusterId, String metric, String job) {
         JdbcClient client = createReader(clusterId);
-        // UNION 确保同时覆盖 gauge 和 sum 两表里的指标
-        String sql = "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
-                + "  " + JOB_EXPR + " AS job,\n"
-                + "  CAST(attributes['vol_name'] AS STRING) AS vol_name,\n"
-                + "  CAST(attributes['mp'] AS STRING) AS mp,\n"
-                + "  CAST(attributes['method'] AS STRING) AS method\n"
-                + "FROM otel.otel_metrics_gauge\n"
-                + "WHERE metric_name = :metric\n"
-                + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)\n"
-                + (needsFilter(job) ? "  AND " + JOB_EXPR + " REGEXP :job\n" : "")
-                + "UNION\n"
-                + "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
-                + "  " + JOB_EXPR + " AS job,\n"
-                + "  CAST(attributes['vol_name'] AS STRING) AS vol_name,\n"
-                + "  CAST(attributes['mp'] AS STRING) AS mp,\n"
-                + "  CAST(attributes['method'] AS STRING) AS method\n"
-                + "FROM otel.otel_metrics_sum\n"
-                + "WHERE metric_name = :metric\n"
-                + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)"
-                + (needsFilter(job) ? "\n  AND " + JOB_EXPR + " REGEXP :job" : "");
+        String sql = buildLabelsSql(needsFilter(job));
         JdbcClient.StatementSpec spec = client.sql(sql).param("metric", metric);
         if (needsFilter(job)) {
             spec = spec.param("job", job);
@@ -360,7 +343,7 @@ public class OtelMetricsQueryService {
         Set<String> instances = new LinkedHashSet<>();
         Set<String> jobs = new LinkedHashSet<>();
         Map<String, Set<String>> attributes = new LinkedHashMap<>();
-        for (String key : List.of("vol_name", "mp", "method")) {
+        for (String key : LABEL_ATTR_KEYS) {
             attributes.put(key, new LinkedHashSet<>());
         }
         for (Map<String, Object> row : rows) {
@@ -384,6 +367,28 @@ public class OtelMetricsQueryService {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> List.copyOf(e.getValue()),
                         (a, b) -> a, LinkedHashMap::new));
         return new LabelsResult(List.copyOf(instances), List.copyOf(jobs), attrValues);
+    }
+
+    static String buildLabelsSql(boolean filterJob) {
+        String attrSelect = LABEL_ATTR_KEYS.stream()
+                .map(key -> "  CAST(attributes['" + key + "'] AS STRING) AS " + key)
+                .collect(Collectors.joining(",\n", ",\n", "\n"));
+        // UNION 确保同时覆盖 gauge 和 sum 两表里的指标。
+        return "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
+                + "  " + JOB_EXPR + " AS job"
+                + attrSelect
+                + "FROM otel.otel_metrics_gauge\n"
+                + "WHERE metric_name = :metric\n"
+                + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)\n"
+                + (filterJob ? "  AND " + JOB_EXPR + " REGEXP :job\n" : "")
+                + "UNION\n"
+                + "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
+                + "  " + JOB_EXPR + " AS job"
+                + attrSelect
+                + "FROM otel.otel_metrics_sum\n"
+                + "WHERE metric_name = :metric\n"
+                + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)"
+                + (filterJob ? "\n  AND " + JOB_EXPR + " REGEXP :job" : "");
     }
 
     /**

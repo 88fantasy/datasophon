@@ -4,6 +4,8 @@ export default {
   'pages.valkeyMonitor.panel.maxUptime': 'Max Uptime',
   'pages.valkeyMonitor.panel.clients': 'Clients',
   'pages.valkeyMonitor.panel.memoryUsage': 'Memory Usage',
+  'pages.valkeyMonitor.panel.memoryLimitNotConfigured':
+    'Memory limit not configured',
   'pages.valkeyMonitor.panel.cacheHitPct': 'Cache Hit %',
   'pages.valkeyMonitor.panel.totalCommands': 'Total Commands / sec',
   'pages.valkeyMonitor.panel.hitsAndMisses': 'Hits / Misses per Sec',

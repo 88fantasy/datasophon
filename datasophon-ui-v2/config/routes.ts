@@ -95,12 +95,6 @@ export default [
         component: './monitor/NginxMonitor',
       },
       {
-        path: '/monitor/valkey',
-        name: 'valkey-monitor',
-        icon: 'monitor',
-        component: './monitor/ValkeyMonitor',
-      },
-      {
         path: '/monitor/rustfs',
         name: 'rustfs-monitor',
         icon: 'hdd',

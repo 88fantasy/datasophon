@@ -84,6 +84,22 @@ class OtelScrapeConfigBuilderTest {
     }
 
     @Test
+    void buildsValkeyExporterScrapeJobWithDefaultPathAndLocalTarget() {
+        givenClusterFrame("FRAME_VALKEY");
+        givenRoleMeta("FRAME_VALKEY_VALKEY_ValkeyExporter", "valkeyExporterPort");
+        givenServiceDefaults("FRAME_VALKEY_VALKEY", param("valkeyExporterPort", "9121"));
+        when(roleService.getServiceRoleListByHostnameAndClusterId("ddh-01", 1))
+                .thenReturn(List.of(role("VALKEY", "ValkeyExporter", ServiceRoleState.RUNNING)));
+
+        String yaml = builder.build(1, "ddh-01");
+
+        assertThat(yaml).contains("        - job_name: 'ValkeyExporter'");
+        assertThat(yaml).contains("          metrics_path: '/metrics'");
+        assertThat(yaml).contains("            - targets: ['127.0.0.1:9121']");
+        assertThat(yaml).contains("              labels: {job: 'ValkeyExporter', instance: 'ddh-01:9121'}");
+    }
+
+    @Test
     void skipsStoppedRolesAndRolesWithoutRoleMetadata() {
         givenClusterFrame("FRAME_B");
         givenRoleMeta("FRAME_B_HDFS_NameNode", "namenodeJmxPort");

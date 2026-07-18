@@ -60,7 +60,6 @@ export default {
   'menu.monitor-dashboards.juicefs-monitor': 'JuiceFS Monitor',
   'menu.monitor-dashboards.kyuubi-monitor': 'Kyuubi Monitor',
   'menu.monitor-dashboards.nginx-monitor': 'Nginx Monitor',
-  'menu.monitor-dashboards.valkey-monitor': 'Valkey Monitor',
   'menu.monitor-dashboards.rustfs-monitor': 'RustFS Monitor',
   'menu.colony': 'Cluster Management',
   'menu.colony.manage': 'Cluster List',

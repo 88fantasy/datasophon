@@ -1,87 +1,107 @@
 import { describe, expect, it } from 'vitest';
-import { PANEL_QUERIES, replaceValkeyVars } from './panelQueries';
+import { PANEL_QUERIES, VALKEY_JOB_FILTER } from './panelQueries';
 
-describe('ValkeyMonitor panel queries', () => {
+describe('ValkeyMonitor Doris panel descriptors', () => {
   it('defines all Valkey dashboard panels V01 through V14 plus V03_max', () => {
     const coreIds = Array.from(
       { length: 14 },
       (_, i) => `V${String(i + 1).padStart(2, '0')}`,
     );
-    const allIds = [...coreIds, 'V03_max'].sort();
-    expect(Object.keys(PANEL_QUERIES).sort()).toEqual(allIds);
-  });
-
-  it('replaces $instance variable correctly', () => {
-    expect(
-      replaceValkeyVars('redis_up{instance=~"$instance"}', {
-        instance: '10.0.0.1:9121',
-      }),
-    ).toBe('redis_up{instance=~"10.0.0.1:9121"}');
-
-    expect(replaceValkeyVars('redis_up{instance=~"$instance"}', {})).toBe(
-      'redis_up{instance=~".+"}',
+    expect(Object.keys(PANEL_QUERIES).sort()).toEqual(
+      [...coreIds, 'V03_max'].sort(),
     );
+    expect(VALKEY_JOB_FILTER).toBe('^ValkeyExporter$');
   });
 
-  it('V01 is instant query for max uptime', () => {
-    expect(PANEL_QUERIES.V01).toMatchObject({
+  it('uses gauge instant descriptors for overview values', () => {
+    expect(PANEL_QUERIES.V01).toEqual({
       type: 'instant',
-      promql: 'max(redis_uptime_in_seconds{instance=~"$instance"})',
+      metric: 'redis_uptime_in_seconds',
+      agg: 'max',
+    });
+    expect(PANEL_QUERIES.V02).toEqual({
+      type: 'instant',
+      metric: 'redis_connected_clients',
+      agg: 'sum',
+    });
+    expect(PANEL_QUERIES.V03).toMatchObject({
+      type: 'instant',
+      metric: 'redis_memory_used_bytes',
+      denominatorMetric: 'redis_memory_max_bytes',
+      scale: 100,
     });
   });
 
-  it('V04 Cache Hit % uses rate-based ratio formula', () => {
-    const v04 = PANEL_QUERIES.V04;
-    expect(v04.type).toBe('instant');
-    if (v04.type === 'instant') {
-      expect(v04.promql).toContain('redis_keyspace_hits_total');
-      expect(v04.promql).toContain('redis_keyspace_misses_total');
-    }
+  it('derives cache hit percentage from Doris hits and misses range rates', () => {
+    expect(PANEL_QUERIES.V04).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        {
+          label: 'Hits',
+          metric: 'redis_keyspace_hits_total',
+          rate: '5m',
+          table: 'sum',
+        },
+        {
+          label: 'Misses',
+          metric: 'redis_keyspace_misses_total',
+          rate: '5m',
+          table: 'sum',
+        },
+      ],
+    });
   });
 
-  it('V05 Commands uses range with seriesKey cmd', () => {
+  it('uses sum counters and cmd grouping for command rate and latency', () => {
     expect(PANEL_QUERIES.V05).toMatchObject({
-      type: 'range',
-      seriesKey: 'cmd',
-    });
-  });
-
-  it('V07 Avg Time by Command uses ratio PromQL with seriesKey cmd', () => {
-    const v07 = PANEL_QUERIES.V07;
-    expect(v07.type).toBe('range');
-    if (v07.type === 'range') {
-      expect(v07.promql).toContain('redis_commands_duration_seconds_total');
-      expect(v07.promql).toContain('redis_commands_total');
-      expect(v07.seriesKey).toBe('cmd');
-    }
-  });
-
-  it('V09 Memory has Used and Max series for max=0 handling', () => {
-    expect(PANEL_QUERIES.V09).toMatchObject({
       type: 'multi-range',
-      queries: [{ label: 'Used' }, { label: 'Max' }],
+      queries: [
+        {
+          metric: 'redis_commands_total',
+          rate: '1m',
+          table: 'sum',
+          groupBy: ['cmd'],
+        },
+      ],
     });
-  });
-
-  it('V13 Evicted/Expired has correct labels', () => {
-    expect(PANEL_QUERIES.V13).toMatchObject({
+    expect(PANEL_QUERIES.V07).toMatchObject({
       type: 'multi-range',
-      queries: [{ label: 'Expired' }, { label: 'Evicted' }],
+      queries: [
+        {
+          metric: 'redis_commands_duration_seconds_total',
+          denominatorMetric: 'redis_commands_total',
+          rate: '1m',
+          table: 'sum',
+          denominatorTable: 'sum',
+          groupBy: ['cmd'],
+        },
+      ],
     });
   });
 
-  it('V14 Rejected Connections is range (Error補強 panel)', () => {
-    expect(PANEL_QUERIES.V14).toMatchObject({ type: 'range' });
-    const v14 = PANEL_QUERIES.V14;
-    if (v14.type === 'range') {
-      expect(v14.promql).toContain('redis_rejected_connections_total');
+  it('keeps V12 raw key matrices grouped by db for client-side pairing', () => {
+    expect(PANEL_QUERIES.V12).toEqual({
+      type: 'multi-range',
+      queries: [
+        { label: 'Total', metric: 'redis_db_keys', groupBy: ['db'] },
+        {
+          label: 'Expiring',
+          metric: 'redis_db_keys_expiring',
+          groupBy: ['db'],
+        },
+      ],
+    });
+  });
+
+  it('queries all remaining counter panels from the sum table', () => {
+    for (const panelId of ['V06', 'V08', 'V13', 'V14']) {
+      const descriptor = PANEL_QUERIES[panelId];
+      expect(descriptor.type).toBe('multi-range');
+      if (descriptor.type === 'multi-range') {
+        expect(descriptor.queries.every((query) => query.table === 'sum')).toBe(
+          true,
+        );
+      }
     }
-  });
-
-  it('V03_max auxiliary instant panel exists for maxmemory=0 detection', () => {
-    expect(PANEL_QUERIES.V03_max).toMatchObject({
-      type: 'instant',
-      promql: 'sum(redis_memory_max_bytes{instance=~"$instance"})',
-    });
   });
 });
