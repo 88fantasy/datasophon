@@ -70,8 +70,8 @@
 | 6 | CLI apply 基础环境初始化 | PASSED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复已现场验证通过；§7.2.7：连续 8 层修复后 34 个 Step 全部跑完（24 completed + 10 skipped + 0 failed）；§7.2.8：远端服务健康检查发现并修复 MySQL 密码链路 3 处新 bug，Nexus/RustFS/MySQL/NTP 四项实测可正常访问，Gate 6 完成） |
 | 7 | 基础环境、RustFS 与 API 健康 | PASSED | 已批准从前端创建集群 | 连接与健康检查（§7.4：ddh-01 补装 JDK21、`datasophon-api` 已部署启动，DB 迁移至 2.2.3、HTTP 8080、gRPC 18081、登录鉴权均验证通过；NACOS ddl 元数据加载报错为遗留问题，不阻塞；§7.5：NACOS ddl 根因修复并现场验证；§7.6：18 服务 DDL value/defaultValue 清理 + `/internal/meta/refresh` 端点现场部署，2026-07-17 验证通过，另发现线上有 11 轮未提交修复被本次部署覆盖，详见 §7.6） |
 | 8 | 前端集群初始化：Worker 与 OTel Collector | PASSED | 五个节点检查均通过后才可导入服务 DAG | §8.1：五节点 Worker/Collector 正常、导出队列清零、RustFS 已写入 445 个对象，前端集群状态为“正在运行” |
-| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；§7.8：VALKEY 单装失败，`ValkeyMaster` 预编译包与 openEuler OpenSSL 主版本不兼容（缺 `libssl.so.3`），upstream 无该发行版预编译包，已记录暂不处理；§7.9：APISIX 以 openEuler 离线 RPM Standalone bundle 通过前端安装和现场验收，RPM、systemd、路由转发、`9091` metrics 均正常，Admin API 未监听；DS 移入阶段 A，`dependencies` 清空、注册中心切到 MySQL/JDBC；§7.10：现场安装验证，连续修复 5 个真实 bug（MINIO→RustFS 占位符、`INSTALL_PATH` 变量注册通用化、YARN 缺前缀、mysql 驱动缺失、`ServiceHandler` 状态检查退出码平台级 bug），`ApiServer`/`MasterServer`/`AlertServer` 三角色验证运行正常；`WorkerServer` 因 S3 存储插件不随官方发行包分发，一度记录为已知问题；§7.11：从 Maven Central 补全插件后仍崩溃，反编译定位到 S3 相关 property key 命名与官方 3.4.1 实际约定不符（`resource.aws.*` vs 官方 `aws.s3.*`），修复后 DS 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer`×3）全部验证真实稳定运行，S3 存储插件问题解除，不再是已知问题；`ZOOKEEPER` 已从基础依赖批移除（DolphinScheduler 改用 MySQL 注册中心，不再需要，见 §1.3）；DORIS 已安装完成并验证通过；§7.12：VALKEY 改用 openEuler 原生构建（链接系统自带 OpenSSL 1.1.1，非原先不兼容的 Ubuntu Jammy/OpenSSL3 包），Gate 1-6 现场验证全部通过，`ldd` 无 `not found`、真实进程/端口、认证 `PING`/`SET`/`GET`/`DEL`、exporter `redis_up=1` 均正常，不再是已知问题；实际部署节点从冻结拓扑的 `ddh-02` 改为 `ddh-01`（`ddh-02` 内存不足，用户现场决定改用 `ddh-01`，非代码 bug，属已批准的拓扑偏差）；尚未走正式批次审批流程，批量导入待续 |
-| 10 | 阶段 A 业务与故障演练 | BLOCKED | 每次停止实例前单独审批 | SQL / 健康 / 演练报告 |
+| 9 | 前端导入阶段 A 服务 DAG | PASSED WITH DEVIATIONS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；§7.8：VALKEY 单装失败，`ValkeyMaster` 预编译包与 openEuler OpenSSL 主版本不兼容（缺 `libssl.so.3`），upstream 无该发行版预编译包，已记录暂不处理；§7.9：APISIX 以 openEuler 离线 RPM Standalone bundle 通过前端安装和现场验收，RPM、systemd、路由转发、`9091` metrics 均正常，Admin API 未监听；DS 移入阶段 A，`dependencies` 清空、注册中心切到 MySQL/JDBC；§7.10：现场安装验证，连续修复 5 个真实 bug（MINIO→RustFS 占位符、`INSTALL_PATH` 变量注册通用化、YARN 缺前缀、mysql 驱动缺失、`ServiceHandler` 状态检查退出码平台级 bug），`ApiServer`/`MasterServer`/`AlertServer` 三角色验证运行正常；`WorkerServer` 因 S3 存储插件不随官方发行包分发，一度记录为已知问题；§7.11：从 Maven Central 补全插件后仍崩溃，反编译定位到 S3 相关 property key 命名与官方 3.4.1 实际约定不符（`resource.aws.*` vs 官方 `aws.s3.*`），修复后 DS 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer`×3）全部验证真实稳定运行，S3 存储插件问题解除，不再是已知问题；`ZOOKEEPER` 已从基础依赖批移除（DolphinScheduler 改用 MySQL 注册中心，不再需要，见 §1.3）；DORIS 已安装完成并验证通过；§7.12：VALKEY 改用 openEuler 原生构建（链接系统自带 OpenSSL 1.1.1，非原先不兼容的 Ubuntu Jammy/OpenSSL3 包），Gate 1-6 现场验证全部通过，`ldd` 无 `not found`、真实进程/端口、认证 `PING`/`SET`/`GET`/`DEL`、exporter `redis_up=1` 均正常，不再是已知问题；实际部署节点从冻结拓扑的 `ddh-02` 改为 `ddh-01`（`ddh-02` 内存不足，用户现场决定改用 `ddh-01`，非代码 bug，属已批准的拓扑偏差）；§9.1（2026-07-18 补记）：四个批次正式验收表 + 本次 SSH 只读复核五节点全部服务健康存活，Phase 9 收口为 `PASSED WITH DEVIATIONS`（偏差：`EsExporter` 缺资产、VALKEY 拓扑偏差、四批次均以单服务逐个安装完成而非整批一次性导入）；§9.2（2026-07-18 晚，补测整批 DAG 导入）：清空 VALKEY/ELASTICSEARCH/NACOS/DS/APISIX 后用 `deploy/phase9-batch-deploy.yaml` 一次性合并导入，验证整批 DAG 路径本身可用（多服务合并单一 DAG、失败节点整体取消同批、`redeploy` 跳过已成功节点重跑均按预期工作）；VALKEY/APISIX/NACOS/DS 批量安装成功，ELASTICSEARCH 主角色成功、`EsExporter` 因既有已知问题失败拖累节点显示 FAILED（不阻塞服务级 RUNNING）；过程中定位并修复真实平台 bug——ddh-01/03/04/05 的 Worker 落后 ddh-02、未同步 APISIX `?c` 模板修复（镜像重演 §7.7 的 Worker 版本偏差问题），已同步四节点 jar+模板并重启验证；另发现 YAML 批量清单无法按角色排除安装（`deploy()` 按服务 DDL 全量角色生成命令），与前端向导单装的行为不同 |
+| 10 | 阶段 A 业务与故障演练 | NOT STARTED | 每次停止实例前单独审批 | SQL / 健康 / 演练报告；Phase 9 已收口，前置条件满足，尚未开始具体验收动作 |
 | 11 | 阶段 A 证据归档与结论 | BLOCKED | PASS / 偏差 / FAIL 审核 | 脱敏归档包 |
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
 
@@ -802,6 +802,56 @@ CLI 创建并启动 `datasophon-api` 后，验证 MySQL 连接、迁移、HTTP `
 4. **网关批**：`APISIX` Standalone，已通过 §7.9 的前端安装与节点侧验证；实际业务 upstream 随业务接入单独配置。
 
 OTel Collector 不在本阶段重复导入或安装；它是 Phase 8 的每节点集群初始化交付物。
+
+### 9.1 批次验收记录补记（2026-07-18）
+
+§7.7～§7.12 记录的是“批量导入前置探索”——四个批次的全部服务实际是**逐个单独试装**验证的，不是本节开头设计的“整批一次性导入 DAG”流程。现补记正式批次验收表，把已完成的验证结果对齐到 §9 要求的记录粒度（角色表、DAG/安装方式、验收证据、起止时间），并作为 Phase 9 收口的依据。
+
+**验收方法说明**：下表“验证方式”列区分两类——`前端 DAG` 表示通过 DataSophon 前端服务安装向导触发（会写入 `t_ddh_cmd`/DAG 执行记录）；`部署清单导入` 表示通过 v2“部署清单导入”接口（`POST /ddh/api/v2/cluster/{id}/deploy/upload → validate-deployment-file → deploy`，即 `ExtRepoInstallDelegateService`）以 YAML 声明角色到主机的映射，同样落库为正式服务实例，只是不经过多服务合并的 DAG 编排界面。两种方式产出的服务实例在数据库和前端展示上完全等价，均满足 §9“从前端导入服务 DAG”的实质要求（服务实例正式落库、纳入集群管理），区别只是触发入口。
+
+| 批次 | 服务/角色 | 部署节点 | 验证方式 | 验收证据 | 起止时间（现场） |
+| --- | --- | --- | --- | --- | --- |
+| 基础依赖批 | `NACOS`（单角色） | ddh-02 | 前端 DAG（单服务） | §7.7：3 个真实 bug 修复后重装成功，DB `service_state=2`，前端侧边栏正常显示 | 2026-07-17 |
+| 基础依赖批 | `ElasticSearch`（主角色） | ddh-02 | 前端 DAG（单服务） | §7.7：修复 Zen1→Zen2 discovery 配置后，进程稳定、`9200`/`9300` 监听、`_cluster/health` 返回结构化 401（非崩溃） | 2026-07-17 |
+| 基础依赖批 | `EsExporter` | — | 未安装 | §1.3/§7.7：第三方二进制资产缺失，已知问题，记录后暂不处理，不阻塞主角色 | — |
+| 基础依赖批 | `ValkeyMaster`+`ValkeyExporter` | ddh-01（拓扑偏差，冻结值为 ddh-02） | 部署清单导入（`deploy/valkey-deploy.yaml`） | §7.12 Gate 1-6：`ldd` 无 `not found`、进程/端口真实存在、`PING`/`SET`/`GET`/`DEL` 全部正确、`redis_up=1` | 2026-07-18 |
+| Doris 批 | `DorisFE` | ddh-01 | 前端 DAG | 本次复核 SSH 实测：`DorisFE` 进程运行中（GC 日志时间戳 `20260716-090544`），`9030`/`9020`/`8030` 监听 | 2026-07-16 |
+| Doris 批 | `DorisBE` × 3 | ddh-03/04/05 | 前端 DAG | 本次复核 SSH 实测：三节点 `doris_be` 进程均运行中 | 2026-07-16 |
+| 调度批 | `ApiServer`/`MasterServer`/`AlertServer` | ddh-02 | 前端 DAG（单服务） | §7.10（5 个真实 bug）+§7.11（S3 插件 property key 修复）；本次复核 SSH 实测：三进程均运行中，`ApiServer` 监听 `12345` | 2026-07-17 初装，2026-07-18 05:42 S3 修复后重装 |
+| 调度批 | `WorkerServer` × 3 | ddh-03/04/05 | 前端 DAG（单服务） | §7.11：S3 存储插件 property key 命名修复后，日志确认 `Started WorkerServer` 且成功注册到 MySQL/JDBC 注册中心；本次复核 SSH 实测三节点进程均运行中 | 同上 |
+| 网关批 | `APISIX`（Standalone） | ddh-02 | 前端 DAG（单服务，导入 `deploy/apisix-deploy.yaml`） | §7.9：RPM/systemd/路由转发/`9091` metrics 现场验收通过；本次复核 SSH 实测 `apisix.service active`、`9080` 监听 | 2026-07-18 |
+
+**已知偏差与遗留问题（不影响本批次收口，已在对应小节记录并经用户确认）**：
+
+- `EsExporter`（资产缺失，§1.3/§7.7）。
+- VALKEY 实际部署节点为 `ddh-01` 而非冻结拓扑的 `ddh-02`（§7.12，内存不足现场改用）。
+- `ZOOKEEPER` 已从阶段 A 移除（§1.3，DS 改用 MySQL/JDBC 注册中心）。
+- 四个批次均以“单服务前端安装/部署清单导入”逐个完成，而非本节开头设计的“整批一次性导入”流程；实质验收标准（服务实例正式落库、真实进程健康）已满足，记录为流程执行方式的偏差，不是功能缺口。
+
+**结论**：基础依赖批（除已知问题 `EsExporter` 外）、Doris 批、调度批、网关批四个批次的核心服务角色均已完成安装并通过真实运行验证（2026-07-18 本次复核以 SSH 直连五节点 `ps`/`ss`/`curl` 只读核实，全部健康存活，证据见本节各行及 §7.7～§7.12）。**Phase 9 状态收口为 `PASSED WITH DEVIATIONS`**（偏差项见上），可进入 Phase 10 业务验收与故障演练；Phase 10 的每一步高风险操作（尤其是故障演练中的实例停止）仍需按 §10 规则单独申请人工 Gate，本次文档补记不构成该批准。
+
+### 9.2 环境重置以复测整批 DAG 导入（2026-07-18，进行中）
+
+上述四个批次的验收结论（§9.1）建立在“逐个单服务安装”的事实基础上，从未真正测试过“基础依赖批 3 个服务合并成一次 DAG 导入”这个原始设计路径。用户要求专门补测这条路径，为此按用户确认的范围清空了现场环境（保留 `DORIS` 与 `OTELCOLLECTOR` 不动）：
+
+- **平台侧**：VALKEY(id 22)、ELASTICSEARCH(id 12)、NACOS(id 11)、DS(id 18)、APISIX(id 21) 五个服务实例，逐个先 `STOP_SERVICE` 停全部角色实例（每次均以 SSH `ps`/`ss` 核实真实进程退出，不只看 API 返回）、再 `DELETE /ddh/api/v2/cluster/1/service/instance/{id}` 触发官方级联清理（角色实例/角色组/WebUI/ClusterVariable）。清理过程中 `OTELCOLLECTOR` 短暂出现 `serviceState=EXISTS_EXCEPTION`（角色实例本身一直是 RUNNING），下一个巡检周期后自愈恢复 `RUNNING`/`alertNum=0`，判断是被删服务关联的告警未及时清空，不是真实故障。
+- **文件系统侧**：DataSophon 的删除 API 只清 DB 记录，不清节点文件，另外手工清理了 ddh-01（VALKEY 安装目录+软链）、ddh-02（NACOS/ELASTICSEARCH/DS 安装目录+软链、APISIX 的 RPM 包 `rpm -e`、`/usr/local/apisix`、`apisix.service` 的 systemd 单元与 drop-in）、ddh-03/04/05（DS `WorkerServer` 安装目录+软链）。未动 `datasophon-worker` 本体、`datasophon-worker.bak-*`/`.backup-*` 调试备份目录、JDK、`otelcol-contrib`、DORIS 相关文件。
+
+**批量清单**：生成 `deploy/phase9-batch-deploy.yaml`，`app:` 下一次列出 VALKEY（ddh-02）、ELASTICSEARCH（ddh-02，仅列 `ElasticSearch` 一个角色）、NACOS（ddh-02）、DS（ApiServer/MasterServer/AlertServer 在 ddh-02，WorkerServer×3 在 ddh-03/04/05）、APISIX（ddh-01，用户要求单独改到这台，验证不同节点复用同一份离线 RPM bundle）。核实后端 `PhysicalProductInstallServiceImpl.deploy()` 会把 `app:` 下所有条目编进**同一个 DAG**（`ProductDeployDAGBuildContext.buildDeployDAG`），这正是 §9 开头设计、此前从未真正跑过的路径。经 `POST .../deploy/upload` → `POST .../deploy/validate-deployment-file`（预检通过，`errors: null`）→ 用户在前端点击 `POST .../deploy/deploy` 触发。
+
+**第一次批量安装结果（`dagId=2078472360468140033`，21:30:01 启动，21:30:41 完成，`FAILED`）**：`GET .../dag/{dagId}/graph` 显示 5 个节点 `edges: []`（互不依赖，符合预期），但执行是**顺序而非并行**——`DS` 先跑完 `SUCCESS`，紧接着 `APISIX` 在 ddh-01 上报错 `FAILED`（`executionLog` 原因为空字符串），随后 `VALKEY`/`ELASTICSEARCH`/`NACOS` 三个还没轮到的节点被整体标记 `CANCEL`（`commandProgress:0`，从未真正尝试安装）。这个"一个节点失败、其余全部取消"的行为与文档 §9 "失败即停止当前批，不进入后续批" 的既定策略一致，是设计行为；但"互不依赖的节点仍按顺序执行、不并行"是本次才确认的调度细节。
+
+**根因排查——ddh-01 上 APISIX 真实报错**：登录 ddh-01 查看 `datasophon-worker/logs/APISIX/Apisix.log`，定位到 FreeMarker 报错 `For "?c" left-hand operand: Expected a number or boolean` ——`apisix-config.ftl` 第 7 行 `${apisixPort?c}` 对字符串类型的 `apisixPort` 用了非法的 `?c` 内建转换，与 §7.9 记录的"已修复"问题完全一致。核实发现：**仓库当前 `datasophon-worker/src/main/resources/templates/apisix-config.ftl` 早已不含 `?c`**，问题出在部署现场——五节点里**只有 ddh-02** 的 Worker（`datasophon-worker-3.0-SNAPSHOT.jar` MD5 `38d1ef4029...`，`Jul 18 08:11`）是修复后版本，**ddh-01/03/04/05 全部还停留在 `Jul 17 17:53` 的旧 jar**（MD5 `1e5eaab002...` 的旧模板，`?c` 仍在）。这是 §7.7 记录过的"Worker jar 版本偏差"问题的镜像重演：当时是 ddh-02 落后于其余四台，这次反过来是 ddh-02 领先、其余四台落后——根因是同一个操作习惯，每次现场修复 Worker 侧代码只把新 jar 推到"当时正在测的那台节点"，没有养成"改完就同步全部五节点"的习惯，导致版本漂移会在没被覆盖到的节点上不定期复发。此前 APISIX 只在 ddh-02 装过，这次用户要求换到 ddh-01 才第一次暴露 ddh-01 的 Worker 已经过期。
+
+**修复**：把 ddh-02 上最新的 `datasophon-worker-3.0-SNAPSHOT.jar`、`conf/templates/apisix-config.ftl`、`conf/templates/apisix-routes.ftl` 三个文件（经本地中转、逐份 MD5 核对）同步到 ddh-01/03/04/05，用 `./datasophon-worker.sh stop` + `./datasophon-worker.sh start` 重启四节点 Worker（注意：`restart` 子命令内部用 `"$0" stop`，以相对路径 `bash datasophon-worker.sh restart` 调用时 `$0` 解析不出自身、报 `command not found` 且旧进程完全没重启，是脚本的一个小 bug，需用 `./datasophon-worker.sh` 形式或分开调用 `stop`/`start` 规避）。四节点重启后日志确认 `Worker gRPC registered to master` 成功；`ps -ef` 核实 Doris FE（ddh-01）、Doris BE 与 DS `WorkerServer`（ddh-03/04/05）四个真实业务进程 PID 均未变化，未受 Worker 重启影响。
+
+**重跑（`POST .../dag/{dagId}/redeploy`，硬编码 `restart=true`，后端 `redeploy()` 跳过状态已是 `SUCCESS` 的节点）**：`VALKEY`/`APISIX`/`NACOS` 全部 `SUCCESS`；`ELASTICSEARCH` 节点整体 `FAILED`，但拆到角色级别看，`ElasticSearch` 主角色 `SUCCESS`，只有 `EsExporter` 失败（`检查EsExporter状态失败，已经达到重试次数20`）——这正是 §1.3/§7.7 早就记录、决定不修的已知问题（第三方 exporter 二进制资产缺失），不是新 bug。
+
+**衍生发现——YAML 批量清单不能选择性排除角色**：本次清单里 `ELASTICSEARCH` 只写了 `ElasticSearch` 一个角色，特意不写 `EsExporter`，原以为能跳过这个已知会失败的角色；但 `deploy()` 的 DAG 仍然把 `EsExporter` 编了进去并绑定到与 `ElasticSearch` 相同的主机（`ddh-02`）。对比 §7.7 记录的"前端安装向导单装 ElasticSearch"——那次真实落库的角色实例里从未出现过 `EsExporter`。说明**向导式单装和 YAML 清单批量部署在"要不要装某个角色"上走的是两条不同判断逻辑**：清单驱动的 `deploy()` 按服务 DDL 的完整角色集生成命令，YAML 里的 `roles:` 只提供 host 映射，不是角色选择开关。这意味着只要通过批量清单路径部署 `ELASTICSEARCH`，`EsExporter` 的已知失败就会必然发生、并把整个节点/DAG 拖成 `FAILED`（即便主角色完全健康），这是清单批量路径相比向导单装新暴露的一个真实差异，供后续决定是否需要修 `EsExporter`、或者改造 `deploy()` 支持角色级过滤时参考。
+
+**最终验证（物理核实，非仅看 API）**：`GET .../service/instance/list` 显示 `APISIX`/`DORIS`/`DS`/`ELASTICSEARCH`/`NACOS`/`VALKEY` 服务级状态均为 `RUNNING`（`ELASTICSEARCH` 的服务级状态不受 `EsExporter` 子角色失败影响）；SSH 直连 ddh-02 确认 `ApiApplicationServer`/`MasterServer`/`AlertServer`/`nacos.nacos`/`Elasticsearch`/`valkey-server` 等真实进程均在运行，`EsExporter` 确认无对应进程（失败属实）；ddh-01 上 `apisix.service` 为 `active`，用节点真实 IP（`192.168.10.131:9091`，而非 loopback——`config.yaml` 里 `prometheus.export_addr.ip` 绑定的就是真实 IP，和 ElasticSearch 的 `network.host` 同一类坑）探测 `/apisix/prometheus/metrics` 返回 `HTTP 200`。`OTELCOLLECTOR` 在本轮操作期间再次短暂出现 `EXISTS_EXCEPTION`（角色实例仍是 RUNNING），与 §9.2 前半段记录的现象一致，判断仍是同一类"被删/被装服务关联告警未及时清空"的自愈噪音。
+
+**结论**：整批 DAG 导入路径本身验证通过（能正确合并多服务为一个 DAG、正确跳过已成功节点重跑、正确按主机分发命令）；VALKEY/APISIX/NACOS/DS 四个服务批量安装完全成功；ELASTICSEARCH 主角色批量安装成功，`EsExporter` 因已知资产缺失问题失败、拖累整个节点显示为 `FAILED`，不是新增缺陷。过程中额外修复了一个真实平台问题（ddh-01/03/04/05 的 Worker 落后于 ddh-02，未同步 APISIX `?c` 修复）和发现一个真实行为差异（YAML 清单批量部署不支持按角色排除，会强制安装服务 DDL 声明的全部角色）。
 
 ## 10. Phase 10：业务验收与故障演练
 
