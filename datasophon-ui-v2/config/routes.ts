@@ -44,13 +44,7 @@ export default [
     routes: [
       {
         path: '/monitor',
-        redirect: '/monitor/apisix',
-      },
-      {
-        path: '/monitor/apisix',
-        name: 'apisix-monitor',
-        icon: 'monitor',
-        component: './monitor/ApisixMonitor',
+        redirect: '/monitor/zookeeper',
       },
       {
         path: '/monitor/zookeeper',

@@ -132,8 +132,10 @@ class OtelScrapeConfigBuilderTest {
         assertThat(yaml).contains("metrics_path: '/nacos/actuator/prometheus'");
         assertThat(yaml).contains("job_name: 'Apisix'");
         assertThat(yaml).contains("metrics_path: '/apisix/prometheus/metrics'");
+        assertThat(yaml).contains("targets: ['worker-3:9091']");
         assertThat(yaml).contains("job_name: 'Minio'");
         assertThat(yaml).contains("metrics_path: '/minio/v2/metrics/cluster'");
+        assertThat(yaml).contains("targets: ['127.0.0.1:9000']");
         assertThat(yaml).contains("labels: {job: 'DorisFE', instance: 'worker-3:8030', group: 'fe'}");
         assertThat(yaml).contains("labels: {job: 'DorisBE', instance: 'worker-3:8040', group: 'be'}");
     }

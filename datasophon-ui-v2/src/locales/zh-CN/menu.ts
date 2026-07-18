@@ -51,7 +51,6 @@ export default {
   'menu.editor.koni': '拓扑编辑器',
   'menu.chatbot': 'AI 助手',
   'menu.monitor-dashboards': '监控看板',
-  'menu.monitor-dashboards.apisix-monitor': 'APISIX 监控',
   'menu.monitor-dashboards.zookeeper-monitor': 'ZooKeeper 监控',
   'menu.monitor-dashboards.dolphinscheduler-monitor': 'DolphinScheduler 监控',
   'menu.monitor-dashboards.mysql-monitor': 'MySQL 监控',

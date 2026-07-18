@@ -51,7 +51,6 @@ export default {
   'menu.editor.koni': 'Koni Editor',
   'menu.chatbot': 'AI Assistant',
   'menu.monitor-dashboards': 'Monitor Dashboards',
-  'menu.monitor-dashboards.apisix-monitor': 'APISIX Monitor',
   'menu.monitor-dashboards.zookeeper-monitor': 'ZooKeeper Monitor',
   'menu.monitor-dashboards.dolphinscheduler-monitor':
     'DolphinScheduler Monitor',

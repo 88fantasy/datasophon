@@ -4,6 +4,7 @@ import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
+import ApisixDashboard from '@/pages/monitor/ApisixMonitor';
 import DorisDashboard from '@/pages/monitor/DorisMonitor';
 import NacosDashboard from '@/pages/monitor/NacosMonitor';
 import { listK8sResourceTypes } from '@/services/k8s';
@@ -168,6 +169,14 @@ const ServiceInstance: React.FC = () => {
 
   // ── 物理集群实例页（原有逻辑不变）─────────────────────────────────
   const items: NonNullable<TabsProps['items']> = [];
+  const isApisix = serviceInfo?.serviceName === 'APISIX';
+  if (isApisix) {
+    items.push({
+      key: 'monitor',
+      label: '监控',
+      children: <ApisixDashboard clusterId={numericClusterId} />,
+    });
+  }
   if (serviceInfo?.dashboardUrl) {
     items.push({
       key: 'overview',
@@ -223,8 +232,9 @@ const ServiceInstance: React.FC = () => {
 
   return (
     <Tabs
+      key={`${numericInstanceId}-${serviceInfo?.serviceName ?? ''}`}
       tabBarExtraContent={tabBarExtraContent}
-      defaultActiveKey="instance"
+      defaultActiveKey={isApisix ? 'monitor' : 'instance'}
       items={items}
     />
   );

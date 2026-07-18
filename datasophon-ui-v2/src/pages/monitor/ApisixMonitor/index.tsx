@@ -102,7 +102,11 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
   );
 };
 
-const ApisixDashboard: FC = () => {
+export interface ApisixDashboardProps {
+  clusterId: number;
+}
+
+const ApisixDashboard: FC<ApisixDashboardProps> = ({ clusterId }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -133,7 +137,7 @@ const ApisixDashboard: FC = () => {
   const { instant, series, instances, jobs, loading } = useApisixDashboard({
     variables,
     timeRange,
-    clusterId: 1,
+    clusterId,
     refreshKey,
   });
 

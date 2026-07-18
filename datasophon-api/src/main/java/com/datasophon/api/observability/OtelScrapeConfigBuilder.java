@@ -57,6 +57,7 @@ public class OtelScrapeConfigBuilder {
     private static final String DEFAULT_METRICS_PATH = "/metrics";
     private static final String DORIS_FE = "DorisFE";
     private static final String DORIS_BE = "DorisBE";
+    private static final String APISIX = "Apisix";
 
     private static final Map<String, String> PATH_OVERRIDES = new LinkedHashMap<>();
 
@@ -98,7 +99,8 @@ public class OtelScrapeConfigBuilder {
                 continue;
             }
             appendJob(yaml, role.getServiceRoleName(), path(role.getServiceRoleName()),
-                    "127.0.0.1:" + jmxPort, hostname + ":" + jmxPort, group(role.getServiceRoleName()));
+                    target(role.getServiceRoleName(), hostname, jmxPort), hostname + ":" + jmxPort,
+                    group(role.getServiceRoleName()));
         }
 
         return yaml.toString();
@@ -197,6 +199,10 @@ public class OtelScrapeConfigBuilder {
 
     private static String path(String roleName) {
         return PATH_OVERRIDES.getOrDefault(roleName, DEFAULT_METRICS_PATH);
+    }
+
+    private static String target(String roleName, String hostname, String port) {
+        return APISIX.equals(roleName) ? hostname + ":" + port : "127.0.0.1:" + port;
     }
 
     private static String group(String roleName) {

@@ -223,7 +223,9 @@ public class ServiceCommandService {
 
     private boolean shouldRefreshOtelCollectors(Integer commandType) {
         CommandType type = CommandType.ofCode(commandType);
-        return CommandType.START_SERVICE.equals(type)
+        return CommandType.INSTALL_SERVICE.equals(type)
+                || CommandType.UPGRADE_SERVICE.equals(type)
+                || CommandType.START_SERVICE.equals(type)
                 || CommandType.STOP_SERVICE.equals(type)
                 || CommandType.RESTART_SERVICE.equals(type)
                 || CommandType.START_WITH_CONFIG.equals(type)
