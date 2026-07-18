@@ -16,16 +16,14 @@
       "jmxPortParam": "apisixPrometheusPort",
       "startRunner": {
         "timeout": "60",
-        "program": "apisix",
+        "program": "control.sh",
         "args": [
-          "start",
-          "-c",
-          "/usr/local/apisix/conf/config.yaml"
+          "start"
         ]
       },
       "stopRunner": {
         "timeout": "600",
-        "program": "apisix",
+        "program": "control.sh",
         "args": [
           "stop"
         ]
@@ -39,21 +37,28 @@
       },
       "restartRunner": {
         "timeout": "60",
-        "program": "apisix",
+        "program": "control.sh",
         "args": [
-          "restart",
-          "-c",
-          "/usr/local/apisix/conf/config.yaml"
+          "restart"
         ]
       },
       "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "execShell",
+          "params": {
+            "commands": [
+              "bash ${ROOT.APISIX.INSTALL_PATH}/scripts/install.sh"
+            ]
+          }
+        },
         {
           "type": "POST_INSTALL",
           "action": "download",
           "params": {
             "from": "script/control.sh",
             "to": "control.sh",
-            "md5": "e00a98fede2df4441a650b83f6374468"
+            "md5": "c888e1e696d92c9b4118e1f5e1965073"
           }
         }
       ]
@@ -161,8 +166,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "apache-apisix-3.17.0-src.tgz",
-      "decompressPackageName": "apache-apisix-3.17.0"
+      "packageName": "apisix-3.17.0-openEuler-22.03-LTS-SP3-x86_64-standalone-rpm.tar.gz",
+      "decompressPackageName": "apisix-3.17.0-openEuler-22.03-LTS-SP3-x86_64-standalone-rpm"
     }
   }
 }

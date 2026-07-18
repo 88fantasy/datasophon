@@ -1,0 +1,8 @@
+app:
+  - name: APISIX
+    version: 3.17.0
+    deployType: physical
+    roles:
+      - name: Apisix
+        deployHosts:
+          - ddh-02

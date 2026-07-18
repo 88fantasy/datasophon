@@ -45,8 +45,8 @@
 | 阶段 | 服务 | 是否计入本次验收 |
 | --- | --- | --- |
 | 集群初始化 | `OTELCOLLECTOR`，由前端为每个节点安装；CLI 部署 RustFS 作为其 S3 兼容存储 | 是 |
-| 阶段 A DAG | `DORIS`、`VALKEY`、`ELASTICSEARCH`、`NACOS`、`DS`（见下方说明） | 是 |
-| 阶段 A 已知问题搁置 | `APISIX`（源码包与安装策略代码结构不匹配，见 §7.9） | 否，已记录暂不处理 |
+| 阶段 A DAG | `DORIS`、`VALKEY`、`ELASTICSEARCH`、`NACOS`、`DS`、`APISIX`（见下方说明） | 是 |
+| 阶段 A 已知问题搁置 | `VALKEY` 与 `ELASTICSEARCH EsExporter` | 是，按对应已知限制验收 |
 | 阶段 B | `KYUUBI`、`SPARK3`、`HIVE`、`HDFS`、`YARN` 等 | 否，另行立项 |
 
 `DS` 原依赖闭包会引入 `SPARK3 → HIVE → HDFS → ZOOKEEPER`；Kyuubi 的默认运行参数依赖 YARN，仍不能表述为"无 Hadoop"阶段 A 的组成部分。
@@ -62,7 +62,7 @@
 | Phase | 目标 | 状态 | 人工 Gate | 证据/产物 |
 | --- | --- | --- | --- | --- |
 | 0 | 五节点只读盘点与数据盘准备 | PASSED | 资源、磁盘、端口、数据保护与变更许可 | Git 外盘点包；五台 `/data` 持久挂载验证 |
-| 1 | APISIX Standalone 产品适配 | PASSED（自动化） | 真实无 etcd 启动与路由转发仍待现场验证 | 模板单测、后续 DAG 证据 |
+| 1 | APISIX Standalone 产品适配与现场安装 | PASSED | Standalone 无 etcd 启动、参数化配置、最小路由与 `9091` metrics | §7.9：ddh-02 真实 RPM/systemd/路由/指标验收 |
 | 2 | 冻结拓扑、容量与服务角色 | PASSED | 管理面、FE/BE、中间件角色与资源预算 | 拓扑审批单（§5，1 FE + 3 BE） |
 | 3 | 网络、时间、磁盘与离线包预检 | PASSED WITH DEVIATIONS | 数据盘、JDK17、架构与包校验 | manifest（§6 现场记录；阶段 A 服务包/JDK17/CLI 基础设施 bundle 延后） |
 | 4 | CLI 配置生成与五节点审阅 | PASSED | 严格解析、引用、权限、敏感信息检查 | 脱敏配置 hash（§7.2.1） |
@@ -70,7 +70,7 @@
 | 6 | CLI apply 基础环境初始化 | PASSED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复已现场验证通过；§7.2.7：连续 8 层修复后 34 个 Step 全部跑完（24 completed + 10 skipped + 0 failed）；§7.2.8：远端服务健康检查发现并修复 MySQL 密码链路 3 处新 bug，Nexus/RustFS/MySQL/NTP 四项实测可正常访问，Gate 6 完成） |
 | 7 | 基础环境、RustFS 与 API 健康 | PASSED | 已批准从前端创建集群 | 连接与健康检查（§7.4：ddh-01 补装 JDK21、`datasophon-api` 已部署启动，DB 迁移至 2.2.3、HTTP 8080、gRPC 18081、登录鉴权均验证通过；NACOS ddl 元数据加载报错为遗留问题，不阻塞；§7.5：NACOS ddl 根因修复并现场验证；§7.6：18 服务 DDL value/defaultValue 清理 + `/internal/meta/refresh` 端点现场部署，2026-07-17 验证通过，另发现线上有 11 轮未提交修复被本次部署覆盖，详见 §7.6） |
 | 8 | 前端集群初始化：Worker 与 OTel Collector | PASSED | 五个节点检查均通过后才可导入服务 DAG | §8.1：五节点 Worker/Collector 正常、导出队列清零、RustFS 已写入 445 个对象，前端集群状态为“正在运行” |
-| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；§7.8：VALKEY 单装失败，`ValkeyMaster` 预编译包与 openEuler OpenSSL 主版本不兼容（缺 `libssl.so.3`），upstream 无该发行版预编译包，已记录暂不处理；§7.9：APISIX 安装策略代码与源码包结构不匹配，已记录暂不处理；DS 移入阶段 A，`dependencies` 清空、注册中心切到 MySQL/JDBC；§7.10：现场安装验证，连续修复 5 个真实 bug（MINIO→RustFS 占位符、`INSTALL_PATH` 变量注册通用化、YARN 缺前缀、mysql 驱动缺失、`ServiceHandler` 状态检查退出码平台级 bug），`ApiServer`/`MasterServer`/`AlertServer` 三角色验证运行正常；`WorkerServer` 因 S3 存储插件不随官方发行包分发，一度记录为已知问题；§7.11：从 Maven Central 补全插件后仍崩溃，反编译定位到 S3 相关 property key 命名与官方 3.4.1 实际约定不符（`resource.aws.*` vs 官方 `aws.s3.*`），修复后 DS 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer`×3）全部验证真实稳定运行，S3 存储插件问题解除，不再是已知问题；`ZOOKEEPER` 已从基础依赖批移除（DolphinScheduler 改用 MySQL 注册中心，不再需要，见 §1.3）；DORIS 已安装完成并验证通过；尚未走正式批次审批流程，批量导入待续 |
+| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；§7.8：VALKEY 单装失败，`ValkeyMaster` 预编译包与 openEuler OpenSSL 主版本不兼容（缺 `libssl.so.3`），upstream 无该发行版预编译包，已记录暂不处理；§7.9：APISIX 以 openEuler 离线 RPM Standalone bundle 通过前端安装和现场验收，RPM、systemd、路由转发、`9091` metrics 均正常，Admin API 未监听；DS 移入阶段 A，`dependencies` 清空、注册中心切到 MySQL/JDBC；§7.10：现场安装验证，连续修复 5 个真实 bug（MINIO→RustFS 占位符、`INSTALL_PATH` 变量注册通用化、YARN 缺前缀、mysql 驱动缺失、`ServiceHandler` 状态检查退出码平台级 bug），`ApiServer`/`MasterServer`/`AlertServer` 三角色验证运行正常；`WorkerServer` 因 S3 存储插件不随官方发行包分发，一度记录为已知问题；§7.11：从 Maven Central 补全插件后仍崩溃，反编译定位到 S3 相关 property key 命名与官方 3.4.1 实际约定不符（`resource.aws.*` vs 官方 `aws.s3.*`），修复后 DS 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer`×3）全部验证真实稳定运行，S3 存储插件问题解除，不再是已知问题；`ZOOKEEPER` 已从基础依赖批移除（DolphinScheduler 改用 MySQL 注册中心，不再需要，见 §1.3）；DORIS 已安装完成并验证通过；尚未走正式批次审批流程，批量导入待续 |
 | 10 | 阶段 A 业务与故障演练 | BLOCKED | 每次停止实例前单独审批 | SQL / 健康 / 演练报告 |
 | 11 | 阶段 A 证据归档与结论 | BLOCKED | PASS / 偏差 / FAIL 审核 | 脱敏归档包 |
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
@@ -664,9 +664,26 @@ NACOS 三项修复后重装成功，前后端均验证通过。
 
 用户确认此问题记录后暂不处理，与 `EsExporter` 缺二进制资产同属"需要引入额外资产/构建步骤才能解决"的已知问题，不阻塞前置探索的其余部分。后续可选方案（未执行）：① 在 openEuler 22.03 机器上从源码编译 Valkey，链接系统自带 OpenSSL 1.1.1；② 从 Ubuntu 22.04 环境提取 `libssl.so.3`/`libcrypto.so.3` 并通过 `LD_LIBRARY_PATH` 让现有 jammy 二进制运行（需同步改造 `control_valkey.sh` 注入该变量）。
 
-### 7.9 APISIX 安装可行性排查（已知问题，暂不处理）与 DolphinScheduler 注册中心解耦（2026-07-17）
+### 7.9 APISIX Standalone 离线 RPM 现场安装验收与 DolphinScheduler 注册中心解耦（2026-07-17～18）
 
-**APISIX**：在正式安装前排查了 `service_ddl.json` 声明的包 `apache-apisix-3.17.0-src.tgz`（`downloadUrl` 为 Apache 官方源码发布地址，Nexus 上实测 525KB，纯 Lua 源码，不含任何编译产物）与 Worker 侧 `ApisixHandlerStrategy.java:57-61` 的实际安装逻辑——后者硬编码去 `<解压目录>/<arch>/<os_desc>/` 找预编译 `*.rpm` 并 `yum localinstall`，与前者下载的纯源码包结构完全对不上，`ls` 检查会在任何操作系统上都直接失败，不是 openEuler 特有问题。进一步核查 APISIX 3.17.0 官方 `utils/install-dependencies.sh` 发现完整依赖链条更复杂：① 编译工具链/C 库（`gcc`/`pcre-devel`/`openresty-zlib-devel` 等，部分包来自 OpenResty 官方 yum 源）；② OpenResty 本体（APISIX 使用 `api7/apisix-build-tools` 维护的定制版 `apisix-runtime`，目前只发布 EL8/EL9 与 Debian bookworm 预编译包，无 openEuler 专属构建，兼容性未知）；③ LuaRocks（源码编译，需联网拉取）；④ etcd（本次走 Standalone 配置中心模式，已在 Phase 1 完成模板适配，不需要）。前三层均需要访问 `openresty.org`/GitHub 等外部主机，与本环境离线特性冲突；且脚本自身的发行版探测逻辑不识别 openEuler，会直接报 "Non-supported distribution" 退出。综合判断：APISIX 现有安装策略代码需要重写，且依赖链需要提前在联网环境构建产物后离线搬入，工作量超出本次探索范围，用户确认暂不处理，性质与 `EsExporter`/`VALKEY` 缺资产问题同类，均已记录、均不阻塞其余服务。
+**APISIX**：原 `apache-apisix-3.17.0-src.tgz` 是纯 Lua 源码包，而旧 `ApisixHandlerStrategy` 假设解压目录存在按系统与架构分类的预编译 RPM；两者结构不匹配，且离线 openEuler 环境不能依赖运行时联网构建。现改用预制的 `apisix-3.17.0-openEuler-22.03-LTS-SP3-x86_64-standalone-rpm.tar.gz`：内含离线 RPM、校验清单、签名、Standalone 配置及安装脚本，目标为 openEuler 22.03 LTS-SP3 x86_64。
+
+接入改动：
+
+- DDL 切换至新 bundle，并由 `POST_INSTALL` hook 执行 bundle 的 `scripts/install.sh`；安装包校验清单要求目录内容严格匹配，故 `control.sh` 必须在安装脚本完成后再下载。
+- raw Nexus 不自动生成校验 sidecar，而平台下载器强制读取 `<package>.md5`，因此为新包生成并上传对应 `.md5` 文件。
+- `control.sh` 的启停与状态检查统一委托 RPM 自带的 `apisix.service`；`systemctl is-active --quiet` 的退出码直接符合平台状态检查语义。
+- bundle 在写入参数化配置前会先启动 APISIX；`ApisixHandlerStrategy` 在 `INSTALL_SERVICE` 阶段显式重启一次，确保 `/usr/local/apisix/conf/config.yaml` 中的 Prometheus 绑定配置真正加载。
+- 配置参数会被平台转换为字符串，FreeMarker 模板不能对端口使用 `?c`；去掉该内建转换后，`config.yaml` 与 `apisix.yaml` 均由前端参数成功生成。
+
+**现场验收（2026-07-18，ddh-02）**：从前端导入 `deploy/apisix-deploy.yaml` 安装成功，并以节点事实验收：
+
+- `apisix` 与 `apisix-libcrypt-compat` RPM 已安装，`apisix.service` 为 `active` 且 `enabled`，主进程为 OpenResty。
+- 参数化的 `/usr/local/apisix/conf/config.yaml` 含 `role: data_plane`、`config_provider: yaml`、`node_listen: 9080`、`enable_admin: false` 及节点地址上的 `9091` Prometheus 导出配置。
+- `9080` 正在监听；根路径返回 `404`（无默认路由）；`/get` 已匹配并代理至验收上游 `127.0.0.1:8080`，该上游自身返回 `500`，访问日志记录了对应 upstream，证明路由链路生效。
+- `http://<ddh-02>:9091/apisix/prometheus/metrics` 返回 `200` 且包含 `apisix_*` 指标；`9180` 拒绝连接，确认 Admin API 未启用。
+
+APISIX 不再是阶段 A 的已知问题；验收上游仍仅用于最小代理验证，实际业务 upstream 在业务接入时另行配置。
 
 **DolphinScheduler（DS）注册中心解耦**：原 `service_ddl.json` 声明 `dependencies: ["SPARK3", "ZOOKEEPER"]`（`SPARK3` 在参数里从未被实际引用，纯 DAG 顺序声明；`ZOOKEEPER` 通过 `zkUrls` 参数 `${ZOOKEEPER.zkUrls}` 跨服务占位符注入 `dolphinscheduler_env.sh` 的 `REGISTRY_ZOOKEEPER_CONNECT_STRING`）——这正是 §1.3 里把 DS 划入"阶段 B"（因 Spark→Hive→HDFS→ZooKeeper 依赖闭环，不符合"无 Hadoop"定位）的直接原因。核实 DS 3.4.1 源码（`dolphinscheduler-registry-jdbc` 模块）确认官方自带 MySQL/JDBC 注册中心实现（`registry.type=jdbc`，`3.2+` 版本内置，无需额外插件），且所需的 4 张表（`t_ds_jdbc_registry_data`/`_lock`/`_client_heartbeat`/`_data_change_event`）已包含在标准 `dolphinscheduler_mysql.sql` 建表脚本里，无需额外建表步骤。据此改造：
 
@@ -762,7 +779,7 @@ CLI 创建并启动 `datasophon-api` 后，验证 MySQL 连接、迁移、HTTP `
 1. **基础依赖批**：`VALKEY`、`ELASTICSEARCH`、`NACOS`（`ZOOKEEPER` 已移除，见 §1.3）。Nacos 使用 CLI 预建 MySQL DB/账号，但仍须按产品流程确认 schema 初始化。
 2. **Doris 批**：`DORIS`。确认 3 FE、批准数量的 BE、网络优先级、目录与内存限制；从第一个 FE 初始化并让其余 FE 通过 `<master>:9010` 加入。已安装完成，前端验证通过。
 3. **调度批**：`DS`（DolphinScheduler），MySQL/JDBC 注册中心模式，`dependencies` 已清空，见 §7.9、§1.3。
-4. ~~**网关批**：`APISIX` Standalone~~——已知问题（安装策略代码与源码包结构不匹配，见 §7.9），暂不处理，不列入本轮导入批次。
+4. **网关批**：`APISIX` Standalone，已通过 §7.9 的前端安装与节点侧验证；实际业务 upstream 随业务接入单独配置。
 
 OTel Collector 不在本阶段重复导入或安装；它是 Phase 8 的每节点集群初始化交付物。
 
