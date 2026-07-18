@@ -5,6 +5,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
 import ApisixDashboard from '@/pages/monitor/ApisixMonitor';
+import DSDashboard from '@/pages/monitor/DolphinSchedulerMonitor';
 import DorisDashboard from '@/pages/monitor/DorisMonitor';
 import NacosDashboard from '@/pages/monitor/NacosMonitor';
 import ValkeyDashboard from '@/pages/monitor/ValkeyMonitor';
@@ -172,16 +173,21 @@ const ServiceInstance: React.FC = () => {
   const items: NonNullable<TabsProps['items']> = [];
   const isApisix = serviceInfo?.serviceName === 'APISIX';
   const isValkey = serviceInfo?.serviceName === 'VALKEY';
-  const hasPrimaryMonitor = isApisix || isValkey;
+  const isDS = serviceInfo?.serviceName === 'DS';
+  const hasPrimaryMonitor = isApisix || isValkey || isDS;
   if (hasPrimaryMonitor) {
+    let primaryMonitor: React.ReactNode = null;
+    if (isApisix) {
+      primaryMonitor = <ApisixDashboard clusterId={numericClusterId} />;
+    } else if (isValkey) {
+      primaryMonitor = <ValkeyDashboard clusterId={numericClusterId} />;
+    } else if (isDS) {
+      primaryMonitor = <DSDashboard clusterId={numericClusterId} />;
+    }
     items.push({
       key: 'monitor',
       label: '监控',
-      children: isApisix ? (
-        <ApisixDashboard clusterId={numericClusterId} />
-      ) : (
-        <ValkeyDashboard clusterId={numericClusterId} />
-      ),
+      children: primaryMonitor,
     });
   }
   if (serviceInfo?.dashboardUrl) {

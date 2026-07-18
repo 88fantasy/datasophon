@@ -5,13 +5,13 @@ import ClusterContext from '@/context/ClusterContext';
 import { getServiceInstance, getServiceWebUis } from '@/services/service';
 import ServiceInstance from './index';
 
-const { apisixDashboardSpy, valkeyDashboardSpy, routeParams } = vi.hoisted(
-  () => ({
+const { apisixDashboardSpy, valkeyDashboardSpy, dsDashboardSpy, routeParams } =
+  vi.hoisted(() => ({
     apisixDashboardSpy: vi.fn(),
     valkeyDashboardSpy: vi.fn(),
+    dsDashboardSpy: vi.fn(),
     routeParams: { clusterId: '7', instanceId: '9' },
-  }),
-);
+  }));
 
 vi.mock('@umijs/max', () => ({
   history: { replace: vi.fn() },
@@ -71,6 +71,12 @@ vi.mock('@/pages/monitor/ValkeyMonitor', () => ({
   default: (props: { clusterId: number }) => {
     valkeyDashboardSpy(props);
     return <div>Valkey dashboard cluster {props.clusterId}</div>;
+  },
+}));
+vi.mock('@/pages/monitor/DolphinSchedulerMonitor', () => ({
+  default: (props: { clusterId: number }) => {
+    dsDashboardSpy(props);
+    return <div>DS dashboard cluster {props.clusterId}</div>;
   },
 }));
 vi.mock('@/services/k8s', () => ({ listK8sResourceTypes: vi.fn() }));
@@ -241,6 +247,88 @@ describe('VALKEY service instance tabs', () => {
     );
 
     await screen.findByText('Valkey dashboard cluster 7');
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'monitor',
+    );
+  });
+});
+
+describe('DS service instance tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routeParams.clusterId = '7';
+    routeParams.instanceId = '33';
+    vi.mocked(getServiceInstance).mockResolvedValue({
+      data: {
+        serviceName: 'DS',
+        dashboardUrl: 'http://grafana.example/ds',
+      },
+    } as never);
+    vi.mocked(getServiceWebUis).mockResolvedValue({ data: [] } as never);
+  });
+
+  it('places monitoring first and opens it with the route cluster id', async () => {
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('DS dashboard cluster 7');
+    const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+
+    expect(tabs).toEqual(['监控', '概览', '实例', '配置']);
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'monitor',
+    );
+    await waitFor(() =>
+      expect(dsDashboardSpy).toHaveBeenCalledWith({ clusterId: 7 }),
+    );
+  });
+
+  it('opens monitoring when navigating from another service to DS', async () => {
+    routeParams.instanceId = '8';
+    vi.mocked(getServiceInstance).mockImplementation(
+      async (_clusterId, instanceId) =>
+        ({
+          data:
+            instanceId === 33
+              ? {
+                  serviceName: 'DS',
+                  dashboardUrl: 'http://grafana.example/ds',
+                }
+              : { serviceName: 'DORIS' },
+        }) as never,
+    );
+
+    const view = render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('instances');
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'instance',
+    );
+
+    routeParams.instanceId = '33';
+    view.rerender(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('DS dashboard cluster 7');
     expect(screen.getByTestId('tabs')).toHaveAttribute(
       'data-active-key',
       'monitor',

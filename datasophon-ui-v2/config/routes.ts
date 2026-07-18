@@ -53,12 +53,6 @@ export default [
         component: './monitor/ZooKeeperMonitor',
       },
       {
-        path: '/monitor/dolphinscheduler',
-        name: 'dolphinscheduler-monitor',
-        icon: 'fundProjectionScreen',
-        component: './monitor/DolphinSchedulerMonitor',
-      },
-      {
         path: '/monitor/mysql',
         name: 'mysql-monitor',
         icon: 'database',

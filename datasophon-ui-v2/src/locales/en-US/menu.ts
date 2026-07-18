@@ -52,8 +52,6 @@ export default {
   'menu.chatbot': 'AI Assistant',
   'menu.monitor-dashboards': 'Monitor Dashboards',
   'menu.monitor-dashboards.zookeeper-monitor': 'ZooKeeper Monitor',
-  'menu.monitor-dashboards.dolphinscheduler-monitor':
-    'DolphinScheduler Monitor',
   'menu.monitor-dashboards.mysql-monitor': 'MySQL Monitor',
   'menu.monitor-dashboards.nexus-monitor': 'Nexus Monitor',
   'menu.monitor-dashboards.datart-monitor': 'DATART Monitor',
