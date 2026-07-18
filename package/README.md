@@ -69,6 +69,11 @@ curl -L --max-time 3600 -C - \
 | `datart-server.tar.gz` | 内部 BI 服务 |
 | `redis-8.6.tar.gz` / `redis-8.6-arm.tar.gz` | 自定义构建（非官方版本号） |
 
+## Valkey 私有构建包
+
+Valkey x86_64 离线包是私有制品，不通过 `download.sh` 自动获取。构建、校验和制品说明见
+[docs/valkey/BUILD.md](./docs/valkey/BUILD.md)。
+
 ## 多架构包说明
 
 ALERTMANAGER、DORIS、PROMETHEUS 各有 x86_64 和 aarch64 两个包，包内顶层目录名含架构后缀（如 `alertmanager-0.32.1.linux-amd64`）。Worker 安装时使用 `tar --strip-components=1` 剥除顶层目录，因此 `decompressPackageName` 使用归一化名称（如 `alertmanager-0.32.1`），与实际架构无关。

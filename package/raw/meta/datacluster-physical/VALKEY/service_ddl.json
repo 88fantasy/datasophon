@@ -8,8 +8,8 @@
   "dependencies": [],
   "arch": {
     "x86_64": {
-      "packageName": "valkey-8.1.8-jammy-x86_64.tar.gz",
-      "decompressPackageName": "valkey-8.1.8-jammy-x86_64"
+      "packageName": "valkey-8.1.8-openeuler22.03-x86_64.tar.gz",
+      "decompressPackageName": "valkey-8.1.8-openeuler22.03-x86_64"
     },
     "aarch64": {
       "packageName": "valkey-8.1.8-jammy-arm64.tar.gz",

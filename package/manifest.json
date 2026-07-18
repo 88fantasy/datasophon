@@ -267,20 +267,20 @@
   {
     "service": "VALKEY",
     "arch": "x86_64",
-    "packageName": "valkey-8.1.8-jammy-x86_64.tar.gz",
-    "decompressPackageName": "valkey-8.1.8-jammy-x86_64",
-    "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.8-jammy-x86_64.tar.gz",
+    "packageName": "valkey-8.1.8-openeuler22.03-x86_64.tar.gz",
+    "decompressPackageName": "valkey-8.1.8-openeuler22.03-x86_64",
+    "downloadUrl": null,
     "status": "private",
-    "note": "从 downloadUrl 下载官方 jammy 预编译包后，需手动下载 redis_exporter（https://github.com/oliver006/redis_exporter/releases）并放入包内 redis-exporter/ 目录，重打包后上传到 package/"
+    "note": "私有包；openEuler 22.03 LTS-SP3/SP4 x86_64 原生构建包，内含 redis_exporter 1.84.0。构建说明：package/docs/valkey/BUILD.md"
   },
   {
     "service": "VALKEY",
     "arch": "aarch64",
     "packageName": "valkey-8.1.8-jammy-arm64.tar.gz",
     "decompressPackageName": "valkey-8.1.8-jammy-arm64",
-    "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.8-jammy-arm64.tar.gz",
+    "downloadUrl": null,
     "status": "private",
-    "note": "从 downloadUrl 下载官方 jammy 预编译包后，需手动下载 redis_exporter（https://github.com/oliver006/redis_exporter/releases）并放入包内 redis-exporter/ 目录，重打包后上传到 package/"
+    "note": "私有包；尚未提供 openEuler 22.03 aarch64 制品，不能使用 x86_64 包。构建说明：package/docs/valkey/BUILD.md"
   },
   {
     "service": "SPARK3",
