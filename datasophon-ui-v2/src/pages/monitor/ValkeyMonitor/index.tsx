@@ -122,7 +122,6 @@ const ValkeyDashboard: FC<ValkeyDashboardProps> = ({ clusterId }) => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={t('pages.valkeyMonitor.title', 'Valkey Monitor')}
       toolbar={
         <ValkeyDashboardToolbar
           timeRange={timeRange}

@@ -141,7 +141,6 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={t('pages.dorisMonitor.title')}
       toolbar={
         <DorisDashboardToolbar
           hideClusterSelect={embedded}

@@ -108,7 +108,6 @@ const NacosDashboard: FC<NacosDashboardProps> = ({ clusterId }) => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={t('pages.nacosMonitor.title')}
       toolbar={
         <NacosDashboardToolbar
           timeRange={timeRange}

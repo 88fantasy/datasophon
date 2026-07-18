@@ -117,7 +117,6 @@ const ApisixDashboard: FC<ApisixDashboardProps> = ({ clusterId }) => {
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
   const panelTitle = (id: string) => t(`pages.apisixMonitor.panel.${id}`);
-  const title = t('pages.apisixMonitor.title');
 
   const variables = useMemo(
     () => ({
@@ -144,7 +143,6 @@ const ApisixDashboard: FC<ApisixDashboardProps> = ({ clusterId }) => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={title}
       toolbar={
         <ZKDashboardToolbar
           timeRange={timeRange}

@@ -5,13 +5,21 @@ import ClusterContext from '@/context/ClusterContext';
 import { getServiceInstance, getServiceWebUis } from '@/services/service';
 import ServiceInstance from './index';
 
-const { apisixDashboardSpy, valkeyDashboardSpy, dsDashboardSpy, routeParams } =
-  vi.hoisted(() => ({
-    apisixDashboardSpy: vi.fn(),
-    valkeyDashboardSpy: vi.fn(),
-    dsDashboardSpy: vi.fn(),
-    routeParams: { clusterId: '7', instanceId: '9' },
-  }));
+const {
+  apisixDashboardSpy,
+  valkeyDashboardSpy,
+  dsDashboardSpy,
+  dorisDashboardSpy,
+  nacosDashboardSpy,
+  routeParams,
+} = vi.hoisted(() => ({
+  apisixDashboardSpy: vi.fn(),
+  valkeyDashboardSpy: vi.fn(),
+  dsDashboardSpy: vi.fn(),
+  dorisDashboardSpy: vi.fn(),
+  nacosDashboardSpy: vi.fn(),
+  routeParams: { clusterId: '7', instanceId: '9' },
+}));
 
 vi.mock('@umijs/max', () => ({
   history: { replace: vi.fn() },
@@ -65,8 +73,18 @@ vi.mock('@/pages/monitor/ApisixMonitor', () => ({
   },
 }));
 
-vi.mock('@/pages/monitor/DorisMonitor', () => ({ default: () => null }));
-vi.mock('@/pages/monitor/NacosMonitor', () => ({ default: () => null }));
+vi.mock('@/pages/monitor/DorisMonitor', () => ({
+  default: (props: { clusterId: number; embedded?: boolean }) => {
+    dorisDashboardSpy(props);
+    return <div>Doris dashboard cluster {props.clusterId}</div>;
+  },
+}));
+vi.mock('@/pages/monitor/NacosMonitor', () => ({
+  default: (props: { clusterId: number }) => {
+    nacosDashboardSpy(props);
+    return <div>Nacos dashboard cluster {props.clusterId}</div>;
+  },
+}));
 vi.mock('@/pages/monitor/ValkeyMonitor', () => ({
   default: (props: { clusterId: number }) => {
     valkeyDashboardSpy(props);
@@ -137,7 +155,7 @@ describe('APISIX service instance tabs', () => {
                   serviceName: 'APISIX',
                   dashboardUrl: 'http://grafana.example/apisix',
                 }
-              : { serviceName: 'DORIS' },
+              : { serviceName: 'HDFS' },
         }) as never,
     );
 
@@ -219,7 +237,7 @@ describe('VALKEY service instance tabs', () => {
                   serviceName: 'VALKEY',
                   dashboardUrl: 'http://grafana.example/valkey',
                 }
-              : { serviceName: 'DORIS' },
+              : { serviceName: 'HDFS' },
         }) as never,
     );
 
@@ -301,7 +319,7 @@ describe('DS service instance tabs', () => {
                   serviceName: 'DS',
                   dashboardUrl: 'http://grafana.example/ds',
                 }
-              : { serviceName: 'DORIS' },
+              : { serviceName: 'HDFS' },
         }) as never,
     );
 
@@ -332,6 +350,83 @@ describe('DS service instance tabs', () => {
     expect(screen.getByTestId('tabs')).toHaveAttribute(
       'data-active-key',
       'monitor',
+    );
+  });
+});
+
+describe('DORIS service instance tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routeParams.clusterId = '7';
+    routeParams.instanceId = '44';
+    vi.mocked(getServiceInstance).mockResolvedValue({
+      data: {
+        serviceName: 'DORIS',
+        dashboardUrl: 'http://grafana.example/doris',
+      },
+    } as never);
+    vi.mocked(getServiceWebUis).mockResolvedValue({ data: [] } as never);
+  });
+
+  it('places monitoring first and opens it with the route cluster id', async () => {
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('Doris dashboard cluster 7');
+    const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+
+    expect(tabs).toEqual(['监控', '概览', '实例', '配置']);
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'monitor',
+    );
+    await waitFor(() =>
+      expect(dorisDashboardSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
+    );
+  });
+});
+
+describe('NACOS service instance tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routeParams.clusterId = '7';
+    routeParams.instanceId = '55';
+    vi.mocked(getServiceInstance).mockResolvedValue({
+      data: {
+        serviceName: 'NACOS',
+        dashboardUrl: 'http://grafana.example/nacos',
+      },
+    } as never);
+    vi.mocked(getServiceWebUis).mockResolvedValue({ data: [] } as never);
+  });
+
+  it('places monitoring first and opens it with the route cluster id', async () => {
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('Nacos dashboard cluster 7');
+    const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+
+    expect(tabs).toEqual(['监控', '概览', '实例', '配置']);
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'monitor',
+    );
+    await waitFor(() =>
+      expect(nacosDashboardSpy).toHaveBeenCalledWith({ clusterId: 7 }),
     );
   });
 });

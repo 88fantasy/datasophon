@@ -174,7 +174,9 @@ const ServiceInstance: React.FC = () => {
   const isApisix = serviceInfo?.serviceName === 'APISIX';
   const isValkey = serviceInfo?.serviceName === 'VALKEY';
   const isDS = serviceInfo?.serviceName === 'DS';
-  const hasPrimaryMonitor = isApisix || isValkey || isDS;
+  const isDoris = serviceInfo?.serviceName === 'DORIS';
+  const isNacos = serviceInfo?.serviceName === 'NACOS';
+  const hasPrimaryMonitor = isApisix || isValkey || isDS || isDoris || isNacos;
   if (hasPrimaryMonitor) {
     let primaryMonitor: React.ReactNode = null;
     if (isApisix) {
@@ -183,6 +185,10 @@ const ServiceInstance: React.FC = () => {
       primaryMonitor = <ValkeyDashboard clusterId={numericClusterId} />;
     } else if (isDS) {
       primaryMonitor = <DSDashboard clusterId={numericClusterId} />;
+    } else if (isDoris) {
+      primaryMonitor = <DorisDashboard clusterId={numericClusterId} embedded />;
+    } else if (isNacos) {
+      primaryMonitor = <NacosDashboard clusterId={numericClusterId} />;
     }
     items.push({
       key: 'monitor',
@@ -228,21 +234,6 @@ const ServiceInstance: React.FC = () => {
       children: <QueueTab clusterId={numericClusterId} />,
     });
   }
-  if (serviceInfo?.serviceName === 'DORIS') {
-    items.push({
-      key: 'monitor',
-      label: '监控',
-      children: <DorisDashboard clusterId={numericClusterId} embedded />,
-    });
-  }
-  if (serviceInfo?.serviceName === 'NACOS') {
-    items.push({
-      key: 'monitor',
-      label: '监控',
-      children: <NacosDashboard clusterId={numericClusterId} />,
-    });
-  }
-
   return (
     <Tabs
       key={`${numericInstanceId}-${serviceInfo?.serviceName ?? ''}`}

@@ -486,7 +486,6 @@ const DolphinSchedulerDashboard: FC<DSDashboardProps> = ({ clusterId }) => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={t('pages.dolphinSchedulerMonitor.title')}
       toolbar={
         <DSDashboardToolbar
           instances={instances}
