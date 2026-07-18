@@ -46,7 +46,7 @@
 | --- | --- | --- |
 | 集群初始化 | `OTELCOLLECTOR`，由前端为每个节点安装；CLI 部署 RustFS 作为其 S3 兼容存储 | 是 |
 | 阶段 A DAG | `DORIS`、`VALKEY`、`ELASTICSEARCH`、`NACOS`、`DS`、`APISIX`（见下方说明） | 是 |
-| 阶段 A 已知问题搁置 | `VALKEY` 与 `ELASTICSEARCH EsExporter` | 是，按对应已知限制验收 |
+| 阶段 A 已知问题搁置 | `ELASTICSEARCH EsExporter`（`VALKEY` 已于 §7.12 用 openEuler 原生构建解决，不再是已知问题） | 是，按对应已知限制验收 |
 | 阶段 B | `KYUUBI`、`SPARK3`、`HIVE`、`HDFS`、`YARN` 等 | 否，另行立项 |
 
 `DS` 原依赖闭包会引入 `SPARK3 → HIVE → HDFS → ZOOKEEPER`；Kyuubi 的默认运行参数依赖 YARN，仍不能表述为"无 Hadoop"阶段 A 的组成部分。
@@ -70,7 +70,7 @@
 | 6 | CLI apply 基础环境初始化 | PASSED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复已现场验证通过；§7.2.7：连续 8 层修复后 34 个 Step 全部跑完（24 completed + 10 skipped + 0 failed）；§7.2.8：远端服务健康检查发现并修复 MySQL 密码链路 3 处新 bug，Nexus/RustFS/MySQL/NTP 四项实测可正常访问，Gate 6 完成） |
 | 7 | 基础环境、RustFS 与 API 健康 | PASSED | 已批准从前端创建集群 | 连接与健康检查（§7.4：ddh-01 补装 JDK21、`datasophon-api` 已部署启动，DB 迁移至 2.2.3、HTTP 8080、gRPC 18081、登录鉴权均验证通过；NACOS ddl 元数据加载报错为遗留问题，不阻塞；§7.5：NACOS ddl 根因修复并现场验证；§7.6：18 服务 DDL value/defaultValue 清理 + `/internal/meta/refresh` 端点现场部署，2026-07-17 验证通过，另发现线上有 11 轮未提交修复被本次部署覆盖，详见 §7.6） |
 | 8 | 前端集群初始化：Worker 与 OTel Collector | PASSED | 五个节点检查均通过后才可导入服务 DAG | §8.1：五节点 Worker/Collector 正常、导出队列清零、RustFS 已写入 445 个对象，前端集群状态为“正在运行” |
-| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；§7.8：VALKEY 单装失败，`ValkeyMaster` 预编译包与 openEuler OpenSSL 主版本不兼容（缺 `libssl.so.3`），upstream 无该发行版预编译包，已记录暂不处理；§7.9：APISIX 以 openEuler 离线 RPM Standalone bundle 通过前端安装和现场验收，RPM、systemd、路由转发、`9091` metrics 均正常，Admin API 未监听；DS 移入阶段 A，`dependencies` 清空、注册中心切到 MySQL/JDBC；§7.10：现场安装验证，连续修复 5 个真实 bug（MINIO→RustFS 占位符、`INSTALL_PATH` 变量注册通用化、YARN 缺前缀、mysql 驱动缺失、`ServiceHandler` 状态检查退出码平台级 bug），`ApiServer`/`MasterServer`/`AlertServer` 三角色验证运行正常；`WorkerServer` 因 S3 存储插件不随官方发行包分发，一度记录为已知问题；§7.11：从 Maven Central 补全插件后仍崩溃，反编译定位到 S3 相关 property key 命名与官方 3.4.1 实际约定不符（`resource.aws.*` vs 官方 `aws.s3.*`），修复后 DS 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer`×3）全部验证真实稳定运行，S3 存储插件问题解除，不再是已知问题；`ZOOKEEPER` 已从基础依赖批移除（DolphinScheduler 改用 MySQL 注册中心，不再需要，见 §1.3）；DORIS 已安装完成并验证通过；尚未走正式批次审批流程，批量导入待续 |
+| 9 | 前端导入阶段 A 服务 DAG | IN PROGRESS | 每批角色和参数审批 | §7.7：批量导入前的前置探索——NACOS、ELASTICSEARCH（主角色）单装验证通过（各自修复 1 组真实 bug）；ELASTICSEARCH 的 `EsExporter` 角色因缺失第三方二进制资产暂未解决，不阻塞主角色；§7.8：VALKEY 单装失败，`ValkeyMaster` 预编译包与 openEuler OpenSSL 主版本不兼容（缺 `libssl.so.3`），upstream 无该发行版预编译包，已记录暂不处理；§7.9：APISIX 以 openEuler 离线 RPM Standalone bundle 通过前端安装和现场验收，RPM、systemd、路由转发、`9091` metrics 均正常，Admin API 未监听；DS 移入阶段 A，`dependencies` 清空、注册中心切到 MySQL/JDBC；§7.10：现场安装验证，连续修复 5 个真实 bug（MINIO→RustFS 占位符、`INSTALL_PATH` 变量注册通用化、YARN 缺前缀、mysql 驱动缺失、`ServiceHandler` 状态检查退出码平台级 bug），`ApiServer`/`MasterServer`/`AlertServer` 三角色验证运行正常；`WorkerServer` 因 S3 存储插件不随官方发行包分发，一度记录为已知问题；§7.11：从 Maven Central 补全插件后仍崩溃，反编译定位到 S3 相关 property key 命名与官方 3.4.1 实际约定不符（`resource.aws.*` vs 官方 `aws.s3.*`），修复后 DS 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer`×3）全部验证真实稳定运行，S3 存储插件问题解除，不再是已知问题；`ZOOKEEPER` 已从基础依赖批移除（DolphinScheduler 改用 MySQL 注册中心，不再需要，见 §1.3）；DORIS 已安装完成并验证通过；§7.12：VALKEY 改用 openEuler 原生构建（链接系统自带 OpenSSL 1.1.1，非原先不兼容的 Ubuntu Jammy/OpenSSL3 包），Gate 1-6 现场验证全部通过，`ldd` 无 `not found`、真实进程/端口、认证 `PING`/`SET`/`GET`/`DEL`、exporter `redis_up=1` 均正常，不再是已知问题；实际部署节点从冻结拓扑的 `ddh-02` 改为 `ddh-01`（`ddh-02` 内存不足，用户现场决定改用 `ddh-01`，非代码 bug，属已批准的拓扑偏差）；尚未走正式批次审批流程，批量导入待续 |
 | 10 | 阶段 A 业务与故障演练 | BLOCKED | 每次停止实例前单独审批 | SQL / 健康 / 演练报告 |
 | 11 | 阶段 A 证据归档与结论 | BLOCKED | PASS / 偏差 / FAIL 审核 | 脱敏归档包 |
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
@@ -735,6 +735,26 @@ No qualifying bean of type 'org.apache.dolphinscheduler.plugin.storage.api.Stora
 - `ApiServer` 日志确认 `Started ApiApplicationServer in 27.59 seconds`，Jetty 监听 `12345`；`WorkerServer` 日志确认 `Started WorkerServer in 12.545 seconds`，且已成功注册到 registry center（`Worker node: 192.168.10.133:1234 registry ... successfully`，验证了 §7.9 的 MySQL/JDBC 注册中心解耦此前已生效）。
 
 至此 DolphinScheduler 六个角色（`ApiServer`/`MasterServer`/`AlertServer`/`WorkerServer` × 3）全部验证为真实稳定运行，S3 存储插件问题彻底解决，不再是已知问题清单的一员。
+
+### 7.12 VALKEY openEuler 原生构建现场验证与部署（2026-07-18）
+
+§7.8 记录的问题（预编译包 `valkey-8.1.8-jammy-x86_64.tar.gz` 依赖 OpenSSL 3.x，与 openEuler 22.03 系统自带的 OpenSSL 1.1.1 不兼容）改用 openEuler 原生构建解决：在 `ddh-02` 本地用系统自带 `openssl-devel`（不替换系统 OpenSSL）源码编译 Valkey 8.1.8，产出 `valkey-8.1.8-openeuler22.03-x86_64.tar.gz`（链接 `libssl.so.1.1`/`libcrypto.so.1.1`），静态链接的 `redis_exporter 1.84.0` 一并打包。构建脚本 `package/build-valkey-openeuler.sh`，制品 SHA-256 `031705868b...`，构建产物与校验记录见 `docs/session-handoff-valkey-openeuler-2026-07-18.md`。
+
+现场按该交接文档的 Gate 1-6 逐项执行：
+
+- **Gate 1（本地制品预检）**：SHA-256 与交接值一致；`manifest.json`/`VALKEY/service_ddl.json`/tar 顶层目录名三处包名（`valkey-8.1.8-openeuler22.03-x86_64`）互相一致；构建脚本 `bash -n` 语法检查通过。
+- **Gate 2（上传 Nexus）**：执行时发现 `datasophon-cli-go` 的 `upload registry` 子命令**不响应全局 `--dry-run` 参数**——`internal/cli/upload/registry.go` 的 `doRun`/`repositoryUploadBatch`/`uploadFile` 全程未读取 `dryRun`，只有 `uploadDocker` 一处真正接了该状态；`--dry-run upload registry` 实际发起了真实 HTTP 上传（`success=50 fail=0`）。核实无害：除已知的 `package/docs/apisix/BUILD.md` 外 `package/raw/**` 无任何未提交改动，此次真实上传的内容与 Gate 2 本该做的事完全一致。`curl -u admin:*** HEAD` 验证 Nexus 返回 `200`、`Content-Length=6806399` 与本地文件字节数一致。**已修复（同日）**：`upload registry` 的 `--dry-run` 语义缺失，与模块文档描述的"全局开关只打印命令不实际执行"不符。修复方式：`UploadRegistry` 新增 `DryRun` 字段（`Command`/`Handle` 两个入口都会设置），`uploadFile`/`uploadHelm` 在发起任何 HTTP 请求前直接短路返回并打印 `[dry-run]` 日志；`repositoryUploadBatch` 里 raw 类型上传前独立的 `.md5` sidecar 幂等预检（原本会发起真实只读 GET）同样加了 `!t.DryRun` 守卫。新增单测 `TestRepositoryUploadBatch_DryRunDoesNotHitNetwork` 锁定回归（httptest server 收到任何请求即失败）。对生产 Nexus 复测：52 个文件全部显示 `[dry-run]`，总耗时从秒级降到 0.75s，确认零真实网络调用。
+- **Gate 3（元数据刷新）**：`POST /internal/meta/refresh` 返回 `success=true`、`physicalLoaded==physicalTotal==18`、`errors=[]`。
+- **Gate 4（清理旧实例）**：平台 `cluster/service/instance/list` 查询确认集群内**已无 VALKEY 服务实例记录**（此前失败的实例已在更早会话被正式清理），无需走删除流程；`ddh-02` 上仅有文件系统残留（旧 `valkey-8.1.8-jammy-x86_64` 目录与软链，无真实进程/端口），不阻塞新装。
+- **Gate 5（重新安装）**：通过 v2 部署清单接口（`POST /ddh/api/v2/cluster/1/deploy/upload` → `validate-deployment-file` → `deploy`，即 ui-v2"部署清单导入"背后的 `ExtRepoInstallDelegateService`）导入 `deploy/valkey-deploy.yaml`，校验通过（`errors=null`，`deployHosts` 正确回显为 `ddh-02`）。**现场安装时用户手动把目标主机由 `ddh-02` 改为 `ddh-01`**：`ddh-02` 当时 `free -h` 实测仅 `536Mi` 空闲（总 `30Gi`，已用 `24Gi`，`buff/cache 6.8Gi` 部分可回收，`available 6.6Gi`），已装 `ELASTICSEARCH`/`NACOS`/`APISIX`/`OTELCOLLECTOR`/`Worker` 等阶段 A 中间件后内存吃紧，用户判断不再适合承接新服务，遂改用 `ddh-01`。**排查记录**：安装完成后 Gate 6 一度在 `ddh-02` 找不到任何新进程/软链变化，怀疑是"部署清单导入"代码路径存在 `deployHosts` 未被尊重的平台级 bug；沿 `PhysicalProductInstallServiceImpl.deploy → ServiceInstallServiceImpl.saveServiceRoleHostMapping`（写入 `CacheUtils` 的 `<clusterCode>_SERVICE_ROLE_HOST_MAPPING` 键）代码走读、并用 `GET /service/install/getServiceRoleDeployOverview` 直接查询该内存缓存当前内容，确认 `ValkeyMaster`/`ValkeyExporter` 确实记录为 `["ddh-01"]`，而同一批次此前的 `Apisix`/`ElasticSearch`/`ApiServer`/`MasterServer` 均正确落在 `ddh-02`——排除代码路径系统性问题后，用户确认是现场手动改的目标主机，不是 bug；这段代码走读没有发现问题，顺带确认了这条部署清单路径本身可信。
+- **Gate 6（真实运行验收，`ddh-01`）**：
+  - `ldd valkey-server`：解析到 `libssl.so.1.1 => /usr/lib64/libssl.so.1.1`，无 `not found`；`valkey-server --version`/`valkey-cli --version` 均为 `8.1.8`。
+  - 真实进程存在（`ps -ef`）：`valkey-server 0.0.0.0:7501`、`redis_exporter -redis.addr 127.0.0.1:7501 -web.listen-address 0.0.0.0:9121`；端口 `7501`/`9121` 均真实监听。
+  - 认证读写：`PING`→`PONG`，`SET gate6:openeuler-check ok`→`OK`，`GET`→`ok`，`DEL`→`1`。
+  - Exporter：`/metrics` 返回 `redis_up 1`、`redis_exporter_build_info{...version="v1.84.0"} 1`。
+  - 控制脚本自身日志无 ERROR。
+
+**结论**：openEuler 原生构建的 Valkey 8.1.8 包功能完全验证通过，VALKEY 不再是阶段 A 的已知问题。**拓扑偏差**：实际运行节点是 `ddh-01`，不是 Gate 2 冻结拓扑（§5）指定的 `ddh-02`，原因是 `ddh-02` 现场内存不足，属用户现场批准的偏差，不是安装失败或代码缺陷；`ddh-02` 的可用内存状况需要在后续继续往该节点部署阶段 A 中间件前重新评估。
 
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 

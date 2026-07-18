@@ -109,11 +109,14 @@ type UploadRegistry struct {
 	IsSuccessDelete       bool
 	DisableUploadRegistry bool
 	DockerHTTPPort        int
+	// DryRun 为 true 时只打印将要上传的文件，不发起真实网络请求（--dry-run 支持）。
+	DryRun bool
 }
 
 func (t *UploadRegistry) Name() string { return "制品库上传" }
 
 func (t *UploadRegistry) Handle(client *ssh.Client, dryRun bool) error {
+	t.DryRun = dryRun
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -122,6 +125,7 @@ func (t *UploadRegistry) Command(dryRun *bool) *cobra.Command {
 		Use:   "registry",
 		Short: "将本地安装包批量上传到 Nexus",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			t.DryRun = *dryRun
 			return t.doRun(executor.NewLocalExecutor(*dryRun))
 		},
 	}
@@ -239,8 +243,9 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				} else {
 					dir = "/" + dir
 				}
-				// 优先用同名 .md5 sidecar 文件做幂等检查
-				if data, readErr := os.ReadFile(path + ".md5"); readErr == nil {
+				// 优先用同名 .md5 sidecar 文件做幂等检查（dry-run 不发起该只读查询，统一走下方
+				// uploadFile 的 [dry-run] 短路分支）
+				if data, readErr := os.ReadFile(path + ".md5"); !t.DryRun && readErr == nil {
 					localSum := strings.TrimSpace(string(data))
 					assetName := filepath.Base(path)
 					if dir != "" {
@@ -337,6 +342,10 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 		}
 		assetName = dir + "/" + assetName
 	}
+	if t.DryRun {
+		slog.Info("[dry-run] 将上传", "file", filepath.Base(filePath), "repo", repoType, "asset", assetName)
+		return true
+	}
 	if !force {
 		remoteMD5 := t.nexusMD5(baseURL, repoType, assetName)
 		if remoteMD5 != "" {
@@ -426,6 +435,10 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 // uploadHelm 上传 Helm Chart 到 Nexus helm 仓库（使用 Chartmuseum API）。
 // URL 与字段名与其他仓库不同，单独处理。
 func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
+	if t.DryRun {
+		slog.Info("[dry-run] 将上传", "file", filepath.Base(filePath), "repo", "helm")
+		return true
+	}
 	file, err := os.Open(filePath)
 	if err != nil {
 		slog.Error("打开文件失败", "path", filePath, "err", err)

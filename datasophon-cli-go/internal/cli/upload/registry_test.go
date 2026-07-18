@@ -59,3 +59,33 @@ func TestRepositoryUploadBatch_RawUploadsMd5Sidecar(t *testing.T) {
 		"apache-doris-4.0.6-bin-x64.tar.gz.md5",
 	}, uploadedFilenames)
 }
+
+// TestRepositoryUploadBatch_DryRunDoesNotHitNetwork 覆盖回归场景：`--dry-run upload
+// registry` 此前完全不检查 DryRun 状态，会真实发起 HTTP 上传（曾在生产 Nexus 上误触发
+// 过一次真实上传）。DryRun=true 时不应发起任何网络请求，只打印将要上传的文件并视为成功。
+func TestRepositoryUploadBatch_DryRunDoesNotHitNetwork(t *testing.T) {
+	tmpDir := t.TempDir()
+	rawPackagesDir := filepath.Join(tmpDir, "raw", "packages")
+	require.NoError(t, os.MkdirAll(rawPackagesDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rawPackagesDir, "valkey-8.1.8.tar.gz"), []byte("fake"), 0o644))
+	// 带 .md5 sidecar 的文件会走 repositoryUploadBatch 里独立的幂等预检分支
+	// （在调用 uploadFile 之前查询 Nexus），必须一并确认该分支也不发网络请求。
+	require.NoError(t, os.WriteFile(filepath.Join(rawPackagesDir, "doris-4.0.6.tar.gz"), []byte("fake"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(rawPackagesDir, "doris-4.0.6.tar.gz.md5"), []byte("deadbeef"), 0o644))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("dry-run 不应发起任何网络请求，但收到了: %s %s", r.Method, r.URL.Path)
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{
+		ProductPackagesPath: tmpDir,
+		Username:            "admin",
+		Password:            "admin",
+		DryRun:              true,
+	}
+	success, fail := task.repositoryUploadBatch(server.URL)
+
+	assert.Equal(t, 0, fail)
+	assert.Equal(t, 3, success)
+}
