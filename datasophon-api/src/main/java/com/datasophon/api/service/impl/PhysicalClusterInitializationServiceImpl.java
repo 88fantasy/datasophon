@@ -63,7 +63,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -72,6 +75,7 @@ public class PhysicalClusterInitializationServiceImpl implements PhysicalCluster
     static final String OTEL_SERVICE = "OTELCOLLECTOR";
     static final String OTEL_ROLE = "OtelCollector";
     private static final Duration VERIFY_TIMEOUT = Duration.ofMinutes(2);
+    private static final long STATUS_PING_TIMEOUT_SECONDS = 3;
 
     private final ClusterInfoService clusterInfoService;
     private final ClusterHostService clusterHostService;
@@ -84,6 +88,7 @@ public class PhysicalClusterInitializationServiceImpl implements PhysicalCluster
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final OtelSelfMetricsClient metricsClient;
     private final RustfsEndpointProvider rustfsEndpointProvider;
+    private final Executor nodeStatusExecutor;
 
     public PhysicalClusterInitializationServiceImpl(
                                                     ClusterInfoService clusterInfoService,
@@ -96,7 +101,8 @@ public class PhysicalClusterInitializationServiceImpl implements PhysicalCluster
                                                     ClusterServiceInstanceService serviceInstanceService,
                                                     ClusterServiceRoleInstanceService roleInstanceService,
                                                     OtelSelfMetricsClient metricsClient,
-                                                    RustfsEndpointProvider rustfsEndpointProvider) {
+                                                    RustfsEndpointProvider rustfsEndpointProvider,
+                                                    @Qualifier("physicalInitializationExecutor") Executor nodeStatusExecutor) {
         this.clusterInfoService = clusterInfoService;
         this.clusterHostService = clusterHostService;
         this.workerRegistry = workerRegistry;
@@ -108,6 +114,7 @@ public class PhysicalClusterInitializationServiceImpl implements PhysicalCluster
         this.roleInstanceService = roleInstanceService;
         this.metricsClient = metricsClient;
         this.rustfsEndpointProvider = rustfsEndpointProvider;
+        this.nodeStatusExecutor = nodeStatusExecutor;
     }
 
     @Override
@@ -176,8 +183,13 @@ public class PhysicalClusterInitializationServiceImpl implements PhysicalCluster
         }
 
         boolean verifyCollector = latest != null && CommandState.SUCCESS.equals(latest.getCommandState());
-        for (ClusterHostDO host : hosts) {
-            response.getNodes().add(nodeStatus(host, roles.get(host.getHostname()), latest, verifyCollector));
+        List<CompletableFuture<NodeStatus>> nodeStatuses = hosts.stream()
+                .map(host -> CompletableFuture.supplyAsync(
+                        () -> nodeStatus(host, roles.get(host.getHostname()), latest, verifyCollector),
+                        nodeStatusExecutor))
+                .toList();
+        for (CompletableFuture<NodeStatus> nodeStatus : nodeStatuses) {
+            response.getNodes().add(nodeStatus.join());
         }
 
         boolean allHealthy = !response.getNodes().isEmpty()
@@ -258,18 +270,19 @@ public class PhysicalClusterInitializationServiceImpl implements PhysicalCluster
         } else {
             try {
                 OtelSelfMetrics metrics = metricsClient.fetch(host.getIp());
+                boolean queueSaturated = metrics.queueCapacity() > 0
+                        && metrics.queueSize() >= metrics.queueCapacity();
                 collectorHealthy = metrics.processUptime() > 0
                         && metrics.sentTotal() > 0
-                        && metrics.queueSize() == 0
-                        && metrics.receiverFailedTotal() == 0;
+                        && !queueSaturated;
                 if (collectorHealthy) {
                     message = "正常";
                 } else if (metrics.sentTotal() == 0) {
                     message = "Collector 尚未产生成功导出";
-                } else if (metrics.queueSize() > 0) {
-                    message = "Collector 导出队列尚未清空";
+                } else if (queueSaturated) {
+                    message = "Collector 导出队列已满";
                 } else {
-                    message = "Collector 接收数据失败";
+                    message = "Collector 尚未就绪";
                 }
             } catch (RuntimeException e) {
                 message = "Collector 自监控不可达";
@@ -288,7 +301,7 @@ public class PhysicalClusterInitializationServiceImpl implements PhysicalCluster
 
     private boolean pingWorker(String hostname) {
         try {
-            ExecResult result = workerCommandClient.ping(hostname);
+            ExecResult result = workerCommandClient.ping(hostname, STATUS_PING_TIMEOUT_SECONDS);
             return result != null && Boolean.TRUE.equals(result.getExecResult());
         } catch (RuntimeException e) {
             return false;

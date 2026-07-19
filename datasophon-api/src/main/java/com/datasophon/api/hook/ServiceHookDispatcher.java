@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import cn.hutool.core.util.StrUtil;
@@ -61,6 +62,7 @@ public class ServiceHookDispatcher {
         }
     }
 
+    @Async("serviceHookExecutor")
     public void dispatch(ServiceNode node, HookType type) {
         List<HookConfig> matched = node.getMatchedServiceHooks(type);
         if (matched.isEmpty()) {

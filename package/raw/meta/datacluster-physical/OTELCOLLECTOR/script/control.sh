@@ -25,10 +25,22 @@ start() {
   if [ -f "$env_file" ]; then
     while IFS= read -r line || [ -n "$line" ]; do
       case "$line" in
-        AWS_ACCESS_KEY_ID=*|AWS_SECRET_ACCESS_KEY=*|OTEL_DORIS_USER=*|OTEL_DORIS_PASSWORD=*)
+        ''|'#'*)
+          ;;
+        *=*)
           key=${line%%=*}
           value=${line#*=}
-          export "$key=$value"
+          case "$key" in
+            ''|[0-9]*|*[!A-Za-z0-9_]*)
+              echo "invalid environment key in $env_file: $key"; exit 1
+              ;;
+            *)
+              export "$key=$value"
+              ;;
+          esac
+          ;;
+        *)
+          echo "invalid environment entry in $env_file"; exit 1
           ;;
       esac
     done < "$env_file"

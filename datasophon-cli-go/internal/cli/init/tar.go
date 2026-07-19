@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/shellutil"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
@@ -55,19 +56,22 @@ func (t *InitTar) doRun(exec executor.Executor) error {
 
 	arch := exec.GetArch()
 	osType := exec.GetOs()
-	repoDir := filepath.Join(t.ProductPackagesPath, "yum", string(arch), string(osType))
 
-	var glob, installCmdFmt string
+	var repoType, packagePattern, installCmdFmt string
 	switch {
 	case osType.IsUbuntu():
-		glob = filepath.Join(repoDir, "tar_*.deb")
+		repoType = "apt"
+		packagePattern = "tar_*.deb"
 		installCmdFmt = "dpkg -i %s"
 	case osType.IsCentos():
-		glob = filepath.Join(repoDir, "tar-[0-9]*.rpm")
+		repoType = "yum"
+		packagePattern = "tar-[0-9]*.rpm"
 		installCmdFmt = "rpm -ivh %s"
 	default:
 		return fmt.Errorf("不支持的 OS: %s", string(osType))
 	}
+	repoDir := filepath.Join(t.ProductPackagesPath, repoType, string(arch), string(osType))
+	glob := filepath.Join(repoDir, packagePattern)
 
 	matches, err := filepath.Glob(glob)
 	if err != nil {
@@ -88,12 +92,12 @@ func (t *InitTar) doRun(exec executor.Executor) error {
 		return fmt.Errorf("分发 tar 安装包失败 dst=%s: %s", remotePkg, sr.ErrOutput)
 	}
 
-	installCmd := fmt.Sprintf(installCmdFmt, shellQuote(remotePkg))
+	installCmd := fmt.Sprintf(installCmdFmt, shellutil.Quote(remotePkg))
 	slog.Info("安装 tar", "cmd", installCmd)
 	if ir := exec.ExecShell(installCmd); !ir.Success {
 		return fmt.Errorf("安装 tar 失败: %s", ir.ErrOutput)
 	}
-	exec.ExecShell("rm -f " + shellQuote(remotePkg))
+	exec.ExecShell("rm -f " + shellutil.Quote(remotePkg))
 
 	r = exec.ExecShell("which tar")
 	if !(r.Success && strings.TrimSpace(r.Output) != "") {
@@ -101,8 +105,4 @@ func (t *InitTar) doRun(exec executor.Executor) error {
 	}
 	slog.Info("tar 安装完成", "path", strings.TrimSpace(r.Output))
 	return nil
-}
-
-func shellQuote(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/bootstrap"
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
@@ -97,7 +98,7 @@ func (t *mysqlTask) installUbuntu(exec executor.Executor, httpRootPath, mysqlSer
 	}
 	exec.ExecShell(fmt.Sprintf("apt localinstall %s/*.rpm -y", httpRootPath))
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
-		if err := t.rootUserConf(exec); err != nil {
+		if err := bootstrap.ConfigureMySQLRoot(exec, t.Password, t.Port); err != nil {
 			return err
 		}
 		exec.ExecShell("mv /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.bak")
@@ -136,27 +137,10 @@ func (t *mysqlTask) installCentos(exec executor.Executor, osType osinfo.OsType, 
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
 		tmpPasswd := strings.TrimSpace(exec.ExecShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").Output)
 		slog.Info("临时密码已获取，开始修改密码")
-		oldCnf := "/tmp/.dsph_mysql_old.cnf"
-		// cnf 文件里密码必须加引号：MySQL 客户端的配置文件解析器把不加引号的 # 当注释起始符，
-		// 密码含 # 时会被截断，导致后续用这个 cnf 连接时密码错误（Access denied）。
-		exec.WriteLines([]string{"[client]", "password=\"" + tmpPasswd + "\""}, oldCnf)
-		exec.ExecShell(fmt.Sprintf("chmod 600 %s", oldCnf))
-		newSqlPath := "/tmp/.dsph_mysql_init.sql"
-		exec.WriteLines([]string{
-			fmt.Sprintf("ALTER USER 'root'@'localhost' IDENTIFIED BY '%s';", t.Password),
-		}, newSqlPath)
-		exec.ExecShell(fmt.Sprintf("chmod 600 %s", newSqlPath))
-		// --connect-expired-password：临时密码首次登录时 MySQL 强制要求先修改密码才允许执行
-		// 任何 SQL，缺少这个选项会导致这条 ALTER USER 被拒绝执行、root 密码从未真正改变，
-		// 但原先不检查返回值，后续步骤仍会照常执行并报告"安装成功"。
-		// 注意 --defaults-extra-file 必须是第一个参数，放在其他选项之后会被 MySQL 客户端
-		// 误判成普通变量赋值而报 "unknown variable" 错误。
-		ir := exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s --connect-expired-password -uroot < %s", oldCnf, newSqlPath))
-		exec.ExecShell(fmt.Sprintf("rm -f %s %s", oldCnf, newSqlPath))
-		if !ir.Success {
-			return fmt.Errorf("修改 root 初始密码失败: %s", ir.ErrOutput)
+		if err := bootstrap.ResetMySQLTemporaryRootPassword(exec, tmpPasswd, t.Password); err != nil {
+			return err
 		}
-		if err := t.rootUserConf(exec); err != nil {
+		if err := bootstrap.ConfigureMySQLRoot(exec, t.Password, t.Port); err != nil {
 			return err
 		}
 		exec.ExecShell("mv /etc/my.cnf /etc/my.cnf.bak")
@@ -179,27 +163,6 @@ func (t *mysqlTask) mysqlLib(exec executor.Executor, name, checkCmd, installCmd 
 	if r := exec.ExecShell(checkCmd); r.Success {
 		slog.Info("依赖安装成功", "name", name)
 	}
-}
-
-func (t *mysqlTask) rootUserConf(exec executor.Executor) error {
-	newCnf := "/tmp/.dsph_mysql_new.cnf"
-	exec.WriteLines([]string{"[client]", "password=\"" + t.Password + "\""}, newCnf)
-	exec.ExecShell(fmt.Sprintf("chmod 600 %s", newCnf))
-	sqlPath := "/tmp/.dsph_mysql_conf.sql"
-	exec.WriteLines([]string{
-		"UPDATE mysql.user SET host='%' WHERE user='root';",
-		"FLUSH PRIVILEGES;",
-		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;", t.Password),
-		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';", t.Password),
-		"FLUSH PRIVILEGES;",
-	}, sqlPath)
-	exec.ExecShell(fmt.Sprintf("chmod 600 %s", sqlPath))
-	r := exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot -P%d < %s", newCnf, t.Port, sqlPath))
-	exec.ExecShell(fmt.Sprintf("rm -f %s %s", newCnf, sqlPath))
-	if !r.Success {
-		return fmt.Errorf("配置 root 用户权限失败: %s", r.ErrOutput)
-	}
-	return nil
 }
 
 func (t *mysqlTask) mysqldConf() []string {

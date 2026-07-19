@@ -171,3 +171,4 @@ import `HookType`。`onNodeFail/onNodeCancel` 不动。
 6. `./mvnw -pl datasophon-api spotless:apply` 后再跑一次编译(本仓库 Edit 常留行尾空白触发 Spotless/Checkstyle 失败)。
 7. **已知验证缺口(如实告知,不假装完成)**:DORIS 真实安装 → `onNodeSuccess` → `ServiceHookDispatcher` → `otelSchemaInit` → Nexus 拉 SQL → JDBC 真实建库这条端到端链路,本地无真实 Nexus + Doris 集群,不可验证;须记入 `apply-verify.md`,不在提交里声称已验证。
 
+完成以上核验后，再进入真实环境验收。

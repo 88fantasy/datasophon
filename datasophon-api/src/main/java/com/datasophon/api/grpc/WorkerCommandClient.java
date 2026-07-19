@@ -83,8 +83,12 @@ public class WorkerCommandClient {
     // ─── Phase 1 API ─────────────────────────────────────────────────────────
 
     public ExecResult ping(String hostname) {
+        return ping(hostname, 30);
+    }
+
+    public ExecResult ping(String hostname, long deadlineSeconds) {
         return callWorker(hostname, "ping", () -> getStub(hostname)
-                .withDeadlineAfter(30, TimeUnit.SECONDS)
+                .withDeadlineAfter(deadlineSeconds, TimeUnit.SECONDS)
                 .ping(PingRequest.newBuilder().setMessage("ping").build()));
     }
 

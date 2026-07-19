@@ -14,6 +14,7 @@ import (
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/shellutil"
 )
 
 // rustfsTask 安装并启动 Rustfs 对象存储。
@@ -105,33 +106,28 @@ func (t *rustfsTask) checkStart(exec executor.Executor) bool {
 }
 
 func (t *rustfsTask) writeStartScript(exec executor.Executor, home, data, logs string) {
-	// Username/Password 用 shellSingleQuote 转义：密码里的 # 等 shell 元字符若不加引号，
+	// Username/Password 用 shellutil.Quote 转义：密码里的 # 等 shell 元字符若不加引号，
 	// 会被 bash 当注释截断整行命令（含后台符 &），导致进程同步阻塞且不产生日志。
 	startCmd := fmt.Sprintf(
 		"%s/rustfs --address %s:%s --console-enable --console-address %s:%s"+
 			" --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
 		home, t.WebHost, t.APIPort, t.WebHost, t.WebPort,
-		shellSingleQuote(t.Username), shellSingleQuote(t.Password), data, logs,
+		shellutil.Quote(t.Username), shellutil.Quote(t.Password), data, logs,
 	)
 	lines := []string{
-		fmt.Sprintf("mkdir -p %s", shellSingleQuote(data)),
-		fmt.Sprintf("mkdir -p %s", shellSingleQuote(logs)),
+		fmt.Sprintf("mkdir -p %s", shellutil.Quote(data)),
+		fmt.Sprintf("mkdir -p %s", shellutil.Quote(logs)),
 	}
 	if t.ObsEndpoint != "" {
 		// rustfs-obs crate 读取的环境变量，metrics 走 OTLP/HTTP 上报到本节点 OTel Collector。
-		// shellSingleQuote 防止 endpoint 中意外出现的 shell 元字符（空格/;/$()）被 bash 解释执行。
+		// shellutil.Quote 防止 endpoint 中意外出现的 shell 元字符（空格/;/$()）被 bash 解释执行。
 		lines = append(lines,
-			fmt.Sprintf("export RUSTFS_OBS_ENDPOINT=%s", shellSingleQuote(t.ObsEndpoint)),
+			fmt.Sprintf("export RUSTFS_OBS_ENDPOINT=%s", shellutil.Quote(t.ObsEndpoint)),
 			"export RUSTFS_OBS_SERVICE_NAME=rustfs",
 		)
 	}
 	lines = append(lines, startCmd)
 	exec.WriteLines(lines, fmt.Sprintf("%s/start.sh", home))
-}
-
-// shellSingleQuote 把 s 包成 POSIX shell 安全的单引号字符串，转义 s 内部的单引号。
-func shellSingleQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // ── 命令实现 ────────────────────────────────────────────────────────────────

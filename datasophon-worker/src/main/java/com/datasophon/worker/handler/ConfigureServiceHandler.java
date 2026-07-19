@@ -240,8 +240,12 @@ public class ConfigureServiceHandler {
         switch (config.getType()) {
             case Constants.INPUT:
                 Object tempVal = config.getValue();
-                if (String.class.isAssignableFrom(tempVal.getClass())) {
-                    String value = PlaceholderUtils.replacePlaceholders((String) tempVal, paramMap, Constants.REGEX_VARIABLE);
+                if (tempVal == null) {
+                    tempVal = config.getDefaultValue();
+                    config.setValue(tempVal);
+                }
+                if (tempVal instanceof String stringValue) {
+                    String value = PlaceholderUtils.replacePlaceholders(stringValue, paramMap, Constants.REGEX_VARIABLE);
                     config.setValue(value);
                 }
                 break;

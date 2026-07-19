@@ -31,6 +31,7 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -72,6 +73,9 @@ public class ClusterServiceInstanceV2Controller extends ApiController {
                                                      @PathVariable Integer clusterId,
                                                      @PathVariable Integer instanceId) {
         ClusterServiceInstanceEntity entity = clusterServiceInstanceService.getById(instanceId);
+        if (entity == null || !Objects.equals(clusterId, entity.getClusterId())) {
+            return ApiResponse.fail(404, "服务实例不存在");
+        }
         return ApiResponse.ok(ServiceInstanceResponse.from(entity));
     }
 
@@ -83,6 +87,10 @@ public class ClusterServiceInstanceV2Controller extends ApiController {
     @DeleteMapping("/{instanceId}")
     public ApiResponse<Void> delete(@PathVariable Integer clusterId,
                                     @PathVariable Integer instanceId) {
+        ClusterServiceInstanceEntity entity = clusterServiceInstanceService.getById(instanceId);
+        if (entity == null || !Objects.equals(clusterId, entity.getClusterId())) {
+            return ApiResponse.fail(404, "服务实例不存在");
+        }
         Result result = clusterServiceInstanceService.delServiceInstance(instanceId);
         if (result.isSuccess()) {
             return ApiResponse.ok();

@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/upload"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/shellutil"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -153,23 +153,17 @@ func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool
 		"%s/rustfs --address %s:%s --console-enable --console-address %s:%s"+
 			" --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
 		home, t.WebHost, t.APIPort, t.WebHost, t.WebPort,
-		shellQuote(t.Username), shellQuote(t.Password), data, logs,
+		shellutil.Quote(t.Username), shellutil.Quote(t.Password), data, logs,
 	)
 	lines := []string{
-		fmt.Sprintf("mkdir -p %s", shellQuote(data)),
-		fmt.Sprintf("mkdir -p %s", shellQuote(logs)),
+		fmt.Sprintf("mkdir -p %s", shellutil.Quote(data)),
+		fmt.Sprintf("mkdir -p %s", shellutil.Quote(logs)),
 		startCmd,
 	}
 	startPath := fmt.Sprintf("%s/start.sh", home)
 	exec.WriteLines(lines, startPath)
 	r := exec.ExecShell(fmt.Sprintf("bash %s", startPath))
 	return r.Success
-}
-
-// shellQuote 用单引号包裹并转义值中的单引号，避免像 rustfs 密码中出现的
-// `#`（shell 注释起始符）等特殊字符截断命令。
-func shellQuote(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }
 
 // buildRustfs 安装 rustfs（单节点）。

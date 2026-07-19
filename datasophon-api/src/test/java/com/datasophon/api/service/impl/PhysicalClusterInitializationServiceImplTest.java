@@ -87,7 +87,7 @@ class PhysicalClusterInitializationServiceImplTest {
     private final PhysicalClusterInitializationServiceImpl service =
             new PhysicalClusterInitializationServiceImpl(clusterInfoService, clusterHostService, workerRegistry,
                     workerCommandClient, serviceInstallService, installDelegateService, commandService,
-                    serviceInstanceService, roleInstanceService, metricsClient, rustfsEndpointProvider);
+                    serviceInstanceService, roleInstanceService, metricsClient, rustfsEndpointProvider, Runnable::run);
 
     private ClusterInfoEntity cluster;
     private ClusterHostDO host;
@@ -151,18 +151,7 @@ class PhysicalClusterInitializationServiceImplTest {
 
     @Test
     void completesClusterOnlyWhenWorkerAndCollectorAreHealthy() {
-        when(workerRegistry.getEndpoint("ddh-01"))
-                .thenReturn(Optional.of(new WorkerEndpoint("ddh-01", "192.168.10.131", 18082, "x86_64", 7)));
-        when(workerCommandClient.ping("ddh-01")).thenReturn(ExecResult.success());
-        ClusterServiceCommandEntity command = command(CommandState.SUCCESS);
-        when(commandService.getLatestCommand(7, "OTELCOLLECTOR")).thenReturn(command);
-        when(serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(7, "OTELCOLLECTOR"))
-                .thenReturn(new ClusterServiceInstanceEntity());
-        ClusterServiceRoleInstanceEntity role = new ClusterServiceRoleInstanceEntity();
-        role.setHostname("ddh-01");
-        role.setServiceRoleState(ServiceRoleState.RUNNING);
-        when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
-                .thenReturn(List.of(role));
+        mockInstalledCollector();
         when(metricsClient.fetch("192.168.10.131"))
                 .thenReturn(new OtelSelfMetrics(0, 10, 20, 10, 0, 0, 60, 0));
 
@@ -174,10 +163,38 @@ class PhysicalClusterInitializationServiceImplTest {
     }
 
     @Test
+    void completesClusterAfterTransientFailuresWhenQueueHasCapacity() {
+        mockInstalledCollector();
+        when(metricsClient.fetch("192.168.10.131"))
+                .thenReturn(new OtelSelfMetrics(1, 10, 20, 10, 0, 0, 60, 5));
+
+        PhysicalClusterInitializationResponse response = service.getStatus(7);
+
+        assertThat(response.getPhase()).isEqualTo(InitializationPhase.COMPLETED);
+        assertThat(response.isCompleted()).isTrue();
+        verify(clusterInfoService).updateClusterState(7, ClusterState.RUNNING.getValue());
+    }
+
+    @Test
+    void keepsClusterPendingWhenCollectorQueueIsSaturated() {
+        mockInstalledCollector();
+        when(metricsClient.fetch("192.168.10.131"))
+                .thenReturn(new OtelSelfMetrics(10, 10, 20, 0, 0, 0, 60, 0));
+
+        PhysicalClusterInitializationResponse response = service.getStatus(7);
+
+        assertThat(response.getPhase()).isEqualTo(InitializationPhase.VERIFYING);
+        assertThat(response.isCompleted()).isFalse();
+        assertThat(response.getNodes()).singleElement()
+                .satisfies(node -> assertThat(node.getMessage()).isEqualTo("Collector 导出队列已满"));
+        verify(clusterInfoService, never()).updateClusterState(any(), any());
+    }
+
+    @Test
     void keepsClusterPendingWhenCollectorMetricsAreNotHealthy() {
         when(workerRegistry.getEndpoint("ddh-01"))
                 .thenReturn(Optional.of(new WorkerEndpoint("ddh-01", "192.168.10.131", 18082, "x86_64", 7)));
-        when(workerCommandClient.ping("ddh-01")).thenReturn(ExecResult.success());
+        when(workerCommandClient.ping("ddh-01", 3)).thenReturn(ExecResult.success());
         when(commandService.getLatestCommand(7, "OTELCOLLECTOR")).thenReturn(command(CommandState.SUCCESS));
         when(serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(7, "OTELCOLLECTOR"))
                 .thenReturn(new ClusterServiceInstanceEntity());
@@ -215,5 +232,19 @@ class PhysicalClusterInitializationServiceImplTest {
         command.setCommandState(state);
         command.setEndTime(new Date());
         return command;
+    }
+
+    private void mockInstalledCollector() {
+        when(workerRegistry.getEndpoint("ddh-01"))
+                .thenReturn(Optional.of(new WorkerEndpoint("ddh-01", "192.168.10.131", 18082, "x86_64", 7)));
+        when(workerCommandClient.ping("ddh-01", 3)).thenReturn(ExecResult.success());
+        when(commandService.getLatestCommand(7, "OTELCOLLECTOR")).thenReturn(command(CommandState.SUCCESS));
+        when(serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(7, "OTELCOLLECTOR"))
+                .thenReturn(new ClusterServiceInstanceEntity());
+        ClusterServiceRoleInstanceEntity role = new ClusterServiceRoleInstanceEntity();
+        role.setHostname("ddh-01");
+        role.setServiceRoleState(ServiceRoleState.RUNNING);
+        when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
+                .thenReturn(List.of(role));
     }
 }

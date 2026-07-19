@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/bootstrap"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
@@ -101,8 +102,9 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 				return errors.New("nexus 修改管理员密码失败")
 			}
 		}
-		if !t.systemEula(baseURL) {
-			return errors.New("nexus 接受 EULA 失败")
+		if err := bootstrap.AcceptNexusEULA(baseURL, t.Username, t.Password,
+			registryHTTPGet, registryHTTPPost); err != nil {
+			return fmt.Errorf("nexus 接受 EULA 失败: %w", err)
 		}
 		t.repoCreateByList(baseURL)
 		slog.Info("nexus 安装成功", "path", home)
@@ -146,47 +148,6 @@ func (t *registryTask) changePassword(baseURL, oldPassword string) bool {
 	}
 	body, _ := io.ReadAll(resp.Body)
 	slog.Error("修改密码失败", "status", resp.StatusCode, "body", string(body))
-	return false
-}
-
-// systemEula 接受 Nexus EULA。disclaimer 文本先从服务端 GET 获取再原样回传，
-// 不用本地硬编码文本——Nexus 按逐字节比较校验 disclaimer，硬编码文本一旦跟服务端
-// 存储的版本有字符差异（例如引号是直引号还是弯引号）就会被判定为 Invalid EULA disclaimer。
-func (t *registryTask) systemEula(baseURL string) bool {
-	type eulaState struct {
-		Accepted   bool   `json:"accepted"`
-		Disclaimer string `json:"disclaimer"`
-	}
-
-	getResp, err := registryHTTPGet(baseURL, "/service/rest/v1/system/eula", t.Username, t.Password)
-	if err != nil {
-		slog.Error("获取 eula 状态失败", "err", err)
-		return false
-	}
-	defer getResp.Body.Close()
-	var state eulaState
-	if err := json.NewDecoder(getResp.Body).Decode(&state); err != nil {
-		slog.Error("解析 eula 状态失败", "err", err)
-		return false
-	}
-	if state.Accepted {
-		slog.Info("eula 已接受，跳过")
-		return true
-	}
-
-	payload, _ := json.Marshal(eulaState{Accepted: true, Disclaimer: state.Disclaimer})
-	resp, err := registryHTTPPost(baseURL, "/service/rest/v1/system/eula",
-		t.Username, t.Password, "application/json", bytes.NewReader(payload))
-	if err != nil {
-		slog.Error("eula 协议请求失败", "err", err)
-		return false
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == 204 {
-		slog.Info("eula 协议设置成功")
-		return true
-	}
-	slog.Error("eula 协议设置失败", "status", resp.StatusCode)
 	return false
 }
 

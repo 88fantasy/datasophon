@@ -157,3 +157,4 @@ JAVA_HOME=$JH21 ./mvnw -pl datasophon-api spotless:check -s ~/.m2/setting.xml
 2. 用 `deploy/compose/docker-compose.observability.yml` 观测沙箱 + 真实 Doris FE/BE 容器,`mysql -h127.0.0.1 -P9030 -uroot` 核对 `otel_metrics_*` 表 `service_name` 确为 `DorisFE`/`DorisBE`,且各面板指标(`doris_be_disks_local_used_capacity`、`doris_fe_query_total`、`jvm_heap_size_bytes` 等)在去掉 job 过滤后仍能查到数据。
 3. 浏览器端到端:Doris 服务详情页 →"监控"Tab → cluster/fe/be 三段面板均有数据(尤其验证 BE 段,这是 job 漂移最先暴露断链的地方);确认 `/monitor/doris` 已无路由/菜单。
 
+全部证据齐备后，方可标记该监控迁移已完成。

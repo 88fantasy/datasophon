@@ -158,7 +158,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         if (StringUtils.isNotBlank(serviceConfig) && serviceConfig.stripLeading().startsWith("[")) {
             String resolved = PlaceholderUtils.replacePlaceholders(
                     serviceConfig, globalVariables, Constants.REGEX_VARIABLE);
-            return JSONArray.parseArray(resolved, ServiceConfig.class);
+            return applyDefaultValues(JSONArray.parseArray(resolved, ServiceConfig.class));
         }
 
         JSONObject serviceDdl = JSON.parseObject(frameService.getServiceJson());
@@ -168,7 +168,16 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         }
         String resolved = PlaceholderUtils.replacePlaceholders(
                 parameters.toJSONString(), globalVariables, Constants.REGEX_VARIABLE);
-        return JSONArray.parseArray(resolved, ServiceConfig.class);
+        return applyDefaultValues(JSONArray.parseArray(resolved, ServiceConfig.class));
+    }
+
+    static List<ServiceConfig> applyDefaultValues(List<ServiceConfig> configs) {
+        for (ServiceConfig config : configs) {
+            if (config.getValue() == null && config.getDefaultValue() != null) {
+                config.setValue(config.getDefaultValue());
+            }
+        }
+        return configs;
     }
 
     @Override
@@ -184,11 +193,9 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
         // 添加配置数据到全局变量
         for (ServiceConfig serviceConfig : list) {
-            String variableName = serviceConfig.getName();
-            String variableValue = String.valueOf(serviceConfig.getValue());
-            // add to global variable
             if (Boolean.TRUE.equals(serviceConfig.getRegister())) {
-                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, variableName, variableValue);
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName,
+                        serviceConfig.getName(), registeredVariableValue(serviceConfig));
             }
         }
 
@@ -236,6 +243,13 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         serviceInstanceEntity.setUpdateTime(new Date());
         serviceInstanceEntity.setLabel(frameServiceEntity.getLabel());
         serviceInstanceService.updateById(serviceInstanceEntity);
+    }
+
+    static String registeredVariableValue(ServiceConfig config) {
+        if (config.getValue() == null) {
+            throw new ServiceException(500, "注册配置项缺少有效值: " + config.getName());
+        }
+        return String.valueOf(config.getValue());
     }
 
     private String getServiceName(String frameCode, String serviceRoleName) {

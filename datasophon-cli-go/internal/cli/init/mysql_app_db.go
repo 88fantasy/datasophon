@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -66,7 +67,7 @@ func (t *InitMysqlAppDb) initCommonAccount(exec executor.Executor) error {
 	runSQL := func(sql string) error {
 		r := exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' -e \"%s\"", t.Port, t.RootPassword, sql))
 		if !r.Success {
-			return fmt.Errorf("执行 SQL 失败（%s): %s", sql, r.ErrOutput)
+			return errors.New("执行 MySQL 初始化 SQL 失败")
 		}
 		return nil
 	}
@@ -74,7 +75,7 @@ func (t *InitMysqlAppDb) initCommonAccount(exec executor.Executor) error {
 	if err := runSQL(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;", t.DBName)); err != nil {
 		return err
 	}
-	if err := runSQL(fmt.Sprintf("CREATE USER '%s'@'%%' IDENTIFIED BY '%s';", t.Account, t.Password)); err != nil {
+	if err := runSQL(fmt.Sprintf("CREATE USER IF NOT EXISTS '%s'@'%%' IDENTIFIED BY '%s';", t.Account, t.Password)); err != nil {
 		return err
 	}
 	if err := runSQL(fmt.Sprintf("ALTER USER '%s'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;", t.Account, t.Password)); err != nil {

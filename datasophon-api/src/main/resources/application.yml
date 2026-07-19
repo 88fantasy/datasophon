@@ -88,6 +88,8 @@ datasophon:
       interval-ms: 60000
   server:
     path-prefix: /api
+  internal-api:
+    token: ${DDH_INTERNAL_API_TOKEN:}
   ai:
     sidecar-url: ${DDH_AI_SIDECAR_URL:http://localhost:18090}
     internal-token: ${DDH_AI_INTERNAL_TOKEN:change-me}

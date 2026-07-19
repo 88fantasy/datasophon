@@ -7,8 +7,8 @@
 
 - 登录与 CSRF 拦截器仅覆盖 `/ddh/api/**`，`BasicValidRequestInterceptor` 也显式放行
   `/internal/**`。
-- 当前端点不做认证。调用方必须限制在可信网络内；后续可参照 `AgentToolController` 的
-  `X-Agent-Token` 模式增加 `X-Internal-Token` 校验。
+- 内部端点使用 `X-Internal-Token` 请求头认证。服务端 Token 通过环境变量
+  `DDH_INTERNAL_API_TOKEN` 配置；未配置时端点默认拒绝所有请求。
 - 响应统一为 `success`、`code`、`message`、`data` 四字段的 `InternalResponse` 信封。
 
 ## 端点
@@ -16,6 +16,14 @@
 |   方法   |              路径              |                   说明                   |
 |--------|------------------------------|----------------------------------------|
 | `POST` | `/ddh/internal/meta/refresh` | 从已启用的 MetaStorage 全量重新加载物理与 K8s 服务元数据。 |
+
+调用示例：
+
+```bash
+curl -X POST \
+  -H "X-Internal-Token: ${DDH_INTERNAL_API_TOKEN}" \
+  http://127.0.0.1:8080/ddh/internal/meta/refresh
+```
 
 刷新成功时，`data` 为 `MetaReloadResult`：`physicalTotal`、`physicalLoaded`、`k8sTotal`、
 `k8sLoaded`、`errors` 和 `metaStorageAvailable`。其中 `metaStorageAvailable=false` 表示本次因

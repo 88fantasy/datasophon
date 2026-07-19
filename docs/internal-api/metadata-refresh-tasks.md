@@ -181,6 +181,9 @@ cd /Users/pro/IdeaProjects/datasophon
 
 ## Task 3 — /internal/meta 刷新端点
 
+> PR 审查后的安全加固已取代本 Task 最初的“无鉴权”约束：当前端点要求
+> `X-Internal-Token`，服务端通过 `DDH_INTERNAL_API_TOKEN` 配置；未配置或请求 Token 不匹配时返回 HTTP 401。
+
 **目标**:暴露 `POST /internal/meta/refresh`,调用即触发一次全量元数据刷新,返回加载统计。
 
 **依赖**:Task 1(`InternalResponse` 信封 + Advice 生效)+ Task 2(`reloadAllMeta()` 方法)均完成后开始。
@@ -308,17 +311,18 @@ cd /Users/pro/IdeaProjects/datasophon
 - Task 2 核实结论:`run()` 保留事务注解并委托 `reloadAllMeta()`；后者也作为独立的事务入口。
   原有的全局变量加载、物理/K8s 分组加载与单服务失败继续语义均保留，并新增统计、错误列表和
   无 MetaStorage 跳过结果。
-- Task 3 核实结论:端点为裸返回 `MetaReloadResult` 的
-  `POST /internal/meta/refresh`，由内部 Advice 自动包装。未修改 `AppConfiguration`，也未增加认证。
-- Task 4 核实结论:新增 3 个加载层分支测试和 2 个 MockMvc 响应测试均已通过；启动冒烟测试也已通过。
+- Task 3 核实结论:端点为 `POST /internal/meta/refresh`，使用 `X-Internal-Token` 认证；成功和失败响应均为
+  `InternalResponse`。Token 通过 `DDH_INTERNAL_API_TOKEN` 配置，未配置时默认拒绝访问。
+- Task 4 核实结论:新增 3 个加载层分支测试和 4 个 MockMvc 响应测试均已通过；启动冒烟测试也已通过。
   本任务 Java 文件已运行模块级 `spotless:apply`，随后根级 `spotless:check` 也已通过。
 
 ---
 
 ## Claude 负责的验证(实现完成后,不在本清单范围内执行,仅记录以便交接)
 
-1. **静态审查**:审四个 Task 的 diff——重点检查 T1 两个 Advice 的 `basePackages` 是否精确、有没有误伤 `AgentToolController`;T2 `run()` 重构后是否还是"启动时一次性加载全部服务"这个语义、`@Transactional` 是否在正确的方法上;T3 端点是否真的裸返回(没有手动包 `InternalResponse`)、路径是否确实不带 `/api`;T4 两个新测试是否真的断言到了"包装成功"与"包装失败"两条路径,而不是只测 happy path。
+1. **静态审查**:审四个 Task 的 diff——重点检查 T1 两个 Advice 的 `basePackages` 是否精确、有没有误伤 `AgentToolController`;T2 `run()` 重构后是否还是"启动时一次性加载全部服务"这个语义、`@Transactional` 是否在正确的方法上;T3 路径是否确实不带 `/api`、是否校验 `X-Internal-Token`;T4 测试是否覆盖成功、异常和鉴权失败三条路径。
 2. **编译 + 单测**:`./mvnw -pl datasophon-api -am -Dspotless.check.skip=true -Dtest=LoadServiceMetaReloadTest,InternalMetaControllerTest,DataSophonApplicationServerTest test`,再单独跑 `./mvnw -pl datasophon-api spotless:check`。
-3. **端到端**:本地起 `datasophon-api`(IDEA 直接跑或用打包后的 tar 用 `java -cp` 起),`curl -XPOST http://127.0.0.1:8080/ddh/internal/meta/refresh`(不带任何 Cookie/Token)确认:① HTTP 200 + `InternalResponse` 信封;② 服务端日志能看到"重新加载 DDL"相关字样;③ 手动改一份本地/Nexus 上的 `service_ddl.json` 后再打一次该端点,响应 `data` 里的统计/内容能反映出这次改动已生效(不需要重启 `datasophon-api` 进程)。
+3. **端到端**:设置 `DDH_INTERNAL_API_TOKEN`,本地起 `datasophon-api`(IDEA 直接跑或用打包后的 tar 用 `java -cp` 起),`curl -XPOST -H "X-Internal-Token: ${DDH_INTERNAL_API_TOKEN}" http://127.0.0.1:8080/ddh/internal/meta/refresh` 确认:① HTTP 200 + `InternalResponse` 信封;② 服务端日志能看到"重新加载 DDL"相关字样;③ 手动改一份本地/Nexus 上的 `service_ddl.json` 后再打一次该端点,响应 `data` 里的统计/内容能反映出这次改动已生效(不需要重启 `datasophon-api` 进程)。
 4. 若真实行为证伪任何推断,按 ZK/RustFS/Doris 先例回改本文档并记录在"核实结论"一节。
 
+未携带正确 `X-Internal-Token` 的请求应返回 HTTP 401。

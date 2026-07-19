@@ -16,6 +16,7 @@ type tarRecordingExec struct {
 	recordingExec
 	tarAvailable bool
 	sentFiles    [][2]string
+	osType       osinfo.OsType
 }
 
 func (m *tarRecordingExec) ExecShell(cmd string) executor.ExecResult {
@@ -26,7 +27,7 @@ func (m *tarRecordingExec) ExecShell(cmd string) executor.ExecResult {
 			return executor.Succeed("/usr/bin/tar")
 		}
 		return executor.Fail("tar not found")
-	case strings.HasPrefix(cmd, "rpm -ivh "):
+	case strings.HasPrefix(cmd, "rpm -ivh "), strings.HasPrefix(cmd, "dpkg -i "):
 		m.tarAvailable = true
 	}
 	return executor.Succeed("")
@@ -78,7 +79,29 @@ func TestInitTar_InstallsOfflineRpm(t *testing.T) {
 	assert.Equal(t, 2, countCommand(m.commands, "which tar"))
 }
 
+func TestInitTar_InstallsOfflineDebFromAptRepository(t *testing.T) {
+	root := t.TempDir()
+	repoDir := filepath.Join(root, "apt", string(osinfo.ArchX86_64), string(osinfo.OsTypeUbuntu22041LTS))
+	require.NoError(t, os.MkdirAll(repoDir, 0o755))
+	localPkg := filepath.Join(repoDir, "tar_1.0_amd64.deb")
+	require.NoError(t, os.WriteFile(localPkg, nil, 0o644))
+
+	m := &tarRecordingExec{
+		recordingExec: recordingExec{arch: osinfo.ArchX86_64},
+		osType:        osinfo.OsTypeUbuntu22041LTS,
+	}
+	err := (&InitTar{ProductPackagesPath: root}).doRun(m)
+
+	require.NoError(t, err)
+	require.Equal(t, [][2]string{{localPkg, "/tmp/tar_1.0_amd64.deb"}}, m.sentFiles)
+	assert.True(t, hasCmd(m.commands, "dpkg -i '/tmp/tar_1.0_amd64.deb'"))
+	assert.Equal(t, 2, countCommand(m.commands, "which tar"))
+}
+
 func (m *tarRecordingExec) GetOs() osinfo.OsType {
+	if m.osType != "" {
+		return m.osType
+	}
 	return osinfo.OsTypeOpenEuler220303SP3
 }
 

@@ -23,6 +23,7 @@
 package com.datasophon.api.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.model.Generators;
@@ -68,6 +69,34 @@ class ServiceInstallServiceImplTest {
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("shownByDefault", true),
                         org.assertj.core.groups.Tuple.tuple("explicitlyHidden", false));
+    }
+
+    @Test
+    void usesDefaultValueWhenDdlValueIsMissing() {
+        FrameServiceEntity frameService = new FrameServiceEntity();
+        frameService.setServiceJson("""
+                {"parameters":[
+                  {"name":"defaulted","defaultValue":"otel"},
+                  {"name":"explicitEmpty","value":"","defaultValue":"fallback"},
+                  {"name":"explicitFalse","value":false,"defaultValue":true}
+                ]}
+                """);
+
+        assertThat(ServiceInstallServiceImpl.resolveFrameServiceConfigs(frameService, Map.of()))
+                .extracting(ServiceConfig::getName, ServiceConfig::getValue)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("defaulted", "otel"),
+                        org.assertj.core.groups.Tuple.tuple("explicitEmpty", ""),
+                        org.assertj.core.groups.Tuple.tuple("explicitFalse", false));
+    }
+
+    @Test
+    void rejectsNullRegisteredVariableInsteadOfPersistingLiteralNull() {
+        ServiceConfig config = new ServiceConfig();
+        config.setName("root_password");
+
+        assertThatThrownBy(() -> ServiceInstallServiceImpl.registeredVariableValue(config))
+                .hasMessageContaining("root_password");
     }
 
     @Test

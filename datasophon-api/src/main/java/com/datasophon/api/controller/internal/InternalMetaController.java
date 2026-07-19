@@ -25,9 +25,19 @@ package com.datasophon.api.controller.internal;
 import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.load.MetaReloadResult;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * 元数据管理相关的内部端点（供内部系统或脚本调用）。
@@ -37,22 +47,39 @@ import org.springframework.web.bind.annotation.RestController;
  * 拦截器仅覆盖 {@code /ddh/api/**}，{@code basicValidRequestInterceptor} 显式排除
  * {@code /internal/**}，故这些端点不在拦截范围内。
  *
- * <p><b>当前无鉴权</b>。后续如需加固，可参照
- * {@link com.datasophon.api.controller.AgentToolController} 的 X-Agent-Token 方案，
- * 在此增加等价的 X-Internal-Token 校验。
+ * <p>该端点使用 {@code X-Internal-Token} 共享 Token 鉴权。Token 未配置时端点默认拒绝访问。
  */
 @RestController
 @RequestMapping("/internal/meta")
 public class InternalMetaController {
 
     private final LoadServiceMeta loadServiceMeta;
+    private final String internalToken;
 
-    public InternalMetaController(LoadServiceMeta loadServiceMeta) {
+    public InternalMetaController(
+                                  LoadServiceMeta loadServiceMeta,
+                                  @Value("${datasophon.internal-api.token:}") String internalToken) {
         this.loadServiceMeta = loadServiceMeta;
+        this.internalToken = internalToken;
     }
 
     @PostMapping("/refresh")
-    public MetaReloadResult refresh() {
-        return loadServiceMeta.reloadAllMeta();
+    public InternalResponse<MetaReloadResult> refresh(
+                                                      @RequestHeader(name = "X-Internal-Token", required = false) String token,
+                                                      HttpServletResponse response) {
+        if (!isAuthorized(token)) {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            return InternalResponse.fail(HttpStatus.UNAUTHORIZED.value(), "内部接口鉴权失败");
+        }
+        return InternalResponse.ok(loadServiceMeta.reloadAllMeta());
+    }
+
+    private boolean isAuthorized(String token) {
+        if (StringUtils.isBlank(internalToken) || token == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                internalToken.getBytes(StandardCharsets.UTF_8),
+                token.getBytes(StandardCharsets.UTF_8));
     }
 }

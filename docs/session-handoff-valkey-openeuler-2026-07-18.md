@@ -157,12 +157,12 @@ f13280147f1a0f6ed5f5d61ac80620c0b64049d76a99c7a5f043319efeb368fd
 
 本包在 SP3 编译和实测。针对 openEuler 22.03 LTS-SP4 已做 ELF ABI 与官方仓库核验：
 
-| 项目 | 本包要求 | SP4 官方 x86_64 仓库 |
-|---|---|---|
-| glibc | 最高 `GLIBC_2.34` | `glibc-2.34-152.oe2203sp4` |
-| OpenSSL | `libssl.so.1.1`、`libcrypto.so.1.1` | `openssl-libs-1.1.1wa-7.oe2203sp4` |
-| 架构 | x86_64 | x86_64 |
-| redis_exporter | 静态链接 | 不依赖目标机动态库 |
+|       项目       |                本包要求                |          SP4 官方 x86_64 仓库          |
+|----------------|------------------------------------|------------------------------------|
+| glibc          | 最高 `GLIBC_2.34`                    | `glibc-2.34-152.oe2203sp4`         |
+| OpenSSL        | `libssl.so.1.1`、`libcrypto.so.1.1` | `openssl-libs-1.1.1wa-7.oe2203sp4` |
+| 架构             | x86_64                             | x86_64                             |
+| redis_exporter | 静态链接                               | 不依赖目标机动态库                          |
 
 因此判断可用于 SP4 x86_64，但尚未在 SP4 实机启动验证。如果验证环境是 SP4，先执行：
 
@@ -405,3 +405,5 @@ tail -n 200 /data/install_datasophon/valkey/logs/exporter.log
 6. `PING`、读写、`redis_up=1` 的证据；
 7. 是否为 SP3 或 SP4 实机验收；
 8. 未解决问题及是否允许进入后续批次安装。
+
+以上信息回填完成后，本次验证方可关闭。

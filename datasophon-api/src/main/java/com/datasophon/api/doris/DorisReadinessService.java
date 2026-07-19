@@ -65,8 +65,8 @@ public class DorisReadinessService {
                     log.info("cluster {} 尚未就绪(attempt {}/{}): {}", clusterId, attempt, maxAttempts, e.getMessage());
                 }
             }
-            if (attempt < maxAttempts) {
-                sleep(intervalMs);
+            if (attempt < maxAttempts && !sleep(intervalMs)) {
+                return false;
             }
         }
         return false;
@@ -87,11 +87,13 @@ public class DorisReadinessService {
         return value == null ? null : value.getVariableValue();
     }
 
-    private void sleep(long intervalMs) {
+    private boolean sleep(long intervalMs) {
         try {
             Thread.sleep(intervalMs);
+            return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return false;
         }
     }
 }

@@ -89,6 +89,22 @@ class DorisReadinessServiceTest {
         assertEquals(2, service.showBackendsCalls);
     }
 
+    @Test
+    void stopsRetryingWhenThreadIsInterrupted() {
+        givenRoles(List.of(role("fe-1", ServiceRoleState.RUNNING)), List.of(role("be-1", ServiceRoleState.RUNNING)));
+        service.backends = List.of(backend(false));
+        when(variableService.getVariableByVariableName(7, "DORIS", "root_password"))
+                .thenReturn(variable("configured-password"));
+
+        Thread.currentThread().interrupt();
+        try {
+            assertFalse(service.waitUntilClusterReady(7, 3, 1));
+            assertEquals(1, service.showBackendsCalls);
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
     private void givenRoles(List<ClusterServiceRoleInstanceEntity> frontends,
                             List<ClusterServiceRoleInstanceEntity> backends) {
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE")).thenReturn(frontends);

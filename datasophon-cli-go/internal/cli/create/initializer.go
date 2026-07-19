@@ -49,26 +49,35 @@ func (n *nodeInitializer) bindCommonFlags(cmd *cobra.Command) {
 	_ = cmd.MarkFlagRequired("productPackagesPath")
 }
 
-func (n *nodeInitializer) setup() (*config.ClusterConfig, error) {
+func (n *nodeInitializer) validateCommonPaths(createInstallPath bool) error {
 	if !strings.HasPrefix(n.DatasophonPath, "/") || !strings.HasPrefix(n.InstallPath, "/") {
-		return nil, fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
+		return fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
 	}
 	if !strings.HasPrefix(n.ProductPkgsPath, "/") {
-		return nil, fmt.Errorf("productPackagesPath 必须是绝对路径（以 / 开头）")
+		return fmt.Errorf("productPackagesPath 必须是绝对路径（以 / 开头）")
 	}
 	n.DatasophonPath = strings.TrimSuffix(n.DatasophonPath, "/")
 	n.ProductPkgsPath = strings.TrimSuffix(n.ProductPkgsPath, "/")
 
 	if _, err := os.Stat(n.DatasophonPath); err != nil {
-		return nil, fmt.Errorf("路径不存在: %s", n.DatasophonPath)
+		return fmt.Errorf("路径不存在: %s", n.DatasophonPath)
 	}
 	if _, err := os.Stat(n.ProductPkgsPath); err != nil {
-		return nil, fmt.Errorf("productPackagesPath 不存在: %s", n.ProductPkgsPath)
+		return fmt.Errorf("productPackagesPath 不存在: %s", n.ProductPkgsPath)
 	}
-	if _, err := os.Stat(n.InstallPath); err != nil {
-		if mkErr := os.MkdirAll(n.InstallPath, 0755); mkErr != nil {
-			return nil, fmt.Errorf("创建安装路径失败 %s: %w", n.InstallPath, mkErr)
+	if createInstallPath {
+		if _, err := os.Stat(n.InstallPath); err != nil {
+			if mkErr := os.MkdirAll(n.InstallPath, 0755); mkErr != nil {
+				return fmt.Errorf("创建安装路径失败 %s: %w", n.InstallPath, mkErr)
+			}
 		}
+	}
+	return nil
+}
+
+func (n *nodeInitializer) setup() (*config.ClusterConfig, error) {
+	if err := n.validateCommonPaths(true); err != nil {
+		return nil, err
 	}
 
 	n.initPath = n.DatasophonPath + "/datasophon-init"
@@ -109,20 +118,8 @@ func (n *nodeInitializer) setup() (*config.ClusterConfig, error) {
 }
 
 func (n *nodeInitializer) setupStandalone(host *config.Host) error {
-	if !strings.HasPrefix(n.DatasophonPath, "/") || !strings.HasPrefix(n.InstallPath, "/") {
-		return fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
-	}
-	if !strings.HasPrefix(n.ProductPkgsPath, "/") {
-		return fmt.Errorf("productPackagesPath 必须是绝对路径（以 / 开头）")
-	}
-	n.DatasophonPath = strings.TrimSuffix(n.DatasophonPath, "/")
-	n.ProductPkgsPath = strings.TrimSuffix(n.ProductPkgsPath, "/")
-
-	if _, err := os.Stat(n.DatasophonPath); err != nil {
-		return fmt.Errorf("路径不存在: %s", n.DatasophonPath)
-	}
-	if _, err := os.Stat(n.ProductPkgsPath); err != nil {
-		return fmt.Errorf("productPackagesPath 不存在: %s", n.ProductPkgsPath)
+	if err := n.validateCommonPaths(false); err != nil {
+		return err
 	}
 
 	n.initPath = n.DatasophonPath + "/datasophon-init"
@@ -158,26 +155,13 @@ func (n *nodeInitializer) toBuildContext() *plan.BuildContext {
 // setupConfig 配置模式初始化：从 cpath 加载配置，校验新节点不与已有节点冲突。
 // 若 newNode.IP 或 newNode.Hostname 已存在于配置文件 nodes 列表中，返回错误（提示并停止）。
 func (n *nodeInitializer) setupConfig(cpath string, newNode *config.Host) error {
-	if !strings.HasPrefix(n.DatasophonPath, "/") || !strings.HasPrefix(n.InstallPath, "/") {
-		return fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
-	}
-	if !strings.HasPrefix(n.ProductPkgsPath, "/") {
-		return fmt.Errorf("productPackagesPath 必须是绝对路径（以 / 开头）")
+	if err := n.validateCommonPaths(false); err != nil {
+		return err
 	}
 	// Bug 5: 配置文件路径同样必须为绝对路径，与 datasophonPath/installPath 保持一致
 	if !strings.HasPrefix(cpath, "/") {
 		return fmt.Errorf("配置文件路径必须是绝对路径（以 / 开头）: %s", cpath)
 	}
-	n.DatasophonPath = strings.TrimSuffix(n.DatasophonPath, "/")
-	n.ProductPkgsPath = strings.TrimSuffix(n.ProductPkgsPath, "/")
-
-	if _, err := os.Stat(n.DatasophonPath); err != nil {
-		return fmt.Errorf("路径不存在: %s", n.DatasophonPath)
-	}
-	if _, err := os.Stat(n.ProductPkgsPath); err != nil {
-		return fmt.Errorf("productPackagesPath 不存在: %s", n.ProductPkgsPath)
-	}
-
 	cfg, err := config.Load(cpath)
 	if err != nil {
 		return err

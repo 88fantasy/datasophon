@@ -43,6 +43,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({InternalResponseBodyAdvice.class, InternalApiExceptionHandler.class})
 class InternalMetaControllerTest {
 
+    private static final String INTERNAL_TOKEN = "test-internal-token";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -58,7 +60,7 @@ class InternalMetaControllerTest {
         result.setK8sLoaded(1);
         when(loadServiceMeta.reloadAllMeta()).thenReturn(result);
 
-        mockMvc.perform(post("/internal/meta/refresh"))
+        mockMvc.perform(post("/internal/meta/refresh").header("X-Internal-Token", INTERNAL_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(200))
@@ -69,12 +71,28 @@ class InternalMetaControllerTest {
     @Test
     void refresh_convertsUnexpectedExceptionToInternalResponse() throws Exception {
         when(loadServiceMeta.reloadAllMeta()).thenThrow(new RuntimeException("reload failed"));
-        
-        mockMvc.perform(post("/internal/meta/refresh"))
+
+        mockMvc.perform(post("/internal/meta/refresh").header("X-Internal-Token", INTERNAL_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("reload failed"));
+    }
+
+    @Test
+    void refresh_rejectsMissingToken() throws Exception {
+        mockMvc.perform(post("/internal/meta/refresh"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(401));
+    }
+
+    @Test
+    void refresh_rejectsInvalidToken() throws Exception {
+        mockMvc.perform(post("/internal/meta/refresh").header("X-Internal-Token", "wrong-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(401));
     }
 
     @Configuration(proxyBeanMethods = false)
@@ -82,7 +100,7 @@ class InternalMetaControllerTest {
 
         @Bean
         InternalMetaController internalMetaController(LoadServiceMeta loadServiceMeta) {
-            return new InternalMetaController(loadServiceMeta);
+            return new InternalMetaController(loadServiceMeta, INTERNAL_TOKEN);
         }
     }
 }

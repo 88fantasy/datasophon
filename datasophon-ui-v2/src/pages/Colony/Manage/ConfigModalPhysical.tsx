@@ -105,10 +105,23 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
 
   useEffect(() => {
     if (current !== 3) return undefined;
-    const timer = window.setInterval(() => {
-      refreshInitialization().catch(() => undefined);
-    }, 3000);
-    return () => window.clearInterval(timer);
+    let cancelled = false;
+    let timer: number | undefined;
+    const poll = async () => {
+      try {
+        await refreshInitialization();
+      } catch {
+        // 下一轮继续尝试。
+      }
+      if (!cancelled) {
+        timer = window.setTimeout(poll, 3000);
+      }
+    };
+    timer = window.setTimeout(poll, 3000);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, [current, refreshInitialization]);
 
   const reset = () => {
@@ -246,6 +259,37 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
     },
   ];
 
+  const renderFooter = () => {
+    switch (current) {
+      case 0:
+        return [
+          <Button key="cancel" onClick={close}>取消</Button>,
+          <Button key="next" type="primary" loading={loading} onClick={startHostCheck}>开始环境校验</Button>,
+        ];
+      case 1:
+        return [
+          <Button key="prev" onClick={() => setCurrent(0)}>上一步</Button>,
+          <Button key="next" type="primary" loading={loading} onClick={startWorkerDispatch}>分发 Worker</Button>,
+        ];
+      case 2:
+        return [
+          <Button key="close" onClick={close}>取消</Button>,
+          <Button key="collector" type="primary" loading={loading} onClick={startCollector}>安装 Collector</Button>,
+        ];
+      case 3: {
+        const buttons = [<Button key="close" onClick={close}>关闭</Button>];
+        if (initialization?.canRetry) {
+          buttons.push(
+            <Button key="retry" type="primary" loading={loading} onClick={retryInitialization}>重试初始化</Button>,
+          );
+        }
+        return buttons;
+      }
+      default:
+        return [<Button key="finish" type="primary" onClick={finish}>完成初始化</Button>];
+    }
+  };
+
   return (
     <Modal
       title={`配置物理集群 — ${cluster.clusterName}`}
@@ -253,33 +297,7 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
       onCancel={close}
       width={900}
       destroyOnHidden
-      footer={
-        current === 0
-          ? [
-              <Button key="cancel" onClick={close}>取消</Button>,
-              <Button key="next" type="primary" loading={loading} onClick={startHostCheck}>开始环境校验</Button>,
-            ]
-          : current === 1
-            ? [
-                <Button key="prev" onClick={() => setCurrent(0)}>上一步</Button>,
-                <Button key="next" type="primary" loading={loading} onClick={startWorkerDispatch}>分发 Worker</Button>,
-              ]
-            : current === 2
-              ? [
-                <Button key="close" onClick={close}>取消</Button>,
-                <Button key="collector" type="primary" loading={loading} onClick={startCollector}>安装 Collector</Button>,
-              ]
-              : current === 3
-                ? [
-                    <Button key="close" onClick={close}>关闭</Button>,
-                    initialization?.canRetry && (
-                      <Button key="retry" type="primary" loading={loading} onClick={retryInitialization}>重试初始化</Button>
-                    ),
-                  ].filter(Boolean)
-                : [
-                    <Button key="finish" type="primary" onClick={finish}>完成初始化</Button>,
-                  ]
-      }
+      footer={renderFooter()}
     >
       <Steps
         current={current}
