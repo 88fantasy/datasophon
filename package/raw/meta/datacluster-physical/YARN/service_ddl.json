@@ -308,7 +308,6 @@
     {
       "enabled": true,
       "name": "yarn.webapp.ui2.enable",
-      "value": true,
       "description": "启用webui2",
       "label": "启用webui2",
       "hidden": false,
@@ -321,20 +320,18 @@
     {
       "enabled": true,
       "name": "yarn.node-labels.fs-store.root-dir",
-      "value": "hdfs://${dfs.nameservices}/user/yarn/nodeLabels",
       "description": "Node Label存储目录",
       "label": "Node Label存储目录",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "hdfs://${dfs.nameservices}/user/yarn/nodeLabels",
+      "defaultValue": "hdfs://${HDFS.dfs.nameservices}/user/yarn/nodeLabels",
       "configurableInWizard": true,
       "register": false
     },
     {
       "enabled": true,
       "name": "yarn.nodemanager.resource.cpu-vcores",
-      "value": "-1",
       "description": "nodemanager虚拟核数",
       "label": "nodemanager虚拟核数",
       "hidden": false,
@@ -347,7 +344,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.resource.count-logical-processors-as-cores",
-      "value": true,
       "description": "是否将物理核数作为虚拟核数",
       "label": "是否将物理核数作为虚拟核数",
       "hidden": false,
@@ -360,7 +356,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.resource.detect-hardware-capabilities",
-      "value": true,
       "description": "是否让yarn自己检测硬件进行配置",
       "label": "是否让yarn自己检测硬件进行配置",
       "hidden": false,
@@ -373,7 +368,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.resource.pcores-vcores-multiplier",
-      "value": "0.75",
       "description": "",
       "label": "虚拟核数与物理核数比例",
       "hidden": false,
@@ -386,7 +380,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.am.max-attempts",
-      "value": "4",
       "description": "",
       "label": "AM重试次数",
       "hidden": false,
@@ -399,7 +392,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.resource.memory-mb",
-      "value": "65536",
       "description": "可分配给容器的内存",
       "label": "nodemanager内存",
       "hidden": false,
@@ -412,7 +404,6 @@
     {
       "enabled": true,
       "name": "yarn.scheduler.minimum-allocation-mb",
-      "value": "1024",
       "description": "RM上每个容器请求的最小分配量（MB）",
       "label": "RM上每个容器请求的最小分配量（MB）",
       "hidden": false,
@@ -425,7 +416,6 @@
     {
       "enabled": true,
       "name": "yarn.scheduler.maximum-allocation-mb",
-      "value": "65536",
       "description": "RM上每个容器请求的最大分配量（MB）",
       "label": "RM上每个容器请求的最大分配量（MB）",
       "hidden": false,
@@ -438,7 +428,6 @@
     {
       "enabled": true,
       "name": "yarn.scheduler.minimum-allocation-vcores",
-      "value": "1",
       "description": "RM上每个容器请求的虚拟CPU核的最小分配数",
       "label": "RM上每个容器请求的虚拟CPU核的最小分配数",
       "hidden": false,
@@ -451,7 +440,6 @@
     {
       "enabled": true,
       "name": "yarn.scheduler.maximum-allocation-vcores",
-      "value": "16",
       "description": "RM上每个容器请求的虚拟CPU核的最大分配数",
       "label": "RM上每个容器请求的虚拟CPU核的最大分配数",
       "hidden": false,
@@ -464,7 +452,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.vmem-pmem-ratio",
-      "value": "2.1",
       "description": "为容器设置内存限制时，虚拟内存与物理内存之间的比率。",
       "label": "虚拟内存与物理内存之间的比率",
       "hidden": false,
@@ -477,7 +464,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.aux-services",
-      "value": "spark_shuffle,mapreduce_shuffle",
       "description": "yarn服务机制",
       "label": "yarn服务机制",
       "hidden": false,
@@ -490,7 +476,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.aux-services.spark_shuffle.class",
-      "value": "org.apache.spark.network.yarn.YarnShuffleService",
       "description": "spark_shuffle类",
       "label": "spark_shuffle类",
       "hidden": false,
@@ -503,7 +488,6 @@
     {
       "enabled": true,
       "name": "yarn.log-aggregation-enable",
-      "value": true,
       "description": "开启yarn日志聚合",
       "label": "是否开启yarn日志聚合",
       "hidden": false,
@@ -516,7 +500,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.scheduler.class",
-      "value": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler",
       "description": "选择资源调度器，容量调度器或公平调度器",
       "label": "资源调度器",
       "hidden": false,
@@ -533,7 +516,6 @@
     {
       "enabled": true,
       "name": "yarn.scheduler.fair.allocation.file",
-      "value": "${HADOOP_HOME}/etc/hadoop/fair-scheduler.xml",
       "description": "指明公平调度器队列分配配置文件",
       "label": "公平调度器配置文件位置",
       "hidden": false,
@@ -546,7 +528,6 @@
     {
       "enabled": true,
       "name": "yarn.scheduler.fair.preemption",
-      "value": false,
       "description": "是否允许队列间资源抢占",
       "label": "是否允许队列间资源抢占",
       "hidden": false,
@@ -559,7 +540,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.ha.enabled",
-      "value": true,
       "description": "是否启用resourcemanager ha",
       "label": "是否启用resourcemanager ha",
       "hidden": false,
@@ -573,7 +553,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.cluster-id",
-      "value": "cluster-yarn1",
       "description": "",
       "label": "resourcemanager高可用集群id",
       "hidden": false,
@@ -587,7 +566,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.ha.rm-ids",
-      "value": "rm1,rm2",
       "description": "",
       "label": "resourcemanager高可用节点",
       "hidden": false,
@@ -601,7 +579,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.hostname.rm1",
-      "value": "${YARN.rm1}",
       "description": "",
       "label": "rm1主机名",
       "hidden": false,
@@ -615,7 +592,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.hostname.rm2",
-      "value": "${YARN.rm2}",
       "description": "",
       "label": "rm2主机名",
       "hidden": false,
@@ -629,7 +605,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.webapp.address.rm1",
-      "value": "${YARN.rm1}:8088",
       "description": "",
       "label": "rm1 web地址",
       "hidden": false,
@@ -643,7 +618,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.webapp.address.rm2",
-      "value": "${YARN.rm2}:8088",
       "description": "",
       "label": "rm2 web地址",
       "hidden": false,
@@ -657,7 +631,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.address.rm1",
-      "value": "${YARN.rm1}:8032",
       "description": "",
       "label": "ResourceManager对客户端暴露的地址rm1",
       "hidden": false,
@@ -671,7 +644,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.address.rm2",
-      "value": "${YARN.rm2}:8032",
       "description": "",
       "label": "ResourceManager对客户端暴露的地址rm2",
       "hidden": false,
@@ -685,7 +657,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.scheduler.address.rm1",
-      "value": "${YARN.rm1}:8030",
       "description": "",
       "label": "ResourceManager对ApplicationMaster暴露的访问地址rm1",
       "hidden": false,
@@ -699,7 +670,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.scheduler.address.rm2",
-      "value": "${YARN.rm2}:8030",
       "description": "",
       "label": "ResourceManager对ApplicationMaster暴露的访问地址rm2",
       "hidden": false,
@@ -713,7 +683,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.resource-tracker.address.rm1",
-      "value": "${YARN.rm1}:8031",
       "description": "",
       "label": "ResourceManager对NodeManager暴露的地址rm1",
       "hidden": false,
@@ -727,7 +696,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.resource-tracker.address.rm2",
-      "value": "${YARN.rm2}:8031",
       "description": "",
       "label": "ResourceManager对NodeManager暴露的地址rm2",
       "hidden": false,
@@ -741,7 +709,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.zk-address",
-      "value": "${ZOOKEEPER.zkUrls}",
       "description": "",
       "label": "zk地址",
       "hidden": false,
@@ -755,7 +722,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.recovery.enabled",
-      "value": true,
       "description": "",
       "label": "启用自动恢复",
       "hidden": false,
@@ -769,7 +735,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.store.class",
-      "value": "org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore",
       "description": "",
       "label": "yarn状态信息存储类",
       "hidden": false,
@@ -783,7 +748,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.address",
-      "value": "0.0.0.0:45454",
       "description": "",
       "label": "nodemanager地址",
       "hidden": false,
@@ -796,7 +760,6 @@
     {
       "enabled": true,
       "name": "yarn.log.server.url",
-      "value": "http://${YARN.HistoryServer.__host__}`:19888/jobhistory/logs",
       "description": "",
       "label": "historyserver地址",
       "hidden": false,
@@ -809,7 +772,6 @@
     {
       "enabled": true,
       "name": "yarn.log-aggregation.retain-seconds",
-      "value": "2592000",
       "description": "",
       "label": "日志保留时长",
       "hidden": false,
@@ -822,7 +784,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.remote-app-log-dir",
-      "value": "/tmp/logs",
       "description": "",
       "label": "日志保留位置",
       "hidden": false,
@@ -835,7 +796,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.remote-app-log-dir-suffix",
-      "value": "logs",
       "description": "",
       "label": "日志后缀",
       "hidden": false,
@@ -848,9 +808,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.local-dirs",
-      "value": [
-        ""
-      ],
       "description": "NodeManager本地存储目录，可配置多个，按逗号分隔",
       "label": "NodeManager本地存储目录",
       "hidden": false,
@@ -867,9 +824,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.log-dirs",
-      "value": [
-        ""
-      ],
       "description": "NodeManager日志存储目录，可配置多个，按逗号分隔",
       "label": "NodeManager日志存储目录",
       "hidden": false,
@@ -886,7 +840,6 @@
     {
       "enabled": true,
       "name": "mapreduce.cluster.local.dir",
-      "value": "/data/mapred/local",
       "description": "MapReduce本地存储目录",
       "label": "MapReduce本地存储目录",
       "hidden": false,
@@ -901,7 +854,6 @@
     {
       "enabled": true,
       "name": "mapreduce.jobhistory.address",
-      "value": "${YARN.HistoryServer.__host__}:10020",
       "description": "",
       "label": "mapreduce.jobhistory.address",
       "hidden": false,
@@ -914,7 +866,6 @@
     {
       "enabled": true,
       "name": "mapreduce.jobhistory.webapp.address",
-      "value": "${YARN.HistoryServer.__host__}:19888",
       "description": "",
       "label": "mapreduce.jobhistory.webapp.address",
       "hidden": false,
@@ -927,7 +878,6 @@
     {
       "enabled": true,
       "name": "mapreduce.jobhistory.done-dir",
-      "value": "/tmp/history/done",
       "description": "",
       "label": "mapreduce.jobhistory.done-dir",
       "hidden": false,
@@ -940,7 +890,6 @@
     {
       "enabled": true,
       "name": "mapreduce.jobhistory.intermediate-done-dir",
-      "value": "/tmp/history/done_intermediate",
       "description": "",
       "label": "mapreduce.jobhistory.intermediate-done-dir",
       "hidden": false,
@@ -953,19 +902,6 @@
     {
       "enabled": true,
       "name": "yarn.application.classpath",
-      "value": [
-        "${HADOOP_HOME}/etc/hadoop",
-        "${HADOOP_HOME}/share/hadoop/common/lib/*",
-        "${HADOOP_HOME}/share/hadoop/common/*",
-        "${HADOOP_HOME}/share/hadoop/hdfs",
-        "${HADOOP_HOME}/share/hadoop/hdfs/lib/*",
-        "${HADOOP_HOME}/share/hadoop/hdfs/*",
-        "${HADOOP_HOME}/share/hadoop/mapreduce/lib/*",
-        "${HADOOP_HOME}/share/hadoop/mapreduce/*",
-        "${HADOOP_HOME}/share/hadoop/yarn",
-        "${HADOOP_HOME}/share/hadoop/yarn/lib/*",
-        "${HADOOP_HOME}/share/hadoop/yarn/*"
-      ],
       "description": "yarn应用程序加载的classpath",
       "label": "yarn应用程序加载的classpath",
       "hidden": false,
@@ -991,7 +927,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.principal",
-      "value": "",
       "description": "",
       "label": "ResourceManager服务的Kerberos主体",
       "hidden": true,
@@ -1006,7 +941,6 @@
     {
       "enabled": true,
       "name": "yarn.resourcemanager.keytab",
-      "value": "",
       "description": "",
       "label": "ResourceManager服务的Kerberos密钥文件路径",
       "hidden": true,
@@ -1021,7 +955,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.principal",
-      "value": "",
       "description": "",
       "label": "NodeManager服务的Kerberos主体",
       "hidden": true,
@@ -1036,7 +969,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.keytab",
-      "value": "",
       "description": "",
       "label": "NodeManager服务的Kerberos密钥文件路径",
       "hidden": true,
@@ -1051,7 +983,6 @@
     {
       "enabled": true,
       "name": "mapreduce.jobhistory.principal",
-      "value": "",
       "description": "",
       "label": "JobHistory服务的Kerberos主体",
       "hidden": true,
@@ -1066,7 +997,6 @@
     {
       "enabled": true,
       "name": "mapreduce.jobhistory.keytab",
-      "value": "",
       "description": "",
       "label": "JobHistory服务的Kerberos密钥文件路径",
       "hidden": true,
@@ -1081,7 +1011,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.container-executor.class",
-      "value": "",
       "description": "",
       "label": "使用LinuxContainerExecutor管理Container",
       "hidden": true,
@@ -1096,7 +1025,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.linux-container-executor.group",
-      "value": "hadoop",
       "description": "",
       "label": "NodeManager的启动用户的所属组",
       "hidden": true,
@@ -1111,7 +1039,6 @@
     {
       "enabled": true,
       "name": "yarn.nodemanager.linux-container-executor.path",
-      "value": "",
       "description": "",
       "label": "LinuxContainerExecutor脚本路径",
       "hidden": true,
@@ -1126,7 +1053,6 @@
     {
       "enabled": true,
       "name": "yarn.node-labels.enabled",
-      "value": false,
       "description": "开启 YARN Node Labels",
       "label": "启用YARN标签调度",
       "hidden": false,
@@ -1139,7 +1065,6 @@
     {
       "enabled": true,
       "name": "enableKerberos",
-      "value": false,
       "description": "启用Kerberos认证",
       "label": "启用Kerberos认证",
       "hidden": false,
@@ -1157,7 +1082,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "${HADOOP_HOME}",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}"
@@ -1170,7 +1094,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "9323",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9323"
@@ -1183,7 +1106,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "9324",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9324"
@@ -1196,7 +1118,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "9325",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9325"
@@ -1204,7 +1125,6 @@
     {
       "enabled": true,
       "name": "custom.yarn.site.xml",
-      "value": "",
       "description": "自定义配置",
       "label": "自定义配置yarn-site.xml",
       "hidden": false,
@@ -1218,7 +1138,6 @@
     {
       "enabled": true,
       "name": "custom.mapred.site.xml",
-      "value": "",
       "description": "自定义配置",
       "label": "自定义配置mapred-site.xml",
       "hidden": false,

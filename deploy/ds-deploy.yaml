@@ -1,0 +1,19 @@
+app:
+  - name: DS
+    version: 3.4.1
+    deployType: physical
+    roles:
+      - name: ApiServer
+        deployHosts:
+          - ddh-02
+      - name: MasterServer
+        deployHosts:
+          - ddh-02
+      - name: WorkerServer
+        deployHosts:
+          - ddh-03
+          - ddh-04
+          - ddh-05
+      - name: AlertServer
+        deployHosts:
+          - ddh-02

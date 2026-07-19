@@ -77,7 +77,15 @@ const SectionHeader: FC<{ title: string; subtitle: string }> = ({
   );
 };
 
-const DorisDashboard: FC = () => {
+interface DorisDashboardProps {
+  clusterId?: number;
+  embedded?: boolean;
+}
+
+const DorisDashboard: FC<DorisDashboardProps> = ({
+  clusterId = 1,
+  embedded = false,
+}) => {
   const [selectedCluster, setSelectedCluster] = useState('');
   const [selectedFeInstances, setSelectedFeInstances] = useState<string[]>([]);
   const [selectedBeInstances, setSelectedBeInstances] = useState<string[]>([]);
@@ -118,7 +126,7 @@ const DorisDashboard: FC = () => {
       variables,
       activeSegment,
       timeRange,
-      clusterId: 1,
+      clusterId,
       refreshKey,
     });
 
@@ -133,9 +141,9 @@ const DorisDashboard: FC = () => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={t('pages.dorisMonitor.title')}
       toolbar={
         <DorisDashboardToolbar
+          hideClusterSelect={embedded}
           cluster={effectiveCluster}
           clusters={clusters}
           onClusterChange={(value) => {
@@ -162,7 +170,7 @@ const DorisDashboard: FC = () => {
         <>
           {t('pages.dorisMonitor.toolbar.notice')}
           {' · '}
-          {`job="${variables.cluster}" fe_instance=~"${variables.feInstance}" be_instance=~"${variables.beInstance}" interval=${variables.interval}`}
+          {`fe_instance=~"${variables.feInstance}" be_instance=~"${variables.beInstance}" interval=${variables.interval}`}
           {' · '}
           range={timeRange}
         </>

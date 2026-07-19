@@ -32,39 +32,42 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class InstallServiceRoleCommand extends BaseCommand implements Serializable {
-    
+
     private static final long serialVersionUID = -521810628281824531L;
-    
+
+    @JsonIgnore
     private Map<Generators, List<ServiceConfig>> cofigFileMap;
-    
+
     private Long deliveryId;
-    
+
     private Integer normalSize;
-    
+
     private String packageMd5;
-    
+
     /**
      * 创建解压目录
      */
     private Boolean createDecompressDir;
-    
+
     /**
      * 规范化后的文件夹名称
      */
     private String normalPkgDir;
-    
+
     private RunAs runAs;
-    
+
     private ServiceRoleType serviceRoleType;
-    
+
     private Map<String, String> variables;
-    
+
     private List<HookConfig> hooks;
-    
+
 }

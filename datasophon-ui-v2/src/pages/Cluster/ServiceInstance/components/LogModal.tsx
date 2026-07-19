@@ -49,7 +49,7 @@ const LogModal: React.FC<Props> = ({
       onCancel={onClose}
       footer={null}
       width={800}
-      destroyOnClose
+      destroyOnHidden
     >
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>

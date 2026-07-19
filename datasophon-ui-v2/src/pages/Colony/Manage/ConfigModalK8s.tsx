@@ -91,7 +91,7 @@ const ConfigModalK8s: React.FC<Props> = ({
           type: (res.data?.type ?? T_CONFIG_FILE) as DATASOPHON.K8sConnectType,
         };
       }}
-      modalProps={{ destroyOnClose: true, width: 640 }}
+      modalProps={{ destroyOnHidden: true, width: 640 }}
       submitter={{
         render: (_, doms) => (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

@@ -95,7 +95,7 @@ const UploadManifestModal: React.FC<Props> = ({ open, onClose }) => {
         if (!v) onClose();
       }}
       onFinish={handleFinish}
-      modalProps={{ destroyOnClose: true, okText: '开始部署', width: 520 }}
+      modalProps={{ destroyOnHidden: true, okText: '开始部署', width: 520 }}
     >
       <ProFormUploadButton
         label="部署清单"

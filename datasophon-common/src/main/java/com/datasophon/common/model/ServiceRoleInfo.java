@@ -33,6 +33,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.fastjson2.annotation.JSONField;
+
 import lombok.Data;
 
 @Data
@@ -110,12 +112,14 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
      * 接口方法仅为满足 ServiceRoleResource 契约，master 侧不应读取此返回值。
      */
     @Override
+    @JSONField(serialize = false)
     public String getPackageName() {
         throw new UnsupportedOperationException(
                 "ServiceRoleInfo 不支持直接读取 packageName，请通过 archInfoMap 按主机架构解析");
     }
 
     @Override
+    @JSONField(serialize = false)
     public String getDecompressPackageName() {
         throw new UnsupportedOperationException(
                 "ServiceRoleInfo 不支持直接读取 decompressPackageName，请通过 archInfoMap 按主机架构解析");

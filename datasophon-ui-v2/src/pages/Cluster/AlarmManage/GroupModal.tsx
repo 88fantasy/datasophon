@@ -45,7 +45,7 @@ const GroupModal: React.FC<Props> = ({
       width={480}
       layout="horizontal"
       labelCol={{ span: 6 }}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
       onFinish={async (values) => {
         try {
           await saveAlertGroup(clusterId, {

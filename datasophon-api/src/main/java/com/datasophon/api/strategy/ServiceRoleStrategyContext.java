@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServiceRoleStrategyContext {
-    
+
     private static final Map<String, ServiceRoleStrategy> strategyMap = new ConcurrentHashMap<>();
-    
+
     static {
         strategyMap.put("NameNode", new NameNodeHandlerStrategy());
         strategyMap.put("ResourceManager", new RMHandlerStrategy());
@@ -41,8 +41,8 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("SRFE", new FEHandlerStrategy());
         strategyMap.put("DorisFE", new FEHandlerStrategy());
         strategyMap.put("DorisFEObserver", new FEObserverHandlerStartegy());
-        strategyMap.put("SRBE", new BEHandlerStartegy());
-        strategyMap.put("DorisBE", new BEHandlerStartegy());
+        strategyMap.put("SRBE", new BEHandlerStrategy());
+        strategyMap.put("DorisBE", new BEHandlerStrategy());
         strategyMap.put("Krb5Kdc", new Krb5KdcHandlerStrategy());
         strategyMap.put("KAdmin", new KAdminHandlerStrategy());
         strategyMap.put("RangerAdmin", new RangerAdminHandlerStrategy());
@@ -56,15 +56,14 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("KafkaBroker", new KafkaHandlerStrategy());
         strategyMap.put("HBASE", new HBaseHandlerStrategy());
         strategyMap.put("FLINK", new FlinkHandlerStrategy());
-        strategyMap.put("Etcd", new EtcdHandlerStrategy());
-        
+
     }
-    
+
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {
         if (StringUtils.isBlank(type)) {
             return null;
         }
         return strategyMap.get(type);
     }
-    
+
 }

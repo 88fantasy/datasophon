@@ -4,6 +4,7 @@ export default {
   'pages.valkeyMonitor.panel.maxUptime': '最大运行时长',
   'pages.valkeyMonitor.panel.clients': '客户端连接数',
   'pages.valkeyMonitor.panel.memoryUsage': '内存使用率',
+  'pages.valkeyMonitor.panel.memoryLimitNotConfigured': '未配置上限',
   'pages.valkeyMonitor.panel.cacheHitPct': '缓存命中率',
   'pages.valkeyMonitor.panel.totalCommands': '命令速率（按命令）',
   'pages.valkeyMonitor.panel.hitsAndMisses': '命中 / 未命中',

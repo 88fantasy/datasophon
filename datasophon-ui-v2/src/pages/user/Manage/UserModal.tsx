@@ -55,7 +55,7 @@ const UserModal: React.FC<Props> = ({ trigger, user, onSuccess }) => {
           : {}
       }
       onFinish={handleFinish}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
       width={480}
     >
       <ProFormText

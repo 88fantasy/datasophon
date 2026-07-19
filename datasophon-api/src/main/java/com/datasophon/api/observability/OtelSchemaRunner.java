@@ -22,13 +22,14 @@
 
 package com.datasophon.api.observability;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
+import javax.sql.DataSource;
+
 import org.springframework.stereotype.Component;
 
 @Component
 public class OtelSchemaRunner {
-    
-    public void apply(JdbcClient doris, OtelCredentials credentials) {
-        OtelSchemaApplier.apply(doris, credentials);
+
+    public void apply(DataSource dataSource, OtelCredentials credentials) {
+        OtelSchemaApplier.apply(dataSource, credentials);
     }
 }

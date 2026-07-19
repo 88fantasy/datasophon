@@ -14,9 +14,9 @@ import (
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
 	"golang.org/x/crypto/ssh"
-)
 
-const nexusEula = "Use of Sonatype Nexus Repository - Community Edition is governed by the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula. By returning the value from 'accepted:false' to 'accepted:true', you acknowledge that you have read and agree to the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula."
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/bootstrap"
+)
 
 // registryTask 是 plan 包用于 Nexus Registry 安装步骤的 handler。
 type registryTask struct {
@@ -93,9 +93,14 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 	if t.checkStart(exec) {
 		if exec.Exists(passwordPath).Success {
 			oldPassword := strings.TrimSpace(exec.GetFileString(passwordPath).Output)
-			t.changePassword(baseURL, oldPassword)
+			if !t.changePassword(baseURL, oldPassword) {
+				return errors.New("nexus 修改管理员密码失败")
+			}
 		}
-		t.systemEula(baseURL)
+		if err := bootstrap.AcceptNexusEULA(baseURL, t.Username, t.Password,
+			nexusHTTPGet, nexusHTTPPost); err != nil {
+			return fmt.Errorf("nexus 接受 EULA 失败: %w", err)
+		}
 		t.repoCreateByList(baseURL)
 		slog.Info("nexus 安装成功", "path", home)
 		return nil
@@ -138,27 +143,6 @@ func (t *registryTask) changePassword(baseURL, oldPassword string) bool {
 	}
 	body, _ := io.ReadAll(resp.Body)
 	slog.Error("修改密码失败", "status", resp.StatusCode, "body", string(body))
-	return false
-}
-
-func (t *registryTask) systemEula(baseURL string) bool {
-	type eulaReq struct {
-		Accepted   bool   `json:"accepted"`
-		Disclaimer string `json:"disclaimer"`
-	}
-	payload, _ := json.Marshal(eulaReq{Accepted: true, Disclaimer: nexusEula})
-	resp, err := nexusHTTPPost(baseURL, "/service/rest/v1/system/eula",
-		t.Username, t.Password, "application/json", bytes.NewReader(payload))
-	if err != nil {
-		slog.Error("eula 协议请求失败", "err", err)
-		return false
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == 204 {
-		slog.Info("eula 协议设置成功")
-		return true
-	}
-	slog.Error("eula 协议设置失败", "status", resp.StatusCode)
 	return false
 }
 
@@ -241,6 +225,15 @@ func (t *registryTask) realmsDocker(baseURL string) bool {
 	}
 	slog.Error("realms 配置失败", "status", resp.StatusCode)
 	return false
+}
+
+func nexusHTTPGet(baseURL, path, username, password string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, baseURL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(username, password)
+	return http.DefaultClient.Do(req)
 }
 
 func nexusHTTPPost(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {

@@ -28,6 +28,7 @@ Datasophon 的 Master 主服务进程，Spring Boot 3.4.5。本模块既是 HTTP
 
 **协议面**：
 - HTTP REST：`/ddh/api/**`，由 `controller/` 各 `@RestController` 暴露，鉴权链在 `interceptor/`（`LoginHandlerInterceptor` / `UserPermissionHandler` / `BasicValidRequestInterceptor`），密码登录在 `security/PasswordAuthenticator`，免密 LDAP 可在 `security.authentication.type` 切换。
+- `/internal/**`：内部系统对接端点约定；控制器不继承 `ApiController`，绕开登录/CSRF，当前暂无认证。参考 `AgentToolController` 与 `controller/internal/InternalMetaController`。
 - gRPC Server：端口 18081（`grpc-server-spring-boot-starter`），Netty 内嵌，与 Jetty 8080 独立。两类服务挂在同一端口：
   - `WorkerRegistryGrpcService` 接收 Worker `Register / Heartbeat / Unregister`。
   - `MasterCallbackGrpcService` 接收 OLAP 反向注册（`MasterCallbackService.RegisterOlapNode`）。

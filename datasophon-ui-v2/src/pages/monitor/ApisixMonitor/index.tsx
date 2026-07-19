@@ -102,7 +102,11 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
   );
 };
 
-const ApisixDashboard: FC = () => {
+export interface ApisixDashboardProps {
+  clusterId: number;
+}
+
+const ApisixDashboard: FC<ApisixDashboardProps> = ({ clusterId }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -113,7 +117,6 @@ const ApisixDashboard: FC = () => {
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
   const panelTitle = (id: string) => t(`pages.apisixMonitor.panel.${id}`);
-  const title = t('pages.apisixMonitor.title');
 
   const variables = useMemo(
     () => ({
@@ -133,14 +136,13 @@ const ApisixDashboard: FC = () => {
   const { instant, series, instances, jobs, loading } = useApisixDashboard({
     variables,
     timeRange,
-    clusterId: 1,
+    clusterId,
     refreshKey,
   });
 
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={title}
       toolbar={
         <ZKDashboardToolbar
           timeRange={timeRange}

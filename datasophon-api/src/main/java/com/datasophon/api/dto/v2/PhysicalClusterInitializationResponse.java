@@ -20,11 +20,41 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.observability;
+package com.datasophon.api.dto.v2;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface DorisJdbcClientFactory {
-    
-    JdbcClient create(Integer clusterId);
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+public class PhysicalClusterInitializationResponse {
+
+    private InitializationPhase phase;
+    private String dagId;
+    private boolean completed;
+    private boolean canRetry;
+    private List<NodeStatus> nodes = new ArrayList<>();
+
+    public enum InitializationPhase {
+        READY,
+        COLLECTOR_INSTALLING,
+        VERIFYING,
+        FAILED,
+        COMPLETED
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NodeStatus {
+        private String hostname;
+        private String ip;
+        private boolean workerHealthy;
+        private boolean collectorInstalled;
+        private boolean collectorHealthy;
+        private String message;
+    }
 }

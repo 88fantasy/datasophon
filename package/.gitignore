@@ -5,4 +5,5 @@ docker/
 helm/
 yum/
 apt/
+base/
 __pycache__/

@@ -24,57 +24,117 @@ package com.datasophon.api.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataAccessResourceFailureException;
+import org.mockito.InOrder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-import cn.hutool.core.io.IoUtil;
-
 class OtelSchemaApplierTest {
-    
+
     @Test
     void injectsDistinctRuntimePasswordsWithoutLeavingPlaceholders() {
         String sql = "collector='CHANGE_ME_AT_A3_COLLECTOR'; reader='CHANGE_ME_AT_A3_READER'";
-        
+
         String rendered = OtelSchemaApplier.renderSql(
                 sql, new OtelCredentials("collector-secret", "reader-secret"));
-        
+
         assertThat(rendered)
                 .contains("collector='collector-secret'")
                 .contains("reader='reader-secret'")
                 .doesNotContain("CHANGE_ME_AT_A3");
     }
-    
+
     @Test
-    void ignoresAlreadyExistingCreateJobOnly() {
-        JdbcClient jdbc = mock(JdbcClient.class);
-        JdbcClient.StatementSpec statement = mock(JdbcClient.StatementSpec.class);
-        when(jdbc.sql("CREATE JOB test")).thenReturn(statement);
-        when(statement.update()).thenThrow(new DataAccessResourceFailureException("job already exists"));
-        
-        assertThatCode(() -> OtelSchemaApplier.executeStatement(jdbc, "CREATE JOB test"))
+    void createJobSwitchesToOtelDatabaseOnTheSameConnectionBeforeCreating() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
+
+        OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test");
+
+        InOrder order = inOrder(connection, jdbcStatement);
+        order.verify(connection).setCatalog(OtelSchema.DATABASE);
+        order.verify(jdbcStatement).execute("CREATE JOB test");
+        verify(dataSource, times(1)).getConnection();
+    }
+
+    @Test
+    void ignoresAlreadyExistingCreateJobOnly() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
+        when(jdbcStatement.execute("CREATE JOB test")).thenThrow(new SQLException("job already exists"));
+
+        assertThatCode(() -> OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test"))
                 .doesNotThrowAnyException();
     }
-    
+
+    /** Doris 4.0.6 实测的真实措辞是 "job name exist"(不含 "already"),曾一度漏判导致重复 apply 报错。 */
+    @Test
+    void ignoresDorisActualJobNameExistWording() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
+        when(jdbcStatement.execute("CREATE JOB test"))
+                .thenThrow(new SQLException("job name exist, jobName:otel:otel_traces_graph_job"));
+
+        assertThatCode(() -> OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void rethrowsCreateJobFailuresThatAreNotAlreadyExists() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        Statement jdbcStatement = mock(Statement.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.createStatement()).thenReturn(jdbcStatement);
+        when(jdbcStatement.execute("CREATE JOB test")).thenThrow(new SQLException("Unknown database ''"));
+
+        assertThatThrownBy(() -> OtelSchemaApplier.executeStatement(mock(JdbcClient.class), dataSource, "CREATE JOB test"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("CREATE JOB");
+    }
+
     @Test
     void databaseSchemaAlignsExistingOtelUserPasswords() {
-        String sql = readResource("observability/doris/V1__otel_database.sql");
+        String sql = readResource("sql/V1__otel_database.sql");
         String rendered = OtelSchemaApplier.renderSql(
                 sql, new OtelCredentials("collector-secret", "reader-secret"));
-        
+
         assertThat(rendered)
                 .contains("ALTER USER 'otel_collector' IDENTIFIED BY 'collector-secret'")
                 .contains("ALTER USER 'otel_reader' IDENTIFIED BY 'reader-secret'");
     }
-    
+
+    /** {@code OtelSchema.DDL_RESOURCES} 中的相对路径对应本地 {@code package/raw/meta/datacluster-physical/DORIS/} 下的文件。 */
     private static String readResource(String res) {
-        var in = OtelSchemaApplierTest.class.getClassLoader().getResourceAsStream(res);
-        assertThat(in).as("resource %s", res).isNotNull();
-        return IoUtil.read(in, StandardCharsets.UTF_8);
+        Path path = Path.of("..", "package", "raw", "meta", "datacluster-physical", OtelSchema.SERVICE_NAME, res);
+        try {
+            return Files.readString(path);
+        } catch (IOException e) {
+            throw new IllegalStateException("DDL 资源缺失: " + res, e);
+        }
     }
 }

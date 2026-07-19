@@ -16,58 +16,32 @@
 #  limitations under the License.
 #
 
-usage="Usage: start.sh (start|stop|restart) <command> "
+# APISIX 由离线 RPM 安装包安装，随包自带 systemd unit
+# （/usr/lib/systemd/system/apisix.service），生命周期管理直接委托给 systemctl，
+# 不再自行探活 pid 文件——systemctl 的退出码本身就是准确的事实依据。
 
-# if no args specified, show usage
+usage="Usage: control.sh (start|stop|restart|status)"
+
 if [ $# -le 0 ]; then
-  echo $usage
+  echo "$usage"
   exit 1
 fi
-startStop=$1
-shift
-SH_DIR=`dirname $0`
 
-curdir=/usr/local/apisix
-pid=/usr/local/apisix/logs/nginx.pid
-
-status(){
-  if [ -f $pid ]; then
-    ARGET_PID=`cat $pid`
-    echo "pid is $ARGET_PID"
-    kill -0 $ARGET_PID
-    if [ $? -eq 0 ]
-    then
-      # 发送GET请求到指定的URL
-      port=$(grep -e 'node_listen:' $curdir/conf/config.yaml | awk '{print $2}')
-      status=$(curl -I -m 10 -o /dev/null -s -w %{http_code} http://127.0.0.1:$port/)
-      # 检查返回值是否为200||404
-      if [ $status == "200" -o $status == "404" ]; then
-          echo "http request success, return value is $status"
-          echo "Apisix is OK"
-      else
-          echo "http request failed, return value is：$status"
-          echo "Apisix  is not ready"
-          exit 1
-      fi
-      echo "Apisix is  running "
-    else
-      echo "Apisix  is not running"
-      exit 1
-    fi
-  else
-    echo "Apisix pid file is not exists"
-    exit 1
-	fi
-}
-case $startStop in
+case "$1" in
+  (start)
+    systemctl start apisix
+    ;;
+  (stop)
+    systemctl stop apisix
+    ;;
+  (restart)
+    systemctl restart apisix
+    ;;
   (status)
-	  status
-	;;
+    systemctl is-active --quiet apisix
+    ;;
   (*)
-    echo $usage
+    echo "$usage"
     exit 1
     ;;
 esac
-
-
-echo "End $startStop ."

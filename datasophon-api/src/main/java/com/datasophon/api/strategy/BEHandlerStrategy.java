@@ -41,10 +41,10 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BEHandlerStartegy implements ServiceRoleStrategy {
-    
-    private static final Logger logger = LoggerFactory.getLogger(BEHandlerStartegy.class);
-    
+public class BEHandlerStrategy implements ServiceRoleStrategy {
+
+    private static final Logger logger = LoggerFactory.getLogger(BEHandlerStrategy.class);
+
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
@@ -52,26 +52,26 @@ public class BEHandlerStartegy implements ServiceRoleStrategy {
         logger.info("fe master is {}", feMaster);
         serviceRoleInfo.setMasterHost(feMaster);
     }
-    
+
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstanceEntity.getClusterId());
         String feMaster = globalVariables.get("${DORIS.DorisFE.__hostIp__}");
         String rootPassword = globalVariables.get("${DORIS.root_password}");
-        
+
         if (roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
             try {
                 List<ProcInfo> backends = OlapUtils.showBackends(feMaster, rootPassword);
                 resolveProcInfoAlert(roleInstanceEntity.getServiceRoleName(), backends, map);
             } catch (Exception e) {
-                logger.info("dorisBE service role check error. fe:" + feMaster, e);
+                logger.error("dorisBE service role check error. fe:{}", feMaster, e);
             }
-            
+
         }
-        
+
     }
-    
+
     private void resolveProcInfoAlert(String serviceRoleName, List<ProcInfo> frontends,
                                       Map<String, ClusterServiceRoleInstanceEntity> map) {
         ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);

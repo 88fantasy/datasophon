@@ -85,7 +85,7 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
     <Drawer
       title={serviceName}
       placement="right"
-      width={440}
+      size={440}
       open={open}
       onClose={onClose}
       destroyOnHidden

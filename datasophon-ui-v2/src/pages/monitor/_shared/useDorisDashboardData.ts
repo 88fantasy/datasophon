@@ -37,7 +37,7 @@ export interface UseDorisDashboardDataParams {
   panelDescriptors: Record<string, DorisPanelDescriptor>;
   panelIds: string[];
   instance: string;
-  job: string;
+  job?: string;
   timeRange: string;
   clusterId?: number;
   refreshKey: number;

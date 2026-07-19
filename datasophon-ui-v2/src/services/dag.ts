@@ -6,7 +6,7 @@ export function listDagCommands(
   params: { page?: number; pageSize?: number },
 ) {
   return request<DATASOPHON.ApiResponse<DATASOPHON.DagCommandPageResponse>>(
-    `/ddh/api/v2/cluster/${clusterId}/command/list`,
+    `/cluster/${clusterId}/command/list`,
     {
       method: 'GET',
       params,
@@ -17,7 +17,7 @@ export function listDagCommands(
 /** 获取 DAG 图数据（节点 + 边 + 状态），用于 x6 图渲染 */
 export function getDagGraph(clusterId: number, dagId: string) {
   return request<DATASOPHON.ApiResponse<DATASOPHON.DagGraph>>(
-    `/ddh/api/v2/cluster/${clusterId}/dag/${dagId}/graph`,
+    `/cluster/${clusterId}/dag/${dagId}/graph`,
     {
       method: 'GET',
     },
@@ -27,7 +27,7 @@ export function getDagGraph(clusterId: number, dagId: string) {
 /** 重新运行指定 DAG */
 export function redeployDag(clusterId: number, dagId: string) {
   return request<DATASOPHON.ApiResponse<null>>(
-    `/ddh/api/v2/cluster/${clusterId}/dag/${dagId}/redeploy`,
+    `/cluster/${clusterId}/dag/${dagId}/redeploy`,
     {
       method: 'POST',
     },

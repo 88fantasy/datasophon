@@ -1,6 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ARCH_FILTER=""
+DIR_FILTER=""
+
+usage() {
+  cat <<EOF
+用法: $(basename "$0") [--arch <x86_64|aarch64|common>] [--dir <raw|base|docker|helm|yum|apt>]
+
+  --arch    仅下载匹配该架构的包（arch=common 的条目与架构无关，始终包含）
+  --dir     仅下载路由到该目的目录的包（对应 manifest 条目的 repoType；
+            未显式声明 repoType 时按扩展名推断，见脚本内 infer_repo_type）
+  -h, --help  显示本帮助
+
+不带参数时下载 manifest.json 中的全部公有包（原有行为不变）。
+
+示例:
+  $(basename "$0")                          # 全量下载（原有行为）
+  $(basename "$0") --dir base               # 只下载 CLI 基础设施 bundle（nexus/mysql/rustfs）
+  $(basename "$0") --arch x86_64 --dir base # 只下载 x86_64 架构的基础设施 bundle
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --arch)
+      ARCH_FILTER="${2:?--arch 需要一个值}"
+      shift 2
+      ;;
+    --dir)
+      DIR_FILTER="${2:?--dir 需要一个值}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "ERROR: 未知参数 $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
 MANIFEST="$(cd "$(dirname "$0")" && pwd)/manifest.json"
 PKG_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -9,13 +52,18 @@ if ! command -v curl &>/dev/null; then
   exit 1
 fi
 
-python3 - "$MANIFEST" "$PKG_DIR" <<'PYEOF'
+python3 - "$MANIFEST" "$PKG_DIR" "$ARCH_FILTER" "$DIR_FILTER" <<'PYEOF'
 import hashlib, json, os, subprocess, sys
 
-manifest_path, pkg_dir = sys.argv[1], sys.argv[2]
+manifest_path, pkg_dir, arch_filter, dir_filter = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 
 with open(manifest_path) as f:
     pkgs = json.load(f)
+
+VALID_DIRS = {"yum", "apt", "helm", "docker", "base", "raw"}
+if dir_filter and dir_filter not in VALID_DIRS:
+    print(f"ERROR: --dir 取值必须是 {sorted(VALID_DIRS)} 之一，收到 {dir_filter!r}", file=sys.stderr)
+    sys.exit(1)
 
 # 目录结构与 upload/registry.go repositoryUploadBatch 对齐：
 #   yum/<arch>/<os>/*.rpm
@@ -23,6 +71,8 @@ with open(manifest_path) as f:
 #   raw/packages/*
 #   helm/*.tgz
 #   docker/*.tar
+#   base/*                 CLI 自身基础设施 bundle（nexus/mysql/rustfs 等），
+#                           对应 cluster-sample.yml 的 packages: 段，不经 Nexus 服务安装流程
 # manifest 条目可声明 "repoType" 和 "os" 字段覆盖自动推断；
 # "os" 缺省为 "common"。
 def infer_repo_type(name):
@@ -35,10 +85,12 @@ def infer_repo_type(name):
     # .tgz 与 .tar.gz 语义相同，默认 raw；Helm chart 须在 manifest 显式声明 repoType=helm
     return "raw"
 
+def repo_type_for(pkg):
+    return pkg.get("repoType") or infer_repo_type(pkg["packageName"])
+
 def dest_dir_for(pkg):
-    name     = pkg["packageName"]
     arch     = pkg.get("arch", "common")
-    rtype    = pkg.get("repoType") or infer_repo_type(name)
+    rtype    = repo_type_for(pkg)
     if rtype == "yum":
         os_name = pkg.get("os", "common")
         return os.path.join(pkg_dir, "yum", arch, os_name)
@@ -49,6 +101,8 @@ def dest_dir_for(pkg):
         return os.path.join(pkg_dir, "helm")
     if rtype == "docker":
         return os.path.join(pkg_dir, "docker")
+    if rtype == "base":
+        return os.path.join(pkg_dir, "base")
     return os.path.join(pkg_dir, "raw", "packages")
 
 def compute_md5(path):
@@ -64,15 +118,26 @@ def write_md5(dest):
         f.write(md5)
     return md5
 
+if arch_filter or dir_filter:
+    print(f"[FILTER] arch={arch_filter or '(all)'}  dir={dir_filter or '(all)'}")
+
 seen = set()
 skipped_private = []
 download_errors = []
+skipped_by_filter = 0
 
 for pkg in pkgs:
     name = pkg["packageName"]
     url = pkg.get("downloadUrl")
     service = pkg["service"]
     arch = pkg["arch"]
+
+    if arch_filter and arch != arch_filter and arch != "common":
+        skipped_by_filter += 1
+        continue
+    if dir_filter and repo_type_for(pkg) != dir_filter:
+        skipped_by_filter += 1
+        continue
 
     if name in seen:
         continue
@@ -148,6 +213,8 @@ for pkg in pkgs:
         download_errors.append(f"  [ERROR] {name}: {e}")
 
 print("\n===== 下载完成 =====")
+if skipped_by_filter:
+    print(f"\n[已按 --arch/--dir 过滤跳过 {skipped_by_filter} 条]")
 if skipped_private:
     print("\n[私有包，需手动上传到对应子目录]")
     for m in skipped_private:

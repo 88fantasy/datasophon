@@ -22,17 +22,9 @@
 
 package com.datasophon.api.observability;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import javax.sql.DataSource;
 
-import org.junit.jupiter.api.Test;
+public interface DorisDataSourceFactory {
 
-class DefaultDorisJdbcClientFactoryTest {
-    
-    @Test
-    void rejectsMissingRootPassword() {
-        assertThatThrownBy(() -> DefaultDorisJdbcClientFactory.requireValue(null,
-                "Doris root_password is not configured for cluster 7"))
-                        .isInstanceOf(IllegalStateException.class)
-                        .hasMessage("Doris root_password is not configured for cluster 7");
-    }
+    DataSource create(Integer clusterId);
 }

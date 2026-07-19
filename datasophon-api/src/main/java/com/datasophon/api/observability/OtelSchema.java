@@ -27,14 +27,22 @@ import java.util.Set;
 
 /** otel Doris schema 的版本与期望对象集合(单一真相,契约测试与应用器共用)。 */
 public final class OtelSchema {
-    
+
     private OtelSchema() {
     }
-    
+
     public static final String VERSION = "v1";
-    
+
+    /** otel 库名;CREATE JOB 依赖 session 当前数据库,执行前须显式切换到此库。 */
+    public static final String DATABASE = "otel";
+
+    /** DDL_RESOURCES 在 Nexus raw 仓库中的宿主服务，对应 {@code package/raw/meta/datacluster-physical/DORIS/}。 */
+    public static final String FRAMEWORK = "datacluster-physical";
+
+    public static final String SERVICE_NAME = "DORIS";
+
     /**
-     * dorisexporter v0.154.0 Stream Load 目标基表;缺一张对应信号写不进。
+     * dorisexporter v0.156.0 Stream Load 目标基表;缺一张对应信号写不进。
      *
      * <p>表名以 V1__otel_tables.sql 中 CREATE TABLE otel.&lt;name&gt; 为准(8 张)。
      */
@@ -48,17 +56,17 @@ public final class OtelSchema {
                     "otel_metrics_summary",
                     "otel_traces",
                     "otel_traces_graph");
-    
+
     /**
      * 按依赖顺序的 DDL 资源(database → tables → views)。
      *
      * <p>契约:这些资源由 {@code OtelSchemaApplier.splitStatements} 按分号切分逐条执行,因此分号只能作语句分隔符
      * —— 字面量(列 DEFAULT、注释、PROPERTIES value)内不得含分号,否则会被截断成残缺 SQL。需要含分号字面量时,
      * 先把分割逻辑升级为引号感知再加资源。
+     *
+     * <p>路径是相对于 {@link #FRAMEWORK}/{@link #SERVICE_NAME} 在 Nexus raw 仓库中的相对路径(通过
+     * {@code MetaStorage.getResourceAsString} 读取),对应本地 {@code package/raw/meta/datacluster-physical/DORIS/sql/}。
      */
     public static final List<String> DDL_RESOURCES =
-            List.of(
-                    "observability/doris/V1__otel_database.sql",
-                    "observability/doris/V1__otel_tables.sql",
-                    "observability/doris/V1__otel_views.sql");
+            List.of("sql/V1__otel_database.sql", "sql/V1__otel_tables.sql", "sql/V1__otel_views.sql");
 }

@@ -1,45 +1,62 @@
 -- otel 可观测存储：物化视图 + Graph Job (schema v1)
--- 视图定义逐字源自 dorisexporter v0.154.0，仅做机械替换：
+-- 视图定义逐字源自 dorisexporter v0.156.0，仅做机械替换：
 --   1. 视图名加库前缀 otel.<view>，补 IF NOT EXISTS 保证幂等
 --   2. 占位符 %s（第1处=视图名前缀，第2处=基表名）替换为具体值
 -- 注：Doris MATERIALIZED VIEW 不支持 IF NOT EXISTS，用 DROP IF EXISTS 前置保证幂等。
 -- 注：所有表/视图名均使用 otel. 全限定前缀，不依赖 USE 会话上下文（applier 每条语句独立连接）。
+-- 注：Doris 4.0.6 上旧式"单表同步物化视图/rollup"语法（CREATE MATERIALIZED VIEW ... AS SELECT
+--   col ... GROUP BY col）只要投影列名与源表列名相同就必现 errCode=2 Duplicate column name（与
+--   业务字段无关，改别名/换列序/单列/函数包裹均复现，本机 mysql 客户端连 192.168.10.131:9030
+--   实测确认）。改用异步物化视图语法（BUILD IMMEDIATE REFRESH COMPLETE ON MANUAL）规避，且能
+--   完整保留原始列名，不影响下游查询兼容性。
 -- traces_graph_job: JOB 名称格式为 `database:table_graph_job`，此处为 `otel:otel_traces_graph_job`
 
 -- ===========================================================================
 -- 1. otel_logs_services（物化视图）
--- source: dorisexporter v0.154.0 sql/logs_view.sql
+-- source: dorisexporter v0.156.0 sql/logs_view.sql
 -- ===========================================================================
 DROP MATERIALIZED VIEW IF EXISTS otel.otel_logs_services;
-CREATE MATERIALIZED VIEW otel.otel_logs_services AS
+CREATE MATERIALIZED VIEW otel.otel_logs_services
+BUILD IMMEDIATE REFRESH COMPLETE ON MANUAL
+DISTRIBUTED BY RANDOM BUCKETS AUTO
+PROPERTIES ("replication_num" = "1")
+AS
 SELECT service_name, service_instance_id
 FROM otel.otel_logs
 GROUP BY service_name, service_instance_id;
 
 -- ===========================================================================
 -- 2. otel_metrics_services（物化视图）
--- source: dorisexporter v0.154.0 sql/metrics_view.sql
+-- source: dorisexporter v0.156.0 sql/metrics_view.sql
 -- 注：metrics_view 使用 otel_metrics_gauge 作为基表（即 %s_gauge 的 %s = otel_metrics）
 -- ===========================================================================
 DROP MATERIALIZED VIEW IF EXISTS otel.otel_metrics_services;
-CREATE MATERIALIZED VIEW otel.otel_metrics_services AS
+CREATE MATERIALIZED VIEW otel.otel_metrics_services
+BUILD IMMEDIATE REFRESH COMPLETE ON MANUAL
+DISTRIBUTED BY RANDOM BUCKETS AUTO
+PROPERTIES ("replication_num" = "1")
+AS
 SELECT service_name, service_instance_id
 FROM otel.otel_metrics_gauge
 GROUP BY service_name, service_instance_id;
 
 -- ===========================================================================
 -- 3. otel_traces_services（物化视图）
--- source: dorisexporter v0.154.0 sql/traces_view.sql
+-- source: dorisexporter v0.156.0 sql/traces_view.sql
 -- ===========================================================================
 DROP MATERIALIZED VIEW IF EXISTS otel.otel_traces_services;
-CREATE MATERIALIZED VIEW otel.otel_traces_services AS
+CREATE MATERIALIZED VIEW otel.otel_traces_services
+BUILD IMMEDIATE REFRESH COMPLETE ON MANUAL
+DISTRIBUTED BY RANDOM BUCKETS AUTO
+PROPERTIES ("replication_num" = "1")
+AS
 SELECT service_name, service_instance_id, span_name
 FROM otel.otel_traces
 GROUP BY service_name, service_instance_id, span_name;
 
 -- ===========================================================================
 -- 4. otel_traces_graph_job（Doris JOB，每 10 分钟聚合一次调用图数据）
--- source: dorisexporter v0.154.0 sql/traces_graph_job.sql
+-- source: dorisexporter v0.156.0 sql/traces_graph_job.sql
 -- JOB 名格式：`database:table_graph_job` => `otel:otel_traces_graph_job`
 -- ===========================================================================
 CREATE JOB `otel:otel_traces_graph_job`

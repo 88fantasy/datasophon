@@ -64,15 +64,15 @@ import cn.hutool.core.util.ObjectUtil;
  */
 @Service
 public class WorkerStartService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(WorkerStartService.class);
-    
+
     private final ClusterHostService clusterHostService;
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final PhysicalProductInstallService physicalProductActionService;
     private final OtelCollectorConfigService otelCollectorConfigService;
-    
+
     public WorkerStartService(ClusterHostService clusterHostService,
                               ClusterInfoService clusterInfoService,
                               ClusterServiceRoleInstanceService roleInstanceService,
@@ -84,7 +84,7 @@ public class WorkerStartService {
         this.physicalProductActionService = physicalProductActionService;
         this.otelCollectorConfigService = otelCollectorConfigService;
     }
-    
+
     /**
      * 异步处理 Worker 首次启动事件（替代 WorkerStartActor.tell(StartWorkerMessage)）。
      * 在 gRPC 路径下由 WorkerRegistryGrpcService.register() 触发。
@@ -94,13 +94,13 @@ public class WorkerStartService {
         String hostname = msg.getHostname();
         Integer clusterId = msg.getClusterId();
         logger.info("Handling worker registration: {}", hostname);
-        
+
         ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
         if (cluster == null) {
             logger.warn("Cluster {} not found for worker {}", clusterId, hostname);
             return;
         }
-        
+
         logger.info("Host install set to 100%");
         if (CacheUtils.containsKey(cluster.getClusterCode() + Constants.HOST_MAP)) {
             @SuppressWarnings("unchecked")
@@ -114,7 +114,7 @@ public class WorkerStartService {
                 hostInfo.setManaged(true);
             }
         }
-        
+
         ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(hostname);
         if (ObjectUtil.isNull(hostEntity)) {
             ServiceCommandUtils.saveHostInstallInfo(msg, cluster.getClusterCode(), clusterHostService);
@@ -124,13 +124,15 @@ public class WorkerStartService {
             hostEntity.setManaged(MANAGED.YES);
             clusterHostService.updateById(hostEntity);
         }
-        
-        otelCollectorConfigService.pushNodeConfig(cluster.getId(), hostname, Map.of());
-        
+
+        if (roleInstanceService.getOneServiceRole("OtelCollector", hostname, cluster.getId()) != null) {
+            otelCollectorConfigService.pushNodeConfig(cluster.getId(), hostname, Map.of());
+        }
+
         // Auto-start services on the new worker
         autoAddServiceOperatorNeeded(hostname, cluster.getId(), CommandType.START_SERVICE, false);
     }
-    
+
     /**
      * 异步触发主机上服务的自动启动/停止（替代 WorkerStartActor.tell(WorkerServiceMessage)）。
      */
@@ -139,13 +141,13 @@ public class WorkerStartService {
                                        CommandType commandType, boolean needRestart) {
         autoAddServiceOperatorNeeded(hostname, clusterId, commandType, needRestart);
     }
-    
+
     // ─── private helpers ─────────────────────────────────────────────────────
-    
+
     private void autoAddServiceOperatorNeeded(String hostname, Integer clusterId,
                                               CommandType commandType, boolean needRestart) {
         List<ClusterServiceRoleInstanceEntity> serviceRoleList = null;
-        
+
         if (CommandType.START_SERVICE.equals(commandType)) {
             serviceRoleList = roleInstanceService
                     .listStoppedServiceRoleListByHostnameAndClusterId(hostname, clusterId);
@@ -159,12 +161,12 @@ public class WorkerStartService {
                             && !ServiceRoleState.DECOMMISSIONED.equals(r.getServiceRoleState())))
                     .collect(toList());
         }
-        
+
         if (CollectionUtils.isEmpty(serviceRoleList)) {
             logger.info("No services need to start at host {}.", hostname);
             return;
         }
-        
+
         Map<Integer, List<Integer>> serviceRoleMap = serviceRoleList.stream()
                 .collect(groupingBy(ClusterServiceRoleInstanceEntity::getServiceId,
                         mapping(ClusterServiceRoleInstanceEntity::getId, toList())));

@@ -1,18 +1,19 @@
 {
   "name": "VALKEY",
+  "type": "MIDDLEWARE",
   "label": "Valkey",
   "description": "开源的高性能键值对存储系统(Redis 的 BSD-3 开源分叉)",
-  "version": "8.1.7",
+  "version": "8.1.8",
   "sortNum": 91,
   "dependencies": [],
   "arch": {
     "x86_64": {
-      "packageName": "valkey-8.1.7-jammy-x86_64.tar.gz",
-      "decompressPackageName": "valkey-8.1.7-jammy-x86_64"
+      "packageName": "valkey-8.1.8-openeuler22.03-x86_64.tar.gz",
+      "decompressPackageName": "valkey-8.1.8-openeuler22.03-x86_64"
     },
     "aarch64": {
-      "packageName": "valkey-8.1.7-jammy-arm64.tar.gz",
-      "decompressPackageName": "valkey-8.1.7-jammy-arm64"
+      "packageName": "valkey-8.1.8-jammy-arm64.tar.gz",
+      "decompressPackageName": "valkey-8.1.8-jammy-arm64"
     }
   },
   "roles": [
@@ -127,7 +128,6 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "7501",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "7501"
@@ -139,7 +139,6 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "/data/valkey",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/data/valkey"
@@ -151,7 +150,6 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "fX0GzFyWOK4LR^9K",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "fX0GzFyWOK4LR^9K"
@@ -165,7 +163,6 @@
       "type": "slider",
       "minValue": 0,
       "maxValue": 32,
-      "value": "16",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "16"
@@ -179,7 +176,6 @@
       "type": "slider",
       "minValue": 0,
       "maxValue": 4294967296,
-      "value": 0,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": 0
@@ -191,7 +187,6 @@
       "configType": "map",
       "required": true,
       "type": "select",
-      "value": "volatile-random",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "volatile-random",
@@ -211,7 +206,6 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "9121",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9121"
@@ -223,10 +217,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     }
   ]
 }

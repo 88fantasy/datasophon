@@ -1,6 +1,10 @@
 package create
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/shellutil"
+)
 
 func TestShellSingleQuote(t *testing.T) {
 	cases := []struct {
@@ -23,8 +27,8 @@ func TestShellSingleQuote(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := shellSingleQuote(tc.input); got != tc.want {
-				t.Errorf("shellSingleQuote(%q) = %q, want %q", tc.input, got, tc.want)
+			if got := shellutil.Quote(tc.input); got != tc.want {
+				t.Errorf("shellutil.Quote(%q) = %q, want %q", tc.input, got, tc.want)
 			}
 		})
 	}

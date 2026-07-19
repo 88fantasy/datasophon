@@ -51,15 +51,16 @@ import com.alibaba.fastjson2.JSON;
 
 @Component
 public class OtelScrapeConfigBuilder {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(OtelScrapeConfigBuilder.class);
-    
+
     private static final String DEFAULT_METRICS_PATH = "/metrics";
     private static final String DORIS_FE = "DorisFE";
     private static final String DORIS_BE = "DorisBE";
-    
+    private static final String APISIX = "Apisix";
+
     private static final Map<String, String> PATH_OVERRIDES = new LinkedHashMap<>();
-    
+
     static {
         PATH_OVERRIDES.put("ApiServer", "/dolphinscheduler/actuator/prometheus");
         PATH_OVERRIDES.put("MasterServer", "/actuator/prometheus");
@@ -69,11 +70,11 @@ public class OtelScrapeConfigBuilder {
         PATH_OVERRIDES.put("Apisix", "/apisix/prometheus/metrics");
         PATH_OVERRIDES.put("Minio", "/minio/v2/metrics/cluster");
     }
-    
+
     private final ClusterServiceRoleInstanceService roleService;
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
-    
+
     public OtelScrapeConfigBuilder(ClusterServiceRoleInstanceService roleService,
                                    ClusterInfoService clusterInfoService,
                                    ClusterServiceRoleGroupConfigService roleGroupConfigService) {
@@ -81,12 +82,12 @@ public class OtelScrapeConfigBuilder {
         this.clusterInfoService = clusterInfoService;
         this.roleGroupConfigService = roleGroupConfigService;
     }
-    
+
     public String build(Integer clusterId, String hostname) {
         StringBuilder yaml = new StringBuilder();
         ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
         String clusterFrame = cluster == null ? null : cluster.getClusterFrame();
-        
+
         List<ClusterServiceRoleInstanceEntity> roles =
                 roleService.getServiceRoleListByHostnameAndClusterId(hostname, clusterId);
         for (ClusterServiceRoleInstanceEntity role : roles) {
@@ -98,12 +99,13 @@ public class OtelScrapeConfigBuilder {
                 continue;
             }
             appendJob(yaml, role.getServiceRoleName(), path(role.getServiceRoleName()),
-                    "127.0.0.1:" + jmxPort, hostname + ":" + jmxPort, group(role.getServiceRoleName()));
+                    target(role.getServiceRoleName(), hostname, jmxPort), hostname + ":" + jmxPort,
+                    group(role.getServiceRoleName()));
         }
-        
+
         return yaml.toString();
     }
-    
+
     /**
      * 监控端口一律来自角色元数据里声明的 jmxPortParam（指向某个 Web UI 可配置的业务参数），
      * 不再有独立的静态 jmxPort 字段。没有声明 jmxPortParam 的角色（如从未暴露过监控端口的角色）
@@ -125,7 +127,7 @@ public class OtelScrapeConfigBuilder {
         }
         return defaultPortFromDdl(clusterFrame, role.getServiceName(), meta.getJmxPortParam());
     }
-    
+
     /**
      * 优先读该角色当前实际生效的配置值(用户在 Web UI 改过并重启后的最新值)；
      * 任何一步读不到都返回 null，由调用方退回 ddl 参数的 defaultValue。
@@ -156,7 +158,7 @@ public class OtelScrapeConfigBuilder {
         }
         return extractPort(key, meta, config.getConfigJson());
     }
-    
+
     private String extractPort(String key, ServiceRoleInfo meta, String configJson) {
         try {
             List<ServiceConfig> configs = JSON.parseArray(configJson, ServiceConfig.class);
@@ -173,7 +175,7 @@ public class OtelScrapeConfigBuilder {
         }
         return null;
     }
-    
+
     /**
      * configJson 里没有该参数时的兜底：直接读 ddl 声明的 defaultValue（内存态 ServiceInfoMap，无需查库）。
      * 覆盖两种场景：① 老集群升级后角色组 configJson 尚未回填新参数（正常情况下 DdlMetaServiceImpl 在 Master
@@ -194,11 +196,15 @@ public class OtelScrapeConfigBuilder {
         }
         return null;
     }
-    
+
     private static String path(String roleName) {
         return PATH_OVERRIDES.getOrDefault(roleName, DEFAULT_METRICS_PATH);
     }
-    
+
+    private static String target(String roleName, String hostname, String port) {
+        return APISIX.equals(roleName) ? hostname + ":" + port : "127.0.0.1:" + port;
+    }
+
     private static String group(String roleName) {
         if (DORIS_FE.equals(roleName)) {
             return "fe";
@@ -208,22 +214,24 @@ public class OtelScrapeConfigBuilder {
         }
         return null;
     }
-    
+
     private static void appendJob(StringBuilder yaml, String jobName, String metricsPath,
                                   String target, String instance, String group) {
-        yaml.append("    - job_name: '").append(quote(jobName)).append("'\n")
-                .append("      scrape_interval: 15s\n")
-                .append("      metrics_path: '").append(quote(metricsPath)).append("'\n")
-                .append("      static_configs:\n")
-                .append("        - targets: ['").append(quote(target)).append("']\n")
-                .append("          labels: {job: '").append(quote(jobName))
+        // otelcol.ftl 把 ${localScrapeJobsYaml} 嵌在 "scrape_configs:"(6 空格缩进)下一行、不带任何
+        // 前导空白，因此这里的列表项要按 prometheus/self 块同款的 8 空格起始自行携带完整缩进。
+        yaml.append("        - job_name: '").append(quote(jobName)).append("'\n")
+                .append("          scrape_interval: 15s\n")
+                .append("          metrics_path: '").append(quote(metricsPath)).append("'\n")
+                .append("          static_configs:\n")
+                .append("            - targets: ['").append(quote(target)).append("']\n")
+                .append("              labels: {job: '").append(quote(jobName))
                 .append("', instance: '").append(quote(instance)).append("'");
         if (StringUtils.isNotBlank(group)) {
             yaml.append(", group: '").append(quote(group)).append("'");
         }
         yaml.append("}\n");
     }
-    
+
     private static String quote(String value) {
         return value == null ? "" : value.replace("'", "''");
     }

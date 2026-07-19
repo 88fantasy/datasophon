@@ -440,7 +440,11 @@ const WorkerSection: FC<WorkerSectionProps> = ({ series, panelTitle, t }) => (
 
 // ─── 主页面 ──────────────────────────────────────────────────────────────────
 
-const DolphinSchedulerDashboard: FC = () => {
+export interface DSDashboardProps {
+  clusterId: number;
+}
+
+const DolphinSchedulerDashboard: FC<DSDashboardProps> = ({ clusterId }) => {
   const [activeSegment, setActiveSegment] =
     useState<DSApplication>('master-server');
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
@@ -473,7 +477,7 @@ const DolphinSchedulerDashboard: FC = () => {
     variables,
     activeSegment,
     timeRange,
-    clusterId: 1,
+    clusterId,
     refreshKey,
   });
 
@@ -482,7 +486,6 @@ const DolphinSchedulerDashboard: FC = () => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={t('pages.dolphinSchedulerMonitor.title')}
       toolbar={
         <DSDashboardToolbar
           instances={instances}

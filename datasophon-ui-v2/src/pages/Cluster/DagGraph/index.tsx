@@ -291,9 +291,10 @@ const DagGraphPage: React.FC = () => {
   const onLogClick = useCallback(async () => {
     setScheduleLog({ open: true, loading: true, text: '' });
     try {
-      const res = await request<any>('/ddh/api/log/getScheduleLog', {
+      const res = await request<any>('/log/getScheduleLog', {
         method: 'GET',
         params: { clusterId, dagId },
+        baseURL: '/ddh/api',
       });
       const text: string =
         typeof res === 'string'
@@ -358,7 +359,7 @@ const DagGraphPage: React.FC = () => {
         onCancel={() => setScheduleLog((p) => ({ ...p, open: false }))}
         footer={null}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         {scheduleLog.loading ? (
           <div

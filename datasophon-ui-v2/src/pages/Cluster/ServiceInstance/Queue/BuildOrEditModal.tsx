@@ -85,7 +85,7 @@ const BuildOrEditModal: React.FC<Props> = ({
       layout="horizontal"
       labelCol={{ span: 8 }}
       width={520}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
     >
       <ProFormText
         name="queueName"

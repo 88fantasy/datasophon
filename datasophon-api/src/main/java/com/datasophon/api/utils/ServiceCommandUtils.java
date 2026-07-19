@@ -22,6 +22,7 @@
 
 package com.datasophon.api.utils;
 
+import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.service.ServiceCommandService;
@@ -38,13 +39,13 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceRoleType;
+import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ExternalLink;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.model.StartWorkerMessage;
 import com.datasophon.common.model.UpdateCommandHostMessage;
 import com.datasophon.common.utils.HostUtils;
-import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -65,6 +66,8 @@ import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.domain.host.enums.MANAGED;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -81,12 +84,12 @@ import cn.hutool.crypto.SecureUtil;
 
 /** 命令实体生成、执行结果回写、安装信息落库(原 ProcessUtils 拆出)。 */
 public class ServiceCommandUtils {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ServiceCommandUtils.class);
-    
+
     private ServiceCommandUtils() {
     }
-    
+
     public static void saveServiceInstallInfo(ServiceRoleInfo serviceRoleInfo) {
         ClusterServiceInstanceService serviceInstanceService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceInstanceService.class);
@@ -95,13 +98,17 @@ public class ServiceCommandUtils {
         ClusterServiceRoleInstanceService serviceRoleInstanceService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
         ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
+        ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
         ClusterServiceRoleInstanceWebuisService webuisService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
         ClusterServiceInstanceRoleGroupService roleGroupService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceInstanceRoleGroupService.class);
-        
+
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(serviceRoleInfo.getClusterId());
-        
+        ClusterHostDO host = clusterHostService.getClusterHostByHostname(serviceRoleInfo.getHostname());
+        String installHome = resolveInstallHome(
+                serviceRoleInfo, host == null ? null : host.getCpuArchitecture());
+
         ClusterServiceInstanceEntity clusterServiceInstance =
                 serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(serviceRoleInfo.getClusterId(),
                         serviceRoleInfo.getParentName());
@@ -126,14 +133,14 @@ public class ServiceCommandUtils {
             clusterServiceInstanceConfig.setCreateTime(new Date());
             clusterServiceInstanceConfig.setUpdateTime(new Date());
             serviceInstanceConfigService.save(clusterServiceInstanceConfig);
-            
+
         } else {
             clusterServiceInstance.setNeedRestart(NeedRestart.NO);
             clusterServiceInstance.setServiceState(ServiceState.RUNNING);
             clusterServiceInstance.setServiceStateCode(ServiceState.RUNNING.getValue());
             serviceInstanceService.updateById(clusterServiceInstance);
         }
-        
+
         Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + clusterServiceInstance.getId());
         ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleGroupId);
         // save role instance
@@ -163,7 +170,7 @@ public class ServiceCommandUtils {
             }
             roleInstanceEntity = roleInstance;
         }
-        
+
         ExternalLink externalLink = serviceRoleInfo.getExternalLink();
         boolean externalLinkConfigDefined = externalLink != null
                 && StrUtil.isNotBlank(externalLink.getUrl())
@@ -181,25 +188,34 @@ public class ServiceCommandUtils {
         } else if (webui != null) {
             webuisService.removeById(webui.getId());
         }
-        
+
         ServiceConfigUtils.generateClusterVariable(
                 serviceRoleInfo.getClusterId(), GlobalVariables.ROOT,
                 String.format("%s.%s", serviceRoleInfo.getParentName(), GlobalVariables.INSTALL_PATH),
-                PkgInstallPathUtils.getInstallHome(serviceRoleInfo));
+                installHome);
         ServiceConfigUtils.generateClusterVariable(
                 serviceRoleInfo.getClusterId(), serviceRoleInfo.getParentName(),
                 String.format("%s.%s", serviceRoleInfo.getServiceRoleName(), GlobalVariables.INSTALL_PATH),
-                PkgInstallPathUtils.getInstallHome(serviceRoleInfo));
+                installHome);
     }
-    
+
+    static String resolveInstallHome(ServiceRoleInfo serviceRoleInfo, String cpuArchitecture) {
+        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(serviceRoleInfo, cpuArchitecture);
+        if (archInfo == null || StringUtils.isBlank(archInfo.getDecompressPackageName())) {
+            throw new BusinessException(String.format(
+                    "主机%s未找到架构%s对应的解压目录", serviceRoleInfo.getHostname(), cpuArchitecture));
+        }
+        return Constants.INSTALL_PATH + Constants.SLASH + archInfo.getDecompressPackageName();
+    }
+
     public static void saveHostInstallInfo(StartWorkerMessage message, String clusterCode,
                                            ClusterHostService clusterHostService) {
         ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
         ClusterHostDO clusterHostDO = new ClusterHostDO();
         BeanUtil.copyProperties(message, clusterHostDO);
-        
+
         ClusterInfoEntity cluster = clusterInfoService.getClusterByClusterCode(clusterCode);
-        
+
         clusterHostDO.setClusterId(cluster.getId());
         clusterHostDO.setCheckTime(new Date());
         clusterHostDO.setRack("/default-rack");
@@ -210,12 +226,12 @@ public class ServiceCommandUtils {
         clusterHostDO.setManaged(MANAGED.YES);
         clusterHostService.save(clusterHostDO);
     }
-    
+
     public static ClusterServiceCommandHostCommandEntity handleCommandResult(String hostCommandId, Boolean execResult,
                                                                              String execOut) {
         ClusterServiceCommandHostCommandService service =
                 SpringTool.getApplicationContext().getBean(ClusterServiceCommandHostCommandService.class);
-        
+
         ClusterServiceCommandHostCommandEntity hostCommand = service.getByHostCommandId(hostCommandId);
         hostCommand.setCommandProgress(100);
         if (execResult) {
@@ -240,14 +256,14 @@ public class ServiceCommandUtils {
         } else {
             message.setServiceRoleType(ServiceRoleType.WORKER);
         }
-        
+
         ServiceCommandService commandService =
                 SpringTool.getApplicationContext().getBean(ServiceCommandService.class);
         commandService.updateCommandHost(message);
-        
+
         return hostCommand;
     }
-    
+
     public static ClusterServiceCommandEntity generateCommandEntity(Integer clusterId, CommandType commandType,
                                                                     String serviceName) {
         ClusterServiceCommandEntity commandEntity = new ClusterServiceCommandEntity();
@@ -263,7 +279,7 @@ public class ServiceCommandUtils {
         commandEntity.setServiceName(serviceName);
         return commandEntity;
     }
-    
+
     public static ClusterServiceCommandHostEntity generateCommandHostEntity(String commandId, String hostname) {
         ClusterServiceCommandHostEntity commandHost = new ClusterServiceCommandHostEntity();
         String commandHostId = IdUtil.simpleUUID();
@@ -273,10 +289,10 @@ public class ServiceCommandUtils {
         commandHost.setCommandState(CommandState.RUNNING);
         commandHost.setCommandProgress(0);
         commandHost.setCreateTime(new Date());
-        
+
         return commandHost;
     }
-    
+
     public static ClusterServiceCommandHostCommandEntity generateCommandHostCommandEntity(CommandType commandType,
                                                                                           String commandId,
                                                                                           String serviceRoleName,
@@ -298,7 +314,7 @@ public class ServiceCommandUtils {
         hostCommand.setCreateTime(new Date());
         return hostCommand;
     }
-    
+
     public static void updateServiceRoleState(CommandType commandType, String serviceRoleName, String hostname,
                                               Integer clusterId, ServiceRoleState serviceRoleState) {
         ClusterServiceRoleInstanceService serviceRoleInstanceService =

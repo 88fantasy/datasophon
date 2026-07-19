@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -55,40 +56,48 @@ func (t *InitMysqlAppDb) doRun(exec executor.Executor) error {
 	}
 
 	r := exec.ExecShell(fmt.Sprintf("systemctl status %s | grep running | wc -l", mysqlService))
-	if strings.TrimSpace(r.Output) == "1" {
-		t.initCommonAccount(exec)
-	} else {
+	if strings.TrimSpace(r.Output) != "1" {
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
+		return fmt.Errorf("mysql 服务未运行，无法创建应用数据库账号")
 	}
-	return nil
+	return t.initCommonAccount(exec)
 }
 
-func (t *InitMysqlAppDb) initCommonAccount(exec executor.Executor) {
-	exec.ExecShell(fmt.Sprintf(
-		"mysql -uroot -P'%d' -p'%s' -e \"CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;\"",
-		t.Port, t.RootPassword, t.DBName))
-	exec.ExecShell(fmt.Sprintf(
-		"mysql -uroot -P'%d' -p'%s' -e \"CREATE USER '%s'@'%%' IDENTIFIED BY '%s';\"",
-		t.Port, t.RootPassword, t.Account, t.Password))
-	exec.ExecShell(fmt.Sprintf(
-		"mysql -uroot -P'%d' -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"",
-		t.Port, t.RootPassword, t.Account, t.Password))
-	exec.ExecShell(fmt.Sprintf(
-		"mysql -uroot -P'%d' -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"",
-		t.Port, t.RootPassword, t.Account, t.Password))
-	if t.Account == "bigdata" {
-		exec.ExecShell(fmt.Sprintf(
-			"mysql -uroot -P'%d' -p'%s' -e \"GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%';\"",
-			t.Port, t.RootPassword, t.DBName, t.Account))
-	} else {
-		exec.ExecShell(fmt.Sprintf(
-			"mysql -uroot -P'%d' -p'%s' -e \"GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%';\"",
-			t.Port, t.RootPassword, t.Account))
+func (t *InitMysqlAppDb) initCommonAccount(exec executor.Executor) error {
+	runSQL := func(sql string) error {
+		r := exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' -e \"%s\"", t.Port, t.RootPassword, sql))
+		if !r.Success {
+			return errors.New("执行 MySQL 初始化 SQL 失败")
+		}
+		return nil
 	}
-	exec.ExecShell(fmt.Sprintf(
-		"mysql -uroot -P'%d' -p'%s' -e \"FLUSH PRIVILEGES;\"",
-		t.Port, t.RootPassword))
+
+	if err := runSQL(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;", t.DBName)); err != nil {
+		return err
+	}
+	if err := runSQL(fmt.Sprintf("CREATE USER IF NOT EXISTS '%s'@'%%' IDENTIFIED BY '%s';", t.Account, t.Password)); err != nil {
+		return err
+	}
+	if err := runSQL(fmt.Sprintf("ALTER USER '%s'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;", t.Account, t.Password)); err != nil {
+		return err
+	}
+	if err := runSQL(fmt.Sprintf("ALTER USER '%s'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';", t.Account, t.Password)); err != nil {
+		return err
+	}
+	if t.Account == "bigdata" {
+		if err := runSQL(fmt.Sprintf("GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%';", t.DBName, t.Account)); err != nil {
+			return err
+		}
+	} else {
+		if err := runSQL(fmt.Sprintf("GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%';", t.Account)); err != nil {
+			return err
+		}
+	}
+	if err := runSQL("FLUSH PRIVILEGES;"); err != nil {
+		return err
+	}
 	slog.Info("数据库账号创建完成", "account", t.Account, "db", t.DBName)
+	return nil
 }
 
 // Run 导出 doRun，供 create 包配置模式直接调用。

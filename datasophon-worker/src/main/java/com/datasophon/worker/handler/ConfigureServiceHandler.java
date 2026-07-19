@@ -52,7 +52,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 
 import cn.hutool.core.collection.CollUtil;
@@ -241,8 +240,12 @@ public class ConfigureServiceHandler {
         switch (config.getType()) {
             case Constants.INPUT:
                 Object tempVal = config.getValue();
-                if (String.class.isAssignableFrom(tempVal.getClass())) {
-                    String value = PlaceholderUtils.replacePlaceholders((String) tempVal, paramMap, Constants.REGEX_VARIABLE);
+                if (tempVal == null) {
+                    tempVal = config.getDefaultValue();
+                    config.setValue(tempVal);
+                }
+                if (tempVal instanceof String stringValue) {
+                    String value = PlaceholderUtils.replacePlaceholders(stringValue, paramMap, Constants.REGEX_VARIABLE);
                     config.setValue(value);
                 }
                 break;
@@ -250,9 +253,11 @@ public class ConfigureServiceHandler {
                 if (config.getSeparator() == null) {
                     throw new IllegalStateException(String.format("配置项%s配置有误, 类型为multiple要求分割符(separator)不能为空。", config.getName()));
                 }
-                JSONArray value2 = (JSONArray) config.getValue();
-                List<String> valueList = value2.toJavaList(String.class);
-                valueList = valueList.stream()
+                // gRPC 命令经 Jackson 反序列化后，值实际类型是 java.util.ArrayList 而非
+                // fastjson2 的 JSONArray，此处按 List 接口取值而非硬转型到具体实现类
+                List<?> value2 = (List<?>) config.getValue();
+                List<String> valueList = value2.stream()
+                        .map(String::valueOf)
                         .map(val -> PlaceholderUtils.replacePlaceholdersRecursive(val, paramMap, Constants.REGEX_VARIABLE))
                         .toList();
                 String joinValue = String.join(config.getSeparator(), valueList);
@@ -264,8 +269,13 @@ public class ConfigureServiceHandler {
                 if (config.getValue() == null || config.getValue() instanceof String) {
                     break;
                 }
-                List<JSONObject> list = (List<JSONObject>) config.getValue();
-                for (JSONObject item : list) {
+                List<?> list = (List<?>) config.getValue();
+                for (Object rawItem : list) {
+                    if (!(rawItem instanceof Map<?, ?> rawMap)) {
+                        continue;
+                    }
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> item = (Map<String, Object>) rawMap;
                     // create a copy set to prevent ConcurrentModificationException
                     Set<String> keys = new HashSet<>(item.keySet());
                     for (String oldKey : keys) {
@@ -273,8 +283,8 @@ public class ConfigureServiceHandler {
                         Object targetValue = item.get(oldKey);
                         if (targetValue instanceof String) {
                             targetValue = PlaceholderUtils.replacePlaceholders((String) targetValue, paramMap, Constants.REGEX_VARIABLE);
-                        } else if (targetValue instanceof JSONObject) {
-                            String json = ((JSONObject) targetValue).toJSONString();
+                        } else if (targetValue instanceof Map) {
+                            String json = JSONObject.toJSONString(targetValue);
                             json = PlaceholderUtils.replacePlaceholders(json, paramMap, Constants.REGEX_VARIABLE);
                             targetValue = JSONObject.parse(json);
                         }
@@ -330,15 +340,15 @@ public class ConfigureServiceHandler {
             }
         }
 
-        List<JSONObject> list = (List<JSONObject>) config.getValue();
-        for (JSONObject json : list) {
-            if (Objects.nonNull(json)) {
-                Set<String> set = json.keySet();
-                for (String key : set) {
+        List<?> list = (List<?>) config.getValue();
+        for (Object rawJson : list) {
+            if (rawJson instanceof Map<?, ?> json) {
+                for (Object rawKey : json.keySet()) {
+                    String key = String.valueOf(rawKey);
                     if (StringUtils.isNotBlank(key)) {
                         ServiceConfig serviceConfig = new ServiceConfig();
                         serviceConfig.setName(key);
-                        serviceConfig.setValue(json.get(key));
+                        serviceConfig.setValue(json.get(rawKey));
                         customConfList.add(serviceConfig);
                     }
                 }

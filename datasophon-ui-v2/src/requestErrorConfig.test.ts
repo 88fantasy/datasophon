@@ -203,7 +203,7 @@ describe('requestErrorConfig', () => {
 
       errorHandler(error, {});
 
-      expect(window.location.href).toBe('/user/login');
+      expect(window.location.href).toBe('/ddh/user/login');
       expect(message.error).not.toHaveBeenCalled();
     });
 

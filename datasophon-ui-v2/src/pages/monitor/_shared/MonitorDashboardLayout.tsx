@@ -6,7 +6,7 @@ import useStyles from './monitorStyles';
 const { Text, Title } = Typography;
 
 interface MonitorDashboardLayoutProps {
-  title: ReactNode;
+  title?: ReactNode;
   toolbar?: ReactNode;
   meta?: ReactNode;
   loading?: boolean;
@@ -25,9 +25,11 @@ const MonitorDashboardLayout: FC<MonitorDashboardLayoutProps> = ({
   return (
     <GridContent className={styles.dashboard}>
       <div className={styles.header}>
-        <Title level={4} className={styles.title}>
-          {title}
-        </Title>
+        {title && (
+          <Title level={4} className={styles.title}>
+            {title}
+          </Title>
+        )}
         {toolbar}
         {(meta || loading) && (
           <Text type="secondary" className={styles.meta}>

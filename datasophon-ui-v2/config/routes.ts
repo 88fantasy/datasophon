@@ -44,31 +44,13 @@ export default [
     routes: [
       {
         path: '/monitor',
-        redirect: '/monitor/apisix',
-      },
-      {
-        path: '/monitor/apisix',
-        name: 'apisix-monitor',
-        icon: 'monitor',
-        component: './monitor/ApisixMonitor',
+        redirect: '/monitor/zookeeper',
       },
       {
         path: '/monitor/zookeeper',
         name: 'zookeeper-monitor',
         icon: 'cluster',
         component: './monitor/ZooKeeperMonitor',
-      },
-      {
-        path: '/monitor/dolphinscheduler',
-        name: 'dolphinscheduler-monitor',
-        icon: 'fundProjectionScreen',
-        component: './monitor/DolphinSchedulerMonitor',
-      },
-      {
-        path: '/monitor/doris',
-        name: 'doris-monitor',
-        icon: 'database',
-        component: './monitor/DorisMonitor',
       },
       {
         path: '/monitor/mysql',
@@ -105,12 +87,6 @@ export default [
         name: 'nginx-monitor',
         icon: 'monitor',
         component: './monitor/NginxMonitor',
-      },
-      {
-        path: '/monitor/valkey',
-        name: 'valkey-monitor',
-        icon: 'monitor',
-        component: './monitor/ValkeyMonitor',
       },
       {
         path: '/monitor/rustfs',

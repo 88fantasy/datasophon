@@ -109,11 +109,14 @@ type UploadRegistry struct {
 	IsSuccessDelete       bool
 	DisableUploadRegistry bool
 	DockerHTTPPort        int
+	// DryRun 为 true 时只打印将要上传的文件，不发起真实网络请求（--dry-run 支持）。
+	DryRun bool
 }
 
 func (t *UploadRegistry) Name() string { return "制品库上传" }
 
 func (t *UploadRegistry) Handle(client *ssh.Client, dryRun bool) error {
+	t.DryRun = dryRun
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -122,6 +125,7 @@ func (t *UploadRegistry) Command(dryRun *bool) *cobra.Command {
 		Use:   "registry",
 		Short: "将本地安装包批量上传到 Nexus",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			t.DryRun = *dryRun
 			return t.doRun(executor.NewLocalExecutor(*dryRun))
 		},
 	}
@@ -186,7 +190,9 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 		repoDir := filepath.Join(t.ProductPackagesPath, entry.Name())
 		switch repoType {
 		case "yum", "apt":
-			// <arch>/<os>/*.file
+			// <arch>/<os>/**（递归遍历，含 repodata/ 等子目录——yum 仓库的
+			// repomd.xml/primary.xml.gz 等索引元数据就存在这些子目录里，
+			// 缺失时 yum makecache 会因找不到 repodata/repomd.xml 而失败）
 			archEntries, _ := os.ReadDir(repoDir)
 			for _, archEntry := range archEntries {
 				if !archEntry.IsDir() {
@@ -199,32 +205,36 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 						continue
 					}
 					osDir := filepath.Join(archDir, osEntry.Name())
-					// directory 格式：arch/os，与 Java NexusFileUtils 对齐
-					dir := archEntry.Name() + "/" + osEntry.Name()
-					files, _ := os.ReadDir(osDir)
-					for _, f := range files {
-						if f.IsDir() {
-							continue
+					// directory 基础前缀格式：arch/os，与 Java NexusFileUtils 对齐；
+					// 子目录（如 repodata）以相对路径追加在后面。
+					baseDir := archEntry.Name() + "/" + osEntry.Name()
+					_ = filepath.Walk(osDir, func(path string, info os.FileInfo, err error) error {
+						if err != nil || info.IsDir() {
+							return nil
 						}
-						ok := t.uploadFile(baseURL, repoType, filepath.Join(osDir, f.Name()), dir, false)
+						rel, _ := filepath.Rel(osDir, path)
+						relDir := filepath.ToSlash(filepath.Dir(rel))
+						dir := baseDir
+						if relDir != "." {
+							dir = baseDir + "/" + relDir
+						}
+						ok := t.uploadFile(baseURL, repoType, path, dir, false)
 						if ok {
 							success++
 							if t.IsSuccessDelete {
-								_ = os.Remove(filepath.Join(osDir, f.Name()))
+								_ = os.Remove(path)
 							}
 						} else {
 							fail++
 						}
-					}
+						return nil
+					})
 				}
 			}
 		case "raw":
 			_ = filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
 				if err != nil || info.IsDir() {
 					return nil
-				}
-				if strings.HasSuffix(path, ".md5") {
-					return nil // sidecar 文件本身不上传
 				}
 				rel, _ := filepath.Rel(repoDir, path)
 				dir := filepath.ToSlash(filepath.Dir(rel))
@@ -233,8 +243,9 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				} else {
 					dir = "/" + dir
 				}
-				// 优先用同名 .md5 sidecar 文件做幂等检查
-				if data, readErr := os.ReadFile(path + ".md5"); readErr == nil {
+				// 优先用同名 .md5 sidecar 文件做幂等检查（dry-run 不发起该只读查询，统一走下方
+				// uploadFile 的 [dry-run] 短路分支）
+				if data, readErr := os.ReadFile(path + ".md5"); !t.DryRun && readErr == nil {
 					localSum := strings.TrimSpace(string(data))
 					assetName := filepath.Base(path)
 					if dir != "" {
@@ -331,6 +342,10 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 		}
 		assetName = dir + "/" + assetName
 	}
+	if t.DryRun {
+		slog.Info("[dry-run] 将上传", "file", filepath.Base(filePath), "repo", repoType, "asset", assetName)
+		return true
+	}
 	if !force {
 		remoteMD5 := t.nexusMD5(baseURL, repoType, assetName)
 		if remoteMD5 != "" {
@@ -420,6 +435,10 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 // uploadHelm 上传 Helm Chart 到 Nexus helm 仓库（使用 Chartmuseum API）。
 // URL 与字段名与其他仓库不同，单独处理。
 func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
+	if t.DryRun {
+		slog.Info("[dry-run] 将上传", "file", filepath.Base(filePath), "repo", "helm")
+		return true
+	}
 	file, err := os.Open(filePath)
 	if err != nil {
 		slog.Error("打开文件失败", "path", filePath, "err", err)

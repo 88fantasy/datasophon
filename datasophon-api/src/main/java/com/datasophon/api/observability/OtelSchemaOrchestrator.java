@@ -24,29 +24,34 @@ package com.datasophon.api.observability;
 
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class OtelSchemaOrchestrator {
-    
+
     private final OtelExporterSwitchService switchService;
-    private final DorisJdbcClientFactory jdbcFactory;
+    private final DorisDataSourceFactory dataSourceFactory;
     private final OtelCredentialService credentialService;
     private final OtelSchemaRunner schemaRunner;
-    
+
     public OtelSchemaOrchestrator(OtelExporterSwitchService switchService,
-                                  DorisJdbcClientFactory jdbcFactory,
+                                  DorisDataSourceFactory dataSourceFactory,
                                   OtelCredentialService credentialService,
                                   OtelSchemaRunner schemaRunner) {
         this.switchService = switchService;
-        this.jdbcFactory = jdbcFactory;
+        this.dataSourceFactory = dataSourceFactory;
         this.credentialService = credentialService;
         this.schemaRunner = schemaRunner;
     }
-    
+
     public void applyIfReady(Integer clusterId) {
         if (!switchService.isDorisReady(clusterId)) {
+            log.info("cluster {} Doris 未就绪(FE/BE 角色状态未全部 RUNNING)，跳过 otel schema 初始化", clusterId);
             return;
         }
         OtelCredentials credentials = credentialService.getOrCreate(clusterId);
-        schemaRunner.apply(jdbcFactory.create(clusterId), credentials);
+        schemaRunner.apply(dataSourceFactory.create(clusterId), credentials);
+        log.info("cluster {} otel schema 初始化完成", clusterId);
     }
 }

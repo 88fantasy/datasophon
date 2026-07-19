@@ -2,9 +2,9 @@
   {
     "service": "APISIX",
     "arch": "common",
-    "packageName": "apache-apisix-3.16.0-src.tgz",
-    "decompressPackageName": "apache-apisix-3.16.0",
-    "downloadUrl": "https://downloads.apache.org/apisix/3.16.0/apache-apisix-3.16.0-src.tgz",
+    "packageName": "apache-apisix-3.17.0-src.tgz",
+    "decompressPackageName": "apache-apisix-3.17.0",
+    "downloadUrl": "https://downloads.apache.org/apisix/3.17.0/apache-apisix-3.17.0-src.tgz",
     "status": "public"
   },
   {
@@ -27,35 +27,35 @@
   {
     "service": "DORIS",
     "arch": "x86_64",
-    "packageName": "apache-doris-4.0.5-bin-x64.tar.gz",
-    "decompressPackageName": "apache-doris-4.0.5",
-    "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.5-bin-x64.tar.gz",
+    "packageName": "apache-doris-4.0.6-bin-x64.tar.gz",
+    "decompressPackageName": "apache-doris-4.0.6",
+    "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.6-bin-x64.tar.gz",
     "status": "public"
   },
   {
     "service": "DORIS",
     "arch": "aarch64",
-    "packageName": "apache-doris-4.0.5-bin-arm64.tar.gz",
-    "decompressPackageName": "apache-doris-4.0.5",
-    "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.5-bin-arm64.tar.gz",
+    "packageName": "apache-doris-4.0.6-bin-arm64.tar.gz",
+    "decompressPackageName": "apache-doris-4.0.6",
+    "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.6-bin-arm64.tar.gz",
     "status": "public"
   },
   {
     "service": "ELASTICSEARCH",
     "arch": "common",
-    "packageName": "elasticsearch-9.4.2-linux-x86_64.tar.gz",
-    "decompressPackageName": "elasticsearch-9.4.2",
-    "downloadUrl": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.4.2-linux-x86_64.tar.gz",
+    "packageName": "elasticsearch-9.4.3-linux-x86_64.tar.gz",
+    "decompressPackageName": "elasticsearch-9.4.3",
+    "downloadUrl": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.4.3-linux-x86_64.tar.gz",
     "status": "public"
   },
   {
     "service": "FLINK",
     "arch": "common",
-    "packageName": "flink-2.2.1-bin-scala_2.12.tgz",
-    "decompressPackageName": "flink-2.2.1",
-    "downloadUrl": "https://downloads.apache.org/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz",
+    "packageName": "flink-2.3.0-bin-scala_2.12.tgz",
+    "decompressPackageName": "flink-2.3.0",
+    "downloadUrl": "https://downloads.apache.org/flink/flink-2.3.0/flink-2.3.0-bin-scala_2.12.tgz",
     "status": "public",
-    "note": "备用镜像：https://archive.apache.org/dist/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz（代理环境下连接易中断，可直接使用此链接重试）"
+    "note": "备用镜像：https://archive.apache.org/dist/flink/flink-2.3.0/flink-2.3.0-bin-scala_2.12.tgz（代理环境下连接易中断，可直接使用此链接重试）"
   },
   {
     "service": "HDFS",
@@ -156,9 +156,9 @@
   {
     "service": "KAFKA",
     "arch": "common",
-    "packageName": "kafka_2.13-4.3.0.tgz",
-    "decompressPackageName": "kafka_2.13-4.3.0",
-    "downloadUrl": "https://downloads.apache.org/kafka/4.3.0/kafka_2.13-4.3.0.tgz",
+    "packageName": "kafka_2.13-4.3.1.tgz",
+    "decompressPackageName": "kafka_2.13-4.3.1",
+    "downloadUrl": "https://downloads.apache.org/kafka/4.3.1/kafka_2.13-4.3.1.tgz",
     "status": "public"
   },
   {
@@ -170,6 +170,26 @@
     "status": "public"
   },
   {
+    "service": "MYSQL",
+    "arch": "x86_64",
+    "packageName": "mysql-8.0.46-1.el8.x86_64.rpm-bundle.tar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.46-1.el8.x86_64.rpm-bundle.tar",
+    "status": "public",
+    "repoType": "base",
+    "note": "CLI 基础设施 bundle（非 Datasophon 服务，无 service_ddl.json），对应 cluster-sample.yml packages.mysql.x86_64；rpm 平铺包无顶层目录，decompressPackageName 不适用"
+  },
+  {
+    "service": "MYSQL",
+    "arch": "aarch64",
+    "packageName": "mysql-8.0.46-1.el8.aarch64.rpm-bundle.tar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.46-1.el8.aarch64.rpm-bundle.tar",
+    "status": "public",
+    "repoType": "base",
+    "note": "同上，对应 packages.mysql.aarch64"
+  },
+  {
     "service": "NACOS",
     "arch": "common",
     "packageName": "nacos-server-3.2.2.tar.gz",
@@ -179,48 +199,88 @@
     "note": "注意：Nacos 官方包实际解压目录为 nacos/（无版本号），需 verify 步确认并修正"
   },
   {
+    "service": "NEXUS",
+    "arch": "x86_64",
+    "packageName": "nexus-3.94.0-12-linux-x86_64.tar.gz",
+    "decompressPackageName": null,
+    "downloadUrl": "https://download.sonatype.com/nexus/3/nexus-3.94.0-12-linux-x86_64.tar.gz",
+    "status": "public",
+    "repoType": "base",
+    "note": "CLI 基础设施 bundle（非 Datasophon 服务，无 service_ddl.json），对应 cluster-sample.yml packages.nexus.x86_64"
+  },
+  {
+    "service": "NEXUS",
+    "arch": "aarch64",
+    "packageName": "nexus-3.94.0-12-linux-aarch_64.tar.gz",
+    "decompressPackageName": null,
+    "downloadUrl": "https://download.sonatype.com/nexus/3/nexus-3.94.0-12-linux-aarch_64.tar.gz",
+    "status": "public",
+    "repoType": "base",
+    "note": "同上，对应 packages.nexus.aarch64"
+  },
+  {
     "service": "NGINX",
     "arch": "common",
-    "packageName": "nginx-1.30.2.tar.gz",
-    "decompressPackageName": "nginx-1.30.2",
-    "downloadUrl": "https://nginx.org/download/nginx-1.30.2.tar.gz",
+    "packageName": "nginx-1.30.3.tar.gz",
+    "decompressPackageName": "nginx-1.30.3",
+    "downloadUrl": "https://nginx.org/download/nginx-1.30.3.tar.gz",
     "status": "public"
   },
   {
     "service": "OTELCOLLECTOR",
     "arch": "x86_64",
-    "packageName": "otelcol-contrib_0.154.0_linux_amd64.tar.gz",
-    "decompressPackageName": "otelcol-contrib_0.154.0",
-    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.154.0/otelcol-contrib_0.154.0_linux_amd64.tar.gz",
+    "packageName": "otelcol-contrib_0.156.0_linux_amd64.tar.gz",
+    "decompressPackageName": "otelcol-contrib_0.156.0",
+    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.156.0/otelcol-contrib_0.156.0_linux_amd64.tar.gz",
     "status": "public",
-    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.154.0/ 目录"
+    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.156.0/ 目录"
   },
   {
     "service": "OTELCOLLECTOR",
     "arch": "aarch64",
-    "packageName": "otelcol-contrib_0.154.0_linux_arm64.tar.gz",
-    "decompressPackageName": "otelcol-contrib_0.154.0",
-    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.154.0/otelcol-contrib_0.154.0_linux_arm64.tar.gz",
+    "packageName": "otelcol-contrib_0.156.0_linux_arm64.tar.gz",
+    "decompressPackageName": "otelcol-contrib_0.156.0",
+    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.156.0/otelcol-contrib_0.156.0_linux_arm64.tar.gz",
     "status": "public",
-    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.154.0/ 目录"
+    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.156.0/ 目录"
+  },
+  {
+    "service": "RUSTFS",
+    "arch": "x86_64",
+    "packageName": "rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
+    "decompressPackageName": null,
+    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.8/rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
+    "status": "public",
+    "repoType": "base",
+    "note": "RustFS 官方至今无 GA 1.0.0（全部 tag 均为 alpha/beta），当前最新 1.0.0-beta.8；发布格式为 .zip 而非 .tar.gz，与 rustfs.go 硬编码的 tar xvz 解压不兼容，需另行改造 CLI 后才可直接使用（跟踪为独立任务，本次只负责下载到位）"
+  },
+  {
+    "service": "RUSTFS",
+    "arch": "aarch64",
+    "packageName": "rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+    "decompressPackageName": null,
+    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.8/rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+    "status": "public",
+    "repoType": "base",
+    "note": "同上，对应 packages.rustfs.aarch64"
   },
   {
     "service": "VALKEY",
     "arch": "x86_64",
-    "packageName": "valkey-8.1.7-jammy-x86_64.tar.gz",
-    "decompressPackageName": "valkey-8.1.7-jammy-x86_64",
-    "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.7-jammy-x86_64.tar.gz",
+    "packageName": "valkey-8.1.8-openeuler22.03-x86_64.tar.gz",
+    "decompressPackageName": "valkey-8.1.8-openeuler22.03-x86_64",
+    "downloadUrl": null,
     "status": "private",
-    "note": "从 downloadUrl 下载官方 jammy 预编译包后，需手动下载 redis_exporter（https://github.com/oliver006/redis_exporter/releases）并放入包内 redis-exporter/ 目录，重打包后上传到 package/"
+    "note": "私有包；openEuler 22.03 LTS-SP3/SP4 x86_64 原生构建包，内含 redis_exporter 1.84.0。构建说明：package/docs/valkey/BUILD.md"
   },
   {
     "service": "VALKEY",
     "arch": "aarch64",
-    "packageName": "valkey-8.1.7-jammy-arm64.tar.gz",
-    "decompressPackageName": "valkey-8.1.7-jammy-arm64",
-    "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.7-jammy-arm64.tar.gz",
+    "packageName": "valkey-8.1.8-jammy-arm64.tar.gz",
+    "decompressPackageName": "valkey-8.1.8-jammy-arm64",
+    "downloadUrl": null,
     "status": "private",
-    "note": "从 downloadUrl 下载官方 jammy 预编译包后，需手动下载 redis_exporter（https://github.com/oliver006/redis_exporter/releases）并放入包内 redis-exporter/ 目录，重打包后上传到 package/"
+    "note": "私有包；尚未提供 openEuler 22.03 aarch64 制品，不能使用 x86_64 包。构建说明：package/docs/valkey/BUILD.md"
   },
   {
     "service": "SPARK3",

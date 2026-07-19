@@ -9,6 +9,7 @@ package/
 ├── manifest.json          # 部署包清单（服务名、架构、下载地址）
 ├── download.sh            # 批量下载脚本
 ├── verify_decompress.py   # 解压目录校验工具
+├── base/                  # CLI 自身基础设施 bundle（nexus/mysql/rustfs 等，见下文说明）
 └── <packageName>.tar.gz   # 下载后的部署包（已加入 .gitignore，不入库）
 ```
 
@@ -55,6 +56,9 @@ curl -L --max-time 3600 -C - \
 | `downloadUrl` | 下载地址；`null` 表示私有包，需手动上传 |
 | `status` | `public`（可自动下载）/ `private`（需手动上传） |
 | `note` | 备注（私有包说明、镜像地址等） |
+| `repoType` | 可选，显式指定下载目的目录（`yum`/`apt`/`helm`/`docker`/`base`），覆盖按扩展名的自动推断；不填则默认落到 `raw/packages/` |
+
+`NEXUS`/`MYSQL`/`RUSTFS` 三个 `service` 条目是 `datasophon-cli-go` 直接消费的 CLI 基础设施 bundle（对应 `cluster-sample.yml` 的 `packages:` 段），不对应任何 `meta/datacluster*/<SERVICE>/service_ddl.json`，因此 `decompressPackageName` 统一为 `null`，`repoType` 固定为 `base`（下载到 `package/base/`）。`verify_decompress.py` 假设包在扁平的 `package/<packageName>` 路径下，这三个包（以及本就走子目录分流的 `raw/packages/`、`docker/` 等）不在该路径，会被它计入 "MISSING"——这是已知的展示性限制，不代表包缺失，以 `download.sh` 的下载结果为准。
 
 ## 私有包
 
@@ -64,6 +68,11 @@ curl -L --max-time 3600 -C - \
 |---|---|
 | `datart-server.tar.gz` | 内部 BI 服务 |
 | `redis-8.6.tar.gz` / `redis-8.6-arm.tar.gz` | 自定义构建（非官方版本号） |
+
+## Valkey 私有构建包
+
+Valkey x86_64 离线包是私有制品，不通过 `download.sh` 自动获取。构建、校验和制品说明见
+[docs/valkey/BUILD.md](./docs/valkey/BUILD.md)。
 
 ## 多架构包说明
 

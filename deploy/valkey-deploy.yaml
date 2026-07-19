@@ -1,0 +1,11 @@
+app:
+  - name: VALKEY
+    version: 8.1.8
+    deployType: physical
+    roles:
+      - name: ValkeyMaster
+        deployHosts:
+          - ddh-02
+      - name: ValkeyExporter
+        deployHosts:
+          - ddh-02

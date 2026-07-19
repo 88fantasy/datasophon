@@ -73,6 +73,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -182,6 +183,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     }
 
     @Override
+    @Transactional
     public InstallResult deploy(DeploymentDTO dto) {
         DeploymentModel model = doParseDeploymentFile(dto);
         List<DeploySrvModel> apps = getTargetApps(model);
@@ -258,7 +260,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         // 保存commandHost的相关数据
         List<ClusterServiceCommandHostEntity> hostEntityList = new ArrayList<>();
         List<FrameServiceRoleEntity> serviceRoleList = frameServiceRoleService.getServiceRoleList(cluster.getId(), Collections.singletonList(frameService.getId()), null);
-        serviceRoleList.sort(Comparator.comparing(FrameServiceRoleEntity::getSortNum));
+        sortServiceRoles(serviceRoleList);
         Set<String> hostnames = new HashSet<>();
         for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
             hostnames.addAll(serviceRoleHostMap.getOrDefault(serviceRole.getServiceRoleName(), new ArrayList<>(0)));
@@ -304,6 +306,11 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
                 cmd.getServiceName(), hostCommandList.size());
 
         return cmd.getCommandId();
+    }
+
+    static void sortServiceRoles(List<FrameServiceRoleEntity> serviceRoleList) {
+        serviceRoleList.sort(Comparator.comparing(FrameServiceRoleEntity::getSortNum,
+                Comparator.nullsLast(Comparator.naturalOrder())));
     }
 
     private String saveDAG(Integer clusterId, String serviceActionName, List<String> commandIds, DAG<String, DAGNode, Integer> dag,
@@ -371,6 +378,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             serviceNode.setMasterRoles(masterRoles);
             serviceNode.setWorkerRoles(workerRoles);
             serviceNode.setClientRoles(clientRoles);
+            serviceNode.setServiceHooks(serviceInfo.getServiceHooks());
 
             NodeDefinitionEntity node = new NodeDefinitionEntity();
             node.setNodeName(info.getName());
@@ -591,6 +599,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     }
 
     @Override
+    @Transactional
     public String generateAndExecSrvInstCmd(Integer clusterId, CommandType commandType, List<Integer> serviceInstanceIds) {
         List<Integer> serviceFrameworkIds = new ArrayList<>();
         List<String> commandIds = new ArrayList<>();
@@ -656,6 +665,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     }
 
     @Override
+    @Transactional
     public String generateAndExecSrvRoleCmd(Integer clusterId, CommandType commandType, Integer instId, List<Integer> roleInstIds) {
         if (Arrays.asList(CommandType.UPGRADE_SERVICE, CommandType.INSTALL_SERVICE).contains(commandType)) {
             throw new UnsupportedOperationException(String.format("command %s is not support", commandType));

@@ -29,48 +29,48 @@ import lombok.Data;
 
 @Data
 public class ServiceConfig implements Serializable {
-    
+
     private String originalName;
-    
+
     private String name;
-    
+
     private Object value;
-    
+
     private String label;
-    
+
     private String key;
-    
+
     private String description;
-    
+
     private boolean required;
-    
-    private boolean enabled;
-    
+
+    private boolean enabled = true;
+
     private String type;
-    
+
     private boolean configurableInWizard;
-    
+
     private Object defaultValue;
-    
+
     private Long minValue;
-    
+
     private Long maxValue;
-    
+
     private String unit;
-    
+
     private boolean hidden;
-    
+
     private List<String> selectValue;
-    
+
     private String configType;
-    
+
     private boolean configWithKerberos;
-    
+
     private boolean configWithRack;
-    
+
     private boolean configWithHA;
-    
+
     private String separator;
-    
+
     private Boolean register;
 }

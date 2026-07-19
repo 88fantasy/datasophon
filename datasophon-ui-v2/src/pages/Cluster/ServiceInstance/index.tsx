@@ -1,16 +1,20 @@
 import { history, useParams } from '@umijs/max';
-import { Button, Dropdown, Spin, Tabs } from 'antd';
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import type { TabsProps } from 'antd';
+import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
+import ApisixDashboard from '@/pages/monitor/ApisixMonitor';
+import DSDashboard from '@/pages/monitor/DolphinSchedulerMonitor';
+import DorisDashboard from '@/pages/monitor/DorisMonitor';
+import NacosDashboard from '@/pages/monitor/NacosMonitor';
+import ValkeyDashboard from '@/pages/monitor/ValkeyMonitor';
 import { listK8sResourceTypes } from '@/services/k8s';
-import { getServiceInstance, getServiceWebUis } from '@/services/service';
+import {
+  deleteServiceInstance,
+  getServiceInstance,
+  getServiceWebUis,
+} from '@/services/service';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';
@@ -36,6 +40,7 @@ const ServiceInstance: React.FC = () => {
   const [k8sResourceTypes, setK8sResourceTypes] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,44 +83,50 @@ const ServiceInstance: React.FC = () => {
     };
   }, [numericClusterId, numericInstanceId, isK8s]);
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteServiceInstance(numericClusterId, numericInstanceId);
+      message.success('服务已删除');
+      history.replace(`/cluster/${numericClusterId}/service`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const tabBarExtraContent = useMemo(() => {
-    if (!webUis?.length) return undefined;
-    const items = webUis.map((val) => ({
-      key: val.name,
-      label: val.name,
-      onClick: () => window.open(val.webUrl),
-    }));
+    const webUiButton = webUis?.length ? (
+      <Dropdown
+        menu={{
+          items: webUis.map((val) => ({
+            key: val.name,
+            label: val.name,
+            onClick: () => window.open(val.webUrl),
+          })),
+        }}
+      >
+        <Button variant="filled" color="default">
+          WebUI
+        </Button>
+      </Dropdown>
+    ) : null;
     return {
       right: (
-        <Dropdown menu={{ items }}>
-          <Button variant="filled" color="default">
-            WebUI
-          </Button>
-        </Dropdown>
+        <Space>
+          {webUiButton}
+          <Popconfirm
+            title={`确认删除服务「${serviceInfo?.serviceName ?? ''}」？`}
+            description="需先停止全部角色实例，删除后无法恢复"
+            onConfirm={handleDelete}
+          >
+            <Button danger loading={deleting}>
+              删除服务
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     };
-  }, [webUis]);
-
-  const onTabChange = useCallback(
-    (key: string) => {
-      const base = `/cluster/${numericClusterId}/service/${numericInstanceId}`;
-      switch (key) {
-        case 'overview':
-          history.push(`${base}/overview`);
-          break;
-        case 'instance':
-          history.push(`${base}/instance`);
-          break;
-        case 'setting':
-          history.push(`${base}/setting`);
-          break;
-        case 'queue':
-          history.push(`${base}/queue`);
-          break;
-      }
-    },
-    [numericClusterId, numericInstanceId],
-  );
+  }, [webUis, serviceInfo, deleting, numericClusterId, numericInstanceId]);
 
   if (loading) {
     return (
@@ -127,62 +138,109 @@ const ServiceInstance: React.FC = () => {
 
   // ── K8s 实例页：资源 Tab（动态）+ 配置 Tab ─────────────────────────
   if (isK8s) {
-    return (
-      <Tabs defaultActiveKey={k8sResourceTypes[0] ?? 'setting'}>
-        {k8sResourceTypes.map((rt) => (
-          <Tabs.TabPane tab={RESOURCE_TYPE_LABELS[rt] ?? rt} key={rt}>
-            <K8sResource
-              clusterId={numericClusterId}
-              instanceId={numericInstanceId}
-              resourceType={rt}
-            />
-          </Tabs.TabPane>
-        ))}
-        <Tabs.TabPane tab="配置" key="setting">
+    const k8sItems: TabsProps['items'] = [
+      ...k8sResourceTypes.map((rt) => ({
+        key: rt,
+        label: RESOURCE_TYPE_LABELS[rt] ?? rt,
+        children: (
+          <K8sResource
+            clusterId={numericClusterId}
+            instanceId={numericInstanceId}
+            resourceType={rt}
+          />
+        ),
+      })),
+      {
+        key: 'setting',
+        label: '配置',
+        children: (
           <SettingTab
             clusterId={numericClusterId}
             instanceId={numericInstanceId}
           />
-        </Tabs.TabPane>
-      </Tabs>
+        ),
+      },
+    ];
+    return (
+      <Tabs
+        defaultActiveKey={k8sResourceTypes[0] ?? 'setting'}
+        items={k8sItems}
+      />
     );
   }
 
   // ── 物理集群实例页（原有逻辑不变）─────────────────────────────────
+  const items: NonNullable<TabsProps['items']> = [];
+  const isApisix = serviceInfo?.serviceName === 'APISIX';
+  const isValkey = serviceInfo?.serviceName === 'VALKEY';
+  const isDS = serviceInfo?.serviceName === 'DS';
+  const isDoris = serviceInfo?.serviceName === 'DORIS';
+  const isNacos = serviceInfo?.serviceName === 'NACOS';
+  const hasPrimaryMonitor = isApisix || isValkey || isDS || isDoris || isNacos;
+  if (hasPrimaryMonitor) {
+    let primaryMonitor: React.ReactNode = null;
+    if (isApisix) {
+      primaryMonitor = <ApisixDashboard clusterId={numericClusterId} />;
+    } else if (isValkey) {
+      primaryMonitor = <ValkeyDashboard clusterId={numericClusterId} />;
+    } else if (isDS) {
+      primaryMonitor = <DSDashboard clusterId={numericClusterId} />;
+    } else if (isDoris) {
+      primaryMonitor = <DorisDashboard clusterId={numericClusterId} embedded />;
+    } else if (isNacos) {
+      primaryMonitor = <NacosDashboard clusterId={numericClusterId} />;
+    }
+    items.push({
+      key: 'monitor',
+      label: '监控',
+      children: primaryMonitor,
+    });
+  }
+  if (serviceInfo?.dashboardUrl) {
+    items.push({
+      key: 'overview',
+      label: '概览',
+      children: (
+        <iframe
+          className="w-full"
+          style={{ height: '72vh', border: 'none' }}
+          src={serviceInfo.dashboardUrl}
+          title="概览"
+        />
+      ),
+    });
+  }
+  items.push({
+    key: 'instance',
+    label: '实例',
+    children: (
+      <InstanceTab
+        clusterId={numericClusterId}
+        instanceId={numericInstanceId}
+      />
+    ),
+  });
+  items.push({
+    key: 'setting',
+    label: '配置',
+    children: (
+      <SettingTab clusterId={numericClusterId} instanceId={numericInstanceId} />
+    ),
+  });
+  if (serviceInfo?.serviceName === 'YARN') {
+    items.push({
+      key: 'queue',
+      label: '资源配置',
+      children: <QueueTab clusterId={numericClusterId} />,
+    });
+  }
   return (
     <Tabs
+      key={`${numericInstanceId}-${serviceInfo?.serviceName ?? ''}`}
       tabBarExtraContent={tabBarExtraContent}
-      defaultActiveKey="instance"
-      onChange={onTabChange}
-    >
-      {serviceInfo?.dashboardUrl && (
-        <Tabs.TabPane tab="概览" key="overview">
-          <iframe
-            className="w-full"
-            style={{ height: '72vh', border: 'none' }}
-            src={serviceInfo.dashboardUrl}
-            title="概览"
-          />
-        </Tabs.TabPane>
-      )}
-      <Tabs.TabPane tab="实例" key="instance">
-        <InstanceTab
-          clusterId={numericClusterId}
-          instanceId={numericInstanceId}
-        />
-      </Tabs.TabPane>
-      <Tabs.TabPane tab="配置" key="setting">
-        <SettingTab
-          clusterId={numericClusterId}
-          instanceId={numericInstanceId}
-        />
-      </Tabs.TabPane>
-      {serviceInfo?.serviceName === 'YARN' && (
-        <Tabs.TabPane tab="资源配置" key="queue">
-          <QueueTab clusterId={numericClusterId} />
-        </Tabs.TabPane>
-      )}
-    </Tabs>
+      defaultActiveKey={hasPrimaryMonitor ? 'monitor' : 'instance'}
+      items={items}
+    />
   );
 };
 

@@ -3,20 +3,38 @@
   "type": "MIDDLEWARE",
   "label": "Doris",
   "description": "简单易用、高性能和统一的分析数据库",
-  "version": "4.0.5",
+  "version": "4.0.6",
   "sortNum": 11,
   "createDecompressDir": false,
   "dependencies": [],
   "arch": {
     "x86_64": {
-      "packageName": "apache-doris-4.0.5-bin-x64.tar.gz",
-      "decompressPackageName": "apache-doris-4.0.5"
+      "packageName": "apache-doris-4.0.6-bin-x64.tar.gz",
+      "decompressPackageName": "apache-doris-4.0.6"
     },
     "aarch64": {
-      "packageName": "apache-doris-4.0.5-bin-arm64.tar.gz",
-      "decompressPackageName": "apache-doris-4.0.5"
+      "packageName": "apache-doris-4.0.6-bin-arm64.tar.gz",
+      "decompressPackageName": "apache-doris-4.0.6"
     }
   },
+  "serviceHooks": [
+    {
+      "type": "POST_INSTALL",
+      "action": "dorisRootPasswordInit",
+      "params": {
+        "maxAttempts": 24,
+        "intervalMs": 5000
+      }
+    },
+    {
+      "type": "POST_INSTALL",
+      "action": "otelSchemaInit",
+      "params": {
+        "maxAttempts": 24,
+        "intervalMs": 5000
+      }
+    }
+  ],
   "roles": [
     {
       "name": "DorisFE",
@@ -67,6 +85,15 @@
             "md5": "e16e258a2278e15c07db4b43e175ec15",
             "from": "script/status_fe.sh",
             "templateId": "2019333119884447746"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_HOME=$JAVA_HOME17",
+            "source": "fe/bin/start_fe.sh"
           }
         }
       ]
@@ -126,6 +153,15 @@
             "text": "ulimit -c 0 -n 655350",
             "source": "be/bin/start_be.sh"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_HOME=$JAVA_HOME17",
+            "source": "be/bin/start_be.sh"
+          }
         }
       ]
     }
@@ -182,7 +218,6 @@
   "parameters": [
     {
       "name": "cluster_id",
-      "value": "1",
       "description": "相同集群ID的FE/BE节点属于同一个集群",
       "label": "集群ID",
       "hidden": false,
@@ -194,7 +229,6 @@
     },
     {
       "name": "meta_dir",
-      "value": "/data/doris/fe/doris-meta",
       "description": "FE元数据的保存目录",
       "label": "FE元数据的保存目录",
       "hidden": false,
@@ -207,7 +241,6 @@
     },
     {
       "name": "root_password",
-      "value": "3ght%ed75BGk",
       "description": "设置root用户初始化密码",
       "label": "设置root用户初始化密码",
       "hidden": false,
@@ -218,22 +251,42 @@
       "register": true
     },
     {
+      "name": "otel_collector_password",
+      "description": "Doris otel_collector 账号(OTel Collector 写入用)的密码，留空则自动生成随机密码",
+      "label": "OTel Collector 写入密码",
+      "hidden": false,
+      "required": false,
+      "type": "password",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "name": "otel_reader_password",
+      "description": "Doris otel_reader 账号(平台查询 Doris 指标用)的密码，留空则自动生成随机密码",
+      "label": "OTel Reader 查询密码",
+      "hidden": false,
+      "required": false,
+      "type": "password",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
       "name": "http_port",
       "key": "http_port",
-      "value": "18030",
       "description": "FE节点上前端界面的端口",
       "label": "FE节点上前端界面的端口",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "18030",
+      "defaultValue": "8030",
       "configurableInWizard": true,
       "register": true
     },
     {
       "name": "rpc_port",
       "key": "rpc_port",
-      "value": "9020",
       "description": "FE 节点上 Thrift 服务器的端口。",
       "label": "FE节点上Thrift服务器的端口",
       "hidden": false,
@@ -246,7 +299,6 @@
     {
       "name": "query_port",
       "key": "query_port",
-      "value": "9030",
       "description": "FE 节点上 MySQL 服务器的端口",
       "label": "FE节点上MySQL服务器的端口",
       "hidden": false,
@@ -258,7 +310,6 @@
     },
     {
       "name": "fe_priority_networks",
-      "value": "192.168.2.0/24",
       "description": "为那些有多个 IP 地址的服务器声明一个选择策略。\n请注意，最多应该有一个 IP 地址与此列表匹配。这是一个以分号分隔格式的列表，用 CIDR 表示法，例如 10.10.10.0/24。 如果没有匹配这条规则的ip，会随机选择一个。",
       "label": "FE优先网段",
       "hidden": false,
@@ -270,7 +321,6 @@
     },
     {
       "name": "fe_heap_size",
-      "value": "8",
       "description": "FE最大堆内存，单位为GB",
       "label": "FE最大堆内存",
       "hidden": false,
@@ -283,7 +333,6 @@
     },
     {
       "name": "lower_case_table_names",
-      "value": "0",
       "description": "值为 0 时，表名大小写敏感。默认为0。\n值为 1 时，表名大小写不敏感，doris在存储和查询时会将表名转换为小写。\n优点是在一条语句中可以使用表名的任意大小写形式\n缺点是建表后无法获得建表语句中指定的表名，show tables 查看的表名为指定表名的小写。\n值为 2 时，表名大小写不敏感，doris存储建表语句中指定的表名，查询时转换为小写进行比较。\n优点是show tables 查看的表名为建表语句中指定的表名；\n缺点是同一语句中只能使用表名的一种大小写形式。",
       "label": "表名大小写是否敏感,只有初始化安装时有效",
       "hidden": false,
@@ -300,7 +349,6 @@
     },
     {
       "name": "enable_outfile_to_local",
-      "value": false,
       "description": "是否允许 outfile 函数将结果导出到本地磁盘",
       "label": "是否允许outfile函数将结果导出到本地磁盘",
       "hidden": false,
@@ -312,7 +360,6 @@
     },
     {
       "name": "be_priority_networks",
-      "value": "192.168.2.0/24",
       "description": "为那些有多个 IP 地址的服务器声明一个选择策略。\n请注意，最多应该有一个 IP 地址与此列表匹配。这是一个以分号分隔格式的列表，用 CIDR 表示法，例如 10.10.10.0/24。 如果没有匹配这条规则的ip，会随机选择一个。",
       "label": "BE优先网段",
       "hidden": false,
@@ -324,7 +371,6 @@
     },
     {
       "name": "sys_log_level",
-      "value": "INFO",
       "description": "",
       "label": "BE服务日志级别",
       "hidden": false,
@@ -343,7 +389,6 @@
     {
       "name": "be_port",
       "key": "be_port",
-      "value": "9060",
       "description": "BE admin端口",
       "label": "BE admin端口",
       "hidden": false,
@@ -355,19 +400,17 @@
     },
     {
       "name": "webserver_port",
-      "value": "18040",
       "description": "BE WebServer端口",
       "label": "BE WebServer端口",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "18040",
+      "defaultValue": "8040",
       "configurableInWizard": true,
       "register": false
     },
     {
       "name": "brpc_port",
-      "value": "8060",
       "description": "BE Rpc端口",
       "label": "BE Rpc端口",
       "hidden": false,
@@ -379,9 +422,6 @@
     },
     {
       "name": "storage_root_path",
-      "value": [
-        "/data/doris/be/storage"
-      ],
       "description": "BE数据存储目录，可配置多个，按分号分隔，例如/data1,medium:HDD;/data2,medium:SSD;/data3",
       "label": "BE数据存储目录",
       "hidden": false,
@@ -397,7 +437,6 @@
     },
     {
       "name": "mem_limit",
-      "value": "100%",
       "description": "限制BE进程使用服务器最大内存百分比。用于防止BE内存挤占太多的机器内存，该参数必须大于0，当百分大于100%之后，该值会默认为100%。",
       "label": "BE进程使用服务器最大内存百分比",
       "hidden": false,
@@ -409,7 +448,6 @@
     },
     {
       "name": "custom.fe.conf",
-      "value": [],
       "description": "自定义配置",
       "label": "自定义配置fe.conf",
       "hidden": false,
@@ -422,7 +460,6 @@
     },
     {
       "name": "custom.be.conf",
-      "value": [],
       "description": "自定义配置",
       "label": "自定义配置be.conf",
       "hidden": false,

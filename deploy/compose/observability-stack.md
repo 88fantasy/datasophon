@@ -5,7 +5,7 @@
 ## 架构
 
 ```
-OTel Collector (otelcol-contrib:0.154.0)
+OTel Collector (otelcol-contrib:0.156.0)
   ├─[otlp receiver :4317/:4318]◀── datasophon-api / worker（OTel Java Agent 直发 traces/logs）
   ├─[prometheus/self :8888]      collector 自身 self-metrics
   ├─[prometheus/doris :8030/:8040]  Doris FE/BE 指标
@@ -28,7 +28,7 @@ OTel Collector (otelcol-contrib:0.154.0)
 | obs-doris-init | 一次性初始化容器，等待 BE 向 FE 注册完成后退出 | — |
 | obs-otelcol | OTel Collector，接收 api/worker OTLP + 采集 Doris/host 指标写入 Doris | 8888 (self-metrics), 4317 (OTLP gRPC), 4318 (OTLP HTTP) |
 
-版本对应 `package/manifest.json`：Doris 4.0.5、otelcol-contrib 0.154.0。
+版本对应 `package/manifest.json`：Doris 4.0.6、otelcol-contrib 0.156.0（2026-07-12 从 4.0.5/0.154.0 升级）。
 
 ## 前置条件
 

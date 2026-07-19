@@ -12,7 +12,7 @@ const StepInstall: React.FC<Props> = ({ services }) => {
       <Alert
         type="info"
         showIcon
-        message="确认无误后点击「开始安装」，系统将生成安装 DAG 并立即执行，随后自动跳转到 DAG 进度图。"
+        title="确认无误后点击「开始安装」，系统将生成安装 DAG 并立即执行，随后自动跳转到 DAG 进度图。"
         style={{ marginBottom: 16 }}
       />
       <div>

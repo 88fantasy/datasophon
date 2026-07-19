@@ -47,6 +47,7 @@ func TestSetupConfig_DuplicateIP(t *testing.T) {
 		ProductPkgsPath: tmpDir + "/pkgs",
 	}
 	_ = os.MkdirAll(tmpDir+"/install", 0755)
+	_ = os.MkdirAll(tmpDir+"/pkgs", 0755)
 
 	// 目标节点 IP = 10.0.0.1，已存在于 nodes 列表
 	newNode := &config.Host{IP: "10.0.0.1", Port: 22, User: "root", Password: "pass", Hostname: "newnode"}
@@ -75,6 +76,7 @@ func TestSetupConfig_DuplicateHostname(t *testing.T) {
 		ProductPkgsPath: tmpDir + "/pkgs",
 	}
 	_ = os.MkdirAll(tmpDir+"/install", 0755)
+	_ = os.MkdirAll(tmpDir+"/pkgs", 0755)
 
 	// IP 不同，但 hostname = node1 与配置文件中已有节点重复
 	newNode := &config.Host{IP: "10.0.0.99", Port: 22, User: "root", Password: "pass", Hostname: "node1"}
@@ -102,6 +104,7 @@ func TestSetupConfig_NewIP(t *testing.T) {
 		ProductPkgsPath: tmpDir + "/pkgs",
 	}
 	_ = os.MkdirAll(tmpDir+"/install", 0755)
+	_ = os.MkdirAll(tmpDir+"/pkgs", 0755)
 
 	newNode := &config.Host{IP: "10.0.0.99", Port: 22, User: "root", Password: "pass", Hostname: "newnode"}
 	err := n.setupConfig(cfgPath, newNode)

@@ -23,45 +23,58 @@
 package com.datasophon.api.observability;
 
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 @Service
 public class OtelMonitorService {
-    
+
     private static final String ROLE_NAME = "OtelCollector";
-    
+
     private final ClusterServiceRoleInstanceService roleInstanceService;
+    private final ClusterHostService clusterHostService;
     private final OtelSelfMetricsClient metricsClient;
-    
+
     public OtelMonitorService(ClusterServiceRoleInstanceService roleInstanceService,
+                              ClusterHostService clusterHostService,
                               OtelSelfMetricsClient metricsClient) {
         this.roleInstanceService = roleInstanceService;
+        this.clusterHostService = clusterHostService;
         this.metricsClient = metricsClient;
     }
-    
+
     public List<NodeOtelMetrics> collectAll(Integer clusterId) {
         List<NodeOtelMetrics> result = new ArrayList<>();
+        Map<String, String> hostIps = clusterHostService.getHostListByClusterId(clusterId).stream()
+                .collect(Collectors.toMap(ClusterHostDO::getHostname, ClusterHostDO::getIp, (left, right) -> left));
         for (ClusterServiceRoleInstanceEntity role : roleInstanceService
                 .getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, ROLE_NAME)) {
             if (!ServiceRoleState.RUNNING.equals(role.getServiceRoleState())) {
                 continue;
             }
             try {
+                String ip = hostIps.get(role.getHostname());
+                if (ip == null || ip.isBlank()) {
+                    throw new IllegalStateException("host ip not found");
+                }
                 result.add(new NodeOtelMetrics(role.getHostname(), true, null,
-                        metricsClient.fetch(role.getHostname())));
+                        metricsClient.fetch(ip)));
             } catch (RuntimeException e) {
                 result.add(new NodeOtelMetrics(role.getHostname(), false, errorMessage(e), null));
             }
         }
         return result;
     }
-    
+
     private static String errorMessage(RuntimeException e) {
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }

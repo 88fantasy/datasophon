@@ -86,7 +86,7 @@ const MetricModal: React.FC<Props> = ({
       width={560}
       layout="horizontal"
       labelCol={{ span: 8 }}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
       initialValues={initialValues}
       onValuesChange={(changed) => {
         if ('alertGroupId' in changed) {

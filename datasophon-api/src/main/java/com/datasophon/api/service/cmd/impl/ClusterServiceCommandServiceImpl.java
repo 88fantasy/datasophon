@@ -45,7 +45,7 @@ import cn.hutool.core.date.DateUtil;
 public class ClusterServiceCommandServiceImpl extends ServiceImpl<ClusterServiceCommandMapper, ClusterServiceCommandEntity>
         implements
             ClusterServiceCommandService {
-    
+
     @Override
     public Result getServiceCommandlist(Integer clusterId, Integer page, Integer pageSize) {
         Integer offset = (page - 1) * pageSize;
@@ -66,10 +66,20 @@ public class ClusterServiceCommandServiceImpl extends ServiceImpl<ClusterService
         }
         return Result.success(total, list);
     }
-    
+
     @Override
     public ClusterServiceCommandEntity getCommandById(String commandId) {
         return lambdaQuery().eq(ClusterServiceCommandEntity::getCommandId, commandId).one();
     }
-    
+
+    @Override
+    public ClusterServiceCommandEntity getLatestCommand(Integer clusterId, String serviceName) {
+        return lambdaQuery()
+                .eq(ClusterServiceCommandEntity::getClusterId, clusterId)
+                .eq(ClusterServiceCommandEntity::getServiceName, serviceName)
+                .orderByDesc(ClusterServiceCommandEntity::getCreateTime)
+                .last("LIMIT 1")
+                .one();
+    }
+
 }

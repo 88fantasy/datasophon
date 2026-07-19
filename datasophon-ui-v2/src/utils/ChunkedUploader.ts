@@ -77,7 +77,7 @@ export async function chunkedUpload({
     uploadType?: number;
   };
   const taskRes = await request<{ data: TaskData }>(
-    `/v2/cluster/${clusterId}/deploy/create-shard-task`,
+    `/cluster/${clusterId}/deploy/create-shard-task`,
     {
       method: 'POST',
       data: {
@@ -111,7 +111,7 @@ export async function chunkedUpload({
 
     // 断点续传：先检查分片是否已上传
     const checkRes = await request<{ data: boolean }>(
-      `/v2/cluster/${clusterId}/deploy/is-chunk-uploaded`,
+      `/cluster/${clusterId}/deploy/is-chunk-uploaded`,
       { method: 'POST', data: { attachId, chunkNo: i, md5: chunkMd5 } },
     );
 
@@ -121,7 +121,7 @@ export async function chunkedUpload({
       formData.append('chunkNo', String(i));
       formData.append('attachId', String(attachId));
       formData.append('md5', chunkMd5);
-      await request(`/v2/cluster/${clusterId}/deploy/upload-chunk`, {
+      await request(`/cluster/${clusterId}/deploy/upload-chunk`, {
         method: 'POST',
         data: formData,
         requestType: 'form',
@@ -134,7 +134,7 @@ export async function chunkedUpload({
   }
 
   // 触发异步合并（async=true 避免大文件合并超时）
-  await request(`/v2/cluster/${clusterId}/deploy/merge-chunk`, {
+  await request(`/cluster/${clusterId}/deploy/merge-chunk`, {
     method: 'POST',
     data: { attachId, md5: fileMd5, async: true },
   });

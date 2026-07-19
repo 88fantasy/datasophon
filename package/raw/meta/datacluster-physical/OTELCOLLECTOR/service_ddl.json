@@ -1,19 +1,20 @@
 {
   "name": "OTELCOLLECTOR",
+  "type": "ENVIRONMENT",
   "label": "OpenTelemetry Collector",
   "description": "统一可观测采集器(metrics/logs/traces)",
-  "version": "0.154.0",
+  "version": "0.156.0",
   "sortNum": 18,
   "dependencies": [],
   "createDecompressDir": true,
   "arch": {
     "x86_64": {
-      "packageName": "otelcol-contrib_0.154.0_linux_amd64.tar.gz",
-      "decompressPackageName": "otelcol-contrib_0.154.0"
+      "packageName": "otelcol-contrib_0.156.0_linux_amd64.tar.gz",
+      "decompressPackageName": "otelcol-contrib_0.156.0"
     },
     "aarch64": {
-      "packageName": "otelcol-contrib_0.154.0_linux_arm64.tar.gz",
-      "decompressPackageName": "otelcol-contrib_0.154.0"
+      "packageName": "otelcol-contrib_0.156.0_linux_arm64.tar.gz",
+      "decompressPackageName": "otelcol-contrib_0.156.0"
     }
   },
   "roles": [
@@ -27,22 +28,30 @@
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["start"]
+        "args": [
+          "start"
+        ]
       },
       "stopRunner": {
         "timeout": "600",
         "program": "control.sh",
-        "args": ["stop"]
+        "args": [
+          "stop"
+        ]
       },
       "statusRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["status"]
+        "args": [
+          "status"
+        ]
       },
       "restartRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["restart"]
+        "args": [
+          "restart"
+        ]
       },
       "hooks": [
         {
@@ -51,7 +60,7 @@
           "params": {
             "from": "script/control.sh",
             "to": "control.sh",
-            "md5": "2726884da0b6c06e73d3ae35e34e34a0"
+            "md5": "8bdffc91b9c7d28dcee374c09c3138f0"
           }
         }
       ]
@@ -101,9 +110,9 @@
       "label": "Collector 自监控端口",
       "description": "OTel Collector 自身 Prometheus 指标暴露端口(内部自采集亦用此端口)",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "8888",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "8888"
@@ -113,9 +122,9 @@
       "label": "otelcol.yaml 覆盖内容",
       "description": "非空时完全替换基础参数生成的 otelcol.yaml",
       "required": false,
+      "enabled": true,
       "configType": "map",
       "type": "textarea",
-      "value": "",
       "defaultValue": "",
       "configurableInWizard": false,
       "hidden": true
@@ -125,9 +134,9 @@
       "label": "节点主机名",
       "description": "host_metrics 采集的 service.instance.id，安装后由控制面按节点刷新为真实 hostname",
       "required": false,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "${host}",
       "defaultValue": "${host}",
       "configurableInWizard": false,
       "hidden": true
@@ -136,11 +145,14 @@
       "name": "exporterMode",
       "label": "Exporter 模式",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "select",
-      "value": "s3",
       "defaultValue": "s3",
-      "selectValue": ["s3", "doris"],
+      "selectValue": [
+        "s3",
+        "doris"
+      ],
       "configurableInWizard": true,
       "hidden": false
     },
@@ -148,9 +160,9 @@
       "name": "dorisEndpoint",
       "label": "Doris Stream Load 端点",
       "required": false,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "defaultValue": "",
       "configurableInWizard": false,
       "hidden": true
@@ -159,9 +171,9 @@
       "name": "dorisDatabase",
       "label": "Doris 数据库",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "otel",
       "defaultValue": "otel",
       "configurableInWizard": false,
       "hidden": true
@@ -170,9 +182,9 @@
       "name": "dorisUser",
       "label": "Doris 写入用户",
       "required": false,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "otel_collector",
       "defaultValue": "otel_collector",
       "configurableInWizard": false,
       "hidden": true
@@ -181,9 +193,9 @@
       "name": "dorisPassword",
       "label": "Doris 写入密码",
       "required": false,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "defaultValue": "",
       "configurableInWizard": false,
       "hidden": true
@@ -192,10 +204,10 @@
       "name": "s3Endpoint",
       "label": "S3 端点(Rustfs)",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "http://mw1:9040",
-      "defaultValue": "http://mw1:9040",
+      "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}",
       "configurableInWizard": true,
       "hidden": false
     },
@@ -203,9 +215,9 @@
       "name": "s3Bucket",
       "label": "S3 Bucket",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "otel-bootstrap",
       "defaultValue": "otel-bootstrap",
       "configurableInWizard": true,
       "hidden": false
@@ -214,9 +226,9 @@
       "name": "s3Prefix",
       "label": "S3 前缀",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "node",
       "defaultValue": "node",
       "configurableInWizard": false,
       "hidden": false
@@ -225,9 +237,9 @@
       "name": "s3Region",
       "label": "S3 Region",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "us-east-1",
       "defaultValue": "us-east-1",
       "configurableInWizard": false,
       "hidden": true
@@ -236,9 +248,9 @@
       "name": "memLimitMiB",
       "label": "内存限制(MiB)",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "512",
       "defaultValue": "512",
       "configurableInWizard": true,
       "hidden": false
@@ -247,9 +259,9 @@
       "name": "batchSize",
       "label": "批量大小",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "8192",
       "defaultValue": "8192",
       "configurableInWizard": true,
       "hidden": false
@@ -258,9 +270,9 @@
       "name": "queueStorageDir",
       "label": "持久化队列目录",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "/data/otelcol/storage",
       "defaultValue": "/data/otelcol/storage",
       "configurableInWizard": false,
       "hidden": false
@@ -269,9 +281,9 @@
       "name": "s3AccessKey",
       "label": "S3 Access Key",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "${ROOT.Rustfs.access_key}",
       "defaultValue": "${ROOT.Rustfs.access_key}",
       "configurableInWizard": false,
       "hidden": true
@@ -280,9 +292,9 @@
       "name": "s3SecretKey",
       "label": "S3 Secret Key",
       "required": true,
+      "enabled": true,
       "configType": "map",
       "type": "input",
-      "value": "${ROOT.Rustfs.secret_key}",
       "defaultValue": "${ROOT.Rustfs.secret_key}",
       "configurableInWizard": false,
       "hidden": true

@@ -52,12 +52,12 @@ import com.alibaba.fastjson2.JSONObject;
 
 /** 服务配置与集群变量工具:配置合并、占位符替换、变量落库(原 ProcessUtils 拆出)。 */
 public class ServiceConfigUtils {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ServiceConfigUtils.class);
-    
+
     private ServiceConfigUtils() {
     }
-    
+
     public static void generateClusterVariable(Integer clusterId, String serviceName, String variableName, String value) {
         ClusterVariableService variableService = SpringTool.getApplicationContext().getBean(ClusterVariableService.class);
         ClusterVariable clusterVariable = variableService.getVariableByVariableName(clusterId, serviceName, variableName);
@@ -74,7 +74,7 @@ public class ServiceConfigUtils {
             newClusterVariable.setVariableValue(value);
             variableService.save(newClusterVariable);
         }
-        
+
         // 内存立即写（同事务内的后续读取依赖新值）；若处于事务中，注册回滚补偿，
         // 事务回滚时把内存恢复到写前状态，保证 DB 与 GlobalVariables 一致。
         String key = serviceName + "." + variableName;
@@ -82,7 +82,7 @@ public class ServiceConfigUtils {
         GlobalVariables.putValue(clusterId, key, value);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                
+
                 @Override
                 public void afterCompletion(int status) {
                     if (status == STATUS_ROLLED_BACK) {
@@ -96,22 +96,54 @@ public class ServiceConfigUtils {
             });
         }
     }
-    
+
     /**
      * @Description: 生成configFileMap
      */
     public static void generateConfigFileMap(Map<Generators, List<ServiceConfig>> configFileMap,
                                              ClusterServiceRoleGroupConfig config, Integer clusterId) {
+        String configFileJson = config.getConfigFileJson();
+        if (configFileJson.stripLeading().startsWith("[")) {
+            JSONArray entries = JSONArray.parseArray(configFileJson);
+            for (Object value : entries) {
+                JSONObject entry = (JSONObject) value;
+                Generators generators = entry.getObject("generator", Generators.class);
+                List<ServiceConfig> serviceConfigs = entry.getJSONArray("configs").toJavaList(ServiceConfig.class);
+                addConfigFile(configFileMap, config, clusterId, generators, serviceConfigs);
+            }
+            return;
+        }
+
         Map<JSONObject, JSONArray> map = JSONObject.parseObject(config.getConfigFileJson(), Map.class);
         for (JSONObject fileJson : map.keySet()) {
             Generators generators = fileJson.toJavaObject(Generators.class);
             List<ServiceConfig> serviceConfigs = map.get(fileJson).toJavaList(ServiceConfig.class);
-            Map<String, String> variables = createMergeVariables(clusterId, config.getServiceName(), serviceConfigs);
-            replaceVariable(serviceConfigs, variables);
-            configFileMap.put(generators, serviceConfigs);
+            addConfigFile(configFileMap, config, clusterId, generators, serviceConfigs);
         }
     }
-    
+
+    public static String serializeConfigFileMap(Map<Generators, List<ServiceConfig>> configFileMap) {
+        JSONArray entries = new JSONArray();
+        configFileMap.forEach((generator, configs) -> {
+            JSONObject entry = new JSONObject();
+            entry.put("generator", generator);
+            entry.put("configs", configs);
+            entries.add(entry);
+        });
+        return entries.toJSONString();
+    }
+
+    private static void addConfigFile(
+                                      Map<Generators, List<ServiceConfig>> configFileMap,
+                                      ClusterServiceRoleGroupConfig config,
+                                      Integer clusterId,
+                                      Generators generators,
+                                      List<ServiceConfig> serviceConfigs) {
+        Map<String, String> variables = createMergeVariables(clusterId, config.getServiceName(), serviceConfigs);
+        replaceVariable(serviceConfigs, variables);
+        configFileMap.put(generators, serviceConfigs);
+    }
+
     public static Map<String, String> createMergeVariables(Integer clusterId, String serviceName, List<ServiceConfig> serviceConfigs) {
         Map<String, String> variables = new HashMap<>(GlobalVariables.getVariables(clusterId));
         serviceConfigs.forEach(config -> {
@@ -127,7 +159,7 @@ public class ServiceConfigUtils {
         });
         return variables;
     }
-    
+
     private static void replaceVariable(List<ServiceConfig> serviceConfigs, Map<String, String> variables) {
         for (ServiceConfig serviceConfig : serviceConfigs) {
             serviceConfig.setOriginalName(serviceConfig.getName());
@@ -175,7 +207,7 @@ public class ServiceConfigUtils {
             }
         }
     }
-    
+
     public static ServiceConfig createServiceConfig(String configName, Object configValue, String type) {
         ServiceConfig serviceConfig = new ServiceConfig();
         serviceConfig.setName(configName);
@@ -187,12 +219,12 @@ public class ServiceConfigUtils {
         serviceConfig.setType(type);
         return serviceConfig;
     }
-    
+
     public static ClusterInfoEntity getClusterInfo(Integer clusterId) {
         ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
         return clusterInfoService.getById(clusterId);
     }
-    
+
     /**
      * 并集：左边集合与右边集合合并
      *
@@ -220,7 +252,7 @@ public class ServiceConfigUtils {
         }
         return left;
     }
-    
+
     public static Map<String, ServiceConfig> translateToMap(List<ServiceConfig> list) {
         return list.stream()
                 .collect(Collectors.toMap(ServiceConfig::getName, serviceConfig -> serviceConfig, (v1, v2) -> v1));

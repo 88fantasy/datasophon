@@ -1,5 +1,6 @@
 {
   "name": "DATART",
+  "type": "APPLICATION",
   "label": "Datart",
   "description": "数艺",
   "version": "3.6.1",
@@ -54,7 +55,7 @@
       "externalLink": {
         "name": "Datart UI",
         "label": "Datart UI",
-        "url": "http://${host}:${datartServerPort}/datart"
+        "url": "http://${host}:${DATART.datartServerPort}/datart"
       }
     }
   ],
@@ -84,10 +85,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "8080",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "8989"
+      "defaultValue": "8080",
+      "register": true
     },
     {
       "name": "datartMysqlHost",
@@ -96,10 +97,9 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${mysqlHost}"
+      "defaultValue": "${ROOT.Mysql.__hostIp__}"
     },
     {
       "name": "datartMysqlPort",
@@ -108,10 +108,9 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${mysqlPort}"
+      "defaultValue": "${ROOT.Mysql.__port__}"
     },
     {
       "name": "datartMysqlUsername",
@@ -120,7 +119,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "datart",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "datart"
@@ -132,7 +130,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "fI5sQ4yQ4fP5",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "fI5sQ4yQ4fP5"

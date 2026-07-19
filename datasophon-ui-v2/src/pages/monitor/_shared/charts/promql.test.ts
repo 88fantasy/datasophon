@@ -61,6 +61,31 @@ describe('mergeNamedSeries', () => {
     expect(points.map((p) => p.series)).toEqual(['Request', 'Response']);
   });
 
+  it('多个实例没有额外标签时按 instance/job 拆成独立曲线', () => {
+    const points = mergeNamedSeries([
+      {
+        label: 'memory',
+        matrix: matrix([
+          {
+            metric: { instance: 'be-1:8040', job: 'DorisBE' },
+            values: [[1000, '10'], [1015, '11']],
+          },
+          {
+            metric: { instance: 'be-2:8040', job: 'DorisBE' },
+            values: [[1000, '20'], [1015, '21']],
+          },
+        ]),
+      },
+    ]);
+
+    expect(points.map((point) => point.series)).toEqual([
+      'memory (be-1:8040, DorisBE)',
+      'memory (be-1:8040, DorisBE)',
+      'memory (be-2:8040, DorisBE)',
+      'memory (be-2:8040, DorisBE)',
+    ]);
+  });
+
   it('groupBy 产生多条原始 series 时按标签值区分，不再压扁成同名线', () => {
     // 复现 Codex 复审发现的 bug：RustFS R06 按 op 分组，此前全部落到同一个 series: 'op'。
     const points = mergeNamedSeries([

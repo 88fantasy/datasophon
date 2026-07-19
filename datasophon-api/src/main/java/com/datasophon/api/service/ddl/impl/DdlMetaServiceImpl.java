@@ -188,9 +188,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             if (StringUtils.isBlank(dcp)) {
                 throw new IllegalStateException(String.format("服务%s的arch.%s缺少decompressPackageName字段。", serviceName, e.getKey()));
             }
-            if (StringUtils.lowerCase(serviceName).equals(StringUtils.lowerCase(dcp))) {
-                throw new IllegalStateException(String.format("服务名称%s不能和解压文件名%s一致(忽略大小写)。", serviceName, dcp));
-            }
+            // 服务名与解压文件名同名(如 NACOS/nacos)时，InstallServiceHandler#createLink 会跳过建软链，无需在此拦截
         }
         log.info("arch:{}", serviceInfo.getArch());
 
@@ -214,16 +212,17 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
 
     /**
-     * @deprecated 解决完HADOOP_HOME后，可以去掉该方法的调用
+     * @deprecated HDFS 的 {@code ${HADOOP_HOME}} 分支解决完后，可以去掉该分支的调用
      */
     @Deprecated
     private void putServiceHomeToVariable(String frameCode, List<ClusterInfoEntity> clusters, String serviceName, String decompressPackageName) {
         for (ClusterInfoEntity cluster : clusters) {
             Integer clusterId = cluster.getId();
             if (cluster.getClusterFrame().equals(frameCode)) {
+                String installPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName;
+                GlobalVariables.putValue(clusterId, "ROOT." + serviceName + ".INSTALL_PATH", installPath);
                 if (HDFS.equals(serviceName)) {
-                    serviceName = HADOOP;
-                    GlobalVariables.putValue(clusterId, serviceName + "_HOME", Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                    GlobalVariables.putValue(clusterId, HADOOP + "_HOME", installPath);
                 }
             }
         }

@@ -1,30 +1,32 @@
 # otel Doris Schema — vendoring 说明
 
+> **文件位置变更(2026-07-12)**：`V1__otel_database.sql` / `V1__otel_tables.sql` / `V1__otel_views.sql` 三个 SQL 文件已从本目录迁移到 `package/raw/meta/datacluster-physical/DORIS/sql/`，随 DORIS 服务 DDL 一起经 `datasophon-cli upload registry` 上传到 Nexus raw 仓库；运行时由 `OtelSchemaApplier` 通过 `MetaStorage.getResourceAsString`（而非 classpath）读取。本目录只保留说明文档。触发方式见 `apply-verify.md`。
+
 ## 版本
 
 | 属性 | 值 |
 |---|---|
 | schema 版本 | v1 |
-| vendoring 来源 | opentelemetry-collector-contrib **v0.154.0** |
+| vendoring 来源 | opentelemetry-collector-contrib **v0.156.0** |
 | 数据库名 | `otel` |
-| 生成时间 | 2026-06-19 |
+| 生成时间 | 2026-06-19（2026-07-12 复核升级到 v0.156.0，12 个源文件逐字节对比与 v0.154.0 完全一致，无需改动） |
 
-## 源文件列表（pin v0.154.0）
+## 源文件列表（pin v0.156.0）
 
 | 文件名 | URL |
 |---|---|
-| `logs_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/logs_ddl.sql |
-| `metrics_gauge_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/metrics_gauge_ddl.sql |
-| `metrics_sum_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/metrics_sum_ddl.sql |
-| `metrics_histogram_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/metrics_histogram_ddl.sql |
-| `metrics_exponential_histogram_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/metrics_exponential_histogram_ddl.sql |
-| `metrics_summary_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/metrics_summary_ddl.sql |
-| `traces_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/traces_ddl.sql |
-| `traces_graph_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/traces_graph_ddl.sql |
-| `logs_view.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/logs_view.sql |
-| `metrics_view.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/metrics_view.sql |
-| `traces_view.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/traces_view.sql |
-| `traces_graph_job.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.154.0/exporter/dorisexporter/sql/traces_graph_job.sql |
+| `logs_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/logs_ddl.sql |
+| `metrics_gauge_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/metrics_gauge_ddl.sql |
+| `metrics_sum_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/metrics_sum_ddl.sql |
+| `metrics_histogram_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/metrics_histogram_ddl.sql |
+| `metrics_exponential_histogram_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/metrics_exponential_histogram_ddl.sql |
+| `metrics_summary_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/metrics_summary_ddl.sql |
+| `traces_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/traces_ddl.sql |
+| `traces_graph_ddl.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/traces_graph_ddl.sql |
+| `logs_view.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/logs_view.sql |
+| `metrics_view.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/metrics_view.sql |
+| `traces_view.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/traces_view.sql |
+| `traces_graph_job.sql` | https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.156.0/exporter/dorisexporter/sql/traces_graph_job.sql |
 
 ## 占位符说明
 

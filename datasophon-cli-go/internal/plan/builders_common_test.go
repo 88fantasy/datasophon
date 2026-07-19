@@ -12,7 +12,7 @@ import (
 
 // stubCfg/stubCtx 来自 plan_test.go（相同包，直接复用）
 
-// buildBinPackage/buildTar/buildJdk8/buildJdk21：
+// buildBinPackage/buildJdk8/buildJdk21：
 // stubCtx.LocalIP="127.0.0.1"，与 node1/node2 的 IP 均不同，
 // 所以 workerHostSlice 不排除任何节点，2 个 worker。
 
@@ -32,6 +32,18 @@ func TestBuildTar_WorkerCount(t *testing.T) {
 	assert.Len(t, actions, 2)
 }
 
+func TestBuildTar_IncludesLocalNode(t *testing.T) {
+	cfg := stubCfg()
+	ctx := stubCtx(cfg, t.TempDir())
+	ctx.LocalIP = "10.0.0.1"
+	ctx.ProductPkgsPath = t.TempDir() + "/pkg"
+
+	actions, err := buildTar(allNodes)(ctx)
+	require.NoError(t, err)
+	require.Len(t, actions, 2)
+	assert.Equal(t, ctx.ProductPkgsPath, actions[0].Handler.(*initcmd.InitTar).ProductPackagesPath)
+}
+
 func TestBuildJdk8_WorkerCountAndRegistry(t *testing.T) {
 	cfg := stubCfg()
 	cfg.Registry = config.Registry{
@@ -46,7 +58,7 @@ func TestBuildJdk8_WorkerCountAndRegistry(t *testing.T) {
 
 	jdk := actions[0].Handler.(*initcmd.InitJdk8)
 	assert.True(t, jdk.EnableRegistry)
-	assert.Equal(t, "node1", jdk.RegistryIP)
+	assert.Equal(t, "10.0.0.1", jdk.RegistryIP) // 解析为 IP，而非 hostname "node1"
 	assert.Equal(t, "8081", jdk.RegistryPort)
 	assert.Equal(t, ctx.InstallPath, jdk.InstallPath)
 }
@@ -90,9 +102,10 @@ func TestBuildOfflineNodes_RegistryOverridesYum(t *testing.T) {
 	actions, err := buildOfflineNodes(allNodes)(ctx)
 	require.NoError(t, err)
 	require.Len(t, actions, 2)
-	// Registry 启用时 ServerIP/Port 应来自 Registry，不是 YumServer
+	// Registry 启用时 ServerIP/Port 应来自 Registry，不是 YumServer；
+	// ServerIP 解析为 IP（而非 hostname "node1"），因为本步排在 init-all-host 之前，DNS 不可用。
 	h := actions[0].Handler.(*initcmd.InitOfflineSlave)
-	assert.Equal(t, "node1", h.ServerIP)
+	assert.Equal(t, "10.0.0.1", h.ServerIP)
 	assert.Equal(t, "8081", h.ServerPort)
 }
 

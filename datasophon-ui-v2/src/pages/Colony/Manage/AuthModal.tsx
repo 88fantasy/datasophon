@@ -37,7 +37,7 @@ const AuthModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
       trigger={trigger}
       initialValues={{ userIds: currentManagerIds }}
       onFinish={handleFinish}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
       width={480}
     >
       <ProFormSelect

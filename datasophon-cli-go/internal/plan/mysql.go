@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/bootstrap"
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
@@ -92,7 +93,9 @@ func (t *mysqlTask) installUbuntu(exec executor.Executor, httpRootPath, mysqlSer
 	}
 	exec.ExecShell(fmt.Sprintf("apt localinstall %s/*.rpm -y", httpRootPath))
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
-		t.rootUserConf(exec)
+		if err := bootstrap.ConfigureMySQLRoot(exec, t.Password, t.Port); err != nil {
+			return err
+		}
 		exec.ExecShell("mv /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.bak")
 		exec.WriteLines(t.mysqldConf(), "/etc/mysql/mysql.conf.d/mysqld.cnf")
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
@@ -129,17 +132,12 @@ func (t *mysqlTask) installCentos(exec executor.Executor, osType osinfo.OsType, 
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
 		tmpPasswd := strings.TrimSpace(exec.ExecShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").Output)
 		slog.Info("临时密码已获取，开始修改密码")
-		oldCnf := "/tmp/.dsph_mysql_old.cnf"
-		exec.WriteLines([]string{"[client]", "password=" + tmpPasswd}, oldCnf)
-		exec.ExecShell(fmt.Sprintf("chmod 600 %s", oldCnf))
-		newSqlPath := "/tmp/.dsph_mysql_init.sql"
-		exec.WriteLines([]string{
-			fmt.Sprintf("ALTER USER 'root'@'localhost' IDENTIFIED BY '%s';", t.Password),
-		}, newSqlPath)
-		exec.ExecShell(fmt.Sprintf("chmod 600 %s", newSqlPath))
-		exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot < %s", oldCnf, newSqlPath))
-		exec.ExecShell(fmt.Sprintf("rm -f %s %s", oldCnf, newSqlPath))
-		t.rootUserConf(exec)
+		if err := bootstrap.ResetMySQLTemporaryRootPassword(exec, tmpPasswd, t.Password); err != nil {
+			return err
+		}
+		if err := bootstrap.ConfigureMySQLRoot(exec, t.Password, t.Port); err != nil {
+			return err
+		}
 		exec.ExecShell("mv /etc/my.cnf /etc/my.cnf.bak")
 		exec.WriteLines(t.mysqldConf(), "/etc/my.cnf")
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
@@ -160,23 +158,6 @@ func (t *mysqlTask) mysqlLib(exec executor.Executor, name, checkCmd, installCmd 
 	if r := exec.ExecShell(checkCmd); r.Success {
 		slog.Info("依赖安装成功", "name", name)
 	}
-}
-
-func (t *mysqlTask) rootUserConf(exec executor.Executor) {
-	newCnf := "/tmp/.dsph_mysql_new.cnf"
-	exec.WriteLines([]string{"[client]", "password=" + t.Password}, newCnf)
-	exec.ExecShell(fmt.Sprintf("chmod 600 %s", newCnf))
-	sqlPath := "/tmp/.dsph_mysql_conf.sql"
-	exec.WriteLines([]string{
-		"UPDATE mysql.user SET host='%' WHERE user='root';",
-		"FLUSH PRIVILEGES;",
-		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;", t.Password),
-		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';", t.Password),
-		"FLUSH PRIVILEGES;",
-	}, sqlPath)
-	exec.ExecShell(fmt.Sprintf("chmod 600 %s", sqlPath))
-	exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot -P%d < %s", newCnf, t.Port, sqlPath))
-	exec.ExecShell(fmt.Sprintf("rm -f %s %s", newCnf, sqlPath))
 }
 
 func (t *mysqlTask) mysqldConf() []string {

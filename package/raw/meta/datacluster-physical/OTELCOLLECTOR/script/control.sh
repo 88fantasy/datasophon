@@ -23,7 +23,27 @@ start() {
   fi
   env_file=$current_path/config/otelcol.env
   if [ -f "$env_file" ]; then
-    set -a; . "$env_file"; set +a
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        ''|'#'*)
+          ;;
+        *=*)
+          key=${line%%=*}
+          value=${line#*=}
+          case "$key" in
+            ''|[0-9]*|*[!A-Za-z0-9_]*)
+              echo "invalid environment key in $env_file: $key"; exit 1
+              ;;
+            *)
+              export "$key=$value"
+              ;;
+          esac
+          ;;
+        *)
+          echo "invalid environment entry in $env_file"; exit 1
+          ;;
+      esac
+    done < "$env_file"
   fi
   echo "starting otelcol, logging to $log"
   nohup $bin --config=$conf > $log 2>&1 &

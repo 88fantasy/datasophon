@@ -1,21 +1,23 @@
-# otelcol-contrib v0.154.0 vendoring
+# otelcol-contrib v0.156.0 vendoring
 
 Phase A1 数据面运行物。非 Maven 产物,手动 vendoring 后经 `datasophon-cli upload registry` 上传到 Nexus raw,worker 安装时下载解压。
+
+> **版本升级记录(2026-07-12)**:从 v0.154.0 升级到 v0.156.0。升级前逐字节对比了 dorisexporter 的全部 12 个 SQL schema 源文件(`sql/*.sql`),v0.154.0 与 v0.156.0 完全一致,`datasophon-api/src/main/resources/observability/doris/` 下的 vendored SQL 无需改动。已用真实 v0.156.0 二进制重新执行下方"配置校验",doris/s3 两种 exporter 模式均 EXIT=0。
 
 ## 发行包(linux,部署目标)
 
 | arch | packageName | decompressPackageName | md5(实测) |
 |---|---|---|---|
-| x86_64 | `otelcol-contrib_0.154.0_linux_amd64.tar.gz` | `otelcol-contrib_0.154.0` | `73c543b5dc167cbddfb9a6e25442c8db` |
-| aarch64 | `otelcol-contrib_0.154.0_linux_arm64.tar.gz` | `otelcol-contrib_0.154.0` | `03cc56daf082985daee6213f042d2e6f` |
+| x86_64 | `otelcol-contrib_0.156.0_linux_amd64.tar.gz` | `otelcol-contrib_0.156.0` | `55e295c11826346e8915d93fb519c351` |
+| aarch64 | `otelcol-contrib_0.156.0_linux_arm64.tar.gz` | `otelcol-contrib_0.156.0` | `79bf393164664c96376ee6db39a8ac00` |
 
-下载源:`https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.154.0/<packageName>`
+下载源:`https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.156.0/<packageName>`
 
 > 与 PROMTAIL 同构:tarball 解压为扁平文件(二进制 `otelcol-contrib` + LICENSE + README),
-> `service_ddl.json` 设 `createDecompressDir: true`,由 datasophon 创建 `otelcol-contrib_0.154.0/` 目录并解入;
+> `service_ddl.json` 设 `createDecompressDir: true`,由 datasophon 创建 `otelcol-contrib_0.156.0/` 目录并解入;
 > control.sh 以 `$current_path/otelcol-contrib` 启动。
 
-## 必含组件(已对 v0.154.0 二进制 `otelcol-contrib components` 实测确认)
+## 必含组件(已对 v0.156.0 二进制 `otelcol-contrib components` 实测确认)
 
 - exporters:`awss3`、`doris`、`otlp`、`otlphttp`、`prometheus`
 - receivers:`awss3receiver`、`filelogreceiver`、`prometheusreceiver`、`otlpreceiver`、`otlpjsonfilereceiver`
@@ -23,23 +25,23 @@ Phase A1 数据面运行物。非 Maven 产物,手动 vendoring 后经 `datasoph
 - processors:`batch`、`memory_limiter`
 
 > 这组组件是 A1(awss3/filestorage)、A2(doris)、A3/F2 回灌(awss3receiver)、Phase C(prometheus/filelog)
-> 的二进制前提,已在 vendoring 时一次性核实。
+> 的二进制前提,已在 vendoring 时一次性核实;升级到 v0.156.0 时已用 `otelcol-contrib components` 复核,组件名和数量均未变化。
 
 ## 配置校验(A1 验收的一部分)
 
 `datasophon-worker/src/main/resources/templates/otelcol.ftl` 的渲染产物已用真实二进制
-`otelcol-contrib validate` 通过(EXIT=0)。校验过程发现并修复两处 v0.154.0 配置缺陷:
+`otelcol-contrib validate` 通过(EXIT=0)。首次校验(v0.154.0)时发现并修复两处配置缺陷,复核确认 v0.156.0 下仍然必需:
 1. `service.telemetry.metrics.address` 已废弃 → 改 `readers/pull/prometheus`(host+port);
 2. `file_storage` 目录不存在即拒启 → 加 `create_directory: true`。
 
-复验命令(需 darwin/arm64 或对应平台二进制):
+模板已含 `rawYaml` 覆盖分支和 `exporterMode`(`s3`/`doris`)条件分支,纯 `sed` 替换无法正确渲染 `<#if>` 指令;复验须用 Freemarker 引擎实际渲染,例如:
 
 ```bash
-sed -e 's#${queueStorageDir}#/data/otelcol/storage#g' -e 's#${ip}#10.0.0.11#g' \
-    -e 's#${memLimitMiB}#512#g' -e 's#${batchSize}#8192#g' -e 's#${s3Region}#us-east-1#g' \
-    -e 's#${s3Bucket}#otel-bootstrap#g' -e 's#${s3Prefix}#node#g' -e 's#${s3Endpoint}#http://mw1:9040#g' \
-    datasophon-worker/src/main/resources/templates/otelcol.ftl > /tmp/otelcol.yaml
-otelcol-contrib validate --config /tmp/otelcol.yaml
+# 用真实 Freemarker 渲染(而非 sed),避免 <#if rawYaml>/<#if exporterMode> 等指令被当作字面文本
+# 可复用 datasophon-worker/src/test/java/com/datasophon/worker/test/OtelcolTemplateTest.java 中的
+# render(exporterMode, localScrapeJobsYaml) 方法逻辑,分别渲染 "doris" 和 "s3" 两种模式后:
+otelcol-contrib validate --config otelcol-doris.yaml
+otelcol-contrib validate --config otelcol-s3.yaml
 ```
 
 ## Java Agent traces 接入(Phase D)

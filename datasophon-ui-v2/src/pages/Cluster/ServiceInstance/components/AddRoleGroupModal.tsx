@@ -47,7 +47,7 @@ const AddRoleGroupModal: React.FC<Props> = ({
       onOpenChange={(v) => {
         if (!v) onClose();
       }}
-      modalProps={{ destroyOnClose: true }}
+      modalProps={{ destroyOnHidden: true }}
       onFinish={async (values) => {
         try {
           await saveRoleGroup(clusterId, instanceId, {

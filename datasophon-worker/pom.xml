@@ -153,6 +153,7 @@
                         <include>**/test/ExporterScriptTemplateTest.java</include>
                         <include>**/test/YarnEnvTemplateTest.java</include>
                         <include>**/test/DolphinschedulerEnvTemplateTest.java</include>
+                        <include>**/test/ApisixStandaloneTemplateTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

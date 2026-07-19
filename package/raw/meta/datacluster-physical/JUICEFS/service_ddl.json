@@ -1,5 +1,6 @@
 {
   "name": "JUICEFS",
+  "type": "MIDDLEWARE",
   "label": "Juicefs",
   "description": "高性能、云原生分布式文件系统",
   "version": "1.3.1",
@@ -99,7 +100,6 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "9567",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9567"
@@ -111,10 +111,9 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "mysql://juicefs:juicefs@(${apiIp}:3306)/juicefs"
+      "defaultValue": "mysql://juicefs:juicefs@(${ROOT.Mysql.__hostIp__}:3306)/juicefs"
     },
     {
       "name": "juicefsMounts",
@@ -123,12 +122,6 @@
       "required": true,
       "type": "multipleWithMap",
       "configType": "map",
-      "value": [
-        {
-          "path": "/data/install_datasophon/juicefs/appweb",
-          "log": "appweb"
-        }
-      ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [
@@ -145,7 +138,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "s3",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "s3"
@@ -157,10 +149,9 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "http://${minioHost}:${minioApiPort}/appweb",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://${minioHost}:${minioApiPort}/appweb"
+      "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}/appweb"
     },
     {
       "name": "juicefsAccessKey",
@@ -169,10 +160,9 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "${minioAccessKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${minioAccessKey}"
+      "defaultValue": "${ROOT.Rustfs.access_key}"
     },
     {
       "name": "juicefsSecretKey",
@@ -181,10 +171,9 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "${minioSecretKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${minioSecretKey}"
+      "defaultValue": "${ROOT.Rustfs.secret_key}"
     },
     {
       "name": "juicefsFileSystemName",
@@ -193,7 +182,6 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "appweb",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "appweb"

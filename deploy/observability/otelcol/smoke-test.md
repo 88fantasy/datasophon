@@ -4,16 +4,14 @@
 并验证 sink 断连时落盘不丢、恢复后重放。对应设计文档验收 §5.1(S3 段)与 §5.6(落盘不丢段)。
 
 > 前置:需可达的 Rustfs(S3,mw1:9040)+ 预建 bucket `otel-bootstrap`;运行平台对应的
-> otelcol-contrib v0.154.0 二进制(见同目录 README)。
+> otelcol-contrib v0.156.0 二进制(见同目录 README)。
 
 ## 1. 渲染节点配置 + 启 otelcol
 
 ```bash
-# 用与渲染测试相同参数生成具体配置
-sed -e 's#${queueStorageDir}#/data/otelcol/storage#g' -e 's#${ip}#10.0.0.11#g' \
-    -e 's#${memLimitMiB}#512#g' -e 's#${batchSize}#8192#g' -e 's#${s3Region}#us-east-1#g' \
-    -e 's#${s3Bucket}#otel-bootstrap#g' -e 's#${s3Prefix}#node#g' -e 's#${s3Endpoint}#http://mw1:9040#g' \
-    datasophon-worker/src/main/resources/templates/otelcol.ftl > /tmp/otelcol.yaml
+# 模板已含 <#if rawYaml>/<#if exporterMode> 等 Freemarker 指令，纯 sed 替换无法正确渲染；
+# 须用 Freemarker 引擎渲染（可复用 OtelcolTemplateTest.render(exporterMode, localScrapeJobsYaml) 的逻辑），
+# 渲染结果另存为 /tmp/otelcol.yaml 后再执行：
 otelcol-contrib validate --config /tmp/otelcol.yaml   # 期望 EXIT=0
 otelcol-contrib --config /tmp/otelcol.yaml &
 sleep 3
@@ -48,7 +46,7 @@ curl -s localhost:8888/metrics | grep -E "otelcol_exporter_queue_size|otelcol_ex
 
 | 项 | 状态 |
 |---|---|
-| 配置 `validate`(真实 v0.154.0 二进制) | ✅ 已通过(EXIT=0,见 README) |
+| 配置 `validate`(真实 v0.156.0 二进制) | ✅ 已通过(EXIT=0,2026-07-12 复核,见 README) |
 | 组件齐全(awss3/filestorage/...) | ✅ 已实测确认(见 README) |
 | 合成 OTLP 落 Rustfs(步骤 1-2) | ⏳ 待真实环境(本地无 Rustfs 运行实例) |
 | file_storage 落盘不丢(步骤 3) | ⏳ 待真实环境 |

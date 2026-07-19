@@ -51,9 +51,9 @@ import com.jcraft.jsch.Session;
  */
 @Service
 public class DispatcherWorkerService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(DispatcherWorkerService.class);
-    
+
     /**
      * 异步分发并安装 Worker Agent（替代 DispatcherWorkerActor.tell(command)）。
      */
@@ -63,12 +63,12 @@ public class DispatcherWorkerService {
         String localIp = HostUtils.getLocalIp();
         logger.info("start dispatcher host agent: {}, ip: {}", hostInfo.getHostname(), hostInfo.getIp());
         hostInfo.setMessage("开始分发worker agent安装包");
-        
+
         Session session = null;
         try {
             PackageStorage packageStorage = StorageUtils.getPackageStorage();
             packageStorage.downloadPackageToLocal(Constants.WORKER_PACKAGE_NAME);
-            
+
             DispatcherWorkerHandlerChain handlerChain = new DispatcherWorkerHandlerChain();
             if (!localIp.equals(hostInfo.getIp())) {
                 handlerChain.addHandler(new UploadWorkerHandler());
@@ -76,11 +76,11 @@ public class DispatcherWorkerService {
             }
             handlerChain.addHandler(new DecompressWorkerHandler());
             handlerChain.addHandler(new InstallJDKHandler());
-            handlerChain.addHandler(new StartWorkerHandler(command.getClusterId(), command.getClusterFrame()));
-            
+            handlerChain.addHandler(new StartWorkerHandler(command.getClusterId()));
+
             Integer port = hostInfo.getSshPort() == null ? 22 : hostInfo.getSshPort();
             session = JschUtils.getJSchSession(SSHAuthType.AUTO,
-                    hostInfo.getHostname(), port,
+                    hostInfo.getIp(), port,
                     hostInfo.getSshUser(), hostInfo.getSshPassword());
             handlerChain.handle(session, hostInfo);
         } catch (Throwable e) {

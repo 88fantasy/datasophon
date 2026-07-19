@@ -1,19 +1,20 @@
 package com.datasophon.api.configuration;
 
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Contact;
-import io.swagger.v3.oas.models.info.Info;
-
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
 
 /**
  * @author zhanghuangbin
  */
 @Configuration
 public class OpenApiConfiguration {
-    
+
     @Bean
     @ConditionalOnProperty(name = {"springdoc.api-docs.enabled"})
     public OpenAPI openAPI() {
@@ -27,5 +28,13 @@ public class OpenApiConfiguration {
                                 .email("88fantasy@gmail.com"));
         return new OpenAPI().info(info);
     }
-    
+
+    @Bean
+    @ConditionalOnProperty(name = {"springdoc.api-docs.enabled"})
+    public GroupedOpenApi internalApi() {
+        return GroupedOpenApi.builder()
+                .group("internal")
+                .pathsToMatch("/internal/**")
+                .build();
+    }
 }

@@ -38,8 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-import lombok.Data;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,39 +47,40 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
+import lombok.Data;
 
 @Data
 public class InstallServiceHandler {
-    
+
     protected String frameCode;
-    
+
     protected String serviceName;
-    
+
     protected String serviceRoleName;
-    
+
     private Logger logger;
-    
+
     public void init(InstallServiceRoleCommand command) {
         this.frameCode = command.getFrameCode();
         this.serviceName = command.getServiceName();
         this.serviceRoleName = command.getServiceRoleName();
         logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(serviceName, serviceRoleName, InstallServiceHandler.class));
     }
-    
+
     public boolean match(InstallServiceRoleCommand command) {
         return true;
     }
-    
+
     public int getOrder() {
         return Integer.MAX_VALUE;
     }
-    
+
     public ExecResult install(InstallServiceRoleCommand command) {
         String linkName = getLinkName(command);
         if (command.getNormalPkgDir().equals(linkName)) {
             throw new IllegalStateException(String.format("软件%s安装目录和软链目录名字一致，无法解压", command.getServiceName()));
         }
-        
+
         ExecResult execResult = new ExecResult();
         try {
             logger.info("开始下载安装包{}....", command.getPackageName());
@@ -91,7 +90,7 @@ public class InstallServiceHandler {
             } else {
                 logger.info("安装包{}没有变更，无需下载", command.getPackageName());
             }
-            
+
             boolean goon = true;
             boolean unpackPkg = needDecompressPkg(command, downloadResult);
             if (unpackPkg) {
@@ -116,6 +115,7 @@ public class InstallServiceHandler {
                 }
                 ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
                 logger.info("chmod {} {}", normalPkgDir, chmodResult.getExecResult() ? "success" : "fail");
+                execResult = chmodResult;
             }
         } catch (Exception e) {
             logger.error("安装服务{} {}失败,  {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
@@ -123,7 +123,7 @@ public class InstallServiceHandler {
         }
         return execResult;
     }
-    
+
     protected boolean needDecompressPkg(InstallServiceRoleCommand command, DownloadResult downloadResult) {
         if (downloadResult.isChange()) {
             return true;
@@ -140,7 +140,7 @@ public class InstallServiceHandler {
         String md5 = getInstallMetaSign(downloadResult, command);
         return !md5.equalsIgnoreCase(content);
     }
-    
+
     private File getMetaDir() {
         File dir = new File(Constants.INSTALL_PATH + Constants.SLASH + ".install_meta");
         if (!dir.exists()) {
@@ -148,21 +148,21 @@ public class InstallServiceHandler {
         }
         return dir;
     }
-    
+
     protected File getMetaFile(InstallServiceRoleCommand command) {
         return new File(getMetaDir(), command.getNormalPkgDir() + ".md5");
     }
-    
+
     protected String getInstallMetaSign(DownloadResult result, InstallServiceRoleCommand command) {
         // mete表示会影响解压文件内容的配置项
         PackageMeta meta = new PackageMeta(result, command);
         return MD5.create().digestHex(JSONObject.toJSONString(meta), StandardCharsets.UTF_8);
     }
-    
+
     protected boolean decompressPkg(InstallServiceRoleCommand instCmd, DownloadResult downloadResult) {
         String packageName = instCmd.getPackageName();
         String decompressPackageName = instCmd.getDecompressPackageName();
-        
+
         String sourceFile = downloadResult.getTarget();
         String suffix = FileUtil.getSuffix(packageName);
         boolean success;
@@ -170,16 +170,16 @@ public class InstallServiceHandler {
         String serviceDecompressDir = null;
         try {
             ArrayList<String> command = new ArrayList<>();
-            
+
             boolean needParentDir = BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
-            
+
             String baseTempDir = Constants.INSTALL_PATH + Constants.SLASH + "temp";
             serviceDecompressDir = baseTempDir + Constants.SLASH + decompressPackageName;
             checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
-            
+
             FileUtil.del(serviceDecompressDir);
             FileUtil.mkdir(new File(serviceDecompressDir));
-            
+
             boolean needTrimDirName = !needParentDir;
             ExecResult execResult = new ExecResult();
             if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
@@ -204,14 +204,14 @@ public class InstallServiceHandler {
             } else {
                 throw new UnsupportedOperationException(String.format("unsupported file type %s", suffix));
             }
-            
+
             success = execResult.getExecResult();
             if (success) {
                 String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
                 FileUtil.mkdir(targetDir);
                 // 将临时目录，重命名为安装目录
                 FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir), true);
-                
+
                 // 写入本次安装的信息，用于下一次检测安装包是否发生变更
                 FileUtil.writeString(getInstallMetaSign(downloadResult, instCmd), getMetaFile(instCmd), StandardCharsets.UTF_8);
             }
@@ -223,7 +223,7 @@ public class InstallServiceHandler {
         }
         return success;
     }
-    
+
     /**
      * 检查是否越权，防止innerDir存在 ../../之类的路径，造成越权
      *
@@ -233,19 +233,26 @@ public class InstallServiceHandler {
             throw new SecurityException(String.format("can operation dir %s out of %s", innerDir, baseTempDir));
         }
     }
-    
+
     public ExecResult createLink(InstallServiceRoleCommand command) {
         String appLinkHome = getLinkName(command);
         if (appLinkHome == null) {
             logger.info("服务{} {}无需创建软链...", command.getServiceName(), command.getServiceRoleName());
             return ExecResult.success();
         }
-        
-        logger.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
+
         String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getNormalPkgDir();
+        if (appLinkHome.equals(appHome)) {
+            // 服务名与 decompressPackageName 同名（如 NACOS 解压目录本身就叫 nacos）时，
+            // 软链目标和软链路径是同一个目录，无需也不能再建一次软链
+            logger.info("服务{} {}解压目录与软链目录一致({})，跳过创建软链...", command.getServiceName(), command.getServiceRoleName(), appHome);
+            return ExecResult.success();
+        }
+
+        logger.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
         return doCreateLink(appLinkHome, appHome);
     }
-    
+
     protected ExecResult doCreateLink(String linkPath, String targetPath) {
         File linkFile = new File(linkPath);
         if (linkFile.exists()) {
@@ -259,25 +266,25 @@ public class InstallServiceHandler {
         logger.info("创建软链：{} -> {} {}", linkPath, targetPath, execResult.isSuccess() ? "成功" : "失败");
         return execResult;
     }
-    
+
     protected String getLinkName(InstallServiceRoleCommand command) {
         return Constants.INSTALL_PATH + Constants.SLASH + PkgInstallPathUtils.getLinkDirName(command);
     }
-    
+
     @Data
     protected static class PackageMeta {
         private String md5;
         private Object createDecompressDir;
         private String decompressPackageName;
-        
+
         protected PackageMeta() {
         }
-        
+
         protected PackageMeta(DownloadResult result, InstallServiceRoleCommand command) {
             md5 = result.getMd5();
             createDecompressDir = command.getCreateDecompressDir();
             decompressPackageName = command.getDecompressPackageName();
         }
-        
+
     }
 }

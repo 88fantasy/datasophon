@@ -289,6 +289,7 @@ const InstanceTab: React.FC<InstanceTabProps> = ({ clusterId, instanceId }) => {
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
+        params={{ clusterId, instanceId }}
         request={async (params) => {
           const { current, pageSize, ...rest } = params;
           const res = await listServiceRoleInstances(clusterId, instanceId, {

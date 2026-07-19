@@ -3,7 +3,7 @@
   "type": "MIDDLEWARE",
   "label": "ElasticSearch",
   "description": "高性能搜索引擎",
-  "version": "9.4.2",
+  "version": "9.4.3",
   "sortNum": 12,
   "createDecompressDir": false,
   "dependencies": [],
@@ -143,13 +143,11 @@
         "includeParams": [
           "cluster.name",
           "node.name",
-          "node.master",
           "network.host",
           "http.port",
-          "transport.tcp.port",
-          "transport.tcp.compress",
+          "transport.port",
+          "transport.compress",
           "discovery.seed_hosts",
-          "discovery.zen.minimum_master_nodes",
           "cluster.initial_master_nodes",
           "http.cors.enabled",
           "http.cors.allow-origin",
@@ -187,7 +185,6 @@
   "parameters": [
     {
       "name": "cluster.name",
-      "value": "ddp_es",
       "description": "集群名称",
       "label": "集群名称",
       "hidden": false,
@@ -199,7 +196,6 @@
     },
     {
       "name": "node.name",
-      "value": "${host}",
       "description": "",
       "label": "节点名称",
       "hidden": false,
@@ -210,20 +206,7 @@
       "register": false
     },
     {
-      "name": "node.master",
-      "value": true,
-      "description": "是不是有资格竞选主节点",
-      "label": "是否竞选主节点",
-      "hidden": false,
-      "required": true,
-      "type": "switch",
-      "defaultValue": true,
-      "configurableInWizard": true,
-      "register": false
-    },
-    {
       "name": "network.host",
-      "value": "${host}",
       "description": "",
       "label": "节点地址",
       "hidden": false,
@@ -235,7 +218,6 @@
     },
     {
       "name": "http.port",
-      "value": "9200",
       "description": "对外提供服务的端口",
       "label": "对外服务端口",
       "hidden": false,
@@ -246,8 +228,7 @@
       "register": false
     },
     {
-      "name": "transport.tcp.port",
-      "value": "9300",
+      "name": "transport.port",
       "description": "",
       "label": "集群通信端口",
       "hidden": false,
@@ -258,8 +239,7 @@
       "register": false
     },
     {
-      "name": "transport.tcp.compress",
-      "value": false,
+      "name": "transport.compress",
       "description": "设置是否压缩tcp传输时的数据，默认为false，不压缩",
       "label": "数据传输是否压缩",
       "hidden": false,
@@ -272,7 +252,6 @@
     {
       "name": "discovery.seed_hosts",
       "key": "",
-      "value": "${ELASTICSEARCH.seedHosts}",
       "description": "",
       "label": "服务发现种子主机",
       "hidden": false,
@@ -283,21 +262,8 @@
       "register": false
     },
     {
-      "name": "discovery.zen.minimum_master_nodes",
-      "value": "2",
-      "description": "",
-      "label": "discovery.zen.minimum_master_nodes",
-      "hidden": false,
-      "required": true,
-      "type": "input",
-      "defaultValue": "2",
-      "configurableInWizard": true,
-      "register": false
-    },
-    {
       "name": "cluster.initial_master_nodes",
       "key": "",
-      "value": "${ELASTICSEARCH.initMasterNodes}",
       "description": "",
       "label": "初始主节点",
       "hidden": false,
@@ -309,7 +275,6 @@
     },
     {
       "name": "http.cors.enabled",
-      "value": true,
       "description": "",
       "label": "是否可跨域",
       "hidden": false,
@@ -321,7 +286,6 @@
     },
     {
       "name": "http.cors.allow-origin",
-      "value": "\\\"*\\\"",
       "description": "",
       "label": "支持的跨域范围",
       "hidden": false,
@@ -333,9 +297,6 @@
     },
     {
       "name": "path.data",
-      "value": [
-        "/data/es"
-      ],
       "description": "",
       "label": "数据存储目录",
       "hidden": false,
@@ -351,7 +312,6 @@
     },
     {
       "name": "xpack.security.enabled",
-      "value": true,
       "description": "",
       "label": "xpack安全认证开关",
       "hidden": false,
@@ -363,7 +323,6 @@
     },
     {
       "name": "xpack.security.transport.ssl.enabled",
-      "value": true,
       "description": "",
       "label": "xpack.ssl安全认证开关",
       "hidden": false,
@@ -375,7 +334,6 @@
     },
     {
       "name": "xpack.security.transport.ssl.verification_mode",
-      "value": "certificate",
       "description": "",
       "label": "xpack.ssl安全认证模式",
       "hidden": false,
@@ -387,7 +345,6 @@
     },
     {
       "name": "xpack.security.transport.ssl.keystore.path",
-      "value": "certs/elastic-certificates.p12",
       "description": "",
       "label": "xpack.ssl.keystore密钥路径",
       "hidden": false,
@@ -399,7 +356,6 @@
     },
     {
       "name": "xpack.security.transport.ssl.truststore.path",
-      "value": "certs/elastic-certificates.p12",
       "description": "",
       "label": "xpack.ssl.truststore密钥路径",
       "hidden": false,
@@ -411,7 +367,6 @@
     },
     {
       "name": "heapSize",
-      "value": "2g",
       "description": "",
       "label": "ES堆内存大小",
       "hidden": true,
@@ -424,7 +379,6 @@
     },
     {
       "name": "esExporterPort",
-      "value": "9114",
       "description": "elasticsearch_exporter 指标暴露端口",
       "label": "监控暴露端口",
       "hidden": false,
@@ -437,11 +391,6 @@
     },
     {
       "name": "custom.elasticsearch.yml",
-      "value": [
-        {
-          "ingest.geoip.downloader.enabled": "false"
-        }
-      ],
       "description": "自定义配置",
       "label": "自定义配置elasticsearch.yml",
       "hidden": false,
@@ -459,8 +408,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "elasticsearch-9.4.2-linux-x86_64.tar.gz",
-      "decompressPackageName": "elasticsearch-9.4.2"
+      "packageName": "elasticsearch-9.4.3-linux-x86_64.tar.gz",
+      "decompressPackageName": "elasticsearch-9.4.3"
     }
   }
 }
