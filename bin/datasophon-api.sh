@@ -79,6 +79,7 @@ pid=$DDH_PID_DIR/$command.pid
 cd $DDH_HOME
 
 CLASS=com.datasophon.api.DataSophonApplicationServer
+export OTEL_JAVAAGENT_ENABLED="${OTEL_JAVAAGENT_ENABLED:-true}"
 OTEL=""
 if [ "$OTEL_JAVAAGENT_ENABLED" = "true" ]; then
   OTEL="-javaagent:$DDH_HOME/otel/opentelemetry-javaagent.jar"
