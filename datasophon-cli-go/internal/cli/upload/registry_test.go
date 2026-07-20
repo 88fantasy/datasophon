@@ -89,3 +89,136 @@ func TestRepositoryUploadBatch_DryRunDoesNotHitNetwork(t *testing.T) {
 	assert.Equal(t, 0, fail)
 	assert.Equal(t, 3, success)
 }
+
+// TestResolveRepoTypeAndDir 覆盖 --files 路径推导规则：yum/apt 需要 <arch>/<os>/<file>
+// 至少三段，raw 允许直接在根目录下，helm 无 directory，docker 与未知前缀均判定不支持。
+func TestResolveRepoTypeAndDir(t *testing.T) {
+	cases := []struct {
+		name          string
+		relFile       string
+		wantRepoType  string
+		wantDirectory string
+		wantOK        bool
+	}{
+		{"raw 带子目录", "raw/meta/datacluster-physical/DORIS/service_ddl.json", "raw", "/meta/datacluster-physical/DORIS", true},
+		{"raw 根目录文件", "raw/packages/jdk.tar.gz", "raw", "/packages", true},
+		{"yum 三段", "yum/x86_64/openEuler22.03/foo.rpm", "yum", "x86_64/openEuler22.03", true},
+		{"yum 带 repodata 子目录", "yum/x86_64/openEuler22.03/repodata/repomd.xml", "yum", "x86_64/openEuler22.03/repodata", true},
+		{"yum 段数不够", "yum/x86_64/foo.rpm", "yum", "", false},
+		{"apt 三段", "apt/x86_64/ubuntu22.04/foo.deb", "apt", "x86_64/ubuntu22.04", true},
+		{"helm", "helm/mychart-1.0.0.tgz", "helm", "", true},
+		{"docker 不支持", "docker/image.tar", "docker", "", false},
+		{"未知前缀", "conf/foo.yml", "", "", false},
+		{"无前缀单段", "foo.txt", "", "", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			repoType, directory, ok := resolveRepoTypeAndDir(c.relFile)
+			assert.Equal(t, c.wantRepoType, repoType)
+			assert.Equal(t, c.wantDirectory, directory)
+			assert.Equal(t, c.wantOK, ok)
+		})
+	}
+}
+
+// TestUploadSpecificFiles_RawFileForcesUploadRegardlessOfRemoteMd5 覆盖回归场景：--files
+// 指定的文件必须无条件强制上传，即使 Nexus 上已有同名资产且 MD5 相同（模拟内容被改过但
+// 文件名未变的元数据文件场景），不能因为幂等检查而被静默跳过。
+func TestUploadSpecificFiles_RawFileForcesUploadRegardlessOfRemoteMd5(t *testing.T) {
+	tmpDir := t.TempDir()
+	rawDir := filepath.Join(tmpDir, "raw", "meta", "datacluster-physical", "DORIS")
+	require.NoError(t, os.MkdirAll(rawDir, 0o755))
+	ddlPath := filepath.Join(rawDir, "service_ddl.json")
+	require.NoError(t, os.WriteFile(ddlPath, []byte(`{"port":true}`), 0o644))
+
+	var uploadedDirs []string
+	var searchCalled bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/service/rest/v1/search/assets":
+			// force=true 时 uploadFile 不应查询远端 MD5；若调用到这里说明幂等检查逻辑被误触发。
+			searchCalled = true
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[{"checksum":{"md5":"whatever"}}]}`))
+		case r.URL.Path == "/service/rest/internal/ui/upload/raw":
+			require.NoError(t, r.ParseMultipartForm(10<<20))
+			dirs := r.MultipartForm.Value["directory"]
+			require.Len(t, dirs, 1)
+			uploadedDirs = append(uploadedDirs, dirs[0])
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{
+		ProductPackagesPath: tmpDir,
+		Username:            "admin",
+		Password:            "admin",
+	}
+	success, fail := task.uploadSpecificFiles(server.URL, []string{"raw/meta/datacluster-physical/DORIS/service_ddl.json"})
+
+	assert.Equal(t, 0, fail)
+	assert.Equal(t, 1, success)
+	assert.False(t, searchCalled, "force=true 时不应查询远端 MD5")
+	assert.Equal(t, []string{"/meta/datacluster-physical/DORIS"}, uploadedDirs)
+}
+
+// TestUploadSpecificFiles_UnsupportedAndMissingFilesCountAsFail 覆盖 docker 镜像、
+// 无法识别前缀、文件不存在三种场景均计入 fail 且不影响其余文件正常上传。
+func TestUploadSpecificFiles_UnsupportedAndMissingFilesCountAsFail(t *testing.T) {
+	tmpDir := t.TempDir()
+	rawDir := filepath.Join(tmpDir, "raw")
+	require.NoError(t, os.MkdirAll(rawDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rawDir, "ok.txt"), []byte("ok"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "docker"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "docker", "image.tar"), []byte("fake"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "conf"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "conf", "unknown.yml"), []byte("k: v"), 0o644))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{
+		ProductPackagesPath: tmpDir,
+		Username:            "admin",
+		Password:            "admin",
+	}
+	success, fail := task.uploadSpecificFiles(server.URL, []string{
+		"raw/ok.txt",
+		"docker/image.tar",
+		"conf/unknown.yml",
+		"raw/does-not-exist.txt",
+	})
+
+	assert.Equal(t, 1, success)
+	assert.Equal(t, 3, fail)
+}
+
+// TestUploadSpecificFiles_DryRunDoesNotHitNetwork 覆盖 --dry-run 与 --files 组合时
+// 不应发起任何真实网络请求。
+func TestUploadSpecificFiles_DryRunDoesNotHitNetwork(t *testing.T) {
+	tmpDir := t.TempDir()
+	rawDir := filepath.Join(tmpDir, "raw")
+	require.NoError(t, os.MkdirAll(rawDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rawDir, "service_ddl.json"), []byte("{}"), 0o644))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("dry-run 不应发起任何网络请求，但收到了: %s %s", r.Method, r.URL.Path)
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{
+		ProductPackagesPath: tmpDir,
+		Username:            "admin",
+		Password:            "admin",
+		DryRun:              true,
+	}
+	success, fail := task.uploadSpecificFiles(server.URL, []string{"raw/service_ddl.json"})
+
+	assert.Equal(t, 0, fail)
+	assert.Equal(t, 1, success)
+}

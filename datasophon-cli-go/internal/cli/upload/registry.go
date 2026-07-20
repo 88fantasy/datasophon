@@ -109,6 +109,10 @@ type UploadRegistry struct {
 	IsSuccessDelete       bool
 	DisableUploadRegistry bool
 	DockerHTTPPort        int
+	// Files 非空时只上传这些指定文件（相对 ProductPackagesPath 的路径，如
+	// "raw/meta/datacluster-physical/DORIS/service_ddl.json"），跳过整目录扫描与 docker 镜像上传。
+	// 用于只改了少数几个文件（如元数据 DDL）时避免重新扫描/校验整个安装包目录。
+	Files []string
 	// DryRun 为 true 时只打印将要上传的文件，不发起真实网络请求（--dry-run 支持）。
 	DryRun bool
 }
@@ -138,6 +142,9 @@ func (t *UploadRegistry) Command(dryRun *bool) *cobra.Command {
 	cmd.Flags().BoolVarP(&t.IsSuccessDelete, "isSuccessDelete", "e", false, "上传成功后删除本地文件")
 	cmd.Flags().BoolVar(&t.DisableUploadRegistry, "disableUploadRegistry", false, "禁用上传")
 	cmd.Flags().IntVar(&t.DockerHTTPPort, "dockerHttpPort", 0, "Docker HTTP 端口（必填）")
+	cmd.Flags().StringSliceVar(&t.Files, "files", nil,
+		"只上传指定文件（相对 productPackagesPath 的路径，可重复传入或逗号分隔，如 "+
+			"raw/meta/datacluster-physical/DORIS/service_ddl.json）；传入时跳过整目录扫描与 docker 镜像上传，且一律强制覆盖上传")
 	_ = cmd.MarkFlagRequired("productPackagesPath")
 	_ = cmd.MarkFlagRequired("webHost")
 	_ = cmd.MarkFlagRequired("webPort")
@@ -158,13 +165,105 @@ func (t *UploadRegistry) doRun(exec executor.Executor) error {
 	}
 
 	baseURL := fmt.Sprintf("http://%s:%s", t.WebHost, t.WebPort)
-	if !t.DisableUploadRegistry {
-		slog.Info("制品库上传开始", "url", baseURL)
-		success, fail := t.repositoryUploadBatch(baseURL)
-		t.uploadDocker(exec, baseURL)
-		slog.Info("制品库上传完成", "success", success, "fail", fail)
+	if t.DisableUploadRegistry {
+		return nil
 	}
+	if len(t.Files) > 0 {
+		slog.Info("制品库上传开始（指定文件模式）", "url", baseURL, "count", len(t.Files))
+		success, fail := t.uploadSpecificFiles(baseURL, t.Files)
+		slog.Info("制品库上传完成", "success", success, "fail", fail)
+		return nil
+	}
+	slog.Info("制品库上传开始", "url", baseURL)
+	success, fail := t.repositoryUploadBatch(baseURL)
+	t.uploadDocker(exec, baseURL)
+	slog.Info("制品库上传完成", "success", success, "fail", fail)
 	return nil
+}
+
+// resolveRepoTypeAndDir 从相对 ProductPackagesPath 的文件路径推导 Nexus 仓库类型与
+// directory 字段，规则与 repositoryUploadBatch 的整目录扫描保持一致：
+//
+//	yum/apt: <arch>/<os>[/<subdir>...]/<file>  → repoType=yum|apt, directory=<arch>/<os>[/<subdir>...]
+//	raw:     [<subdir>...]/<file>              → repoType=raw,     directory=(空 或 /<subdir>...)
+//	helm:    <file>                            → repoType=helm,    directory 不适用
+//	docker:  不支持（docker 镜像走 load+tag+push，不是普通文件上传）
+//
+// ok=false 时 repoType 仍可能非空（如 "docker"），供调用方给出更精确的错误提示。
+func resolveRepoTypeAndDir(relFile string) (repoType string, directory string, ok bool) {
+	parts := strings.Split(filepath.ToSlash(relFile), "/")
+	if len(parts) < 2 {
+		return "", "", false
+	}
+	repoType = strings.ToLower(parts[0])
+	switch repoType {
+	case "yum", "apt":
+		if len(parts) < 4 {
+			return repoType, "", false
+		}
+		directory = strings.Join(parts[1:len(parts)-1], "/")
+		return repoType, directory, true
+	case "raw":
+		dirParts := parts[1 : len(parts)-1]
+		if len(dirParts) > 0 {
+			directory = "/" + strings.Join(dirParts, "/")
+		}
+		return repoType, directory, true
+	case "helm":
+		return repoType, "", true
+	case "docker":
+		return repoType, "", false
+	default:
+		return "", "", false
+	}
+}
+
+// uploadSpecificFiles 只上传 files 里显式列出的文件（相对 ProductPackagesPath），
+// 不扫描目录、不处理 docker 镜像。每个文件都强制覆盖上传（force=true）——用户已经明确
+// 点名要传这个文件，不需要 repositoryUploadBatch 那套「远端 MD5 相同就跳过」的幂等优化。
+func (t *UploadRegistry) uploadSpecificFiles(baseURL string, files []string) (int, int) {
+	success, fail := 0, 0
+	for _, relFile := range files {
+		relFile = strings.TrimPrefix(filepath.ToSlash(relFile), "/")
+		fullPath := filepath.Join(t.ProductPackagesPath, relFile)
+		info, err := os.Stat(fullPath)
+		if err != nil {
+			slog.Error("指定文件不存在", "file", relFile, "err", err)
+			fail++
+			continue
+		}
+		if info.IsDir() {
+			slog.Error("--files 只接受文件路径，不接受目录", "file", relFile)
+			fail++
+			continue
+		}
+		repoType, directory, ok := resolveRepoTypeAndDir(relFile)
+		if !ok {
+			if repoType == "docker" {
+				slog.Error("--files 不支持 docker 镜像，请改用整目录上传（不带 --files）", "file", relFile)
+			} else {
+				slog.Error("无法识别仓库类型，路径应以 yum/apt/raw/helm 开头", "file", relFile)
+			}
+			fail++
+			continue
+		}
+
+		var uploaded bool
+		if repoType == "helm" {
+			uploaded = t.uploadHelm(baseURL, fullPath)
+		} else {
+			uploaded = t.uploadFile(baseURL, repoType, fullPath, directory, true)
+		}
+		if uploaded {
+			success++
+			if t.IsSuccessDelete {
+				_ = os.Remove(fullPath)
+			}
+		} else {
+			fail++
+		}
+	}
+	return success, fail
 }
 
 // repositoryUploadBatch 遍历 productPackagesPath 下的子目录，按仓库类型上传。
