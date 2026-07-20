@@ -218,6 +218,7 @@
     },
     {
       "name": "http.port",
+      "port": true,
       "description": "对外提供服务的端口",
       "label": "对外服务端口",
       "hidden": false,
@@ -229,6 +230,7 @@
     },
     {
       "name": "transport.port",
+      "port": true,
       "description": "",
       "label": "集群通信端口",
       "hidden": false,
@@ -379,6 +381,7 @@
     },
     {
       "name": "esExporterPort",
+      "port": true,
       "description": "elasticsearch_exporter 指标暴露端口",
       "label": "监控暴露端口",
       "hidden": false,

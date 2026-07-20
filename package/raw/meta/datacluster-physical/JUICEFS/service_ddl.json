@@ -95,6 +95,7 @@
   "parameters": [
     {
       "name": "juicefsJmxPort",
+      "port": true,
       "label": "JuiceFS 监控端口",
       "description": "JuiceFS mount --metrics Prometheus 监听端口",
       "required": true,

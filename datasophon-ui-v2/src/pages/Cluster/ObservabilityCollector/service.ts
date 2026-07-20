@@ -88,6 +88,8 @@ export interface TopologyNode {
   maxDurationNs: number;
   external?: boolean;
   dbSystem?: string;
+  /** 后端按 ip:port 反查出的真实服务类型(如 "doris"/"datasophon-worker"),查不到时为空,前端回退按 dbSystem 展示。 */
+  serviceType?: string;
 }
 
 export interface TopologyEdge {

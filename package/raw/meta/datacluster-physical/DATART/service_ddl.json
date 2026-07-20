@@ -80,6 +80,7 @@
   "parameters": [
     {
       "name": "datartServerPort",
+      "port": true,
       "label": "datart应用服务端口",
       "description": "datart应用服务端口",
       "required": true,

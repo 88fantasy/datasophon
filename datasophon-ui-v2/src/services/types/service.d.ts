@@ -16,6 +16,12 @@ declare namespace DATASOPHON {
     updateTime?: string;
   }
 
+  interface RolePort {
+    paramName: string;
+    label: string;
+    port: number;
+  }
+
   interface ServiceRoleInstanceInfo {
     id: number;
     serviceId: number;
@@ -27,6 +33,8 @@ declare namespace DATASOPHON {
     serviceRoleStateCode: number;
     clusterId: number;
     createTime?: string;
+    /** 该角色实例当前监听的端口(可能多个),查不到时为空数组或未定义。 */
+    ports?: RolePort[];
   }
 
   interface WebuiInfo {

@@ -390,6 +390,7 @@
     },
     {
       "name": "kyuubi.metrics.prometheus.port",
+      "port": true,
       "label": "监控服务端口",
       "description": "监控服务端口",
       "required": true,

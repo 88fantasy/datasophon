@@ -379,6 +379,7 @@
     {
       "enabled": true,
       "name": "hive.metastore.port",
+      "port": true,
       "description": "",
       "label": "hive metastore服务端口",
       "hidden": false,
@@ -668,6 +669,7 @@
     {
       "enabled": true,
       "name": "hive.server2.thrift.port",
+      "port": true,
       "description": "",
       "label": "hiveserver2 thrift端口",
       "hidden": true,
@@ -680,6 +682,7 @@
     },
     {
       "name": "hiveServer2JmxPort",
+      "port": true,
       "label": "HiveServer2 JMX监控端口",
       "description": "HiveServer2 Prometheus JMX exporter 监听端口",
       "required": true,
@@ -691,6 +694,7 @@
     },
     {
       "name": "hiveMetaStoreJmxPort",
+      "port": true,
       "label": "HiveMetaStore JMX监控端口",
       "description": "HiveMetaStore Prometheus JMX exporter 监听端口",
       "required": true,

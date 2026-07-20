@@ -123,6 +123,7 @@
   "parameters": [
     {
       "name": "valkeyMasterPort",
+      "port": true,
       "label": "master节点端口号",
       "description": "",
       "configType": "map",
@@ -201,6 +202,7 @@
     },
     {
       "name": "valkeyExporterPort",
+      "port": true,
       "label": "监控暴露端口",
       "description": "redis_exporter 指标暴露端口",
       "configType": "map",

@@ -192,6 +192,21 @@ const InstanceTab: React.FC<InstanceTabProps> = ({ clusterId, instanceId }) => {
         ellipsis: true,
       },
       {
+        title: '端口',
+        dataIndex: 'ports',
+        search: false,
+        render: (_, record) =>
+          record.ports?.length ? (
+            record.ports.map((p) => (
+              <Tooltip key={p.paramName} title={p.label}>
+                <Tag>{p.port}</Tag>
+              </Tooltip>
+            ))
+          ) : (
+            <span>-</span>
+          ),
+      },
+      {
         title: '状态',
         dataIndex: 'serviceRoleState',
         ellipsis: true,

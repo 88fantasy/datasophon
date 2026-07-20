@@ -1089,6 +1089,7 @@
     {
       "enabled": true,
       "name": "rmJmxPort",
+      "port": true,
       "label": "ResourceManager监控端口",
       "description": "ResourceManager jmx_prometheus_javaagent 指标暴露端口",
       "required": true,
@@ -1101,6 +1102,7 @@
     {
       "enabled": true,
       "name": "nmJmxPort",
+      "port": true,
       "label": "NodeManager监控端口",
       "description": "NodeManager jmx_prometheus_javaagent 指标暴露端口",
       "required": true,
@@ -1113,6 +1115,7 @@
     {
       "enabled": true,
       "name": "historyServerJmxPort",
+      "port": true,
       "label": "HistoryServer监控端口",
       "description": "HistoryServer jmx_prometheus_javaagent 指标暴露端口",
       "required": true,

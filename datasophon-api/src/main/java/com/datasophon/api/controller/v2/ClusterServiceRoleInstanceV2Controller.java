@@ -31,6 +31,7 @@ import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
+import com.datasophon.api.service.ServiceInstancePortResolver;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.CommandType;
@@ -46,8 +47,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,6 +56,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import cn.hutool.core.util.EnumUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * v2 服务角色实例管理接口。
@@ -65,22 +65,25 @@ import cn.hutool.core.util.EnumUtil;
 @RestController
 @RequestMapping("/v2/cluster/{clusterId}/service/instance/{instanceId}/role")
 public class ClusterServiceRoleInstanceV2Controller extends ApiController {
-    
+
     @Autowired
     private ClusterServiceRoleInstanceService clusterServiceRoleInstanceService;
-    
+
     @Autowired
     private ClusterServiceInstanceService clusterServiceInstanceService;
-    
+
     @Autowired
     private ClusterServiceInstanceRoleGroupService roleGroupService;
-    
+
     @Autowired
     private ClusterServiceRoleInstanceWebuisService webuisService;
-    
+
     @Autowired
     private PhysicalProductInstallService physicalProductInstallService;
-    
+
+    @Autowired
+    private ServiceInstancePortResolver portResolver;
+
     /**
      * 服务角色实例列表（分页）。
      *
@@ -105,11 +108,16 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
         Long total = result.get(Constants.TOTAL) != null
                 ? ((Number) result.get(Constants.TOTAL)).longValue()
                 : 0L;
-        List<ServiceRoleInstanceResponse> records = ServiceRoleInstanceResponse.fromList(
-                entities != null ? entities : List.of());
+        List<ClusterServiceRoleInstanceEntity> safeEntities = entities != null ? entities : List.of();
+        List<ServiceRoleInstanceResponse> records = ServiceRoleInstanceResponse.fromList(safeEntities);
+        // 端口不是实体字段，需按 service_ddl 元数据逐条反查回填（详见 ServiceInstancePortResolver）；
+        // fromList 是纯映射不改变顺序/条数，这里按下标对齐 entity 与其对应的 response。
+        for (int i = 0; i < safeEntities.size(); i++) {
+            records.get(i).setPorts(portResolver.portsOf(safeEntities.get(i)));
+        }
         return ApiResponse.ok(ServiceRoleInstancePageResponse.of(records, total));
     }
-    
+
     /**
      * 服务角色类型列表（供筛选）。只投影 id / serviceRoleName 两个字段，不泄漏实体全量信息。
      */
@@ -130,7 +138,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
                 }).toList();
         return ApiResponse.ok(projected);
     }
-    
+
     /**
      * 服务角色组列表（供筛选）。
      */
@@ -142,7 +150,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
                 roleGroupService.listRoleGroupByServiceInstanceId(instanceId);
         return ApiResponse.ok(RoleGroupResponse.fromList(list));
     }
-    
+
     /**
      * 服务 WebUI 列表。
      */
@@ -154,7 +162,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
         List<WebuisVO> list = (List<WebuisVO>) result.getData();
         return ApiResponse.ok(list != null ? list : List.of());
     }
-    
+
     /**
      * 批量操作角色实例（启动/停止/重启）。
      */
@@ -168,7 +176,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
         String result = physicalProductInstallService.generateAndExecSrvRoleCmd(clusterId, command, instanceId, ids);
         return ApiResponse.ok(result);
     }
-    
+
     /**
      * 删除角色实例。
      */
@@ -180,7 +188,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
         clusterServiceRoleInstanceService.deleteServiceRole(idList);
         return ApiResponse.ok();
     }
-    
+
     /**
      * 查看角色实例日志。
      */
@@ -192,7 +200,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
         Object data = result.getData();
         return ApiResponse.ok(data != null ? data.toString() : "");
     }
-    
+
     /**
      * 添加角色组。
      */
@@ -204,7 +212,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
         roleGroupService.saveRoleGroup(instanceId, roleGroupId, roleGroupName);
         return ApiResponse.ok();
     }
-    
+
     /**
      * 批量分配角色组。
      */

@@ -95,6 +95,7 @@
   "parameters": [
     {
       "name": "nacosServerPort",
+      "port": true,
       "label": "端口",
       "description": "端口",
       "required": true,
@@ -106,6 +107,7 @@
     },
     {
       "name": "nacosConsolePort",
+      "port": true,
       "label": "控制台端口",
       "description": "控制台端口",
       "required": true,

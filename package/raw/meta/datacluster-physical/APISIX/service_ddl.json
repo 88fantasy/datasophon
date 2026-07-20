@@ -93,6 +93,7 @@
   "parameters": [
     {
       "name": "apisixPort",
+      "port": true,
       "key": "apisixPort",
       "label": "网关端口",
       "description": "网关入口端口",
@@ -153,6 +154,7 @@
     },
     {
       "name": "apisixPrometheusPort",
+      "port": true,
       "key": "apisixPrometheusPort",
       "label": "监控暴露端口",
       "description": "APISIX prometheus 插件指标暴露端口",

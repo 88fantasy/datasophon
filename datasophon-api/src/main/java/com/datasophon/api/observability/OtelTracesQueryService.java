@@ -22,12 +22,17 @@
 
 package com.datasophon.api.observability;
 
+import com.datasophon.api.service.ServiceInstancePortResolver;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +41,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class OtelTracesQueryService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OtelTracesQueryService.class);
 
     static final Set<String> ALLOWED_STATUS = Set.of("OK", "ERROR");
 
@@ -51,9 +58,11 @@ public class OtelTracesQueryService {
     private static final ListTypeRef LIST_TYPE = new ListTypeRef();
 
     private final OtelDorisReaderFactory readerFactory;
+    private final ServiceInstancePortResolver portResolver;
 
-    public OtelTracesQueryService(OtelDorisReaderFactory readerFactory) {
+    public OtelTracesQueryService(OtelDorisReaderFactory readerFactory, ServiceInstancePortResolver portResolver) {
         this.readerFactory = readerFactory;
+        this.portResolver = portResolver;
     }
 
     public PageResult<TraceRow> listTraces(Integer clusterId, long startSec, long endSec,
@@ -122,7 +131,9 @@ public class OtelTracesQueryService {
                 .param("end", endSec)
                 .query()
                 .listOfRows();
-        return mergeExternalDependencies(toTopologyGraph(nodeRows, edgeRows), externalRows);
+        BiFunction<String, String, String> serviceTypeResolver =
+                (addr, port) -> portResolver.resolveServiceType(clusterId, addr, port);
+        return mergeExternalDependencies(toTopologyGraph(nodeRows, edgeRows), externalRows, serviceTypeResolver);
     }
 
     public ServiceSummary getServiceSummary(Integer clusterId, long startSec, long endSec, String serviceName) {
@@ -256,10 +267,11 @@ public class OtelTracesQueryService {
         // 这类 span 是客户端插桩产生的 SPAN_KIND_CLIENT(JDBC/HTTP/…),其 service_name 与发起方相同，
         // 因此 otel_traces_graph_job(t1.service_name != t2.service_name)永远不会把它们聚合成边。
         // 不按 db.system 是否存在做类型限制——任何带 server.address/port 的 CLIENT span 都视为一个外部依赖，
-        // system 标签按 db.system → http（有 http.request.method 时）→ other 三级兜底。
+        // system 标签按 db.system → rpc.system（如 grpc）→ http（有 http.request.method 时）→ other 四级兜底。
         return "SELECT service_name AS caller,\n"
                 + "       COALESCE(\n"
                 + "           NULLIF(cast(span_attributes['db.system'] as string), ''),\n"
+                + "           NULLIF(cast(span_attributes['rpc.system'] as string), ''),\n"
                 + "           IF(NULLIF(cast(span_attributes['http.request.method'] as string), '') IS NOT NULL,\n"
                 + "              'http', 'other')\n"
                 + "       ) AS db_system,\n"
@@ -331,6 +343,16 @@ public class OtelTracesQueryService {
     }
 
     static TopologyGraph mergeExternalDependencies(TopologyGraph graph, List<Map<String, Object>> externalRows) {
+        return mergeExternalDependencies(graph, externalRows, null);
+    }
+
+    /**
+     * @param serviceTypeResolver 把外部依赖节点的 (server.address, server.port) 反查成真实服务类型
+     *                            （如 "doris"/"datasophon-worker"），查不到时可返回 null，节点仍按原
+     *                            dbSystem 三级兜底（db.system → http → other）展示。测试可传 null 跳过反查。
+     */
+    static TopologyGraph mergeExternalDependencies(TopologyGraph graph, List<Map<String, Object>> externalRows,
+                                                   BiFunction<String, String, String> serviceTypeResolver) {
         if (externalRows.isEmpty()) {
             return graph;
         }
@@ -343,10 +365,13 @@ public class OtelTracesQueryService {
         for (Map<String, Object> row : externalRows) {
             String caller = stringValue(row.get("caller"));
             String dbSystem = stringValue(row.get("db_system"));
-            String externalId = dbSystem + "@" + stringValue(row.get("server_addr")) + ":" + stringValue(row.get("server_port"));
+            String serverAddr = stringValue(row.get("server_addr"));
+            String serverPort = stringValue(row.get("server_port"));
+            String externalId = dbSystem + "@" + serverAddr + ":" + serverPort;
             long callCount = longValue(row.get("call_count"));
             long errorCount = longValue(row.get("error_count"));
-            externalAggregates.computeIfAbsent(externalId, id -> new ExternalAggregate(externalId, dbSystem))
+            externalAggregates.computeIfAbsent(externalId, id -> new ExternalAggregate(externalId, dbSystem,
+                    resolveServiceType(serviceTypeResolver, serverAddr, serverPort)))
                     .add(callCount, errorCount,
                             doubleValue(row.get("avg_duration_ns")),
                             doubleValue(row.get("p99_duration_ns")),
@@ -357,11 +382,26 @@ public class OtelTracesQueryService {
         return new TopologyGraph(List.copyOf(nodes.values()), edges);
     }
 
+    private static String resolveServiceType(BiFunction<String, String, String> serviceTypeResolver,
+                                             String serverAddr, String serverPort) {
+        if (serviceTypeResolver == null) {
+            return null;
+        }
+        try {
+            return serviceTypeResolver.apply(serverAddr, serverPort);
+        } catch (Exception e) {
+            logger.warn("反查外部依赖节点 {}:{} 的服务类型失败", serverAddr, serverPort, e);
+            return null;
+        }
+    }
+
     private static final class ExternalAggregate {
 
         private final String externalId;
 
         private final String dbSystem;
+
+        private final String serviceType;
 
         private long callCount;
 
@@ -373,9 +413,10 @@ public class OtelTracesQueryService {
 
         private double maxDurationNs;
 
-        private ExternalAggregate(String externalId, String dbSystem) {
+        private ExternalAggregate(String externalId, String dbSystem, String serviceType) {
             this.externalId = externalId;
             this.dbSystem = dbSystem;
+            this.serviceType = serviceType;
         }
 
         private void add(long nextCallCount, long nextErrorCount, double nextAvgDurationNs,
@@ -389,8 +430,8 @@ public class OtelTracesQueryService {
 
         private TopologyNode toNode() {
             double avgDurationNs = callCount > 0 ? weightedAvgDurationNs / callCount : 0D;
-            return TopologyNode.external(
-                    externalId, dbSystem, callCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs);
+            return TopologyNode.external(externalId, dbSystem, serviceType, callCount, errorCount, avgDurationNs,
+                    p99DurationNs, maxDurationNs);
         }
     }
 
@@ -552,18 +593,23 @@ public class OtelTracesQueryService {
                                double p99DurationNs,
                                double maxDurationNs,
                                boolean external,
-                               String dbSystem) {
+                               String dbSystem,
+                               String serviceType) {
 
     static TopologyNode service(String serviceName, long spanCount, long errorCount,
                                 double avgDurationNs, double p99DurationNs, double maxDurationNs) {
         return new TopologyNode(serviceName, spanCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs,
-                false, "");
+                false, "", null);
     }
 
-    static TopologyNode external(String id, String dbSystem, long spanCount, long errorCount,
+    /**
+     * @param serviceType 按 ip:port 反查出的真实服务类型（如 "doris"/"datasophon-worker"），查不到时为
+     *                    null，前端回退按 dbSystem 展示。
+     */
+    static TopologyNode external(String id, String dbSystem, String serviceType, long spanCount, long errorCount,
                                  double avgDurationNs, double p99DurationNs, double maxDurationNs) {
         return new TopologyNode(id, spanCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs,
-                true, dbSystem);
+                true, dbSystem, serviceType);
     }
     }
 

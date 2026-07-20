@@ -275,6 +275,7 @@
     },
     {
       "name": "historyserver.web.port",
+      "port": true,
       "description": "",
       "label": "HistoryServer页面端口",
       "hidden": false,

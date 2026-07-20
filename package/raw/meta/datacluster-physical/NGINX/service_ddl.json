@@ -246,6 +246,7 @@
     },
     {
       "name": "nginxStatusPort",
+      "port": true,
       "key": "nginxStatusPort",
       "label": "nginxStatus状态端口",
       "description": "nginxStatus状态端口",
@@ -258,6 +259,7 @@
     },
     {
       "name": "nginxExporterPort",
+      "port": true,
       "key": "nginxExporterPort",
       "label": "nginxExporter监控端口",
       "description": "nginxExporter监控端口",
@@ -270,6 +272,7 @@
     },
     {
       "name": "nginxServerPort",
+      "port": true,
       "key": "nginxServerPort",
       "label": "nginx服务端口",
       "description": "nginx服务端口",
@@ -282,6 +285,7 @@
     },
     {
       "name": "nginxWebPort",
+      "port": true,
       "key": "nginxWebPort",
       "label": "nginx页面端口",
       "description": "nginx页面端口",
