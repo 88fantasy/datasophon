@@ -76,6 +76,14 @@
         },
         {
           "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
           "action": "append_line",
           "params": {
             "source": "bin/dolphinscheduler-daemon.sh",
@@ -175,6 +183,14 @@
         },
         {
           "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
           "action": "append_line",
           "params": {
             "source": "bin/dolphinscheduler-daemon.sh",
@@ -262,6 +278,14 @@
           "params": {
             "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
             "target": "worker-server/libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
           }
         },
         {
@@ -363,6 +387,14 @@
           "params": {
             "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
             "target": "alert-server/libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
           }
         },
         {

@@ -64,6 +64,11 @@ public class ApisixStandaloneTemplateTest {
         assertFalse(config.contains("etcd"));
         assertTrue(yaml.containsKey("deployment"));
         assertTrue(yaml.containsKey("apisix"));
+        // 中间件链路追踪接入（Phase F）：opentelemetry 未进 APISIX 官方默认插件清单，config.yaml 显式声明
+        // plugins 会整体覆盖默认清单而非追加，必须列出全部默认项 + opentelemetry
+        assertTrue(yaml.containsKey("plugins"));
+        assertTrue(config.contains("- opentelemetry"));
+        assertTrue(config.contains("- prometheus"));
     }
 
     @Test
@@ -75,10 +80,17 @@ public class ApisixStandaloneTemplateTest {
         assertTrue(routes.contains("'192.168.10.135:8080': 1"));
         assertTrue(routes.contains("uri: '/get'"));
         assertTrue(routes.contains("prometheus:"));
+        assertTrue(routes.contains("opentelemetry:"));
+        // sampler 必须显式 always_on：插件 schema 默认 sampler=always_off，写空对象 {} 不会真正采样任何 span
+        assertTrue(routes.contains("name: always_on"));
+        // opentelemetry 插件运行时读取 plugin_metadata（不是 plugin_attr），缺失时插件静默跳过、不产生任何 span
+        assertTrue(routes.contains("service.name: apisix"));
+        assertTrue(routes.contains("address: 127.0.0.1:4318"));
         assertTrue(routes.endsWith("#END\n"));
         assertTrue(document.containsKey("upstreams"));
         assertTrue(document.containsKey("routes"));
         assertTrue(document.containsKey("global_rules"));
+        assertTrue(document.containsKey("plugin_metadata"));
     }
 
     @Test
