@@ -43,8 +43,13 @@ public class DolphinschedulerEnvTemplateTest {
         tpl.process(data, out);
         String env = out.toString();
 
-        // $command 由 dolphinscheduler-daemon.sh 在 source 本文件前置好，case 分支穷举 4 个角色
-        assertTrue(env.contains("case \"$command\" in"));
+        // $command 是 dolphinscheduler-daemon.sh 的本地 shell 变量，daemon.sh 用 nohup bash 派生
+        // 新进程执行各角色 start.sh，source 本文件时 $command 恒为空——改用各角色 start.sh 各自
+        // 设置的 *_HOME 变量判断角色，这是运行时真正可靠的信号
+        assertTrue(env.contains("if [ -n \"$API_HOME\" ]"));
+        assertTrue(env.contains("elif [ -n \"$MASTER_HOME\" ]"));
+        assertTrue(env.contains("elif [ -n \"$WORKER_HOME\" ]"));
+        assertTrue(env.contains("elif [ -n \"$ALERT_HOME\" ]"));
         assertTrue(env.contains("export SERVER_PORT=12345"));
         assertTrue(env.contains("export SERVER_PORT=5679"));
         assertTrue(env.contains("export SERVER_PORT=1235"));
@@ -58,5 +63,12 @@ public class DolphinschedulerEnvTemplateTest {
         assertTrue(env.contains(
                 "export REGISTRY_HIKARI_CONFIG_DRIVER_CLASS_NAME=${REGISTRY_HIKARI_CONFIG_DRIVER_CLASS_NAME:-com.mysql.cj.jdbc.Driver}"));
         assertTrue(!env.contains("REGISTRY_ZOOKEEPER_CONNECT_STRING"));
+        // OTel Java Agent 默认开启，只发 traces，agent jar 复用 datasophon-worker 自带的 otel/
+        assertTrue(env.contains("export OTEL_JAVAAGENT_ENABLED=\"${OTEL_JAVAAGENT_ENABLED:-true}\""));
+        assertTrue(env.contains("-javaagent:$DOLPHINSCHEDULER_HOME/otel/opentelemetry-javaagent.jar"));
+        assertTrue(env.contains("-Dotel.service.name=dolphinscheduler-$DS_ROLE"));
+        assertTrue(env.contains("-Dotel.traces.exporter=otlp"));
+        assertTrue(env.contains("-Dotel.metrics.exporter=none"));
+        assertTrue(env.contains("-Dotel.logs.exporter=none"));
     }
 }

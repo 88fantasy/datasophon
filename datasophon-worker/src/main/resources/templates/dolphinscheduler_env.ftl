@@ -53,20 +53,34 @@ export CHUNJUN_HOME=${r"${CHUNJUN_HOME"}:-/opt/soft/chunjun}
 export PATH=$HADOOP_HOME/bin:$SPARK_HOME1/bin:$SPARK_HOME2/bin:$PYTHON_HOME/bin:$JAVA_HOME/bin:$HIVE_HOME/bin:$FLINK_HOME/bin:$DATAX_HOME/bin:$SEATUNNEL_HOME/bin:$CHUNJUN_HOME/bin:$PATH
 
 # 按角色覆盖 server.port（Spring Boot 环境变量优先级高于内置 application.yaml，
-# 与上面 SPRING_DATASOURCE_* 是同一套注入机制）。依赖 dolphinscheduler-daemon.sh
-# 在 source 本文件时 $command 仍为 api-server/master-server/worker-server/alert-server；
-# 若该变量不可用则 case 无匹配分支、不导出，回退到 DS 自带默认端口。
-case "${r"$command"}" in
-  api-server)
-    export SERVER_PORT=${apiServerPort}
-    ;;
-  master-server)
-    export SERVER_PORT=${masterServerPort}
-    ;;
-  worker-server)
-    export SERVER_PORT=${workerServerPort}
-    ;;
-  alert-server)
-    export SERVER_PORT=${alertServerPort}
-    ;;
-esac
+# 与上面 SPRING_DATASOURCE_* 是同一套注入机制）、OTel service.name。四个角色共用
+# 同一份渲染结果（configWriter 只生成一份 bin/env/dolphinscheduler_env.sh，由
+# dolphinscheduler-daemon.sh 复制覆盖各角色 conf/ 下同名文件），无法在渲染期区分
+# 角色，只能靠运行时判断。$command 不可靠——它是 dolphinscheduler-daemon.sh 的本地
+# shell 变量，daemon.sh 用 nohup bash 派生新进程执行各角色 bin/start.sh，新进程不
+# 继承旧进程的本地变量，source 本文件时 $command 恒为空。改用各角色 start.sh 在
+# source 前各自设置、互不重名的 *_HOME 变量（API_HOME/MASTER_HOME/WORKER_HOME/
+# ALERT_HOME）判断，这是运行时真正可靠的信号。
+if [ -n "${r"$API_HOME"}" ]; then
+  export DS_ROLE=api-server
+  export SERVER_PORT=${apiServerPort}
+elif [ -n "${r"$MASTER_HOME"}" ]; then
+  export DS_ROLE=master-server
+  export SERVER_PORT=${masterServerPort}
+elif [ -n "${r"$WORKER_HOME"}" ]; then
+  export DS_ROLE=worker-server
+  export SERVER_PORT=${workerServerPort}
+elif [ -n "${r"$ALERT_HOME"}" ]; then
+  export DS_ROLE=alert-server
+  export SERVER_PORT=${alertServerPort}
+fi
+
+# OTel Java Agent 自动埋点（中间件链路追踪接入，Phase F）：只开 traces，metrics 已由
+# Prometheus 抓取管道覆盖（避免重复计数）。agent jar 复用 datasophon-worker 自带的
+# otel/opentelemetry-javaagent.jar（同目录 service_ddl.json 的 link hook 在安装期软链
+# 到 DS 安装根目录），依赖 dolphinscheduler-daemon.sh 在 source 本文件时已导出
+# $DOLPHINSCHEDULER_HOME；service.name 复用上面 $DS_ROLE。
+export OTEL_JAVAAGENT_ENABLED="${r"${OTEL_JAVAAGENT_ENABLED:-true}"}"
+if [ "${r"$OTEL_JAVAAGENT_ENABLED"}" = "true" ]; then
+  export JAVA_TOOL_OPTIONS="-javaagent:$DOLPHINSCHEDULER_HOME/otel/opentelemetry-javaagent.jar -Dotel.service.name=dolphinscheduler-${r"$DS_ROLE"} -Dotel.exporter.otlp.endpoint=http://localhost:4317 -Dotel.exporter.otlp.protocol=grpc -Dotel.traces.exporter=otlp -Dotel.metrics.exporter=none -Dotel.logs.exporter=none"
+fi

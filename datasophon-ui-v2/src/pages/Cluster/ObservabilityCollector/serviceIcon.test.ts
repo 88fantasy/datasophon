@@ -58,8 +58,14 @@ describe('serviceIconFor', () => {
   });
 
   it('falls back to a generic service icon for unmatched names', () => {
-    const icon = serviceIconFor('datasophon-api');
+    const icon = serviceIconFor('unknown-custom-service');
     expect(icon.keyword).toBe('');
     expect(icon.src).toMatch(/^data:image\/svg\+xml/);
+  });
+
+  it('gives datasophon自有组件(api/worker/master) their own logo instead of the generic fallback', () => {
+    expectValidIcon('datasophon-api', 'datasophon');
+    expectValidIcon('datasophon-worker', 'datasophon');
+    expectValidIcon('datasophon-master', 'datasophon');
   });
 });

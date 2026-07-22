@@ -22,6 +22,7 @@
 
 package com.datasophon.api.dto.v2;
 
+import com.datasophon.api.service.ServiceInstancePortResolver;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.ServiceRoleState;
 
@@ -54,6 +55,8 @@ public class ServiceRoleInstanceResponse {
     private Integer serviceRoleStateCode;
     private Integer clusterId;
     private Date createTime;
+    /** 该角色实例当前监听的端口(可能多个)，由 controller 在 {@code fromList} 之后按实体逐条回填。 */
+    private List<ServiceInstancePortResolver.RolePort> ports;
 
     /**
      * 从实体构建响应体。实体的 {@code serviceRoleStateCode} 与 {@code roleGroupName}

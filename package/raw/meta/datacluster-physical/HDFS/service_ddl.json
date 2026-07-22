@@ -31,6 +31,7 @@
       "sortNum": 1,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-journalnode-${host}.log",
       "jmxPortParam": "journalnodeJmxPort",
+      "portParams": ["journalnodeJmxPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -95,6 +96,7 @@
       "sortNum": 2,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
       "jmxPortParam": "namenodeJmxPort",
+      "portParams": ["namenodeJmxPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -172,6 +174,7 @@
       "sortNum": 5,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
       "jmxPortParam": "datanodeJmxPort",
+      "portParams": ["datanodeJmxPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -236,6 +239,7 @@
       "sortNum": 3,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-zkfc-${host}.log",
       "jmxPortParam": "zkfcJmxPort",
+      "portParams": ["zkfcJmxPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -707,6 +711,7 @@
     },
     {
       "name": "namenodeJmxPort",
+      "port": true,
       "label": "NameNode JMX监控端口",
       "description": "NameNode Prometheus JMX exporter 监听端口",
       "required": true,
@@ -718,6 +723,7 @@
     },
     {
       "name": "datanodeJmxPort",
+      "port": true,
       "label": "DataNode JMX监控端口",
       "description": "DataNode Prometheus JMX exporter 监听端口",
       "required": true,
@@ -729,6 +735,7 @@
     },
     {
       "name": "journalnodeJmxPort",
+      "port": true,
       "label": "JournalNode JMX监控端口",
       "description": "JournalNode Prometheus JMX exporter 监听端口",
       "required": true,
@@ -740,6 +747,7 @@
     },
     {
       "name": "zkfcJmxPort",
+      "port": true,
       "label": "ZKFC JMX监控端口",
       "description": "ZKFC Prometheus JMX exporter 监听端口",
       "required": true,

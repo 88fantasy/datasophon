@@ -18,20 +18,22 @@ datasophon-cli [--dry-run] upload registry \
   --dockerHttpPort <port>
   [--isSuccessDelete]
   [--disableUploadRegistry]
+  [--files <relative-path> [--files <relative-path> ...]]
 ```
 
 ## 参数 / Flags
 
-|           flag            |  简写  |   类型   |   默认    | 必填 |             说明              |
-|---------------------------|------|--------|---------|----|-----------------------------|
-| `--productPackagesPath`   | 无    | string | —       | 是  | 本地安装包根目录（须存在）               |
-| `--webHost`               | 无    | string | —       | 是  | Nexus 主机 IP 或 hostname      |
-| `--webPort`               | 无    | string | —       | 是  | Nexus Web UI 端口（如 `8091`）   |
-| `--username`              | `-u` | string | —       | 是  | Nexus 管理员用户名                |
-| `--password`              | `-p` | string | —       | 是  | Nexus 管理员密码                 |
-| `--dockerHttpPort`        | 无    | int    | —       | 是  | Docker 仓库 HTTP 端口（如 `8083`） |
-| `--isSuccessDelete`       | `-e` | bool   | `false` | 否  | 上传成功后删除本地文件（节省磁盘空间）         |
-| `--disableUploadRegistry` | 无    | bool   | `false` | 否  | 设为 `true` 时跳过整个上传流程（调试用）    |
+|           flag            |  简写  |    类型    |   默认    | 必填 |                            说明                            |
+|---------------------------|------|----------|---------|----|-----------------------------------------------------------|
+| `--productPackagesPath`   | 无    | string   | —       | 是  | 本地安装包根目录（须存在）                                              |
+| `--webHost`               | 无    | string   | —       | 是  | Nexus 主机 IP 或 hostname                                     |
+| `--webPort`               | 无    | string   | —       | 是  | Nexus Web UI 端口（如 `8091`）                                  |
+| `--username`              | `-u` | string   | —       | 是  | Nexus 管理员用户名                                               |
+| `--password`              | `-p` | string   | —       | 是  | Nexus 管理员密码                                                |
+| `--dockerHttpPort`        | 无    | int      | —       | 是  | Docker 仓库 HTTP 端口（如 `8083`）；`--files` 模式不上传镜像，仍需传但不会被用到     |
+| `--isSuccessDelete`       | `-e` | bool     | `false` | 否  | 上传成功后删除本地文件（节省磁盘空间）                                        |
+| `--disableUploadRegistry` | 无    | bool     | `false` | 否  | 设为 `true` 时跳过整个上传流程（调试用）                                    |
+| `--files`                 | 无    | []string | 无       | 否  | 只上传指定文件（相对 `productPackagesPath`，可重复传入或逗号分隔），见下方「指定文件上传」章节 |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../global-flags.md)
@@ -63,6 +65,33 @@ datasophon-cli [--dry-run] upload registry \
 ```
 
 > 不符合上述结构的子目录会被跳过并打印 Info 日志。
+
+## 指定文件上传（`--files`）
+
+只改了少数几个文件（例如元数据 `service_ddl.json`）时，不需要重新扫描/校验整个 `productPackagesPath`（可能有上千个文件，含大体积安装包）。传入一个或多个 `--files`（相对 `productPackagesPath` 的路径）即可只上传这些文件：
+
+```bash
+datasophon-cli upload registry \
+  --productPackagesPath /data/install_datasophon/package \
+  --webHost 127.0.0.1 --webPort 8081 \
+  -u admin -p 'YourPassword' \
+  --dockerHttpPort 8083 \
+  --enableRegistry \
+  --files raw/meta/datacluster-physical/DORIS/service_ddl.json \
+  --files raw/meta/datacluster-physical/NACOS/service_ddl.json
+```
+
+或用逗号一次性传入：
+
+```bash
+  --files raw/meta/datacluster-physical/DORIS/service_ddl.json,raw/meta/datacluster-physical/NACOS/service_ddl.json
+```
+
+行为差异（相对整目录扫描模式）：
+
+- **一律强制覆盖上传**：不做「远端 MD5 相同则跳过」的幂等检查——既然显式点名要传这个文件，就应该传上去，不应该因为文件名恰好没变、检查逻辑判断"未变化"而被静默跳过。
+- **不扫描目录，不处理 `docker/`**：`--files` 传入时完全跳过 `repositoryUploadBatch` 的整目录遍历与 `uploadDocker` 的镜像 load/push 流程；docker 镜像仍需用不带 `--files` 的整目录模式上传。
+- **仓库类型仍按路径首段推导**：`--files` 的路径必须以 `yum/`、`apt/`、`raw/` 或 `helm/` 开头，`yum`/`apt` 还需要至少 `<arch>/<os>/<file>` 三段（用于推导 Nexus `directory` 字段），否则该文件计入失败并打印错误，不影响列表里其余文件继续上传。
 
 ## Docker 镜像上传流程
 

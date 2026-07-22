@@ -16,6 +16,7 @@
       "cardinality": "1+",
       "logFile": "logs/ddp_es.log",
       "serverPorts": [],
+      "portParams": ["http.port", "transport.port"],
       "runAs": {
         "user": "elastic",
         "group": "elastic"
@@ -84,6 +85,14 @@
             "from": "script/control_es.sh",
             "templateId": "2003757981428420609"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
+          }
         }
       ]
     },
@@ -96,6 +105,7 @@
       "logFile": "elasticsearch-exporter/logs/es_exporter-${ELASTICSEARCH.ElasticSearch.__hostIp__}.out",
       "serverPorts": [],
       "jmxPortParam": "esExporterPort",
+      "portParams": ["esExporterPort"],
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -163,12 +173,14 @@
       {
         "filename": "jvm.options",
         "configFormat": "custom",
-        "outputDirectory": "",
+        "outputDirectory": "config",
         "templateType": "DEFAULT",
         "templateId": 2003724231525076993,
         "templateName": "jvm.options.ftl",
         "includeParams": [
-          "heapSize"
+          "heapSize",
+          "otelJavaagentEnabled",
+          "otelJavaagentPath"
         ]
       },
       {
@@ -218,6 +230,7 @@
     },
     {
       "name": "http.port",
+      "port": true,
       "description": "对外提供服务的端口",
       "label": "对外服务端口",
       "hidden": false,
@@ -229,6 +242,7 @@
     },
     {
       "name": "transport.port",
+      "port": true,
       "description": "",
       "label": "集群通信端口",
       "hidden": false,
@@ -378,7 +392,32 @@
       "register": false
     },
     {
+      "name": "otelJavaagentEnabled",
+      "description": "Elasticsearch 9.x 当前存在 OTel Java Agent HelperInjector 兼容问题，确认兼容后再启用",
+      "label": "启用 OTel Java Agent",
+      "hidden": false,
+      "required": false,
+      "configType": "map",
+      "type": "switch",
+      "defaultValue": false,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "name": "otelJavaagentPath",
+      "description": "",
+      "label": "OTel Java Agent 路径",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${ROOT.ELASTICSEARCH.INSTALL_PATH}/otel/opentelemetry-javaagent.jar",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
       "name": "esExporterPort",
+      "port": true,
       "description": "elasticsearch_exporter 指标暴露端口",
       "label": "监控暴露端口",
       "hidden": false,

@@ -16,6 +16,7 @@
       "cardinality": "1+",
       "logFile": "logs/kafkaServer.out",
       "jmxPortParam": "kafkaJmxPort",
+      "portParams": ["kafkaJmxPort"],
       "startRunner": {
         "timeout": "60",
         "program": "bin/kafka-server-start.sh",
@@ -127,6 +128,7 @@
     },
     {
       "name": "kafkaJmxPort",
+      "port": true,
       "label": "Kafka JMX监控端口",
       "description": "Kafka Broker Prometheus JMX exporter 监听端口",
       "required": true,

@@ -73,4 +73,6 @@ public class ServiceConfig implements Serializable {
     private String separator;
 
     private Boolean register;
+
+    private boolean port;
 }

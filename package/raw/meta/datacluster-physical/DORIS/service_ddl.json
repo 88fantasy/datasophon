@@ -44,6 +44,7 @@
       "logFile": "fe/log/fe.log",
       "serverPorts": [],
       "jmxPortParam": "http_port",
+      "portParams": ["http_port", "rpc_port", "query_port"],
       "runAs": {},
       "startRunner": {
         "timeout": "600",
@@ -95,6 +96,23 @@
             "text": "export JAVA_HOME=$JAVA_HOME17",
             "source": "fe/bin/start_fe.sh"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "fe/otel/opentelemetry-javaagent.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_TOOL_OPTIONS=\"-javaagent:$(pwd)/fe/otel/opentelemetry-javaagent.jar -Dotel.service.name=doris-fe -Dotel.exporter.otlp.endpoint=http://localhost:4317 -Dotel.exporter.otlp.protocol=grpc -Dotel.traces.exporter=otlp -Dotel.metrics.exporter=none -Dotel.logs.exporter=none\"",
+            "source": "fe/bin/start_fe.sh"
+          }
         }
       ]
     },
@@ -106,6 +124,7 @@
       "logFile": "be/log/be.INFO",
       "serverPorts": [],
       "jmxPortParam": "webserver_port",
+      "portParams": ["be_port", "webserver_port", "brpc_port"],
       "runAs": {},
       "startRunner": {
         "timeout": "600",
@@ -274,6 +293,7 @@
     },
     {
       "name": "http_port",
+      "port": true,
       "key": "http_port",
       "description": "FE节点上前端界面的端口",
       "label": "FE节点上前端界面的端口",
@@ -286,6 +306,7 @@
     },
     {
       "name": "rpc_port",
+      "port": true,
       "key": "rpc_port",
       "description": "FE 节点上 Thrift 服务器的端口。",
       "label": "FE节点上Thrift服务器的端口",
@@ -298,6 +319,7 @@
     },
     {
       "name": "query_port",
+      "port": true,
       "key": "query_port",
       "description": "FE 节点上 MySQL 服务器的端口",
       "label": "FE节点上MySQL服务器的端口",
@@ -388,6 +410,7 @@
     },
     {
       "name": "be_port",
+      "port": true,
       "key": "be_port",
       "description": "BE admin端口",
       "label": "BE admin端口",
@@ -400,6 +423,7 @@
     },
     {
       "name": "webserver_port",
+      "port": true,
       "description": "BE WebServer端口",
       "label": "BE WebServer端口",
       "hidden": false,
@@ -411,6 +435,7 @@
     },
     {
       "name": "brpc_port",
+      "port": true,
       "description": "BE Rpc端口",
       "label": "BE Rpc端口",
       "hidden": false,

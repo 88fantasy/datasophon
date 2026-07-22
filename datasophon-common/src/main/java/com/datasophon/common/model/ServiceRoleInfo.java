@@ -83,6 +83,11 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
      */
     private String jmxPortParam;
 
+    /**
+     * 该角色实际监听端口对应的 ddl 业务参数名。端口值优先从角色组实时配置读取，缺失时回退到参数默认值。
+     */
+    private List<String> portParams;
+
     private boolean isSlave = false;
 
     private CommandType commandType;

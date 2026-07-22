@@ -138,14 +138,19 @@ export function toGraphData(
     if (errorRate > 0) {
       metrics.push(`err ${(errorRate * 100).toFixed(1)}%`);
     }
-    // 外部依赖节点(合成 id 形如 "mysql@127.0.0.1:3306")按 dbSystem 取图标，
-    // 展示名拆成 "mysql" + 端点两行，比原始合成 id 更易读。
-    const icon = serviceIconFor(
-      node.external ? (node.dbSystem ?? node.serviceName) : node.serviceName,
-    );
+    // 外部依赖节点(合成 id 形如 "mysql@127.0.0.1:3306")优先按后端反查出的 serviceType 取图标/展示名
+    // (如 9030 端口的 dbSystem 是 mysql,但 serviceType 精确反查为 doris),反查不到时回退 dbSystem。
+    // 展示名拆成 "doris" + 端点两行，比原始合成 id 更易读。
+    const externalLabel = node.serviceType ?? node.dbSystem ?? '';
+    const icon = serviceIconFor(node.external ? externalLabel : node.serviceName);
     const displayName = node.external
-      ? `${node.dbSystem ?? ''}\n${node.serviceName.split('@')[1] ?? node.serviceName}`
+      ? `${externalLabel}\n${node.serviceName.split('@')[1] ?? node.serviceName}`
       : node.serviceName;
+    // dbSystem 是 db.system → rpc.system（如 grpc）→ http → other 四级兜底后的展示用标签，不能直接拿它
+    // 反推"是不是数据库"——排除 http/other/grpc 会把非 grpc 的 rpc.system（如 thrift/dubbo）误判成数据库。
+    // isDatabase 由后端在合并外部依赖时按是否真的落到 db.system 显式标注，DB 徽标改用它判定。
+    const isDb = Boolean(node.external) && Boolean(node.isDatabase);
+    const isGrpc = Boolean(node.external) && node.dbSystem === 'grpc';
     return {
       id: node.serviceName,
       data: {
@@ -157,6 +162,8 @@ export function toGraphData(
         iconWidth: icon.width,
         iconHeight: icon.height,
         external: node.external ?? false,
+        isDb,
+        isGrpc,
         displayName,
       },
     };
@@ -266,11 +273,19 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
               backgroundFill: string;
               fill: string;
             }> = [];
-            if (d.data?.external) {
+            if (d.data?.isDb) {
               list.push({
                 text: 'DB',
                 placement: 'left-top',
                 backgroundFill: '#597ef7',
+                fill: '#ffffff',
+              });
+            }
+            if (d.data?.isGrpc) {
+              list.push({
+                text: 'GRPC',
+                placement: 'left-top',
+                backgroundFill: '#13c2c2',
                 fill: '#ffffff',
               });
             }

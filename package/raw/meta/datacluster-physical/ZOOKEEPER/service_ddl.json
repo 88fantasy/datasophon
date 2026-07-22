@@ -14,6 +14,7 @@
       "cardinality": "1+",
       "logFile": "logs/zookeeper-root-server-${host}.out",
       "jmxPortParam": "metricsProvider.httpPort",
+      "portParams": ["clientPort", "metricsProvider.httpPort"],
       "startRunner": {
         "timeout": "60",
         "program": "bin/zkServer.sh",
@@ -98,6 +99,7 @@
   "parameters": [
     {
       "name": "clientPort",
+      "port": true,
       "label": "客户端连接的端口号",
       "description": "Zk提供服务的端口号",
       "required": true,
@@ -264,6 +266,7 @@
     },
     {
       "name": "metricsProvider.httpPort",
+      "port": true,
       "label": "监控端口",
       "description": "ZooKeeper 原生 PrometheusMetricsProvider 指标暴露端口",
       "required": false,

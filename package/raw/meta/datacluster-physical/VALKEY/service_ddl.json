@@ -23,6 +23,7 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/master.log",
+      "portParams": ["valkeyMasterPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control_valkey.sh",
@@ -56,6 +57,7 @@
       "cardinality": "1",
       "logFile": "redis-exporter/logs/exporter.log",
       "jmxPortParam": "valkeyExporterPort",
+      "portParams": ["valkeyExporterPort"],
       "sortNum": 2,
       "startRunner": {
         "timeout": "60",
@@ -123,6 +125,7 @@
   "parameters": [
     {
       "name": "valkeyMasterPort",
+      "port": true,
       "label": "master节点端口号",
       "description": "",
       "configType": "map",
@@ -201,6 +204,7 @@
     },
     {
       "name": "valkeyExporterPort",
+      "port": true,
       "label": "监控暴露端口",
       "description": "redis_exporter 指标暴露端口",
       "configType": "map",

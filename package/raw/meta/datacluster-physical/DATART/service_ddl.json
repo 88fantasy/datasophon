@@ -13,6 +13,7 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/datart-server.log",
+      "portParams": ["datartServerPort"],
       "hooks": [
         {
           "type": "POST_INSTALL",
@@ -80,6 +81,7 @@
   "parameters": [
     {
       "name": "datartServerPort",
+      "port": true,
       "label": "datart应用服务端口",
       "description": "datart应用服务端口",
       "required": true,

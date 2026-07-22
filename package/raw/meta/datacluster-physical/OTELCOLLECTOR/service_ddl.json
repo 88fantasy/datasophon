@@ -25,6 +25,7 @@
       "cardinality": "1+",
       "logFile": "logs/otelcol.out",
       "jmxPortParam": "otelSelfMetricsPort",
+      "portParams": ["otelSelfMetricsPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
@@ -107,6 +108,7 @@
   "parameters": [
     {
       "name": "otelSelfMetricsPort",
+      "port": true,
       "label": "Collector 自监控端口",
       "description": "OTel Collector 自身 Prometheus 指标暴露端口(内部自采集亦用此端口)",
       "required": true,

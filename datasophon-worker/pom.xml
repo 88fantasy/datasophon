@@ -154,6 +154,7 @@
                         <include>**/test/YarnEnvTemplateTest.java</include>
                         <include>**/test/DolphinschedulerEnvTemplateTest.java</include>
                         <include>**/test/ApisixStandaloneTemplateTest.java</include>
+                        <include>**/test/JvmOptionsTemplateTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

@@ -59,7 +59,7 @@ class OtelMonitorControllerTest {
         OtelTracesQueryService tracesQueryService = mock(OtelTracesQueryService.class);
         OtelTracesQueryService.TopologyGraph graph = new OtelTracesQueryService.TopologyGraph(
                 List.of(new OtelTracesQueryService.TopologyNode(
-                        "datasophon-api", 10L, 0L, 1_000_000.0, 2_000_000.0, 3_000_000.0, false, "")),
+                        "datasophon-api", 10L, 0L, 1_000_000.0, 2_000_000.0, 3_000_000.0, false, "", false, null)),
                 List.of());
         when(tracesQueryService.getTopology(7, 100L, 200L)).thenReturn(graph);
 

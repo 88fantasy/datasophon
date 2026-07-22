@@ -88,6 +88,10 @@ export interface TopologyNode {
   maxDurationNs: number;
   external?: boolean;
   dbSystem?: string;
+  /** 该外部依赖是否真的落到 db.system(而非 rpc.system/http/other 兜底),DB 徽标据此判定。 */
+  isDatabase?: boolean;
+  /** 后端按 ip:port 反查出的真实服务类型(如 "doris"/"datasophon-worker"),查不到时为空,前端回退按 dbSystem 展示。 */
+  serviceType?: string;
 }
 
 export interface TopologyEdge {

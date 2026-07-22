@@ -1,4 +1,5 @@
 import type { ProLayoutProps } from '@ant-design/pro-components';
+import { LOGO_URL } from './publicPath';
 
 /**
  * @name
@@ -14,7 +15,7 @@ const Settings: ProLayoutProps & {
   fixSiderbar: true,
   colorWeak: false,
   title: 'DataSophon',
-  logo: '/logo.svg',
+  logo: LOGO_URL,
   iconfontUrl: '',
   token: {
     // 参见ts声明，demo 见文档，通过token 修改样式

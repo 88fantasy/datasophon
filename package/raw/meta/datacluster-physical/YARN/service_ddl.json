@@ -19,6 +19,7 @@
       "logFile": "logs/hadoop-yarn-resourcemanager-${ROOT.VosManager.__host__}.log",
       "serverPorts": [],
       "jmxPortParam": "rmJmxPort",
+      "portParams": ["rmJmxPort"],
       "runAs": {
         "user": "yarn",
         "group": "hadoop"
@@ -102,6 +103,7 @@
       "cardinality": "1+",
       "logFile": "logs/hadoop-yarn-nodemanager-${ROOT.VosManager.__host__}.log",
       "jmxPortParam": "nmJmxPort",
+      "portParams": ["nmJmxPort"],
       "runAs": {
         "user": "yarn",
         "group": "hadoop"
@@ -172,6 +174,7 @@
       "cardinality": "1",
       "logFile": "logs/hadoop-mapred-historyserver-${ROOT.VosManager.__host__}.log",
       "jmxPortParam": "historyServerJmxPort",
+      "portParams": ["historyServerJmxPort"],
       "runAs": {
         "user": "mapred",
         "group": "hadoop"
@@ -1089,6 +1092,7 @@
     {
       "enabled": true,
       "name": "rmJmxPort",
+      "port": true,
       "label": "ResourceManager监控端口",
       "description": "ResourceManager jmx_prometheus_javaagent 指标暴露端口",
       "required": true,
@@ -1101,6 +1105,7 @@
     {
       "enabled": true,
       "name": "nmJmxPort",
+      "port": true,
       "label": "NodeManager监控端口",
       "description": "NodeManager jmx_prometheus_javaagent 指标暴露端口",
       "required": true,
@@ -1113,6 +1118,7 @@
     {
       "enabled": true,
       "name": "historyServerJmxPort",
+      "port": true,
       "label": "HistoryServer监控端口",
       "description": "HistoryServer jmx_prometheus_javaagent 指标暴露端口",
       "required": true,
