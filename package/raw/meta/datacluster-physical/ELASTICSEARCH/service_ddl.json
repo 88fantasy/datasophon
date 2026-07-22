@@ -16,6 +16,7 @@
       "cardinality": "1+",
       "logFile": "logs/ddp_es.log",
       "serverPorts": [],
+      "portParams": ["http.port", "transport.port"],
       "runAs": {
         "user": "elastic",
         "group": "elastic"
@@ -104,6 +105,7 @@
       "logFile": "elasticsearch-exporter/logs/es_exporter-${ELASTICSEARCH.ElasticSearch.__hostIp__}.out",
       "serverPorts": [],
       "jmxPortParam": "esExporterPort",
+      "portParams": ["esExporterPort"],
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -177,6 +179,7 @@
         "templateName": "jvm.options.ftl",
         "includeParams": [
           "heapSize",
+          "otelJavaagentEnabled",
           "otelJavaagentPath"
         ]
       },
@@ -385,6 +388,18 @@
       "configType": "map",
       "type": "input",
       "defaultValue": "2g",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "name": "otelJavaagentEnabled",
+      "description": "Elasticsearch 9.x 当前存在 OTel Java Agent HelperInjector 兼容问题，确认兼容后再启用",
+      "label": "启用 OTel Java Agent",
+      "hidden": false,
+      "required": false,
+      "configType": "map",
+      "type": "switch",
+      "defaultValue": false,
       "configurableInWizard": true,
       "register": false
     },

@@ -110,6 +110,7 @@ func TestResolveRepoTypeAndDir(t *testing.T) {
 		{"docker 不支持", "docker/image.tar", "docker", "", false},
 		{"未知前缀", "conf/foo.yml", "", "", false},
 		{"无前缀单段", "foo.txt", "", "", false},
+		{"路径穿越", "raw/../../outside.txt", "", "", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -119,6 +120,55 @@ func TestResolveRepoTypeAndDir(t *testing.T) {
 			assert.Equal(t, c.wantOK, ok)
 		})
 	}
+}
+
+func TestUploadSpecificFiles_RejectsPathTraversalAndAbsolutePath(t *testing.T) {
+	tmpDir := t.TempDir()
+	outsidePath := filepath.Join(filepath.Dir(tmpDir), "outside.txt")
+	require.NoError(t, os.WriteFile(outsidePath, []byte("secret"), 0o644))
+	t.Cleanup(func() { _ = os.Remove(outsidePath) })
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("非法路径不应发起网络请求: %s %s", r.Method, r.URL.Path)
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{ProductPackagesPath: tmpDir, IsSuccessDelete: true}
+	success, fail := task.uploadSpecificFiles(server.URL, []string{
+		"raw/../../outside.txt",
+		outsidePath,
+	})
+
+	assert.Equal(t, 0, success)
+	assert.Equal(t, 2, fail)
+	_, err := os.Stat(outsidePath)
+	assert.NoError(t, err, "非法 --files 路径不能删除目录外文件")
+}
+
+func TestUploadSpecificFiles_RejectsSymlinkOutsideProductDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	rawDir := filepath.Join(tmpDir, "raw")
+	require.NoError(t, os.MkdirAll(rawDir, 0o755))
+	outsidePath := filepath.Join(filepath.Dir(tmpDir), "outside-symlink-target.txt")
+	require.NoError(t, os.WriteFile(outsidePath, []byte("secret"), 0o644))
+	t.Cleanup(func() { _ = os.Remove(outsidePath) })
+	linkPath := filepath.Join(rawDir, "linked.txt")
+	if err := os.Symlink(outsidePath, linkPath); err != nil {
+		t.Skipf("当前环境不支持符号链接: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("越界符号链接不应发起网络请求: %s %s", r.Method, r.URL.Path)
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{ProductPackagesPath: tmpDir, IsSuccessDelete: true}
+	success, fail := task.uploadSpecificFiles(server.URL, []string{"raw/linked.txt"})
+
+	assert.Equal(t, 0, success)
+	assert.Equal(t, 1, fail)
+	_, err := os.Stat(outsidePath)
+	assert.NoError(t, err, "越界符号链接不能删除目标文件")
 }
 
 // TestUploadSpecificFiles_RawFileForcesUploadRegardlessOfRemoteMd5 覆盖回归场景：--files

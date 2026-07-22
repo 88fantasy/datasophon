@@ -1,5 +1,6 @@
 package com.datasophon.worker.test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringWriter;
@@ -23,7 +24,7 @@ public class JvmOptionsTemplateTest {
     }
 
     @Test
-    public void rendersHeapSizeAndOtelJavaagent() throws Exception {
+    public void omitsOtelJavaagentByDefault() throws Exception {
         Configuration cfg = buildCfg();
         Template tpl = cfg.getTemplate("jvm.options.ftl");
         Map<String, Object> data = new HashMap<>();
@@ -35,6 +36,22 @@ public class JvmOptionsTemplateTest {
 
         assertTrue(options.contains("-Xms2g"));
         assertTrue(options.contains("-Xmx2g"));
+        assertFalse(options.contains("-javaagent:"));
+        assertFalse(options.contains("-Dotel.service.name=elasticsearch"));
+    }
+
+    @Test
+    public void rendersOtelJavaagentWhenExplicitlyEnabled() throws Exception {
+        Configuration cfg = buildCfg();
+        Template tpl = cfg.getTemplate("jvm.options.ftl");
+        Map<String, Object> data = new HashMap<>();
+        data.put("heapSize", "2g");
+        data.put("otelJavaagentEnabled", true);
+        data.put("otelJavaagentPath", "/data/install_datasophon/elasticsearch/otel/opentelemetry-javaagent.jar");
+        StringWriter out = new StringWriter();
+        tpl.process(data, out);
+        String options = out.toString();
+
         // ES 没有内建 OTel SDK，走 javaagent 自动插桩；jar 复用 datasophon-worker 自带的 otel/
         // 拷贝（Phase F link hook），路径由 ${ROOT.ELASTICSEARCH.INSTALL_PATH} 在 DDL 层解析为绝对路径，
         // 避免依赖 ES 启动脚本的 cwd 假设

@@ -94,6 +94,22 @@ public class ApisixStandaloneTemplateTest {
     }
 
     @Test
+    public void rendersStringPortValuesWithoutNumericFormattingErrors() throws Exception {
+        Map<String, Object> configData = configData();
+        configData.put("apisixPort", "9080");
+        configData.put("apisixPrometheusPort", "9091");
+        Map<String, Object> routeData = routeData();
+        routeData.put("apisixUpstreamPort", "8080");
+
+        String config = render(buildCfg(), "apisix-config.ftl", configData);
+        String routes = render(buildCfg(), "apisix-routes.ftl", routeData);
+
+        assertTrue(config.contains("node_listen: 9080"));
+        assertTrue(config.contains("port: 9091"));
+        assertTrue(routes.contains("'192.168.10.135:8080': 1"));
+    }
+
+    @Test
     public void standaloneDdlUsesCustomTemplatesAndMapParameters() throws Exception {
         String ddl = Files.readString(Path.of("..", "package", "raw", "meta", "datacluster-physical", "APISIX", "service_ddl.json"));
 
@@ -104,11 +120,12 @@ public class ApisixStandaloneTemplateTest {
         assertFalse(ddl.contains("apisixEtcdNodeList"));
         assertFalse(ddl.contains("apisixAdminKey"));
         assertFalse(ddl.contains("apisixAllowAdmin"));
-        assertTrue(ddl.contains("\"name\": \"apisixPort\",\n      \"key\": \"apisixPort\""));
+        assertTrue(ddl.contains("\"name\": \"apisixPort\""));
+        assertTrue(ddl.contains("\"portParams\": [\"apisixPort\", \"apisixPrometheusPort\"]"));
         assertTrue(ddl.contains("\"name\": \"apisixRouteUri\",\n      \"key\": \"apisixRouteUri\""));
         assertTrue(ddl.contains("\"name\": \"apisixUpstreamHost\",\n      \"key\": \"apisixUpstreamHost\""));
         assertTrue(ddl.contains("\"name\": \"apisixUpstreamPort\",\n      \"key\": \"apisixUpstreamPort\""));
         assertTrue(ddl.contains("\"name\": \"apisixPrometheusAddr\",\n      \"key\": \"apisixPrometheusAddr\""));
-        assertTrue(ddl.contains("\"name\": \"apisixPrometheusPort\",\n      \"key\": \"apisixPrometheusPort\""));
+        assertTrue(ddl.contains("\"name\": \"apisixPrometheusPort\""));
     }
 }

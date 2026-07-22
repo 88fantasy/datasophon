@@ -17,6 +17,7 @@
       "logFile": "api-server/logs/dolphinscheduler-api.log",
       "serverPorts": [],
       "jmxPortParam": "apiServerPort",
+      "portParams": ["apiServerPort"],
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -120,6 +121,7 @@
       "logFile": "master-server/logs/dolphinscheduler-master.log",
       "serverPorts": [],
       "jmxPortParam": "masterServerPort",
+      "portParams": ["masterServerPort"],
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -227,6 +229,7 @@
       "logFile": "worker-server/logs/dolphinscheduler-worker.log",
       "serverPorts": [],
       "jmxPortParam": "workerServerPort",
+      "portParams": ["workerServerPort"],
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -336,6 +339,7 @@
       "logFile": "alert-server/logs/dolphinscheduler-alert.log",
       "serverPorts": [],
       "jmxPortParam": "alertServerPort",
+      "portParams": ["alertServerPort", "alert.rpc.port"],
       "runAs": {},
       "startRunner": {
         "timeout": "60",

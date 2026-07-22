@@ -19,6 +19,7 @@
       "logFile": "logs/hivemetastore.out",
       "serverPorts": [],
       "jmxPortParam": "hiveMetaStoreJmxPort",
+      "portParams": ["hive.metastore.port", "hiveMetaStoreJmxPort"],
       "runAs": {
         "user": "hive",
         "group": "hadoop"
@@ -118,6 +119,7 @@
       "logFile": "logs/hiveserver2.out",
       "serverPorts": [],
       "jmxPortParam": "hiveServer2JmxPort",
+      "portParams": ["hive.server2.thrift.port", "hiveServer2JmxPort"],
       "runAs": {
         "user": "hive",
         "group": "hadoop"

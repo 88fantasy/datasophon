@@ -27,6 +27,7 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceInfo;
+import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
@@ -35,9 +36,10 @@ import com.datasophon.dao.enums.NeedRestart;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,10 +55,9 @@ import com.alibaba.fastjson2.JSON;
  * 全部端口（{@link #portsOf(ClusterServiceRoleInstanceEntity)}）。
  *
  * <p>端口来源分两层：① 角色组的实时配置（{@code ClusterServiceRoleGroupConfig#configJson}，用户在 Web UI
- * 改过并重启后的最新值，参数需在 {@code service_ddl.json} 里显式标注 {@code "port": true}）；② 读不到实时值
- * 时退回 ddl 声明的 {@code defaultValue}（内存态 {@link ServiceInfoMap}，无需查库）。这一双层推导与
- * {@code OtelScrapeConfigBuilder} 的 jmxPortParam 单端口推导同源，区别是这里按 {@code isPort} 标志枚举
- * 一个角色的全部端口，而不是只匹配一个固定参数名。
+ * 改过并重启后的最新值）；② 读不到实时值时退回 ddl 声明的 {@code defaultValue}（内存态
+ * {@link ServiceInfoMap}，无需查库）。角色与端口参数的归属由 role 的 {@code portParams} 显式声明，避免
+ * 同一服务下多个角色互相混入端口。
  */
 @Component
 public class ServiceInstancePortResolver {
@@ -96,32 +97,37 @@ public class ServiceInstancePortResolver {
      * serviceName，天然可命中前端 serviceIconFor 的关键字匹配），查不到时返回 {@code null}（由调用方
      * 保留原有兜底展示）。
      *
-     * <p>先按集群实例表精确反查（addr 命中集群某台主机时，逐个角色实例比对端口）；
-     * 未命中再查静态知名端口表（平台自身/外部基础设施）。
+     * <p>只有 addr 属于当前集群主机时才继续反查：先逐个角色实例比对端口，未命中再查静态知名端口表。
+     * 该约束避免把任意外部 {@code host:8080} 误识别为 datasophon-api。
      */
     public String resolveServiceType(Integer clusterId, String addr, String portValue) {
         Integer port = parsePort(portValue);
         if (port == null || StringUtils.isBlank(addr)) {
             return null;
         }
-        String byInstance = resolveByClusterInstance(clusterId, addr, port);
+        ClusterHostDO host = findClusterHost(clusterId, addr);
+        if (host == null) {
+            return null;
+        }
+        String byInstance = resolveByClusterInstance(clusterId, host, port);
         if (StringUtils.isNotBlank(byInstance)) {
             return byInstance;
         }
         return WELL_KNOWN_PORTS.get(port);
     }
 
-    private String resolveByClusterInstance(Integer clusterId, String addr, int port) {
-        if (clusterId == null) {
-            return null;
-        }
+    private ClusterHostDO findClusterHost(Integer clusterId, String addr) {
         ClusterHostDO host = hostService.getClusterHostByIp(addr);
         if (host == null) {
             host = hostService.getClusterHostByHostname(addr);
         }
-        if (host == null) {
+        if (host == null || !Objects.equals(clusterId, host.getClusterId())) {
             return null;
         }
+        return host;
+    }
+
+    private String resolveByClusterInstance(Integer clusterId, ClusterHostDO host, int port) {
         ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
         String clusterFrame = cluster == null ? null : cluster.getClusterFrame();
         if (StringUtils.isBlank(clusterFrame)) {
@@ -129,6 +135,9 @@ public class ServiceInstancePortResolver {
         }
         List<ClusterServiceRoleInstanceEntity> roles =
                 roleService.getServiceRoleListByHostnameAndClusterId(host.getHostname(), clusterId);
+        if (roles == null) {
+            return null;
+        }
         for (ClusterServiceRoleInstanceEntity role : roles) {
             for (RolePort rolePort : portsOf(clusterFrame, role)) {
                 if (rolePort.port() == port) {
@@ -155,21 +164,69 @@ public class ServiceInstancePortResolver {
         if (StringUtils.isAnyBlank(clusterFrame, role.getServiceName())) {
             return List.of();
         }
-        List<RolePort> live = livePortsFromConfig(role);
-        if (!live.isEmpty()) {
-            return live;
+        ServiceInfo serviceInfo = ServiceInfoMap.get(clusterFrame + Constants.UNDERLINE + role.getServiceName());
+        if (serviceInfo == null || serviceInfo.getParameters() == null) {
+            return List.of();
         }
-        return defaultPortsFromDdl(clusterFrame, role.getServiceName());
+        List<String> portParamNames = portParamNames(serviceInfo, role.getServiceRoleName());
+        if (portParamNames.isEmpty()) {
+            return List.of();
+        }
+        Map<String, ServiceConfig> ddlParams = new LinkedHashMap<>();
+        for (ServiceConfig param : serviceInfo.getParameters()) {
+            ddlParams.put(param.getName(), param);
+        }
+        Map<String, ServiceConfig> liveParams = liveParamsFromConfig(role);
+        Map<String, RolePort> ports = new LinkedHashMap<>();
+        for (String paramName : portParamNames) {
+            ServiceConfig ddlParam = ddlParams.get(paramName);
+            if (ddlParam == null) {
+                logger.warn("角色 {} 声明的端口参数 {} 不存在", role.getServiceRoleName(), paramName);
+                continue;
+            }
+            ServiceConfig liveParam = liveParams.get(paramName);
+            Object value = liveParam == null ? null : liveParam.getValue();
+            Integer port = value == null ? null : parsePort(String.valueOf(value));
+            if (port == null && ddlParam.getDefaultValue() != null) {
+                port = parsePort(String.valueOf(ddlParam.getDefaultValue()));
+            }
+            if (port != null) {
+                ports.put(paramName, new RolePort(paramName, ddlParam.getLabel(), port));
+            }
+        }
+        return List.copyOf(ports.values());
     }
 
-    private List<RolePort> livePortsFromConfig(ClusterServiceRoleInstanceEntity role) {
+    private List<String> portParamNames(ServiceInfo serviceInfo, String serviceRoleName) {
+        if (serviceInfo.getRoles() == null) {
+            return List.of();
+        }
+        for (ServiceRoleInfo roleInfo : serviceInfo.getRoles()) {
+            if (Objects.equals(serviceRoleName, roleInfo.getName())) {
+                if (roleInfo.getPortParams() != null) {
+                    return roleInfo.getPortParams();
+                }
+                // 兼容尚未补充 portParams 的单角色自定义服务。
+                if (serviceInfo.getRoles().size() == 1) {
+                    return serviceInfo.getParameters().stream()
+                            .filter(ServiceConfig::isPort)
+                            .map(ServiceConfig::getName)
+                            .toList();
+                }
+                return List.of();
+            }
+        }
+        return List.of();
+    }
+
+    private Map<String, ServiceConfig> liveParamsFromConfig(ClusterServiceRoleInstanceEntity role) {
         Integer roleGroupId = role.getRoleGroupId();
         if (roleGroupId == null) {
-            return List.of();
+            return Map.of();
         }
         ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
         if (config == null || StringUtils.isBlank(config.getConfigJson())) {
-            return List.of();
+            return Map.of();
         }
         if (NeedRestart.YES.equals(role.getNeedRestart())) {
             // 与 OtelScrapeConfigBuilder#livePortFromConfig 同样的已知局限：needRestart 是角色组级别的
@@ -177,60 +234,29 @@ public class ServiceInstancePortResolver {
             // 能做到的最接近实际监听端口的近似。
             Integer previousVersion = config.getConfigVersion() == null ? null : config.getConfigVersion() - 1;
             if (previousVersion == null || previousVersion < 1) {
-                return List.of();
+                return Map.of();
             }
             config = roleGroupConfigService.getConfigByRoleGroupIdAndVersion(roleGroupId, previousVersion);
             if (config == null || StringUtils.isBlank(config.getConfigJson())) {
-                return List.of();
+                return Map.of();
             }
         }
-        return extractPorts(role.getServiceRoleName(), config.getConfigJson());
+        return extractParams(role.getServiceRoleName(), config.getConfigJson());
     }
 
-    private List<RolePort> extractPorts(String serviceRoleName, String configJson) {
-        List<RolePort> ports = new ArrayList<>();
+    private Map<String, ServiceConfig> extractParams(String serviceRoleName, String configJson) {
+        Map<String, ServiceConfig> params = new LinkedHashMap<>();
         try {
             List<ServiceConfig> configs = JSON.parseArray(configJson, ServiceConfig.class);
             for (ServiceConfig config : configs) {
-                if (!config.isPort() || config.getValue() == null) {
-                    continue;
-                }
-                Integer port = parsePort(String.valueOf(config.getValue()));
-                if (port != null) {
-                    ports.add(new RolePort(config.getName(), config.getLabel(), port));
+                if (StringUtils.isNotBlank(config.getName())) {
+                    params.put(config.getName(), config);
                 }
             }
         } catch (Exception e) {
             logger.warn("解析角色 {} 的实时配置端口失败，退回 ddl 参数默认值", serviceRoleName, e);
         }
-        return ports;
-    }
-
-    /**
-     * configJson 里没有可用端口时的兜底：直接读 ddl 声明的 defaultValue（内存态 ServiceInfoMap，无需查库）。
-     *
-     * <p>已知局限：{@code ServiceInfo.parameters} 是服务级别的扁平列表，不区分角色（如 DORIS 的
-     * http_port/query_port 属于 DorisFE、be_port/webserver_port 属于 DorisBE，但都在同一个数组里）。
-     * 该兜底只在角色组配置缺失时触发（老集群升级未回填 / roleGroupId 为空等防御性场景），届时会把
-     * 同服务下其它角色的端口也一并列出——对拓扑反查而言仍能定位到正确的服务（只是角色类型不精确），
-     * 对实例列表展示则可能多列出几个不属于该角色的端口，属已知且可接受的降级行为。
-     */
-    private List<RolePort> defaultPortsFromDdl(String clusterFrame, String serviceName) {
-        ServiceInfo serviceInfo = ServiceInfoMap.get(clusterFrame + Constants.UNDERLINE + serviceName);
-        if (serviceInfo == null || serviceInfo.getParameters() == null) {
-            return List.of();
-        }
-        List<RolePort> ports = new ArrayList<>();
-        for (ServiceConfig param : serviceInfo.getParameters()) {
-            if (!param.isPort() || param.getDefaultValue() == null) {
-                continue;
-            }
-            Integer port = parsePort(String.valueOf(param.getDefaultValue()));
-            if (port != null) {
-                ports.add(new RolePort(param.getName(), param.getLabel(), port));
-            }
-        }
-        return ports;
+        return params;
     }
 
     private static Integer parsePort(String raw) {

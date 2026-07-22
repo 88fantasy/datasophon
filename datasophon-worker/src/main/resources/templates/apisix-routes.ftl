@@ -2,7 +2,7 @@ upstreams:
   - id: 1
     type: roundrobin
     nodes:
-      '${apisixUpstreamHost?replace("'", "''")}:${apisixUpstreamPort}': 1
+      '${apisixUpstreamHost?replace("'", "''")}:${apisixUpstreamPort?is_number?then(apisixUpstreamPort?c, apisixUpstreamPort)}': 1
 
 routes:
   - id: 1

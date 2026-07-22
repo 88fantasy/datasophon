@@ -492,4 +492,3 @@ mysql -h127.0.0.1 -P9030 -uroot -e "
 ```
 
 **实测结果（2026-07-22）**：`nacos` 1992 条 span，持续增长；`elasticsearch` 0 条（HelperInjector 注入失败，已知限制）；`doris-fe`/DS 四角色/`apisix` 均未在本轮重新核实（DS/APISIX 沿用此前 F3/F4 验证记录，`doris-fe` 因 F2 未部署预期仍为 0）。
-

@@ -191,7 +191,11 @@ func (t *UploadRegistry) doRun(exec executor.Executor) error {
 //
 // ok=false 时 repoType 仍可能非空（如 "docker"），供调用方给出更精确的错误提示。
 func resolveRepoTypeAndDir(relFile string) (repoType string, directory string, ok bool) {
-	parts := strings.Split(filepath.ToSlash(relFile), "/")
+	cleanFile := filepath.Clean(filepath.FromSlash(relFile))
+	if filepath.IsAbs(cleanFile) || cleanFile == ".." || strings.HasPrefix(cleanFile, ".."+string(filepath.Separator)) {
+		return "", "", false
+	}
+	parts := strings.Split(filepath.ToSlash(cleanFile), "/")
 	if len(parts) < 2 {
 		return "", "", false
 	}
@@ -224,8 +228,13 @@ func resolveRepoTypeAndDir(relFile string) (repoType string, directory string, o
 func (t *UploadRegistry) uploadSpecificFiles(baseURL string, files []string) (int, int) {
 	success, fail := 0, 0
 	for _, relFile := range files {
-		relFile = strings.TrimPrefix(filepath.ToSlash(relFile), "/")
-		fullPath := filepath.Join(t.ProductPackagesPath, relFile)
+		cleanRelFile, fullPath, err := resolveSpecificFile(t.ProductPackagesPath, relFile)
+		if err != nil {
+			slog.Error("指定文件路径非法或不存在", "file", relFile, "err", err)
+			fail++
+			continue
+		}
+		relFile = cleanRelFile
 		info, err := os.Stat(fullPath)
 		if err != nil {
 			slog.Error("指定文件不存在", "file", relFile, "err", err)
@@ -264,6 +273,52 @@ func (t *UploadRegistry) uploadSpecificFiles(baseURL string, files []string) (in
 		}
 	}
 	return success, fail
+}
+
+// resolveSpecificFile 校验 --files 路径只能指向 ProductPackagesPath 内的现有文件。
+// 除了拒绝绝对路径和 .. 穿越，还解析符号链接后的真实路径，避免通过目录或文件 symlink
+// 读取并上传安装包目录之外的文件。
+func resolveSpecificFile(basePath, requested string) (string, string, error) {
+	if strings.TrimSpace(requested) == "" || filepath.IsAbs(requested) {
+		return "", "", fmt.Errorf("路径必须是非空相对路径")
+	}
+	cleanRel := filepath.Clean(filepath.FromSlash(requested))
+	if cleanRel == "." || cleanRel == ".." || strings.HasPrefix(cleanRel, ".."+string(filepath.Separator)) {
+		return "", "", fmt.Errorf("路径不能包含越出安装包目录的 ..")
+	}
+
+	baseAbs, err := filepath.Abs(basePath)
+	if err != nil {
+		return "", "", fmt.Errorf("解析安装包目录失败: %w", err)
+	}
+	fullPath := filepath.Join(baseAbs, cleanRel)
+	if err := ensurePathWithin(baseAbs, fullPath); err != nil {
+		return "", "", err
+	}
+
+	realBase, err := filepath.EvalSymlinks(baseAbs)
+	if err != nil {
+		return "", "", fmt.Errorf("解析安装包目录真实路径失败: %w", err)
+	}
+	realFile, err := filepath.EvalSymlinks(fullPath)
+	if err != nil {
+		return "", "", err
+	}
+	if err := ensurePathWithin(realBase, realFile); err != nil {
+		return "", "", fmt.Errorf("符号链接越出安装包目录: %w", err)
+	}
+	return filepath.ToSlash(cleanRel), fullPath, nil
+}
+
+func ensurePathWithin(basePath, candidatePath string) error {
+	rel, err := filepath.Rel(basePath, candidatePath)
+	if err != nil {
+		return fmt.Errorf("校验路径边界失败: %w", err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return fmt.Errorf("路径越出安装包目录")
+	}
+	return nil
 }
 
 // repositoryUploadBatch 遍历 productPackagesPath 下的子目录，按仓库类型上传。

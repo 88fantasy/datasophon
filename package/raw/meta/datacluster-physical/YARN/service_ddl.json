@@ -19,6 +19,7 @@
       "logFile": "logs/hadoop-yarn-resourcemanager-${ROOT.VosManager.__host__}.log",
       "serverPorts": [],
       "jmxPortParam": "rmJmxPort",
+      "portParams": ["rmJmxPort"],
       "runAs": {
         "user": "yarn",
         "group": "hadoop"
@@ -102,6 +103,7 @@
       "cardinality": "1+",
       "logFile": "logs/hadoop-yarn-nodemanager-${ROOT.VosManager.__host__}.log",
       "jmxPortParam": "nmJmxPort",
+      "portParams": ["nmJmxPort"],
       "runAs": {
         "user": "yarn",
         "group": "hadoop"
@@ -172,6 +174,7 @@
       "cardinality": "1",
       "logFile": "logs/hadoop-mapred-historyserver-${ROOT.VosManager.__host__}.log",
       "jmxPortParam": "historyServerJmxPort",
+      "portParams": ["historyServerJmxPort"],
       "runAs": {
         "user": "mapred",
         "group": "hadoop"

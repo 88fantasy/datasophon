@@ -1,5 +1,6 @@
 -Xms${heapSize}
 -Xmx${heapSize}
+<#if otelJavaagentEnabled?? && otelJavaagentEnabled?string == "true">
 -javaagent:${otelJavaagentPath}
 -Dotel.service.name=elasticsearch
 -Dotel.exporter.otlp.endpoint=http://localhost:4317
@@ -7,3 +8,4 @@
 -Dotel.traces.exporter=otlp
 -Dotel.metrics.exporter=none
 -Dotel.logs.exporter=none
+</#if>

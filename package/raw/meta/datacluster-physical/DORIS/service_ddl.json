@@ -44,6 +44,7 @@
       "logFile": "fe/log/fe.log",
       "serverPorts": [],
       "jmxPortParam": "http_port",
+      "portParams": ["http_port", "rpc_port", "query_port"],
       "runAs": {},
       "startRunner": {
         "timeout": "600",
@@ -123,6 +124,7 @@
       "logFile": "be/log/be.INFO",
       "serverPorts": [],
       "jmxPortParam": "webserver_port",
+      "portParams": ["be_port", "webserver_port", "brpc_port"],
       "runAs": {},
       "startRunner": {
         "timeout": "600",

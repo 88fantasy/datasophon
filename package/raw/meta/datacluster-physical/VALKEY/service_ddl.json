@@ -23,6 +23,7 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/master.log",
+      "portParams": ["valkeyMasterPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control_valkey.sh",
@@ -56,6 +57,7 @@
       "cardinality": "1",
       "logFile": "redis-exporter/logs/exporter.log",
       "jmxPortParam": "valkeyExporterPort",
+      "portParams": ["valkeyExporterPort"],
       "sortNum": 2,
       "startRunner": {
         "timeout": "60",

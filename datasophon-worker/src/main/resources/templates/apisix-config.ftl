@@ -4,7 +4,7 @@ deployment:
     config_provider: yaml
 
 apisix:
-  node_listen: ${apisixPort}
+  node_listen: ${apisixPort?is_number?then(apisixPort?c, apisixPort)}
   enable_admin: false
 
 # 中间件链路追踪接入（Phase F）：APISIX 官方默认插件清单（对齐 apisix/cli/config.lua 的 plugins 数组，
@@ -121,5 +121,5 @@ plugin_attr:
   prometheus:
     export_addr:
       ip: ${apisixPrometheusAddr?json_string}
-      port: ${apisixPrometheusPort}
+      port: ${apisixPrometheusPort?is_number?then(apisixPrometheusPort?c, apisixPrometheusPort)}
     enable_export_server: true

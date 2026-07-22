@@ -17,6 +17,7 @@
       },
       "cardinality": "1+",
       "jmxPortParam": "kyuubi.metrics.prometheus.port",
+      "portParams": ["kyuubi.metrics.prometheus.port"],
       "logFile": "logs/kyuubi-hive-org.apache.kyuubi.server.KyuubiServer-${host}.out",
       "startRunner": {
         "timeout": "60",

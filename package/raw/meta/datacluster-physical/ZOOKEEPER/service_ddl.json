@@ -14,6 +14,7 @@
       "cardinality": "1+",
       "logFile": "logs/zookeeper-root-server-${host}.out",
       "jmxPortParam": "metricsProvider.httpPort",
+      "portParams": ["clientPort", "metricsProvider.httpPort"],
       "startRunner": {
         "timeout": "60",
         "program": "bin/zkServer.sh",
