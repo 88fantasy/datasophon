@@ -95,6 +95,23 @@
             "text": "export JAVA_HOME=$JAVA_HOME17",
             "source": "fe/bin/start_fe.sh"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "fe/otel/opentelemetry-javaagent.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_TOOL_OPTIONS=\"-javaagent:$(pwd)/fe/otel/opentelemetry-javaagent.jar -Dotel.service.name=doris-fe -Dotel.exporter.otlp.endpoint=http://localhost:4317 -Dotel.exporter.otlp.protocol=grpc -Dotel.traces.exporter=otlp -Dotel.metrics.exporter=none -Dotel.logs.exporter=none\"",
+            "source": "fe/bin/start_fe.sh"
+          }
         }
       ]
     },

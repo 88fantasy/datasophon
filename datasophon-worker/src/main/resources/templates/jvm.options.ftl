@@ -1,2 +1,9 @@
 -Xms${heapSize}
 -Xmx${heapSize}
+-javaagent:${otelJavaagentPath}
+-Dotel.service.name=elasticsearch
+-Dotel.exporter.otlp.endpoint=http://localhost:4317
+-Dotel.exporter.otlp.protocol=grpc
+-Dotel.traces.exporter=otlp
+-Dotel.metrics.exporter=none
+-Dotel.logs.exporter=none

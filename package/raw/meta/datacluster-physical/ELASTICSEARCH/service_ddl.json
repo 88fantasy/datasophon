@@ -84,6 +84,14 @@
             "from": "script/control_es.sh",
             "templateId": "2003757981428420609"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
+          }
         }
       ]
     },
@@ -163,12 +171,13 @@
       {
         "filename": "jvm.options",
         "configFormat": "custom",
-        "outputDirectory": "",
+        "outputDirectory": "config",
         "templateType": "DEFAULT",
         "templateId": 2003724231525076993,
         "templateName": "jvm.options.ftl",
         "includeParams": [
-          "heapSize"
+          "heapSize",
+          "otelJavaagentPath"
         ]
       },
       {
@@ -376,6 +385,18 @@
       "configType": "map",
       "type": "input",
       "defaultValue": "2g",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "name": "otelJavaagentPath",
+      "description": "",
+      "label": "OTel Java Agent 路径",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${ROOT.ELASTICSEARCH.INSTALL_PATH}/otel/opentelemetry-javaagent.jar",
       "configurableInWizard": true,
       "register": false
     },

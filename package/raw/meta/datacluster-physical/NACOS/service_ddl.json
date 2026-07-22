@@ -66,6 +66,23 @@
             "text": "export JAVA_HOME=$JAVA_HOME17",
             "source": "bin/startup.sh"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_TOOL_OPTIONS=\"-javaagent:$(pwd)/otel/opentelemetry-javaagent.jar -Dotel.service.name=nacos -Dotel.exporter.otlp.endpoint=http://localhost:4317 -Dotel.exporter.otlp.protocol=grpc -Dotel.traces.exporter=otlp -Dotel.metrics.exporter=none -Dotel.logs.exporter=none\"",
+            "source": "bin/startup.sh"
+          }
         }
       ]
     }
