@@ -9,6 +9,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getServiceSummary, getTraceTopology } from './service';
 import TopologyTab, { toGraphData } from './TopologyTab';
 
+vi.mock('@umijs/max', () => ({
+  useIntl: () => ({
+    formatMessage: ({
+      id,
+      defaultMessage,
+    }: {
+      id: string;
+      defaultMessage?: string;
+    }) => defaultMessage ?? id,
+  }),
+}));
+
 const { graphInstances } = vi.hoisted(() => ({
   graphInstances: [] as Array<{
     handlers: Record<string, (event: unknown) => void>;
@@ -391,9 +403,9 @@ describe('TopologyTab', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('查看 Traces')).toBeTruthy();
+      expect(screen.getByText('View traces')).toBeTruthy();
     });
-    fireEvent.click(screen.getByText('查看 Traces'));
+    fireEvent.click(screen.getByText('View traces'));
     expect(onShowTraces).toHaveBeenCalledWith('datasophon-api');
   });
 });

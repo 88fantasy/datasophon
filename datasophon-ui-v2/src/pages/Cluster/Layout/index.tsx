@@ -276,7 +276,7 @@ const ClusterLayout: React.FC = () => {
         icon: <FundProjectionScreenOutlined />,
         label: intl.formatMessage({
           id: 'menu.observability-collector',
-          defaultMessage: 'Collector 控制台',
+          defaultMessage: '链路跟踪',
         }),
       },
       {

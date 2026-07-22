@@ -63,6 +63,6 @@ export default {
   'menu.colony.manage': 'Cluster List',
   'menu.frame': 'Cluster Frameworks',
   'menu.host': 'Host Management',
-  'menu.observability-collector': 'Collector Console',
+  'menu.observability-collector': 'Distributed Tracing',
   'menu.user': 'User Management',
 };

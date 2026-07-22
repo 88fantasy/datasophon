@@ -1,20 +1,5 @@
 import { request } from '@umijs/max';
 
-export interface CollectorConfigField {
-  name: string;
-  label?: string;
-  description?: string;
-  required?: boolean;
-  type?: string;
-  value?: unknown;
-  defaultValue?: unknown;
-  hidden?: boolean;
-  configurableInWizard?: boolean;
-  minValue?: number;
-  maxValue?: number;
-  selectValue?: string[];
-}
-
 export interface CollectorSelfMetrics {
   queueSize: number;
   queueCapacity: number;
@@ -160,17 +145,6 @@ function cleanParams<T extends object>(params: T) {
   );
 }
 
-export function getCollectorConfig(clusterId: number) {
-  return request<ApiResult<CollectorConfigField[]>>(
-    '/observability/otelcol/config',
-    {
-      ...legacyRequestOptions,
-      method: 'GET',
-      params: { clusterId },
-    },
-  );
-}
-
 export function getCollectorMonitor(clusterId: number) {
   return request<ApiResult<CollectorNodeMetrics[]>>(
     '/observability/otelcol/monitor',
@@ -182,19 +156,6 @@ export function getCollectorMonitor(clusterId: number) {
   );
 }
 
-export function pushCollectorConfig(
-  clusterId: number,
-  hostname: string,
-  data: Record<string, string>,
-) {
-  return request<ApiResult<void>>('/observability/otelcol/push', {
-    ...legacyRequestOptions,
-    method: 'POST',
-    params: { clusterId, hostname },
-    data,
-  });
-}
-
 export function listTraces(params: TraceQueryParams) {
   return request<ApiResult<TraceRow[]>>('/observability/otelcol/traces', {
     ...legacyRequestOptions,
@@ -204,11 +165,14 @@ export function listTraces(params: TraceQueryParams) {
 }
 
 export function getTraceDetail(clusterId: number, traceId: string) {
-  return request<ApiResult<SpanNode[]>>('/observability/otelcol/traces/detail', {
-    ...legacyRequestOptions,
-    method: 'GET',
-    params: { clusterId, traceId },
-  });
+  return request<ApiResult<SpanNode[]>>(
+    '/observability/otelcol/traces/detail',
+    {
+      ...legacyRequestOptions,
+      method: 'GET',
+      params: { clusterId, traceId },
+    },
+  );
 }
 
 export function listTraceServices(
@@ -216,11 +180,14 @@ export function listTraceServices(
   start: number,
   end: number,
 ) {
-  return request<ApiResult<string[]>>('/observability/otelcol/traces/services', {
-    ...legacyRequestOptions,
-    method: 'GET',
-    params: { clusterId, start, end },
-  });
+  return request<ApiResult<string[]>>(
+    '/observability/otelcol/traces/services',
+    {
+      ...legacyRequestOptions,
+      method: 'GET',
+      params: { clusterId, start, end },
+    },
+  );
 }
 
 export function getTraceTopology(

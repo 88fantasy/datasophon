@@ -1,13 +1,13 @@
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { useIntl } from '@umijs/max';
 import { Button, DatePicker, Form, Input, Select, Space, Tag } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-import TraceDetailDrawer, { formatDuration } from './TraceDetailDrawer';
-import { type TraceRow, listTraceServices, listTraces } from './service';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useObservabilityStyles } from './observabilityStyles';
+import { listTraceServices, listTraces, type TraceRow } from './service';
+import TraceDetailDrawer, { formatDuration } from './TraceDetailDrawer';
 
 interface TracesTabProps {
   clusterId: number;
@@ -48,6 +48,12 @@ const TracesTab: React.FC<TracesTabProps> = ({
   serviceName,
   onServiceNameConsumed,
 }) => {
+  const intl = useIntl();
+  const t = useCallback(
+    (id: string, defaultMessage: string) =>
+      intl.formatMessage({ id, defaultMessage }),
+    [intl],
+  );
   const { styles } = useObservabilityStyles();
   const actionRef = useRef<ActionType>(null);
   const [form] = Form.useForm<TraceFilters>();
@@ -60,9 +66,11 @@ const TracesTab: React.FC<TracesTabProps> = ({
 
   useEffect(() => {
     const [start, end] = filters.timeRange;
-    listTraceServices(clusterId, toSeconds(start), toSeconds(end)).then((result) => {
-      setServices(result.data ?? []);
-    });
+    listTraceServices(clusterId, toSeconds(start), toSeconds(end)).then(
+      (result) => {
+        setServices(result.data ?? []);
+      },
+    );
   }, [clusterId, filters.timeRange]);
 
   useEffect(() => {
@@ -78,14 +86,15 @@ const TracesTab: React.FC<TracesTabProps> = ({
   const columns = useMemo<ProColumns<TraceRow>[]>(
     () => [
       {
-        title: 'Start time',
+        title: t('pages.observabilityCollector.startTime', 'Start time'),
         dataIndex: 'timestamp',
         width: 180,
         search: false,
-        renderText: (value) => dayjs.utc(value).local().format('MM-DD HH:mm:ss.SSS'),
+        renderText: (value) =>
+          dayjs.utc(value).local().format('MM-DD HH:mm:ss.SSS'),
       },
       {
-        title: 'Service',
+        title: t('pages.observabilityCollector.service', 'Service'),
         dataIndex: 'serviceName',
         width: 160,
         search: false,
@@ -94,7 +103,7 @@ const TracesTab: React.FC<TracesTabProps> = ({
         ),
       },
       {
-        title: 'Root span',
+        title: t('pages.observabilityCollector.rootSpan', 'Root span'),
         dataIndex: 'spanName',
         search: false,
         render: (_, record) => (
@@ -102,7 +111,7 @@ const TracesTab: React.FC<TracesTabProps> = ({
         ),
       },
       {
-        title: 'TraceID',
+        title: t('pages.observabilityCollector.traceId', 'TraceID'),
         dataIndex: 'traceId',
         width: 220,
         search: false,
@@ -118,14 +127,14 @@ const TracesTab: React.FC<TracesTabProps> = ({
         ),
       },
       {
-        title: 'Spans',
+        title: t('pages.observabilityCollector.spans', 'Spans'),
         dataIndex: 'spanCount',
         width: 90,
         search: false,
         render: (_, record) => <Tag color="blue">{record.spanCount}</Tag>,
       },
       {
-        title: 'Duration',
+        title: t('pages.observabilityCollector.duration', 'Duration'),
         dataIndex: 'duration',
         width: 190,
         search: false,
@@ -143,14 +152,14 @@ const TracesTab: React.FC<TracesTabProps> = ({
         ),
       },
       {
-        title: 'Status',
+        title: t('pages.observabilityCollector.status', 'Status'),
         dataIndex: 'status',
         width: 100,
         search: false,
         render: (_, record) => statusTag(record.status),
       },
     ],
-    [styles],
+    [styles, t],
   );
 
   const applyFilters = (values: TraceFilters) => {
@@ -174,18 +183,33 @@ const TracesTab: React.FC<TracesTabProps> = ({
         onFinish={applyFilters}
         className={styles.filterBar}
       >
-        <Form.Item label="Time range" name="timeRange" style={{ marginBottom: 0 }}>
+        <Form.Item
+          label={t('pages.observabilityCollector.timeRange', 'Time range')}
+          name="timeRange"
+          style={{ marginBottom: 0 }}
+        >
           <RangePicker showTime allowClear={false} />
         </Form.Item>
-        <Form.Item label="Service" name="serviceName" style={{ marginBottom: 0 }}>
+        <Form.Item
+          label={t('pages.observabilityCollector.service', 'Service')}
+          name="serviceName"
+          style={{ marginBottom: 0 }}
+        >
           <Select
             allowClear
             showSearch
             style={{ width: 180 }}
-            options={services.map((service) => ({ label: service, value: service }))}
+            options={services.map((service) => ({
+              label: service,
+              value: service,
+            }))}
           />
         </Form.Item>
-        <Form.Item label="Status" name="status" style={{ marginBottom: 0 }}>
+        <Form.Item
+          label={t('pages.observabilityCollector.status', 'Status')}
+          name="status"
+          style={{ marginBottom: 0 }}
+        >
           <Select
             allowClear
             style={{ width: 130 }}
@@ -195,16 +219,36 @@ const TracesTab: React.FC<TracesTabProps> = ({
             ]}
           />
         </Form.Item>
-        <Form.Item label="Span name" name="spanName" style={{ marginBottom: 0 }}>
-          <Input placeholder="Search span name" style={{ width: 220 }} />
+        <Form.Item
+          label={t('pages.observabilityCollector.spanName', 'Span name')}
+          name="spanName"
+          style={{ marginBottom: 0 }}
+        >
+          <Input
+            placeholder={t(
+              'pages.observabilityCollector.spanNameSearchPlaceholder',
+              'Search span name',
+            )}
+            style={{ width: 220 }}
+          />
         </Form.Item>
-        <Form.Item label="TraceID" name="traceId" style={{ marginBottom: 0 }}>
-          <Input placeholder="Full TraceID" style={{ width: 240 }} />
+        <Form.Item
+          label={t('pages.observabilityCollector.traceId', 'TraceID')}
+          name="traceId"
+          style={{ marginBottom: 0 }}
+        >
+          <Input
+            placeholder={t(
+              'pages.observabilityCollector.traceIdFullPlaceholder',
+              'Full TraceID',
+            )}
+            style={{ width: 240 }}
+          />
         </Form.Item>
         <Form.Item style={{ marginBottom: 0 }}>
           <Space>
             <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-              Query
+              {t('pages.observabilityCollector.query', 'Query')}
             </Button>
             <Button
               icon={<ReloadOutlined />}
@@ -215,24 +259,31 @@ const TracesTab: React.FC<TracesTabProps> = ({
                 applyFilters(nextFilters);
               }}
             >
-              Reset
+              {t('pages.observabilityCollector.reset', 'Reset')}
             </Button>
           </Space>
         </Form.Item>
       </Form>
       <div className={styles.quickBar}>
-        <span style={{ color: '#8c8c8c', fontSize: 12 }}>Quick:</span>
+        <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+          {t('pages.observabilityCollector.quick', 'Quick')}:
+        </span>
         <Button size="small" onClick={() => setPreset(15, 'minute')}>
-          Last 15m
+          {t('pages.observabilityCollector.presetLast15m', 'Last 15m')}
         </Button>
-        <Button size="small" type="primary" ghost onClick={() => setPreset(1, 'hour')}>
-          Last 1h
+        <Button
+          size="small"
+          type="primary"
+          ghost
+          onClick={() => setPreset(1, 'hour')}
+        >
+          {t('pages.observabilityCollector.presetLast1h', 'Last 1h')}
         </Button>
         <Button size="small" onClick={() => setPreset(6, 'hour')}>
-          Last 6h
+          {t('pages.observabilityCollector.presetLast6h', 'Last 6h')}
         </Button>
         <Button size="small" onClick={() => setPreset(24, 'hour')}>
-          Last 24h
+          {t('pages.observabilityCollector.presetLast24h', 'Last 24h')}
         </Button>
       </div>
       <ProTable<TraceRow>

@@ -5,9 +5,7 @@ import { useContext, useState } from 'react';
 
 import ClusterContext from '@/context/ClusterContext';
 
-import ConfigTab from './ConfigTab';
 import LogsTab from './LogsTab';
-import MonitorTab from './MonitorTab';
 import TopologyTab from './TopologyTab';
 import TracesTab from './TracesTab';
 
@@ -15,37 +13,16 @@ const ObservabilityCollector: React.FC = () => {
   const intl = useIntl();
   const cluster = useContext(ClusterContext);
   const clusterId = cluster?.clusterId ?? 0;
-  const [activeTab, setActiveTab] = useState('config');
+  const [activeTab, setActiveTab] = useState('topology');
   const [linkedTraceId, setLinkedTraceId] = useState<string>();
   const [linkedServiceName, setLinkedServiceName] = useState<string>();
 
   return (
-    <PageContainer
-      title={intl.formatMessage({
-        id: 'pages.observabilityCollector.title',
-        defaultMessage: 'Collector console',
-      })}
-    >
+    <PageContainer title={false}>
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         items={[
-          {
-            key: 'config',
-            label: intl.formatMessage({
-              id: 'pages.observabilityCollector.config',
-              defaultMessage: 'Configuration',
-            }),
-            children: <ConfigTab clusterId={clusterId} />,
-          },
-          {
-            key: 'monitor',
-            label: intl.formatMessage({
-              id: 'pages.observabilityCollector.monitor',
-              defaultMessage: 'Monitoring',
-            }),
-            children: <MonitorTab clusterId={clusterId} />,
-          },
           {
             key: 'topology',
             label: intl.formatMessage({

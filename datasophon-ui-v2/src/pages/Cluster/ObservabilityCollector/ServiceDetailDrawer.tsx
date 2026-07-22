@@ -1,3 +1,4 @@
+import { useIntl } from '@umijs/max';
 import { Button, Drawer, Empty, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
@@ -34,6 +35,9 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
   onClose,
   onShowTraces,
 }) => {
+  const intl = useIntl();
+  const t = (id: string, defaultMessage: string) =>
+    intl.formatMessage({ id, defaultMessage });
   const [summary, setSummary] = useState<ServiceSummary>();
   const [loading, setLoading] = useState(false);
 
@@ -71,12 +75,20 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
       ? (previous.errorCount / previous.spanCount) * 100
       : 0;
 
+  const requestCountLabel = t(
+    'pages.observabilityCollector.requestCount',
+    'Request count',
+  );
+  const errorCountLabel = t(
+    'pages.observabilityCollector.errorCountMetric',
+    'Error count',
+  );
   const seriesData: TimeSeriesPoint[] = (summary?.series ?? []).flatMap(
     (point) => {
       const time = dayjs.utc(point.time).valueOf();
       return [
-        { time, value: point.spanCount, series: '请求量' },
-        { time, value: point.errorCount, series: '错误数' },
+        { time, value: point.spanCount, series: requestCountLabel },
+        { time, value: point.errorCount, series: errorCountLabel },
       ];
     },
   );
@@ -92,14 +104,17 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
       extra={
         serviceName && (
           <Button size="small" onClick={() => onShowTraces(serviceName)}>
-            查看 Traces
+            {t('pages.observabilityCollector.viewTraces', 'View traces')}
           </Button>
         )
       }
     >
       <Spin spinning={loading}>
         {!current ? (
-          <Empty style={{ padding: '40px 0' }} description="暂无数据" />
+          <Empty
+            style={{ padding: '40px 0' }}
+            description={t('pages.observabilityCollector.noData', 'No data')}
+          />
         ) : (
           <>
             <div
@@ -111,19 +126,22 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
               }}
             >
               <StatPanel
-                title="请求量"
+                title={requestCountLabel}
                 value={current.spanCount}
                 changeRatio={ratio(current.spanCount, previous?.spanCount ?? 0)}
               />
               <StatPanel
-                title="调用频率"
+                title={t('pages.observabilityCollector.callRate', 'Call rate')}
                 value={qps}
                 suffix="qps"
                 precision={2}
                 changeRatio={ratio(qps, previousQps)}
               />
               <StatPanel
-                title="错误率"
+                title={t(
+                  'pages.observabilityCollector.errorRate',
+                  'Error rate',
+                )}
                 value={errorRate}
                 suffix="%"
                 precision={1}
@@ -131,7 +149,10 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
                 changeRatio={ratio(errorRate, previousErrorRate)}
               />
               <StatPanel
-                title="平均响应耗时"
+                title={t(
+                  'pages.observabilityCollector.avgResponseTime',
+                  'Avg response time',
+                )}
                 value={current.avgDurationNs}
                 formatter={formatDuration}
                 changeRatio={ratio(
@@ -140,7 +161,10 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
                 )}
               />
               <StatPanel
-                title="P99 耗时"
+                title={t(
+                  'pages.observabilityCollector.p99Duration',
+                  'P99 duration',
+                )}
                 value={current.p99DurationNs}
                 formatter={formatDuration}
                 changeRatio={ratio(
@@ -149,7 +173,10 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
                 )}
               />
               <StatPanel
-                title="最大调用延时"
+                title={t(
+                  'pages.observabilityCollector.maxLatency',
+                  'Max latency',
+                )}
                 value={current.maxDurationNs}
                 formatter={formatDuration}
                 changeRatio={ratio(
@@ -158,7 +185,14 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
                 )}
               />
             </div>
-            <TimeSeriesPanel title="调用概况" data={seriesData} height={200} />
+            <TimeSeriesPanel
+              title={t(
+                'pages.observabilityCollector.callOverview',
+                'Call overview',
+              )}
+              data={seriesData}
+              height={200}
+            />
           </>
         )}
       </Spin>

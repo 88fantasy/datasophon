@@ -16,6 +16,7 @@ import {
   register,
   subStyleProps,
 } from '@antv/g6';
+import { useIntl } from '@umijs/max';
 import {
   Alert,
   Button,
@@ -29,7 +30,7 @@ import {
   Spin,
 } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useObservabilityStyles } from './observabilityStyles';
 import ServiceDetailDrawer from './ServiceDetailDrawer';
 import { getTraceTopology, type TopologyGraph } from './service';
@@ -142,7 +143,9 @@ export function toGraphData(
     // (如 9030 端口的 dbSystem 是 mysql,但 serviceType 精确反查为 doris),反查不到时回退 dbSystem。
     // 展示名拆成 "doris" + 端点两行，比原始合成 id 更易读。
     const externalLabel = node.serviceType ?? node.dbSystem ?? '';
-    const icon = serviceIconFor(node.external ? externalLabel : node.serviceName);
+    const icon = serviceIconFor(
+      node.external ? externalLabel : node.serviceName,
+    );
     const displayName = node.external
       ? `${externalLabel}\n${node.serviceName.split('@')[1] ?? node.serviceName}`
       : node.serviceName;
@@ -190,6 +193,12 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
   clusterId,
   onShowTraces,
 }) => {
+  const intl = useIntl();
+  const t = useCallback(
+    (id: string, defaultMessage: string, values?: Record<string, string>) =>
+      intl.formatMessage({ id, defaultMessage }, values),
+    [intl],
+  );
   const { styles } = useObservabilityStyles();
   const [form] = Form.useForm<TopologyFilters>();
   const [filters, setFilters] = useState<TopologyFilters>({
@@ -367,10 +376,38 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
           type: 'toolbar',
           position: 'top-right',
           getItems: () => [
-            { id: 'zoom-in', value: 'zoom-in', title: '放大' },
-            { id: 'zoom-out', value: 'zoom-out', title: '缩小' },
-            { id: 'auto-fit', value: 'auto-fit', title: '适应视图' },
-            { id: 'request-fullscreen', value: 'fullscreen', title: '全屏' },
+            {
+              id: 'zoom-in',
+              value: 'zoom-in',
+              title: t(
+                'pages.observabilityCollector.topologyZoomIn',
+                'Zoom in',
+              ),
+            },
+            {
+              id: 'zoom-out',
+              value: 'zoom-out',
+              title: t(
+                'pages.observabilityCollector.topologyZoomOut',
+                'Zoom out',
+              ),
+            },
+            {
+              id: 'auto-fit',
+              value: 'auto-fit',
+              title: t(
+                'pages.observabilityCollector.topologyAutoFit',
+                'Fit view',
+              ),
+            },
+            {
+              id: 'request-fullscreen',
+              value: 'fullscreen',
+              title: t(
+                'pages.observabilityCollector.topologyFullscreen',
+                'Fullscreen',
+              ),
+            },
           ],
           onClick: (value: string) => {
             const g = graphRef.current;
@@ -405,7 +442,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
     });
     graph.render();
     graphRef.current = graph;
-  }, [topology, viewFilters, slowTop5Ids, highlightId]);
+  }, [topology, viewFilters, slowTop5Ids, highlightId, t]);
 
   useEffect(() => {
     return () => {
@@ -430,7 +467,15 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
       node.serviceName.toLowerCase().includes(trimmed.toLowerCase()),
     );
     if (!match) {
-      message.warning(`未找到服务 "${trimmed}"`);
+      message.warning(
+        t(
+          'pages.observabilityCollector.topologyServiceNotFound',
+          'Service "{name}" not found',
+          {
+            name: trimmed,
+          },
+        ),
+      );
       return;
     }
     setHighlightId(match.serviceName);
@@ -440,7 +485,12 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
   const handleExport = async () => {
     const graph = graphRef.current;
     if (!graph) {
-      message.warning('拓扑图尚未加载');
+      message.warning(
+        t(
+          'pages.observabilityCollector.topologyNotLoaded',
+          'Topology graph not loaded yet',
+        ),
+      );
       return;
     }
     const dataURL = await graph.toDataURL({
@@ -465,7 +515,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
         className={styles.filterBar}
       >
         <Form.Item
-          label="Time range"
+          label={t('pages.observabilityCollector.timeRange', 'Time range')}
           name="timeRange"
           style={{ marginBottom: 0 }}
         >
@@ -474,7 +524,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
         <Form.Item style={{ marginBottom: 0 }}>
           <Space>
             <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-              Query
+              {t('pages.observabilityCollector.query', 'Query')}
             </Button>
             <Button
               icon={<ReloadOutlined />}
@@ -484,15 +534,17 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
                 setFilters(nextFilters);
               }}
             >
-              Reset
+              {t('pages.observabilityCollector.reset', 'Reset')}
             </Button>
           </Space>
         </Form.Item>
       </Form>
       <div className={styles.quickBar}>
-        <span style={{ color: '#8c8c8c', fontSize: 12 }}>Quick:</span>
+        <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+          {t('pages.observabilityCollector.quick', 'Quick')}:
+        </span>
         <Button size="small" onClick={() => setPreset(15, 'minute')}>
-          Last 15m
+          {t('pages.observabilityCollector.presetLast15m', 'Last 15m')}
         </Button>
         <Button
           size="small"
@@ -500,13 +552,13 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
           ghost
           onClick={() => setPreset(1, 'hour')}
         >
-          Last 1h
+          {t('pages.observabilityCollector.presetLast1h', 'Last 1h')}
         </Button>
         <Button size="small" onClick={() => setPreset(6, 'hour')}>
-          Last 6h
+          {t('pages.observabilityCollector.presetLast6h', 'Last 6h')}
         </Button>
         <Button size="small" onClick={() => setPreset(24, 'hour')}>
-          Last 24h
+          {t('pages.observabilityCollector.presetLast24h', 'Last 24h')}
         </Button>
       </div>
       <div className={styles.quickBar}>
@@ -516,7 +568,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
             setViewFilters((prev) => ({ ...prev, onlyError: e.target.checked }))
           }
         >
-          仅显示异常
+          {t('pages.observabilityCollector.topologyOnlyError', 'Only errors')}
         </Checkbox>
         <Checkbox
           checked={viewFilters.slowTop5}
@@ -524,7 +576,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
             setViewFilters((prev) => ({ ...prev, slowTop5: e.target.checked }))
           }
         >
-          响应慢 Top5
+          {t('pages.observabilityCollector.topologySlowTop5', 'Slow top 5')}
         </Checkbox>
         <Checkbox
           checked={viewFilters.showAvg}
@@ -532,23 +584,32 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
             setViewFilters((prev) => ({ ...prev, showAvg: e.target.checked }))
           }
         >
-          显示平均耗时
+          {t(
+            'pages.observabilityCollector.topologyShowAvg',
+            'Show avg duration',
+          )}
         </Checkbox>
         <Input.Search
-          placeholder="搜索服务名"
+          placeholder={t(
+            'pages.observabilityCollector.topologySearchPlaceholder',
+            'Search service name',
+          )}
           allowClear
           style={{ width: 200 }}
           onSearch={handleSearch}
         />
         <Button size="small" icon={<DownloadOutlined />} onClick={handleExport}>
-          导出
+          {t('pages.observabilityCollector.topologyExport', 'Export')}
         </Button>
       </div>
       <Spin spinning={loading}>
         {topology && !hasNodes ? (
           <Empty
             style={{ padding: '80px 0' }}
-            description="No topology data in this time range. Ensure the Doris job otel_traces_graph_job is running (data is aggregated every 10 minutes)."
+            description={t(
+              'pages.observabilityCollector.topologyEmptyDescription',
+              'No topology data in this time range. Ensure the Doris job otel_traces_graph_job is running (data is aggregated every 10 minutes).',
+            )}
           />
         ) : (
           <>
@@ -557,7 +618,10 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
                 type="info"
                 showIcon
                 style={{ marginBottom: 12 }}
-                title="No cross-service calls found in this time range. If edges are expected, check the Doris job otel_traces_graph_job."
+                title={t(
+                  'pages.observabilityCollector.topologyNoEdgesAlert',
+                  'No cross-service calls found in this time range. If edges are expected, check the Doris job otel_traces_graph_job.',
+                )}
               />
             )}
             <div ref={containerRef} style={{ height: 560 }} />

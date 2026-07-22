@@ -11,6 +11,7 @@ const {
   dsDashboardSpy,
   dorisDashboardSpy,
   nacosDashboardSpy,
+  otelCollectorMonitorSpy,
   routeParams,
 } = vi.hoisted(() => ({
   apisixDashboardSpy: vi.fn(),
@@ -18,6 +19,7 @@ const {
   dsDashboardSpy: vi.fn(),
   dorisDashboardSpy: vi.fn(),
   nacosDashboardSpy: vi.fn(),
+  otelCollectorMonitorSpy: vi.fn(),
   routeParams: { clusterId: '7', instanceId: '9' },
 }));
 
@@ -95,6 +97,12 @@ vi.mock('@/pages/monitor/DolphinSchedulerMonitor', () => ({
   default: (props: { clusterId: number }) => {
     dsDashboardSpy(props);
     return <div>DS dashboard cluster {props.clusterId}</div>;
+  },
+}));
+vi.mock('@/pages/Cluster/ObservabilityCollector/MonitorTab', () => ({
+  default: (props: { clusterId: number }) => {
+    otelCollectorMonitorSpy(props);
+    return <div>OTel collector monitor cluster {props.clusterId}</div>;
   },
 }));
 vi.mock('@/services/k8s', () => ({ listK8sResourceTypes: vi.fn() }));
@@ -390,6 +398,40 @@ describe('DORIS service instance tabs', () => {
         clusterId: 7,
         embedded: true,
       }),
+    );
+  });
+});
+
+describe('OTELCOLLECTOR service instance tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routeParams.clusterId = '7';
+    routeParams.instanceId = '66';
+    vi.mocked(getServiceInstance).mockResolvedValue({
+      data: { serviceName: 'OTELCOLLECTOR' },
+    } as never);
+    vi.mocked(getServiceWebUis).mockResolvedValue({ data: [] } as never);
+  });
+
+  it('places monitoring first and opens it with the route cluster id', async () => {
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('OTel collector monitor cluster 7');
+    const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+
+    expect(tabs).toEqual(['监控', '实例', '配置']);
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'monitor',
+    );
+    await waitFor(() =>
+      expect(otelCollectorMonitorSpy).toHaveBeenCalledWith({ clusterId: 7 }),
     );
   });
 });

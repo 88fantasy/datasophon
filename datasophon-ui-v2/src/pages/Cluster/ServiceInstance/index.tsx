@@ -4,6 +4,7 @@ import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
+import MonitorTab from '@/pages/Cluster/ObservabilityCollector/MonitorTab';
 import ApisixDashboard from '@/pages/monitor/ApisixMonitor';
 import DSDashboard from '@/pages/monitor/DolphinSchedulerMonitor';
 import DorisDashboard from '@/pages/monitor/DorisMonitor';
@@ -176,7 +177,9 @@ const ServiceInstance: React.FC = () => {
   const isDS = serviceInfo?.serviceName === 'DS';
   const isDoris = serviceInfo?.serviceName === 'DORIS';
   const isNacos = serviceInfo?.serviceName === 'NACOS';
-  const hasPrimaryMonitor = isApisix || isValkey || isDS || isDoris || isNacos;
+  const isOtelCollector = serviceInfo?.serviceName === 'OTELCOLLECTOR';
+  const hasPrimaryMonitor =
+    isApisix || isValkey || isDS || isDoris || isNacos || isOtelCollector;
   if (hasPrimaryMonitor) {
     let primaryMonitor: React.ReactNode = null;
     if (isApisix) {
@@ -189,6 +192,8 @@ const ServiceInstance: React.FC = () => {
       primaryMonitor = <DorisDashboard clusterId={numericClusterId} embedded />;
     } else if (isNacos) {
       primaryMonitor = <NacosDashboard clusterId={numericClusterId} />;
+    } else if (isOtelCollector) {
+      primaryMonitor = <MonitorTab clusterId={numericClusterId} />;
     }
     items.push({
       key: 'monitor',

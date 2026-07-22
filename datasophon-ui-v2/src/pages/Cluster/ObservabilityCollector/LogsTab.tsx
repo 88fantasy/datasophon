@@ -1,12 +1,12 @@
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { useIntl } from '@umijs/max';
 import { Button, DatePicker, Form, Input, Select, Space, Tag } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-import { type LogRow, listLogs, listTraceServices } from './service';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useObservabilityStyles } from './observabilityStyles';
+import { type LogRow, listLogs, listTraceServices } from './service';
 
 interface LogsTabProps {
   clusterId: number;
@@ -60,6 +60,12 @@ const LogsTab: React.FC<LogsTabProps> = ({
   traceId,
   onTraceIdConsumed,
 }) => {
+  const intl = useIntl();
+  const t = useCallback(
+    (id: string, defaultMessage: string) =>
+      intl.formatMessage({ id, defaultMessage }),
+    [intl],
+  );
   const { styles } = useObservabilityStyles();
   const actionRef = useRef<ActionType>(null);
   const [form] = Form.useForm<LogFilters>();
@@ -72,9 +78,11 @@ const LogsTab: React.FC<LogsTabProps> = ({
 
   useEffect(() => {
     const [start, end] = filters.timeRange;
-    listTraceServices(clusterId, toSeconds(start), toSeconds(end)).then((result) => {
-      setServices(result.data ?? []);
-    });
+    listTraceServices(clusterId, toSeconds(start), toSeconds(end)).then(
+      (result) => {
+        setServices(result.data ?? []);
+      },
+    );
   }, [clusterId, filters.timeRange]);
 
   useEffect(() => {
@@ -90,14 +98,14 @@ const LogsTab: React.FC<LogsTabProps> = ({
   const columns = useMemo<ProColumns<LogRow>[]>(
     () => [
       {
-        title: 'Timestamp',
+        title: t('pages.observabilityCollector.timestamp', 'Timestamp'),
         dataIndex: 'timestamp',
         width: 180,
         search: false,
         renderText: (value) => dayjs.utc(value).local().format('HH:mm:ss.SSS'),
       },
       {
-        title: 'Severity',
+        title: t('pages.observabilityCollector.severity', 'Severity'),
         dataIndex: 'severityText',
         width: 110,
         search: false,
@@ -108,7 +116,7 @@ const LogsTab: React.FC<LogsTabProps> = ({
         ),
       },
       {
-        title: 'Service',
+        title: t('pages.observabilityCollector.service', 'Service'),
         dataIndex: 'serviceName',
         width: 160,
         search: false,
@@ -117,17 +125,21 @@ const LogsTab: React.FC<LogsTabProps> = ({
         ),
       },
       {
-        title: 'Body',
+        title: t('pages.observabilityCollector.body', 'Body'),
         dataIndex: 'body',
         search: false,
         render: (_, record) => (
-          <span style={{ color: record.severityText === 'ERROR' ? '#cf1322' : undefined }}>
+          <span
+            style={{
+              color: record.severityText === 'ERROR' ? '#cf1322' : undefined,
+            }}
+          >
             {record.body}
           </span>
         ),
       },
       {
-        title: 'TraceID',
+        title: t('pages.observabilityCollector.traceId', 'TraceID'),
         dataIndex: 'traceId',
         width: 220,
         search: false,
@@ -152,7 +164,7 @@ const LogsTab: React.FC<LogsTabProps> = ({
           ),
       },
     ],
-    [filters, form, styles],
+    [filters, form, styles, t],
   );
 
   const applyFilters = (values: LogFilters) => {
@@ -182,18 +194,33 @@ const LogsTab: React.FC<LogsTabProps> = ({
         onFinish={applyFilters}
         className={styles.filterBar}
       >
-        <Form.Item label="Time range" name="timeRange" style={{ marginBottom: 0 }}>
+        <Form.Item
+          label={t('pages.observabilityCollector.timeRange', 'Time range')}
+          name="timeRange"
+          style={{ marginBottom: 0 }}
+        >
           <RangePicker showTime allowClear={false} />
         </Form.Item>
-        <Form.Item label="Service" name="serviceName" style={{ marginBottom: 0 }}>
+        <Form.Item
+          label={t('pages.observabilityCollector.service', 'Service')}
+          name="serviceName"
+          style={{ marginBottom: 0 }}
+        >
           <Select
             allowClear
             showSearch
             style={{ width: 180 }}
-            options={services.map((service) => ({ label: service, value: service }))}
+            options={services.map((service) => ({
+              label: service,
+              value: service,
+            }))}
           />
         </Form.Item>
-        <Form.Item label="Severity" name="severities" style={{ marginBottom: 0 }}>
+        <Form.Item
+          label={t('pages.observabilityCollector.severity', 'Severity')}
+          name="severities"
+          style={{ marginBottom: 0 }}
+        >
           <Select
             allowClear
             mode="multiple"
@@ -204,16 +231,33 @@ const LogsTab: React.FC<LogsTabProps> = ({
             }))}
           />
         </Form.Item>
-        <Form.Item label="Body search" name="bodyKeyword" style={{ marginBottom: 0 }}>
-          <Input placeholder="Search body keyword" style={{ width: 260 }} />
+        <Form.Item
+          label={t('pages.observabilityCollector.bodySearch', 'Body search')}
+          name="bodyKeyword"
+          style={{ marginBottom: 0 }}
+        >
+          <Input
+            placeholder={t(
+              'pages.observabilityCollector.bodyKeywordPlaceholder',
+              'Search body keyword',
+            )}
+            style={{ width: 260 }}
+          />
         </Form.Item>
-        <Form.Item label="TraceID" name="traceId" style={{ marginBottom: 0 }}>
-          <Input placeholder="TraceID" style={{ width: 240 }} />
+        <Form.Item
+          label={t('pages.observabilityCollector.traceId', 'TraceID')}
+          name="traceId"
+          style={{ marginBottom: 0 }}
+        >
+          <Input
+            placeholder={t('pages.observabilityCollector.traceId', 'TraceID')}
+            style={{ width: 240 }}
+          />
         </Form.Item>
         <Form.Item style={{ marginBottom: 0 }}>
           <Space>
             <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-              Query
+              {t('pages.observabilityCollector.query', 'Query')}
             </Button>
             <Button
               icon={<ReloadOutlined />}
@@ -227,13 +271,15 @@ const LogsTab: React.FC<LogsTabProps> = ({
                 applyFilters(nextFilters);
               }}
             >
-              Reset
+              {t('pages.observabilityCollector.reset', 'Reset')}
             </Button>
           </Space>
         </Form.Item>
       </Form>
       <div className={styles.quickBar}>
-        <span style={{ color: '#8c8c8c', fontSize: 12 }}>Severity:</span>
+        <span style={{ color: '#8c8c8c', fontSize: 12 }}>
+          {t('pages.observabilityCollector.severityQuick', 'Severity:')}
+        </span>
         {severityOptions.map((severity) => {
           const active = filters.severities?.includes(severity);
           return (
@@ -250,7 +296,9 @@ const LogsTab: React.FC<LogsTabProps> = ({
       </div>
       <ProTable<LogRow>
         actionRef={actionRef}
-        rowKey={(record) => `${record.timestamp}-${record.traceId}-${record.spanId}`}
+        rowKey={(record) =>
+          `${record.timestamp}-${record.traceId}-${record.spanId}`
+        }
         columns={columns}
         search={false}
         options={{ reload: true, density: false, setting: false }}

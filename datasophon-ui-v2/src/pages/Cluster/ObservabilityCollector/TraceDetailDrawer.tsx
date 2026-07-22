@@ -4,13 +4,13 @@ import {
   FieldTimeOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
+import { useIntl } from '@umijs/max';
 import { Drawer, Empty, Segmented, Spin, Statistic, Tag } from 'antd';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
-
-import { type SpanNode, getTraceDetail } from './service';
 import { useObservabilityStyles } from './observabilityStyles';
+import { getTraceDetail, type SpanNode } from './service';
 
 interface TraceDetailDrawerProps {
   clusterId: number;
@@ -60,7 +60,9 @@ function buildTree(spans: SpanNode[]) {
   const visit = (node: SpanTreeNode, depth: number) => {
     node.depth = depth;
     flatten.push(node);
-    node.children.sort((a, b) => parseTime(a.timestamp) - parseTime(b.timestamp));
+    node.children.sort(
+      (a, b) => parseTime(a.timestamp) - parseTime(b.timestamp),
+    );
     for (const child of node.children) visit(child, depth + 1);
   };
   roots.sort((a, b) => parseTime(a.timestamp) - parseTime(b.timestamp));
@@ -75,13 +77,19 @@ function kindColor(kind: string) {
   return '#faad14';
 }
 
-function renderAttributes(values: Record<string, unknown>) {
+function renderAttributes(
+  values: Record<string, unknown>,
+  styles: ReturnType<typeof useObservabilityStyles>['styles'],
+) {
   const entries = Object.entries(values ?? {});
-  if (entries.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+  if (entries.length === 0)
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />;
   return entries.map(([key, value]) => (
     <div key={key}>
-      <div>{key}</div>
-      <div>{typeof value === 'string' ? value : JSON.stringify(value)}</div>
+      <div className={styles.attrKey}>{key}</div>
+      <div className={styles.attrValue}>
+        {typeof value === 'string' ? value : JSON.stringify(value)}
+      </div>
     </div>
   ));
 }
@@ -93,6 +101,12 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
   onClose,
   onShowLogs,
 }) => {
+  const intl = useIntl();
+  const t = (
+    id: string,
+    defaultMessage: string,
+    values?: Record<string, string>,
+  ) => intl.formatMessage({ id, defaultMessage }, values);
   const { styles } = useObservabilityStyles();
   const [loading, setLoading] = useState(false);
   const [spans, setSpans] = useState<SpanNode[]>([]);
@@ -135,13 +149,15 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
       )
     : 0;
   const totalMs = Math.max(rootEnd - rootStart, 1);
-  const errorCount = spans.filter((span) => statusIsError(span.statusCode)).length;
+  const errorCount = spans.filter((span) =>
+    statusIsError(span.statusCode),
+  ).length;
   const serviceCount = new Set(spans.map((span) => span.serviceName)).size;
 
   const detailContent = () => {
     if (!selectedSpan) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />;
     if (detailTab === 'resource') {
-      return renderAttributes(selectedSpan.resourceAttributes);
+      return renderAttributes(selectedSpan.resourceAttributes, styles);
     }
     if (detailTab === 'events') {
       return selectedSpan.events.length ? (
@@ -163,12 +179,15 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
         </Tag>
       );
     }
-    return renderAttributes(selectedSpan.spanAttributes);
+    return renderAttributes(selectedSpan.spanAttributes, styles);
   };
 
   return (
     <Drawer
-      title="Trace details"
+      title={t(
+        'pages.observabilityCollector.traceDetailsTitle',
+        'Trace details',
+      )}
       size={920}
       open={open}
       onClose={onClose}
@@ -189,21 +208,41 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
               }}
             >
               <Statistic
-                title="Duration"
+                title={t('pages.observabilityCollector.duration', 'Duration')}
                 value={formatDuration(Math.round(totalMs * 1_000_000))}
               />
-              <Statistic title="Spans" value={spans.length} />
               <Statistic
-                title="Error spans"
+                title={t('pages.observabilityCollector.spans', 'Spans')}
+                value={spans.length}
+              />
+              <Statistic
+                title={t(
+                  'pages.observabilityCollector.errorSpans',
+                  'Error spans',
+                )}
                 value={errorCount}
                 styles={{ content: { color: '#cf1322' } }}
               />
-              <Statistic title="Services" value={serviceCount} />
+              <Statistic
+                title={t('pages.observabilityCollector.services', 'Services')}
+                value={serviceCount}
+              />
             </div>
 
             <div className={styles.waterfallHeader}>
-              <div style={{ width: 340 }}>Service / span</div>
-              <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
+              <div style={{ width: 340 }}>
+                {t(
+                  'pages.observabilityCollector.serviceSpanColumn',
+                  'Service / span',
+                )}
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(5, 1fr)',
+                }}
+              >
                 {[0, 25, 50, 75, 100].map((tick) => (
                   <span key={tick}>{Math.round((totalMs * tick) / 100)}ms</span>
                 ))}
@@ -211,17 +250,24 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
             </div>
             <div className={styles.waterfallBody}>
               {flattenedSpans.map((span) => {
-                const startMs = Math.max(parseTime(span.timestamp) - rootStart, 0);
+                const startMs = Math.max(
+                  parseTime(span.timestamp) - rootStart,
+                  0,
+                );
                 const widthMs = Math.max(span.duration / 1_000_000, 1);
                 const left = Math.min((startMs / totalMs) * 100, 100);
-                const width = Math.max(Math.min((widthMs / totalMs) * 100, 100 - left), 0.5);
+                const width = Math.max(
+                  Math.min((widthMs / totalMs) * 100, 100 - left),
+                  0.5,
+                );
                 const hasError = statusIsError(span.statusCode);
                 return (
                   <div
                     key={span.spanId}
                     className={clsx(
                       styles.spanRow,
-                      span.spanId === selectedSpan?.spanId && styles.selectedSpanRow,
+                      span.spanId === selectedSpan?.spanId &&
+                        styles.selectedSpanRow,
                     )}
                     onClick={() => setSelectedSpanId(span.spanId)}
                   >
@@ -243,7 +289,13 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
                       >
                         {span.spanName}
                       </span>
-                      <span style={{ marginLeft: 'auto', color: '#8c8c8c', fontSize: 11 }}>
+                      <span
+                        style={{
+                          marginLeft: 'auto',
+                          color: '#8c8c8c',
+                          fontSize: 11,
+                        }}
+                      >
                         {formatDuration(span.duration)}
                       </span>
                     </div>
@@ -253,7 +305,9 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
                         style={{
                           left: `${left}%`,
                           width: `${width}%`,
-                          background: hasError ? '#ff7875' : kindColor(span.spanKind),
+                          background: hasError
+                            ? '#ff7875'
+                            : kindColor(span.spanKind),
                         }}
                       />
                     </div>
@@ -268,15 +322,41 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
                 value={detailTab}
                 onChange={(value) => setDetailTab(String(value))}
                 options={[
-                  { label: 'Span attributes', value: 'span', icon: <ApartmentOutlined /> },
-                  { label: 'Resource', value: 'resource', icon: <DatabaseOutlined /> },
-                  { label: `Events (${selectedSpan?.events.length ?? 0})`, value: 'events', icon: <FieldTimeOutlined /> },
-                  { label: 'Logs', value: 'logs', icon: <FileTextOutlined /> },
+                  {
+                    label: t(
+                      'pages.observabilityCollector.spanAttributesTab',
+                      'Span attributes',
+                    ),
+                    value: 'span',
+                    icon: <ApartmentOutlined />,
+                  },
+                  {
+                    label: t(
+                      'pages.observabilityCollector.resourceTab',
+                      'Resource',
+                    ),
+                    value: 'resource',
+                    icon: <DatabaseOutlined />,
+                  },
+                  {
+                    label: t(
+                      'pages.observabilityCollector.eventsTab',
+                      'Events ({count})',
+                      {
+                        count: String(selectedSpan?.events.length ?? 0),
+                      },
+                    ),
+                    value: 'events',
+                    icon: <FieldTimeOutlined />,
+                  },
+                  {
+                    label: t('pages.observabilityCollector.logsTab', 'Logs'),
+                    value: 'logs',
+                    icon: <FileTextOutlined />,
+                  },
                 ]}
               />
-              <div className={styles.detailGrid}>
-                {detailContent()}
-              </div>
+              <div className={styles.detailGrid}>{detailContent()}</div>
             </div>
           </>
         )}

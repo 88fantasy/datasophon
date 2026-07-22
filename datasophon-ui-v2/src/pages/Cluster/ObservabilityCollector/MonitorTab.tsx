@@ -134,14 +134,15 @@ const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
       }),
       search: false,
       render: (_, record) =>
-        record.metrics ? formatDuration(record.metrics.processUptime ?? 0) : '-',
+        record.metrics
+          ? formatDuration(record.metrics.processUptime ?? 0)
+          : '-',
     },
   ];
 
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={t('pages.observabilityCollector.monitorTitle', 'Collector Health')}
       toolbar={
         <DashboardToolbar
           timeRange={timeRange}
@@ -170,7 +171,10 @@ const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
         </PanelCol>
         <PanelCol span={6}>
           <StatPanel
-            title={t('pages.observabilityCollector.unhealthyNodes', 'Unhealthy')}
+            title={t(
+              'pages.observabilityCollector.unhealthyNodes',
+              'Unhealthy',
+            )}
             value={summary.unhealthy}
             color={
               summary.unhealthy > 0 ? CHART_COLORS.error : CHART_COLORS.success
