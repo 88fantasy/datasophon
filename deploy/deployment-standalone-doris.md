@@ -943,12 +943,27 @@ Git 外归档应包括：分支/commit、盘点、拓扑批准、离线包 manif
 | 7 | 文档曾两处明文写入 MySQL root 密码（commit `c8b995337`）与 RustFS secret key（commit `a8fd1fcba`） | 本轮已打码当前文本，但 git 历史仍可查到明文（已 push 到 origin），密码/密钥本身未轮换（用户决定） | 需要拥有仓库访问权限的人明确知晓此残留风险 |
 | 8 | YAML 批量清单部署不支持按角色排除安装 | 平台行为限制，已记录（§9.2） | 影响清单驱动的部署方式，不影响向导单装 |
 | 9 | Worker jar 版本漂移可能在未同步节点复发 | 操作习惯问题，已记录（§9.2/§7.7） | 需要"改完同步全部节点"的操作纪律 |
+| 10 | `control.sh`（含 OTELCOLLECTOR）无并发保护，共享角色被密集 restart 会导致 pid 文件与真实进程错位 | 归档后发现（§11.4），已修复 `OTELCOLLECTOR` 的脚本模板 | 已装节点需重新分发脚本才能生效；其余复用同一 `control.sh` 模式的服务未逐一排查 |
 
 ### 11.3 最终结论
 
 综合 Phase 0～10 全部现场记录：五节点初始化、控制面部署、阶段 A 六个服务（VALKEY/ELASTICSEARCH/NACOS/DORIS/DS/APISIX）的安装与业务读写验证、单 BE 故障停止与恢复演练均已现场验证通过，未发现阻断性缺陷。但存在 §11.2 所列 9 项已记录偏差，其中 #5/#6/#7 为 Phase 10/11 本轮新发现的凭据与安全相关问题，尚未整改完毕。
 
 **最终结论：`PASS WITH DEVIATIONS`**
+
+### 11.4 归档后现场问题：ddh-02 OTELCOLLECTOR 显示 STOP（2026-07-22）
+
+阶段 A 归档（§11.3）后，在 `ddh-02` 上继续安装 `ELASTICSEARCH`/`NACOS` 期间，前端服务列表将 `OTELCOLLECTOR` 显示为 `EXISTS_EXCEPTION`（`alertNum=1`），未随后续巡检周期自愈，与 §9.2 记录的"删除/安装关联告警未及时清空、下一周期自愈"的噪音不是同一类问题。
+
+**排查过程**：`GET /ddh/api/v2/cluster/1/service/instance/1/role/list?hostname=ddh-02` 显示该节点角色实例 `serviceRoleState=STOP`，但 SSH 直连确认 `otelcol-contrib` 进程（PID `159321`）实际已连续运行数小时，`8888` metrics 显示 `queue_size=0`、`send_failed=0`，Doris 导出持续正常——数据链路完全健康。Worker 日志显示每 30 秒执行一次 `otelcollector/control.sh status` 均返回 `fail`；根因是 `control.sh` 的 `status()` 只检查 `pid/otelcol.pid` 里记录的 PID 是否存活，而该文件内容（`171353`）已是一个死进程，与真实存活的 `159321` 不一致。
+
+进一步核实 Worker 日志：`13:15:53～14:15:19` 期间该节点的 `OTELCOLLECTOR` 连续收到 9 次 `control.sh restart`（其中 5 次挤在一分钟内），时间点与当时在同一节点安装 `ELASTICSEARCH`/`NACOS` 精确重合——平台在该节点每装一个新中间件角色都会触发一次共享 `OtelCollector` 的 restart。`control.sh` 的 `start()`/`stop()`/`restart()` 没有任何锁，多个并发 restart 实例竞争同一个 pid 文件，导致最终存活的进程与文件里记录的 PID 来自不同批次、彼此不再对应。当前实际存活的 `159321` 对应的正是这一串 restart 中的第一次（`13:15:53`），此后 8 次 restart 均未能真正替换掉它。
+
+**处理**：
+1. 现场止血：将 `ddh-02` 的 `/data/install_datasophon/otelcollector/pid/otelcol.pid` 内容改写为真实存活的 `159321`（未重启健康进程），下一轮 Worker 巡检后角色状态与服务级状态均已自愈为 `RUNNING`。
+2. 代码修复：`package/raw/meta/datacluster-physical/OTELCOLLECTOR/script/control.sh` 增加 `flock`（`PID_DIR/control.lock`，等待超时 60s），将 `start`/`stop`/`restart`/`status` 串行化，避免同一竞态复现。已在目标节点确认 `flock`（util-linux 2.37.2）自带，无需额外安装。
+
+**遗留**：本次只修复了 `OTELCOLLECTOR` 一个服务的脚本模板；仓库内其余服务是否有同类"无锁 pid 文件 + 共享角色被多处触发 restart"的模式尚未逐一排查（见 §11.2 #10）。已装节点上的 `control.sh` 需要重新分发（走 Nexus 上传 + Worker 重装/更新配置）才能应用这次修复，本次未执行分发。
 
 ## 12. Phase 12：后续 Hadoop 扩展
 

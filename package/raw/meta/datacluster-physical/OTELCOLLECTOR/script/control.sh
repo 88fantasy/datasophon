@@ -10,6 +10,14 @@ export PID_DIR=$current_path/pid
 export LOG_DIR=$current_path/logs
 export STOP_TIMEOUT=10
 [ -d "$LOG_DIR" ] || mkdir -p "$LOG_DIR"
+[ -d "$PID_DIR" ] || mkdir -p "$PID_DIR"
+
+# 同一节点上并发触发的 start/stop/restart/status 会竞争同一个 pid 文件
+# （常见于多个中间件角色相继安装、各自触发一次共享 OtelCollector 重启），
+# 用 flock 串行化，避免 pid 文件记录的进程与实际存活进程错位。
+lockfile=$PID_DIR/control.lock
+exec 200>"$lockfile"
+flock -w 60 200 || { echo "another control.sh operation holds the lock, giving up"; exit 1; }
 
 log=$LOG_DIR/otelcol.out
 pid=$PID_DIR/otelcol.pid
