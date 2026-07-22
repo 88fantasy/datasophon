@@ -385,7 +385,7 @@ flowchart LR
     subgraph Pipeline["create cluster 内部流水线"]
         cfg["config.Load<br/>cluster-sample.yml"]
         bctx["BuildContext<br/>cfg dryRun path"]
-        reg["Registry InitALLRegistry<br/>33 个 Step"]
+        reg["Registry InitALLRegistry<br/>36 个 Step"]
         build["每个 Step.Build<br/>产出 Action 列表"]
         planf[("state initALL.plan.json<br/>hash + 状态")]
         applyp["Apply 顺序执行<br/>跳过 completed"]
@@ -564,4 +564,3 @@ Worker 进程要小、启动要快、对节点环境无侵入。`WorkerApplicati
 | DB 迁移           | `datasophon-api/src/main/resources/db/migration/`                                    |
 
 ---
-

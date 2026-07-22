@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/upload"
@@ -84,6 +85,8 @@ type rustfsTask struct {
 	APIPort     string
 	Username    string
 	Password    string
+	// ObsEndpoint 为空时不导出 RUSTFS_OBS_* 环境变量，RustFS 不上报指标。
+	ObsEndpoint string
 }
 
 func (t *rustfsTask) Name() string { return "安装rustfs" }
@@ -97,7 +100,7 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 		slog.Info("rustfs enable=false，跳过")
 		return nil
 	}
-	if !exec.Exists(t.InstallPath).Success {
+	if executor.InspectPath(exec, t.InstallPath) == executor.PathMissing {
 		slog.Error("安装目录不存在", "path", t.InstallPath)
 		return errors.New("rustfs 安装目录不存在")
 	}
@@ -106,7 +109,7 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 	dataPath := fmt.Sprintf("%s/data", home)
 	logsPath := fmt.Sprintf("%s/logs", home)
 
-	if exec.Exists(home).Success {
+	if executor.InspectPath(exec, home) == executor.PathExists {
 		slog.Info("rustfs 目录已存在", "path", home)
 	} else {
 		tarName := t.X86Tar
@@ -114,23 +117,41 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 			tarName = t.Aarch64Tar
 		}
 		tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
-		if !exec.Exists(tarPath).Success {
-			slog.Error("安装包不存在", "path", tarPath)
-			return errors.New("rustfs 安装包不存在")
+		if err := ensurePackageOnTarget(exec, tarPath, "rustfs"); err != nil {
+			return err
 		}
 		// rustfs 官方发布物是 .zip，包内只有裸 rustfs 二进制（无版本号顶层目录，
 		// 与 tar.gz 发布物的目录结构不同），直接解压到 home 即为 home/rustfs，无需 mv。
-		exec.ExecShell(fmt.Sprintf("mkdir -p %s", home))
-		exec.ExecShell(fmt.Sprintf("unzip -o %s -d %s", tarPath, home))
-		exec.ExecShell(fmt.Sprintf("chmod +x %s/rustfs", home))
+		if result := exec.ExecShell("mkdir -p " + shellutil.Quote(home)); !result.Success {
+			return fmt.Errorf("创建 rustfs 目录失败: %s", result.ErrOutput)
+		}
+		if result := exec.ExecShell(fmt.Sprintf("unzip -o %s -d %s", shellutil.Quote(tarPath), shellutil.Quote(home))); !result.Success {
+			return fmt.Errorf("解压 rustfs 失败: %s", result.ErrOutput)
+		}
+		if result := exec.ExecShell("chmod +x " + shellutil.Quote(home+"/rustfs")); !result.Success {
+			return fmt.Errorf("设置 rustfs 执行权限失败: %s", result.ErrOutput)
+		}
 	}
 
-	if !t.checkStart(exec) {
-		t.start(exec, home, dataPath, logsPath)
+	alreadyRunning := !executor.IsDryRun(exec) && t.checkStart(exec, home)
+	// 始终按当前配置重写 start.sh；运行中进程的端点不一致时受控重启。
+	scriptChanged, err := t.writeStartScript(exec, home, dataPath, logsPath)
+	if err != nil {
+		return err
+	}
+	if alreadyRunning && (scriptChanged || !t.runtimeMatchesObsEndpoint(exec, home)) {
+		slog.Info("rustfs 运行配置发生变化，执行受控重启", "path", home)
+		if !t.stop(exec, home) {
+			return errors.New("rustfs 为应用 obsEndpoint 重启时停止失败")
+		}
+		alreadyRunning = false
+	}
+	if !alreadyRunning {
+		exec.ExecShell("bash " + shellutil.Quote(home+"/start.sh"))
 		exec.ExecShell("sleep 3")
 	}
 
-	if t.checkStart(exec) {
+	if executor.IsDryRun(exec) || t.checkStart(exec, home) {
 		slog.Info("rustfs 安装成功", "path", home)
 		return nil
 	}
@@ -138,8 +159,33 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 	return errors.New("rustfs 启动失败")
 }
 
-func (t *rustfsTask) checkStart(exec executor.Executor) bool {
-	r := exec.ExecShell("ps -ef | grep rustfs | grep -v datasophon-cli | grep -v grep")
+func (t *rustfsTask) runtimeMatchesObsEndpoint(exec executor.Executor, home string) bool {
+	findPID := fmt.Sprintf("ps -eo pid=,args= | awk -v bin=%s '$2 == bin {print $1; exit}'",
+		shellutil.Quote(home+"/rustfs"))
+	command := ""
+	if t.ObsEndpoint == "" {
+		command = fmt.Sprintf("pid=$(%s); [ -n \"$pid\" ] && ! tr '\\0' '\\n' < /proc/$pid/environ | grep -q '^RUSTFS_OBS_ENDPOINT='", findPID)
+	} else {
+		expected := shellutil.Quote("RUSTFS_OBS_ENDPOINT=" + t.ObsEndpoint)
+		command = fmt.Sprintf("pid=$(%s); [ -n \"$pid\" ] && tr '\\0' '\\n' < /proc/$pid/environ | grep -Fqx %s",
+			findPID, expected)
+	}
+	return exec.ExecShell(command).Success
+}
+
+func (t *rustfsTask) stop(exec executor.Executor, home string) bool {
+	findPID := fmt.Sprintf("ps -eo pid=,args= | awk -v bin=%s '$2 == bin {print $1; exit}'",
+		shellutil.Quote(home+"/rustfs"))
+	command := fmt.Sprintf("pid=$(%s); [ -z \"$pid\" ] || { kill \"$pid\" && "+
+		"i=0; while kill -0 \"$pid\" 2>/dev/null && [ $i -lt 10 ]; do sleep 1; i=$((i+1)); done; "+
+		"kill -0 \"$pid\" 2>/dev/null && kill -9 \"$pid\" || true; }", findPID)
+	return exec.ExecShell(command).Success
+}
+
+func (t *rustfsTask) checkStart(exec executor.Executor, home string) bool {
+	findPID := fmt.Sprintf("ps -eo pid=,args= | awk -v bin=%s '$2 == bin {print $1; exit}'",
+		shellutil.Quote(home+"/rustfs"))
+	r := exec.ExecShell(fmt.Sprintf("pid=$(%s); [ -n \"$pid\" ]", findPID))
 	if r.Success {
 		slog.Info("rustfs 已在运行")
 		return true
@@ -148,7 +194,7 @@ func (t *rustfsTask) checkStart(exec executor.Executor) bool {
 	return false
 }
 
-func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool {
+func (t *rustfsTask) writeStartScript(exec executor.Executor, home, data, logs string) (bool, error) {
 	startCmd := fmt.Sprintf(
 		"%s/rustfs --address %s:%s --console-enable --console-address %s:%s"+
 			" --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
@@ -158,12 +204,19 @@ func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool
 	lines := []string{
 		fmt.Sprintf("mkdir -p %s", shellutil.Quote(data)),
 		fmt.Sprintf("mkdir -p %s", shellutil.Quote(logs)),
-		startCmd,
 	}
-	startPath := fmt.Sprintf("%s/start.sh", home)
-	exec.WriteLines(lines, startPath)
-	r := exec.ExecShell(fmt.Sprintf("bash %s", startPath))
-	return r.Success
+	if t.ObsEndpoint != "" {
+		lines = append(lines,
+			fmt.Sprintf("export RUSTFS_OBS_ENDPOINT=%s", shellutil.Quote(t.ObsEndpoint)),
+			"export RUSTFS_OBS_SERVICE_NAME=rustfs",
+		)
+	}
+	lines = append(lines, startCmd)
+	result := executor.WriteFileAtomic(exec, []byte(strings.Join(lines, "\n")+"\n"), fmt.Sprintf("%s/start.sh", home), 0o700)
+	if !result.Success {
+		return false, fmt.Errorf("写入 rustfs start.sh 失败: %s", result.ErrOutput)
+	}
+	return result.Output == "changed", nil
 }
 
 // buildRustfs 安装 rustfs（单节点）。
@@ -176,6 +229,14 @@ func buildRustfs(ctx *BuildContext) ([]Action, error) {
 	if err != nil {
 		return nil, fmt.Errorf("rustfs 节点: %w", err)
 	}
+	obsEndpoint := ""
+	if ctx.Cfg.BaseOtelCollector.Enable {
+		resolved, err := resolveBaseObservability(ctx)
+		if err != nil {
+			return nil, err
+		}
+		obsEndpoint = fmt.Sprintf("http://%s:%s", resolved.CollectorNode.IP, resolved.Config.OtlpHTTPPort)
+	}
 	t := &rustfsTask{
 		Enable:      rs.Enable,
 		PackagePath: ctx.PackagesPath,
@@ -187,6 +248,7 @@ func buildRustfs(ctx *BuildContext) ([]Action, error) {
 		APIPort:     rs.Config.APIPort,
 		Username:    rs.Config.User,
 		Password:    rs.Config.Password,
+		ObsEndpoint: obsEndpoint,
 	}
 	return singleHostAction(node, t), nil
 }
@@ -198,18 +260,31 @@ func buildRegistry(ctx *BuildContext) ([]Action, error) {
 	if err != nil {
 		return nil, fmt.Errorf("registry 节点: %w", err)
 	}
+	metricsUser := ""
+	metricsPassword := ""
+	if ctx.Cfg.BaseOtelCollector.Enable {
+		resolved, resolveErr := resolveBaseObservability(ctx)
+		if resolveErr != nil {
+			return nil, resolveErr
+		}
+		metricsUser = resolved.Config.NexusMetrics.MetricsUser
+		metricsPassword = resolved.Config.NexusMetrics.MetricsPassword
+	}
 	t := &registryTask{
-		EnableRegistry: true,
-		PackagePath:    ctx.PackagesPath,
-		InstallPath:    ctx.InstallPath,
-		Repositories:   reg.Config.Repositories,
-		X86Tar:         ctx.Cfg.Packages.Nexus.X86_64,
-		Aarch64Tar:     ctx.Cfg.Packages.Nexus.Aarch64,
-		WebHost:        node.IP,
-		WebPort:        reg.Config.WebPort,
-		Username:       reg.Config.User,
-		Password:       reg.Config.Password,
-		DockerHTTPPort: reg.Config.DockerHTTPPort,
+		EnableRegistry:  true,
+		EnableMetrics:   ctx.Cfg.BaseOtelCollector.Enable,
+		PackagePath:     ctx.PackagesPath,
+		InstallPath:     ctx.InstallPath,
+		Repositories:    reg.Config.Repositories,
+		X86Tar:          ctx.Cfg.Packages.Nexus.X86_64,
+		Aarch64Tar:      ctx.Cfg.Packages.Nexus.Aarch64,
+		WebHost:         node.IP,
+		WebPort:         reg.Config.WebPort,
+		Username:        reg.Config.User,
+		Password:        reg.Config.Password,
+		DockerHTTPPort:  reg.Config.DockerHTTPPort,
+		MetricsUser:     metricsUser,
+		MetricsPassword: metricsPassword,
 	}
 	return singleHostAction(node, t), nil
 }
@@ -349,6 +424,31 @@ func buildMysqlAppDb(ctx *BuildContext) ([]Action, error) {
 		actions = append(actions, Action{HostKey: node.Hostname, Host: node, Handler: t})
 	}
 	return actions, nil
+}
+
+// buildMysqldExporter 在 MySQL 节点创建监控账号并安装 exporter。
+func buildMysqldExporter(ctx *BuildContext) ([]Action, error) {
+	mc := ctx.Cfg.Mysql
+	resolved, err := resolveBaseObservability(ctx)
+	if err != nil {
+		return nil, err
+	}
+	exporter := resolved.Config.MysqldExporter
+	node := resolved.MySQLNode
+	t := &mysqldExporterTask{
+		Enable:          exporter.Enable,
+		PackagePath:     ctx.PackagesPath,
+		InstallPath:     ctx.InstallPath,
+		X86Tar:          ctx.Cfg.Packages.MysqldExporter.X86_64,
+		Aarch64Tar:      ctx.Cfg.Packages.MysqldExporter.Aarch64,
+		NodeIP:          node.IP,
+		Port:            exporter.Port,
+		MySQLPort:       mc.Port,
+		RootPassword:    mc.Password,
+		MonitorUser:     exporter.MonitorUser,
+		MonitorPassword: exporter.MonitorPassword,
+	}
+	return singleHostAction(node, t), nil
 }
 
 // buildK8sBaseServices 安装 K8s 基础服务（master 节点）。

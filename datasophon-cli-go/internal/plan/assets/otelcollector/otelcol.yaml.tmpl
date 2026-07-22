@@ -1,0 +1,79 @@
+extensions:
+  file_storage/queue:
+    directory: {{yamlQuote .QueueStorageDir}}
+    create_directory: true
+    timeout: 10s
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: {{yamlQuote (printf "0.0.0.0:%s" .OtlpGRPCPort)}}
+      http:
+        endpoint: {{yamlQuote (printf "0.0.0.0:%s" .OtlpHTTPPort)}}
+{{- if or .MysqlTarget .NexusTarget }}
+  prometheus/infra:
+    config:
+      scrape_configs:
+{{- if .MysqlTarget }}
+        - job_name: mysql
+          metrics_path: /metrics
+          static_configs:
+            - targets: [{{yamlQuote .MysqlTarget}}]
+{{- end }}
+{{- if .NexusTarget }}
+        - job_name: nexus
+          metrics_path: {{yamlQuote .NexusPath}}
+          basic_auth:
+            username: ${env:NEXUS_METRICS_USER}
+            password: ${env:NEXUS_METRICS_PASSWORD}
+          static_configs:
+            - targets: [{{yamlQuote .NexusTarget}}]
+{{- end }}
+{{- end }}
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: {{.MemLimitMiB}}
+  filter/drop_empty_summary:
+    metrics:
+      datapoint:
+        - 'metric.type == METRIC_DATA_TYPE_SUMMARY and count == 0'
+  batch:
+    send_batch_size: 8192
+    timeout: 5s
+
+exporters:
+  awss3:
+    s3uploader:
+      region: {{yamlQuote .S3Region}}
+      s3_bucket: {{yamlQuote .S3Bucket}}
+      s3_prefix: {{yamlQuote .S3Prefix}}
+      endpoint: {{yamlQuote .S3Endpoint}}
+      s3_force_path_style: true
+    marshaler: otlp_json
+    sending_queue:
+      enabled: true
+      storage: file_storage/queue
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+service:
+  extensions: [file_storage/queue]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: {{.SelfMetricsPort}}
+  pipelines:
+    metrics:
+      receivers: [otlp{{if or .MysqlTarget .NexusTarget}}, prometheus/infra{{end}}]
+      processors: [memory_limiter, filter/drop_empty_summary, batch]
+      exporters: [awss3]

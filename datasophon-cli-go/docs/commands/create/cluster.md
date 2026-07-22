@@ -2,7 +2,7 @@
 
 ## 用途
 
-完整集群初始化。读取 `cluster-sample.yml`，生成 initALL 33 步执行计划，然后顺序执行。支持 plan / apply 分离、`--plan-only`、跳过确认（`-y`）和断点续跑。
+完整集群初始化。读取 `cluster-sample.yml`，生成 initALL 36 步执行计划，然后顺序执行。支持 plan / apply 分离、`--plan-only`、跳过确认（`-y`）和断点续跑。
 
 适用场景：首次搭建 Datasophon 集群的全量初始化。
 
@@ -45,7 +45,7 @@ create cluster（无参数）
   ├─ 1. 读取 cluster-sample.yml，生成 initALL 计划
   ├─ 2. 打印计划摘要（步骤总数、待执行数、已完成数）
   ├─ 3. 交互确认：输入 y 继续，其他输入取消
-  └─ 4. 顺序执行 33 步 DAG
+  └─ 4. 顺序执行 36 步 DAG
 ```
 
 取消后计划文件已保存，可随时执行 `apply` 恢复：
@@ -76,11 +76,12 @@ datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/insta
 | `global.cluster-type`      | 集群类型：`hadoop` 或 `kubernetes`。CLI `--type` 优先覆盖此值。两者均需合法，否则启动时报错           |
 | `nodes`                    | 至少 1 个节点；当前机器 IP 必须出现在列表中                                                 |
 | `global.sshAuthType`       | SSH 鉴权方式                                                                  |
-| `global.registry.enable`   | 控制 `init-registry` / `init-registry-upload` / `init-offline-nodes` 步骤是否激活 |
-| `global.kubernetes.enable` | 控制所有 `k8s-*` 步骤是否激活（需同时 `global.cluster-type: kubernetes`）                |
-| `global.mysql.enable`      | 控制 `init-mysql` / `init-mysql-app-db` 步骤是否激活                              |
-| `global.ntpServer.enable`  | 控制 NTP 步骤是否激活                                                             |
-| `global.packages.*`        | 各组件安装包文件名，与 `<productPackagesPath>/base/` 下文件名对应                          |
+| `registry.enable`          | 控制 `init-registry` / `init-registry-upload` / `init-offline-nodes` 步骤是否激活 |
+| `kubernetes.enable`        | 控制所有 `k8s-*` 步骤是否激活（需同时 `global.cluster-type: kubernetes`）                |
+| `mysql.enable`             | 控制 `init-mysql` / `init-mysql-app-db` 步骤是否激活                              |
+| `ntpServer.enable`         | 控制 NTP 步骤是否激活                                                             |
+| `baseOtelCollector.enable` | 控制基础 Collector 与 mysqld_exporter 步骤是否激活                                  |
+| `packages.*`               | 各组件安装包文件名，与 `<productPackagesPath>/base/` 下文件名对应                          |
 
 详见 [配置文件参考](../../config-reference.md)。
 
@@ -148,6 +149,5 @@ datasophon-cli create cluster -t hadoop -y \
 
 - [`create node`](./node.md) — 集群初始化完成后扩容新节点
 - [`create config`](./config.md) — 生成初始配置文件
-- [DAG 步骤表](../../reference/init-all-dag.md) — initALL 33 步详解
+- [DAG 步骤表](../../reference/init-all-dag.md) — initALL 36 步详解
 - [退出码与断点续跑](../../reference/exit-codes.md)
-

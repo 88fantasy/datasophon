@@ -13,8 +13,14 @@
 ## 顶层结构
 
 ```yaml
-global:        # 全局配置（cluster-type / registry / mysql / ntp / kubernetes / packages…）
-nodes:         # 集群节点列表（至少 1 个，含主节点）
+global:            # cluster-type / offline / osInfo / sshAuthType
+registry:          # Nexus
+rustfs:            # S3 兼容对象存储
+baseOtelCollector: # 引导期基础设施监控
+mysql:             # MySQL
+kubernetes:        # Kubernetes（按集群类型可选）
+packages:          # 双架构制品名
+nodes:             # 集群节点列表（至少 1 个，含主节点）
 ```
 
 > 早期版本支持的顶层 `type:` 和 `addNodes:` 字段均已移除。集群类型改为 `global.cluster-type`；扩容通过 `create node --ip ...` 对单节点初始化，成功后由命令自动追加到 `nodes` 列表。
@@ -68,7 +74,7 @@ global:
 
 ---
 
-### global.registry
+### registry
 
 控制 Nexus 制品库的安装与使用。`enable: true` 时，DAG 中会激活 `init-registry`、`init-registry-upload`、`init-offline-nodes` 等步骤。
 
@@ -88,7 +94,7 @@ global:
 
 ---
 
-### global.rustfs
+### rustfs
 
 对象存储服务（Rustfs，兼容 S3 协议）。
 
@@ -102,12 +108,42 @@ global:
 | `config.password`    | string   | 必填                | 管理员密码                                                                                                     |
 | `config.installType` | string   | `"SNSD"`          | 部署模式：`SNSD`（单节点单盘）/ `SNMD`（单节点多磁盘）/ `MNMD`（多节点多磁盘）                                                        |
 | `config.volumes`     | string   | `"/data/rustfs0"` | 存储路径。SNSD: `/data/rustfs0`；SNMD: `/data/rustfs{0...3}`；MNMD: `http://node{1...4}:9040/data/rustfs{0...3}` |
+| `config.obsEndpoint` | string   | `""`              | RustFS 指标上报的 OTLP/HTTP 地址；启用 `baseOtelCollector` 时由 plan 自动按 collector 节点覆盖                  |
 
-**相关 DAG 步骤**：`init-rustfs`（步骤 4，条件：`registry.enable && rustfs.enable`）
+**相关 DAG 步骤**：`init-rustfs`（步骤 4，条件：`rustfs.enable`）
 
 ---
 
-### global.yumServer
+### baseOtelCollector
+
+控制引导期 MySQL、Nexus、RustFS 指标的独立 OTel Collector。默认关闭；启用后 Collector 将指标暂存到 RustFS S3，不依赖尚未安装的 Doris。
+
+| 字段 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `enable` | bool | `false` | 是否安装引导期基础 Collector |
+| `node` | string | 必填 | Collector 运行节点 hostname |
+| `otlpHttpPort` | string | `"4318"` | RustFS OTLP/HTTP 上报端口 |
+| `otlpGrpcPort` | string | `"4317"` | OTLP/gRPC 接收端口 |
+| `selfMetricsPort` | string | `"8899"` | Collector 自监控指标端口 |
+| `s3Bucket` | string | `"otel"` | RustFS S3 bucket；Collector 安装前会使用配置凭据幂等创建或确认可访问 |
+| `s3Prefix` | string | `"otel-base"` | S3 对象前缀 |
+| `s3Region` | string | `"us-east-1"` | awss3 exporter 必填 region |
+| `memLimitMiB` | int | `512` | Collector 内存限制（MiB） |
+| `mysqldExporter.enable` | bool | `true` | 是否在 MySQL 节点安装 mysqld_exporter |
+| `mysqldExporter.port` | string | `"9104"` | exporter 监听端口 |
+| `mysqldExporter.monitorUser` | string | `"exporter"` | MySQL 最小权限监控账号 |
+| `mysqldExporter.monitorPassword` | string | 必填 | 监控账号密码，`create config` 自动随机生成 |
+| `nexusMetrics.metricsUser` | string | `"metrics"` | Nexus `nx-metrics-all` 账号 |
+| `nexusMetrics.metricsPassword` | string | 必填 | Nexus metrics 账号密码，`create config` 自动随机生成 |
+| `nexusMetrics.metricsPath` | string | `"/service/rest/metrics/prometheus"` | Nexus Prometheus 指标路径 |
+
+**相关 DAG 步骤**：`init-base-otel-collector`（紧随 RustFS）、`init-registry`（创建 metrics 账号）、`init-mysqld-exporter`（紧随 MySQL 应用账号初始化）
+
+启用时，plan 生成阶段会统一补齐上述默认值，并在任何 SSH/REST 操作前校验节点引用、端口范围、bucket 名、双架构制品名及 RustFS/MySQL/Nexus 必需凭据。Collector 和 exporter 使用稳定安装入口加 `releases/<version>` 目录；配置或版本未变化时保持进程运行。
+
+---
+
+### yumServer
 
 本地 Yum/Apt 离线源服务器（HTTP 文件服务器）。
 
@@ -121,7 +157,7 @@ global:
 
 ---
 
-### global.nmapServer
+### nmapServer
 
 Nmap 网络扫描工具安装。
 
@@ -134,7 +170,7 @@ Nmap 网络扫描工具安装。
 
 ---
 
-### global.mysql
+### mysql
 
 MySQL 8.x 安装与数据库初始化。
 
@@ -156,7 +192,7 @@ MySQL 8.x 安装与数据库初始化。
 
 ---
 
-### global.ntpServer
+### ntpServer
 
 NTP 时钟服务。
 
@@ -169,11 +205,11 @@ NTP 时钟服务。
 
 ---
 
-### global.kubernetes
+### kubernetes
 
 Kubernetes 集群部署（使用 Sealos 方案）。
 
-#### global.kubernetes（顶层）
+#### kubernetes（顶层）
 
 |    字段    |  类型  |   默认    |                 说明                 |
 |----------|------|---------|------------------------------------|
@@ -182,7 +218,7 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 
 > `onlyInstall` 字段已移除，由顶层 `type: kubernetes` 取代。
 
-#### global.kubernetes.baseServices
+#### kubernetes.baseServices
 
 |      字段       |    类型    |   默认   |            说明             |
 |---------------|----------|--------|---------------------------|
@@ -197,7 +233,7 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 
 **相关 DAG 步骤**：`k8s-base-services`（步骤 26）
 
-#### global.kubernetes.kuboardI
+#### kubernetes.kuboardI
 
 |     字段      |    类型    |   默认    |           说明            |
 |-------------|----------|---------|-------------------------|
@@ -207,7 +243,7 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 
 **相关 DAG 步骤**：`k8s-kuboard`（步骤 27，条件：`kubernetes.enable && kuboardI.enable`）
 
-#### global.kubernetes.k8sTools
+#### kubernetes.k8sTools
 
 |    字段     |  类型  |   默认   |                   说明                   |
 |-----------|------|--------|----------------------------------------|
@@ -218,9 +254,9 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 
 ---
 
-### global.packages
+### packages
 
-各组件安装包的文件名，与 `<datasophonPath>/datasophon-init/packages/` 目录拼接定位实际文件。`x86_64` 和 `aarch64` 分别对应两种架构。
+各组件安装包的文件名，与 `<productPackagesPath>/base/` 目录拼接定位实际文件。目标为远端节点且未挂载共享目录时，CLI 会按需通过 SFTP 分发所需的 Collector/exporter 制品。`x86_64` 和 `aarch64` 分别对应两种架构。
 
 |          字段           |   类型   |                     示例值                     |
 |-----------------------|--------|---------------------------------------------|
@@ -233,6 +269,10 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 | `mysql.aarch64`       | string | `mysql-8.0.28-1.el8.aarch64.rpm-bundle.tar` |
 | `rustfs.x86_64`       | string | `rustfs-linux-x86_64-musl-1.0.0.tar.gz`     |
 | `rustfs.aarch64`      | string | `rustfs-linux-aarch64-musl-1.0.0.tar.gz`    |
+| `otelColContrib.x86_64` | string | `otelcol-contrib_0.156.0_linux_amd64.tar.gz` |
+| `otelColContrib.aarch64` | string | `otelcol-contrib_0.156.0_linux_arm64.tar.gz` |
+| `mysqldExporter.x86_64` | string | `mysqld_exporter-0.16.0.linux-amd64.tar.gz` |
+| `mysqldExporter.aarch64` | string | `mysqld_exporter-0.16.0.linux-arm64.tar.gz` |
 | `sealos.x86_64`       | string | `sealos_5.1.0_linux_amd64.tar.gz`           |
 | `sealos.aarch64`      | string | `sealos_5.1.0_linux_arm64.tar.gz`           |
 | `kubernetesI.x86_64`  | string | `kubernetes-v1.31.8-x86.tar`                |

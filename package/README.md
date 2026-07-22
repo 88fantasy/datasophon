@@ -56,9 +56,9 @@ curl -L --max-time 3600 -C - \
 | `downloadUrl` | 下载地址；`null` 表示私有包，需手动上传 |
 | `status` | `public`（可自动下载）/ `private`（需手动上传） |
 | `note` | 备注（私有包说明、镜像地址等） |
-| `repoType` | 可选，显式指定下载目的目录（`yum`/`apt`/`helm`/`docker`/`base`），覆盖按扩展名的自动推断；不填则默认落到 `raw/packages/` |
+| `repoType` / `repoTypes` | 可选，指定一个或多个下载目的目录（`yum`/`apt`/`helm`/`docker`/`base`/`raw`）；不填则默认落到 `raw/packages/` |
 
-`NEXUS`/`MYSQL`/`RUSTFS` 三个 `service` 条目是 `datasophon-cli-go` 直接消费的 CLI 基础设施 bundle（对应 `cluster-sample.yml` 的 `packages:` 段），不对应任何 `meta/datacluster*/<SERVICE>/service_ddl.json`，因此 `decompressPackageName` 统一为 `null`，`repoType` 固定为 `base`（下载到 `package/base/`）。`verify_decompress.py` 假设包在扁平的 `package/<packageName>` 路径下，这三个包（以及本就走子目录分流的 `raw/packages/`、`docker/` 等）不在该路径，会被它计入 "MISSING"——这是已知的展示性限制，不代表包缺失，以 `download.sh` 的下载结果为准。
+`NEXUS`/`MYSQL`/`RUSTFS`/`MYSQLD_EXPORTER` 是 `datasophon-cli-go` 直接消费的基础设施 bundle，固定下载到 `package/base/`。`OTELCOLLECTOR` 同时被 CLI 引导期 collector 和平台纳管的 OTELCOLLECTOR 服务消费，因此使用 `repoTypes: ["raw", "base"]`：只下载一次，再通过 hardlink（跨文件系统时回退 copy）同步到两个目录。`verify_decompress.py` 对子目录分流包可能显示 "MISSING"，以 `download.sh --print-layout` 和下载结果为准。
 
 ## 私有包
 

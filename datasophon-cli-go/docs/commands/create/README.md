@@ -12,7 +12,7 @@
 
 |           命令            |                   说明                   |
 |-------------------------|----------------------------------------|
-| [cluster](./cluster.md) | 完整集群初始化，走 plan → apply 两阶段流程（33 步 DAG） |
+| [cluster](./cluster.md) | 完整集群初始化，走 plan → apply 两阶段流程（36 步 DAG） |
 | [node](./node.md)       | 新增单个节点的基础初始化（独立模式，10 步）                |
 | [config](./config.md)   | 生成带随机密码的 `cluster-sample.yml` 配置模板     |
 
@@ -33,7 +33,7 @@
 2. `create registry` — 安装 Nexus（如启用制品库）
 3. `upload registry` — 上传安装包到 Nexus（可选）
 4. `create mysql` / `create rustfs` / `create ntp-server` / `create nmap-server` / `create yum-server` — 按需逐项安装基础组件
-5. `create cluster` — 执行完整集群初始化（33 步 DAG，自动跳过已 `enable=true` 的步骤所对应的安装动作）
+5. `create cluster` — 执行完整集群初始化（36 步 DAG，自动跳过未启用模块对应的安装动作）
 6. `create node` — 后续单节点扩容
 
 > 注：单独运行的 `create <component>` 命令与 `create cluster` 中对应的 DAG 步骤共用底层 Task 实现；适合分阶段排障与重装单个组件的场景。
@@ -52,6 +52,5 @@ datasophon-cli --dry-run create cluster -p /data/datasophon ...
 
 ## 参考
 
-- [DAG 步骤表](../../reference/init-all-dag.md) — initALL 33 步与各步骤对应的 `create *` 命令
+- [DAG 步骤表](../../reference/init-all-dag.md) — initALL 36 步与各步骤对应的 `create *` 命令
 - [配置文件参考](../../config-reference.md) — `cluster-sample.yml` 各字段含义
-

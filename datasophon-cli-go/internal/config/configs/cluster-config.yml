@@ -82,6 +82,26 @@ rustfs:
     volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
     obsEndpoint: "" #可选，本节点 OTel Collector 的 OTLP/HTTP 端点，如 http://127.0.0.1:4318；留空则不上报指标
   nodes: ["app6"]
+
+baseOtelCollector:
+  enable: false #引导期基础设施采集，默认关闭以保持向后兼容
+  node: "app6"
+  otlpHttpPort: 4318
+  otlpGrpcPort: 4317
+  selfMetricsPort: 8899
+  s3Bucket: "otel"
+  s3Prefix: "otel-base"
+  s3Region: "us-east-1"
+  memLimitMiB: 512
+  mysqldExporter:
+    enable: true
+    port: 9104
+    monitorUser: "exporter"
+    monitorPassword: "{{.MySQLExporterPassword}}"
+  nexusMetrics:
+    metricsUser: "metrics"
+    metricsPassword: "{{.NexusMetricsPassword}}"
+    metricsPath: "/service/rest/metrics/prometheus"
 {{if .IsKubernetes}}
 kubernetes:
   enable: true
@@ -118,6 +138,12 @@ packages:
   rustfs:
     x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
     aarch64: "rustfs-linux-aarch64-musl-1.0.0.tar.gz"
+  otelColContrib:
+    x86_64: "otelcol-contrib_0.156.0_linux_amd64.tar.gz"
+    aarch64: "otelcol-contrib_0.156.0_linux_arm64.tar.gz"
+  mysqldExporter:
+    x86_64: "mysqld_exporter-0.16.0.linux-amd64.tar.gz"
+    aarch64: "mysqld_exporter-0.16.0.linux-arm64.tar.gz"
 {{- if .IsKubernetes}}
   sealos:
     x86_64: "sealos_5.1.0_linux_amd64.tar.gz"

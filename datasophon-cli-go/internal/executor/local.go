@@ -25,6 +25,8 @@ func NewLocalExecutor(dryRun bool) *LocalExecutor {
 	return &LocalExecutor{DryRun: dryRun}
 }
 
+func (l *LocalExecutor) IsDryRun() bool { return l.DryRun }
+
 func (l *LocalExecutor) ExecShell(cmd string) ExecResult {
 	slog.Info("执行命令", "cmd", cmd)
 	if l.DryRun {
@@ -41,11 +43,18 @@ func (l *LocalExecutor) ExecShell(cmd string) ExecResult {
 }
 
 func (l *LocalExecutor) Exists(path string) ExecResult {
+	if l.DryRun {
+		return Succeed("[dry-run] assume exists: " + path)
+	}
 	_, err := os.Stat(path)
 	return ExecResult{Success: err == nil}
 }
 
 func (l *LocalExecutor) SendFile(src, dst string, override bool) ExecResult {
+	if l.DryRun {
+		slog.Info("[dry-run] 跳过文件复制", "src", src, "dst", dst)
+		return Succeed("")
+	}
 	if !override {
 		if _, err := os.Stat(dst); err == nil {
 			return Succeed("")
@@ -73,6 +82,10 @@ func (l *LocalExecutor) SendFile(src, dst string, override bool) ExecResult {
 }
 
 func (l *LocalExecutor) SendDir(srcDir, dstDir string, _ bool) ExecResult {
+	if l.DryRun {
+		slog.Info("[dry-run] 跳过目录复制", "src", srcDir, "dst", dstDir)
+		return Succeed("")
+	}
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return Fail(err.Error())
 	}
@@ -89,6 +102,10 @@ func (l *LocalExecutor) GetFileString(path string) ExecResult {
 }
 
 func (l *LocalExecutor) WriteFromStream(in io.Reader, path string) ExecResult {
+	if l.DryRun {
+		slog.Info("[dry-run] 跳过文件写入", "path", path)
+		return Succeed("")
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return Fail(err.Error())
 	}
@@ -104,6 +121,10 @@ func (l *LocalExecutor) WriteFromStream(in io.Reader, path string) ExecResult {
 }
 
 func (l *LocalExecutor) WriteLines(lines []string, path string) ExecResult {
+	if l.DryRun {
+		slog.Info("[dry-run] 跳过文件写入", "path", path, "lines", len(lines))
+		return Succeed("")
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return Fail(err.Error())
 	}
@@ -122,6 +143,54 @@ func (l *LocalExecutor) WriteLines(lines []string, path string) ExecResult {
 		return Fail(err.Error())
 	}
 	return Succeed("")
+}
+
+func (l *LocalExecutor) WriteFileAtomic(data []byte, path string, mode os.FileMode) ExecResult {
+	if l.DryRun {
+		slog.Info("[dry-run] 跳过原子文件写入", "path", path, "mode", mode.Perm())
+		return Succeed("changed")
+	}
+	if existing, err := os.ReadFile(path); err == nil {
+		if info, statErr := os.Stat(path); statErr == nil && sameFileContentAndMode(data, mode, existing, info.Mode()) {
+			return Succeed("unchanged")
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return Fail(err.Error())
+	}
+	tempPath, err := atomicTempPath(path)
+	if err != nil {
+		return Fail(err.Error())
+	}
+	f, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode.Perm())
+	if err != nil {
+		return Fail(err.Error())
+	}
+	cleanup := func() { _ = os.Remove(tempPath) }
+	if err := f.Chmod(mode.Perm()); err != nil {
+		_ = f.Close()
+		cleanup()
+		return Fail(err.Error())
+	}
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		cleanup()
+		return Fail(err.Error())
+	}
+	if err := f.Sync(); err != nil {
+		_ = f.Close()
+		cleanup()
+		return Fail(err.Error())
+	}
+	if err := f.Close(); err != nil {
+		cleanup()
+		return Fail(err.Error())
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		cleanup()
+		return Fail(err.Error())
+	}
+	return Succeed("changed")
 }
 
 func (l *LocalExecutor) GetOs() osinfo.OsType {

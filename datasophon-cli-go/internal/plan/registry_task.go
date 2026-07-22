@@ -20,17 +20,20 @@ import (
 
 // registryTask 是 plan 包用于 Nexus Registry 安装步骤的 handler。
 type registryTask struct {
-	EnableRegistry bool
-	PackagePath    string
-	InstallPath    string
-	X86Tar         string
-	Aarch64Tar     string
-	WebHost        string
-	WebPort        string
-	Username       string
-	Password       string
-	Repositories   []string
-	DockerHTTPPort int
+	EnableRegistry  bool
+	EnableMetrics   bool
+	PackagePath     string
+	InstallPath     string
+	X86Tar          string
+	Aarch64Tar      string
+	WebHost         string
+	WebPort         string
+	Username        string
+	Password        string
+	Repositories    []string
+	DockerHTTPPort  int
+	MetricsUser     string
+	MetricsPassword string
 }
 
 func (t *registryTask) Name() string { return "安装制品库registry" }
@@ -44,8 +47,7 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 		slog.Info("enableRegistry=false，跳过 registry 安装")
 		return nil
 	}
-
-	if !exec.Exists(t.InstallPath).Success {
+	if executor.InspectPath(exec, t.InstallPath) != executor.PathExists {
 		exec.ExecShell(fmt.Sprintf("mkdir -p %s", t.InstallPath))
 	}
 	home := fmt.Sprintf("%s/nexusDir", t.InstallPath)
@@ -59,12 +61,12 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 	if exec.GetArch() == osinfo.ArchAarch64 {
 		tarPath = fmt.Sprintf("%s/%s", t.PackagePath, t.Aarch64Tar)
 	}
-	if !exec.Exists(tarPath).Success {
+	if executor.InspectPath(exec, tarPath) == executor.PathMissing {
 		slog.Error("安装包不存在", "path", tarPath)
 		return errors.New("安装包不存在")
 	}
 
-	if exec.Exists(nexusPath).Success {
+	if executor.InspectPath(exec, nexusPath) == executor.PathExists {
 		slog.Info("nexus 目录已存在", "path", nexusPath)
 	} else {
 		exec.ExecShell(fmt.Sprintf("mkdir -p %s", home))
@@ -89,6 +91,10 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 			exec.ExecShell("sleep 10")
 		}
 	}
+	if executor.IsDryRun(exec) {
+		slog.Info("[dry-run] registry shell 安装步骤已预演，跳过文件读取与 REST 初始化")
+		return nil
+	}
 
 	if t.checkStart(exec) {
 		if exec.Exists(passwordPath).Success {
@@ -97,11 +103,16 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 				return errors.New("nexus 修改管理员密码失败")
 			}
 		}
-		if err := bootstrap.AcceptNexusEULA(baseURL, t.Username, t.Password,
-			nexusHTTPGet, nexusHTTPPost); err != nil {
+		nexusClient := bootstrap.NewNexusClient(baseURL, t.Username, t.Password)
+		if err := nexusClient.AcceptEULA(); err != nil {
 			return fmt.Errorf("nexus 接受 EULA 失败: %w", err)
 		}
 		t.repoCreateByList(baseURL)
+		if t.EnableMetrics {
+			if err := nexusClient.EnsureMetricsAccount(t.MetricsUser, t.MetricsPassword); err != nil {
+				return fmt.Errorf("nexus 创建 metrics 账号失败: %w", err)
+			}
+		}
 		slog.Info("nexus 安装成功", "path", home)
 		return nil
 	}
@@ -110,6 +121,9 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 }
 
 func (t *registryTask) checkStart(exec executor.Executor) bool {
+	if executor.IsDryRun(exec) {
+		return false
+	}
 	r := exec.ExecShell("ps -ef | grep nexus | grep sonatype-work | grep -v datasophon-cli | grep -v grep")
 	if r.Success {
 		slog.Info("nexus 已在运行")
@@ -170,7 +184,8 @@ func (t *registryTask) repoCreateByList(baseURL string) {
 
 func (t *registryTask) postRepo(baseURL, path string, payload interface{}) bool {
 	body, _ := json.Marshal(payload)
-	resp, err := nexusHTTPPost(baseURL, path, t.Username, t.Password, "application/json", bytes.NewReader(body))
+	client := bootstrap.NewNexusClient(baseURL, t.Username, t.Password)
+	resp, err := client.Do(http.MethodPost, path, "application/json", bytes.NewReader(body))
 	if err != nil {
 		slog.Error("创建仓库请求失败", "path", path, "err", err)
 		return false
@@ -212,8 +227,8 @@ func (t *registryTask) dockerCreate(baseURL, repoName string) bool {
 
 func (t *registryTask) realmsDocker(baseURL string) bool {
 	payload, _ := json.Marshal([]string{"DockerToken", "NexusAuthenticatingRealm"})
-	resp, err := nexusHTTPPut(baseURL, "/service/rest/v1/security/realms/active",
-		t.Username, t.Password, "application/json", bytes.NewReader(payload))
+	client := bootstrap.NewNexusClient(baseURL, t.Username, t.Password)
+	resp, err := client.Do(http.MethodPut, "/service/rest/v1/security/realms/active", "application/json", bytes.NewReader(payload))
 	if err != nil {
 		slog.Error("realms 配置请求失败", "err", err)
 		return false
@@ -225,35 +240,4 @@ func (t *registryTask) realmsDocker(baseURL string) bool {
 	}
 	slog.Error("realms 配置失败", "status", resp.StatusCode)
 	return false
-}
-
-func nexusHTTPGet(baseURL, path, username, password string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, baseURL+path, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	return http.DefaultClient.Do(req)
-}
-
-func nexusHTTPPost(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
-	url := baseURL + path
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	req.Header.Set("Content-Type", contentType)
-	return http.DefaultClient.Do(req)
-}
-
-func nexusHTTPPut(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
-	url := baseURL + path
-	req, err := http.NewRequest(http.MethodPut, url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	req.Header.Set("Content-Type", contentType)
-	return http.DefaultClient.Do(req)
 }
