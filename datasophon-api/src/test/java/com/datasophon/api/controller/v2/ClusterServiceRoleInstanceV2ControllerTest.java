@@ -44,7 +44,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * 端口不是 {@link ClusterServiceRoleInstanceEntity} 的字段，需在 controller 里按
- * {@link ServiceInstancePortResolver} 逐条回填（见 {@code list} 方法）；这里验证回填按下标正确对齐。
+ * {@link ServiceInstancePortResolver} 批量回填（见 {@code list} 方法）；这里验证回填按下标正确对齐。
  */
 class ClusterServiceRoleInstanceV2ControllerTest {
 
@@ -63,10 +63,11 @@ class ClusterServiceRoleInstanceV2ControllerTest {
         ClusterServiceRoleInstanceEntity be = role(2, "DorisBE");
         when(roleService.listAll(7, null, null, null, null, 1, 20))
                 .thenReturn(Result.success(List.of(fe, be)).put(Constants.TOTAL, 2L));
-        when(portResolver.portsOf(fe)).thenReturn(List.of(new RolePort("query_port", "FE节点上MySQL服务器的端口", 9030)));
-        when(portResolver.portsOf(be)).thenReturn(List.of(
-                new RolePort("webserver_port", "BE WebServer端口", 8040),
-                new RolePort("brpc_port", "BE Rpc端口", 8060)));
+        // controller 改走批量重载(见 ServiceInstancePortResolver#portsOf(List))，按下标与 entities 对齐。
+        when(portResolver.portsOf(List.of(fe, be))).thenReturn(List.of(
+                List.of(new RolePort("query_port", "FE节点上MySQL服务器的端口", 9030)),
+                List.of(new RolePort("webserver_port", "BE WebServer端口", 8040),
+                        new RolePort("brpc_port", "BE Rpc端口", 8060))));
 
         ApiResponse<ServiceRoleInstancePageResponse> response =
                 controller.list(1, 7, 1, 20, null, null, null, null);

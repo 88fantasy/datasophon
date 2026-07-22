@@ -135,6 +135,7 @@ describe('toGraphData', () => {
           maxDurationNs: 5_000_000,
           external: true,
           dbSystem: 'mysql',
+          isDatabase: true,
         },
       ],
       edges: [],
@@ -147,8 +148,8 @@ describe('toGraphData', () => {
   });
 
   it('does not mark http/other/grpc external nodes as DB (only real db.system calls)', () => {
-    // dbSystem 是 db.system → rpc.system → http → other 四级兜底的结果；worker/master/nexus 等外部
-    // 依赖走的是普通 HTTP/gRPC 调用，dbSystem 落到 grpc/http/other，不应该显示 DB 徽标。
+    // isDatabase 由后端按是否真的落到 db.system 显式标注；worker/master/nexus 等外部依赖走的是普通
+    // HTTP/gRPC 调用，后端会把 isDatabase 置为 false，不应该显示 DB 徽标。
     const { nodes } = toGraphData({
       nodes: [
         {
@@ -160,6 +161,7 @@ describe('toGraphData', () => {
           maxDurationNs: 2_000_000,
           external: true,
           dbSystem: 'grpc',
+          isDatabase: false,
           serviceType: 'datasophon-worker',
         },
         {
@@ -171,6 +173,7 @@ describe('toGraphData', () => {
           maxDurationNs: 2_000_000,
           external: true,
           dbSystem: 'other',
+          isDatabase: false,
           serviceType: 'nexus',
         },
       ],
@@ -183,8 +186,8 @@ describe('toGraphData', () => {
 
   it('marks rpc.system=grpc external nodes as GRPC, not DB', () => {
     // api(18081)↔worker(18082) 之间是 gRPC 调用，span_attributes 里带 rpc.system=grpc（已在
-    // ddh-01 真实 Doris 数据核实），后端把它纳入 db_system 四级兜底的第二档，前端应识别为 GRPC
-    // 徽标而不是 DB 徽标。
+    // ddh-01 真实 Doris 数据核实），后端把 dbSystem 纳入四级兜底的第二档且 isDatabase=false，
+    // 前端应识别为 GRPC 徽标而不是 DB 徽标。
     const { nodes } = toGraphData({
       nodes: [
         {
@@ -196,6 +199,7 @@ describe('toGraphData', () => {
           maxDurationNs: 2_000_000,
           external: true,
           dbSystem: 'grpc',
+          isDatabase: false,
           serviceType: 'datasophon-worker',
         },
       ],
@@ -204,6 +208,31 @@ describe('toGraphData', () => {
 
     expect(nodes[0].data.isGrpc).toBe(true);
     expect(nodes[0].data.isDb).toBe(false);
+  });
+
+  it('does not mark a non-grpc rpc.system (e.g. thrift) external node as DB', () => {
+    // 回归用例：旧逻辑靠排除 http/other/grpc 反推 isDb,会把非 grpc 的 rpc.system(如 thrift/dubbo)
+    // 误判成数据库。isDatabase 由后端显式标注,这里即使 dbSystem 落到未被特殊处理的 'thrift',
+    // 只要后端标 isDatabase=false 就不应该显示 DB 徽标。
+    const { nodes } = toGraphData({
+      nodes: [
+        {
+          serviceName: 'thrift@192.168.10.131:9090',
+          spanCount: 50,
+          errorCount: 0,
+          avgDurationNs: 500_000,
+          p99DurationNs: 1_000_000,
+          maxDurationNs: 2_000_000,
+          external: true,
+          dbSystem: 'thrift',
+          isDatabase: false,
+        },
+      ],
+      edges: [],
+    });
+
+    expect(nodes[0].data.isDb).toBe(false);
+    expect(nodes[0].data.isGrpc).toBe(false);
   });
 
   it('prefers backend-resolved serviceType over dbSystem for icon and display name', () => {

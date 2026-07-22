@@ -268,6 +268,8 @@ public class OtelTracesQueryService {
         // 因此 otel_traces_graph_job(t1.service_name != t2.service_name)永远不会把它们聚合成边。
         // 不按 db.system 是否存在做类型限制——任何带 server.address/port 的 CLIENT span 都视为一个外部依赖，
         // system 标签按 db.system → rpc.system（如 grpc）→ http（有 http.request.method 时）→ other 四级兜底。
+        // is_database 单独标记"是否真的落到 db.system"，前端 DB 徽标据此判定，不再靠排除
+        // http/other/grpc 反推——避免非 grpc 的 rpc.system（如 thrift/dubbo）被误判成数据库。
         return "SELECT service_name AS caller,\n"
                 + "       COALESCE(\n"
                 + "           NULLIF(cast(span_attributes['db.system'] as string), ''),\n"
@@ -275,6 +277,8 @@ public class OtelTracesQueryService {
                 + "           IF(NULLIF(cast(span_attributes['http.request.method'] as string), '') IS NOT NULL,\n"
                 + "              'http', 'other')\n"
                 + "       ) AS db_system,\n"
+                + "       IF(NULLIF(cast(span_attributes['db.system'] as string), '') IS NOT NULL, 1, 0)\n"
+                + "           AS is_database,\n"
                 + "       cast(span_attributes['server.address'] as string) AS server_addr,\n"
                 + "       cast(span_attributes['server.port'] as string) AS server_port,\n"
                 + "       COUNT(*) AS call_count,\n"
@@ -288,7 +292,7 @@ public class OtelTracesQueryService {
                 + "  AND cast(span_attributes['server.address'] as string) IS NOT NULL\n"
                 + "  AND cast(span_attributes['server.address'] as string) != ''\n"
                 + "  AND service_name IS NOT NULL AND service_name != ''\n"
-                + "GROUP BY caller, db_system, server_addr, server_port";
+                + "GROUP BY caller, db_system, is_database, server_addr, server_port";
     }
 
     static String buildServiceSummaryStatsSql() {
@@ -365,13 +369,14 @@ public class OtelTracesQueryService {
         for (Map<String, Object> row : externalRows) {
             String caller = stringValue(row.get("caller"));
             String dbSystem = stringValue(row.get("db_system"));
+            boolean isDatabase = booleanValue(row.get("is_database"));
             String serverAddr = stringValue(row.get("server_addr"));
             String serverPort = stringValue(row.get("server_port"));
             String externalId = dbSystem + "@" + serverAddr + ":" + serverPort;
             long callCount = longValue(row.get("call_count"));
             long errorCount = longValue(row.get("error_count"));
             externalAggregates.computeIfAbsent(externalId, id -> new ExternalAggregate(externalId, dbSystem,
-                    resolveServiceType(serviceTypeResolver, serverAddr, serverPort)))
+                    isDatabase, resolveServiceType(serviceTypeResolver, serverAddr, serverPort)))
                     .add(callCount, errorCount,
                             doubleValue(row.get("avg_duration_ns")),
                             doubleValue(row.get("p99_duration_ns")),
@@ -401,6 +406,8 @@ public class OtelTracesQueryService {
 
         private final String dbSystem;
 
+        private final boolean isDatabase;
+
         private final String serviceType;
 
         private long callCount;
@@ -413,9 +420,10 @@ public class OtelTracesQueryService {
 
         private double maxDurationNs;
 
-        private ExternalAggregate(String externalId, String dbSystem, String serviceType) {
+        private ExternalAggregate(String externalId, String dbSystem, boolean isDatabase, String serviceType) {
             this.externalId = externalId;
             this.dbSystem = dbSystem;
+            this.isDatabase = isDatabase;
             this.serviceType = serviceType;
         }
 
@@ -430,8 +438,8 @@ public class OtelTracesQueryService {
 
         private TopologyNode toNode() {
             double avgDurationNs = callCount > 0 ? weightedAvgDurationNs / callCount : 0D;
-            return TopologyNode.external(externalId, dbSystem, serviceType, callCount, errorCount, avgDurationNs,
-                    p99DurationNs, maxDurationNs);
+            return TopologyNode.external(externalId, dbSystem, isDatabase, serviceType, callCount, errorCount,
+                    avgDurationNs, p99DurationNs, maxDurationNs);
         }
     }
 
@@ -527,6 +535,10 @@ public class OtelTracesQueryService {
         return value instanceof Number number ? number.longValue() : 0L;
     }
 
+    private static boolean booleanValue(Object value) {
+        return longValue(value) != 0;
+    }
+
     private static double doubleValue(Object value) {
         return value instanceof Number number ? number.doubleValue() : 0D;
     }
@@ -594,22 +606,25 @@ public class OtelTracesQueryService {
                                double maxDurationNs,
                                boolean external,
                                String dbSystem,
+                               boolean isDatabase,
                                String serviceType) {
 
     static TopologyNode service(String serviceName, long spanCount, long errorCount,
                                 double avgDurationNs, double p99DurationNs, double maxDurationNs) {
         return new TopologyNode(serviceName, spanCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs,
-                false, "", null);
+                false, "", false, null);
     }
 
     /**
+     * @param isDatabase 该外部依赖是否真的落到 {@code db.system}（而非 rpc.system/http/other 兜底），
+     *                   前端 DB 徽标据此判定，不再靠排除 http/other/grpc 反推。
      * @param serviceType 按 ip:port 反查出的真实服务类型（如 "doris"/"datasophon-worker"），查不到时为
      *                    null，前端回退按 dbSystem 展示。
      */
-    static TopologyNode external(String id, String dbSystem, String serviceType, long spanCount, long errorCount,
-                                 double avgDurationNs, double p99DurationNs, double maxDurationNs) {
+    static TopologyNode external(String id, String dbSystem, boolean isDatabase, String serviceType, long spanCount,
+                                 long errorCount, double avgDurationNs, double p99DurationNs, double maxDurationNs) {
         return new TopologyNode(id, spanCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs,
-                true, dbSystem, serviceType);
+                true, dbSystem, isDatabase, serviceType);
     }
     }
 

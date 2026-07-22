@@ -24,6 +24,8 @@ package com.datasophon.api.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.load.ServiceInfoMap;
@@ -118,6 +120,23 @@ class ServiceInstancePortResolverTest {
 
         assertThat(ports).extracting(RolePort::paramName).containsExactly("be_port", "webserver_port");
         assertThat(ports).extracting(RolePort::port).containsExactly(9060, 8040);
+    }
+
+    @Test
+    void portsOf_batch_cachesClusterFrameLookupPerCluster() {
+        givenClusterFrame(5, "FRAME_BATCH");
+        givenService("FRAME_BATCH_NACOS", List.of(roleInfo("NacosServer", "nacosServerPort")),
+                portParam("nacosServerPort", "8848"));
+        ClusterServiceRoleInstanceEntity roleA = role(5, "NACOS", "NacosServer", null, null);
+        ClusterServiceRoleInstanceEntity roleB = role(5, "NACOS", "NacosServer", null, null);
+        ClusterServiceRoleInstanceEntity roleC = role(5, "NACOS", "NacosServer", null, null);
+
+        List<List<RolePort>> result = resolver.portsOf(List.of(roleA, roleB, roleC));
+
+        // 三行都属于同一 clusterId=5,批量重载应只查一次 getById,而不是按行各查一次。
+        assertThat(result).hasSize(3);
+        result.forEach(ports -> assertThat(ports).extracting(RolePort::port).containsExactly(8848));
+        verify(clusterInfoService, times(1)).getById(5);
     }
 
     @Test

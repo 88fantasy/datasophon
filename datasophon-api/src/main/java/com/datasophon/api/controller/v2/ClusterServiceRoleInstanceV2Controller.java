@@ -111,9 +111,11 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
         List<ClusterServiceRoleInstanceEntity> safeEntities = entities != null ? entities : List.of();
         List<ServiceRoleInstanceResponse> records = ServiceRoleInstanceResponse.fromList(safeEntities);
         // 端口不是实体字段，需按 service_ddl 元数据逐条反查回填（详见 ServiceInstancePortResolver）；
-        // fromList 是纯映射不改变顺序/条数，这里按下标对齐 entity 与其对应的 response。
+        // fromList 是纯映射不改变顺序/条数，这里按下标对齐 entity 与其对应的 response。批量重载内部按
+        // clusterId 缓存 clusterFrame，避免同一集群在一页内被重复查库。
+        List<List<ServiceInstancePortResolver.RolePort>> portsPerRow = portResolver.portsOf(safeEntities);
         for (int i = 0; i < safeEntities.size(); i++) {
-            records.get(i).setPorts(portResolver.portsOf(safeEntities.get(i)));
+            records.get(i).setPorts(portsPerRow.get(i));
         }
         return ApiResponse.ok(ServiceRoleInstancePageResponse.of(records, total));
     }

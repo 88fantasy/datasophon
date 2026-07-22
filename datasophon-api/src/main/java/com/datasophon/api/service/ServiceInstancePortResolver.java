@@ -36,6 +36,7 @@ import com.datasophon.dao.enums.NeedRestart;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,9 +156,42 @@ public class ServiceInstancePortResolver {
         if (role == null || role.getClusterId() == null) {
             return List.of();
         }
-        ClusterInfoEntity cluster = clusterInfoService.getById(role.getClusterId());
-        String clusterFrame = cluster == null ? null : cluster.getClusterFrame();
-        return portsOf(clusterFrame, role);
+        return portsOf(clusterFrameOf(role.getClusterId()), role);
+    }
+
+    /**
+     * 批量版本：按下标与入参 {@code roles} 一一对应（含 null 元素时该行返回空列表），供列表分页场景使用。
+     * 同一 {@code clusterId} 在一批内只查一次 {@link ClusterInfoService#getById}，避免按行重复查库。
+     */
+    public List<List<RolePort>> portsOf(List<ClusterServiceRoleInstanceEntity> roles) {
+        if (roles == null) {
+            return List.of();
+        }
+        // clusterFrame 可能合法地为 null（集群不存在或未配置 clusterFrame），computeIfAbsent 对返回 null
+        // 的映射函数不会缓存结果，会导致同一 clusterId 反复重查；改用 containsKey 显式判断已缓存过。
+        Map<Integer, String> clusterFrameCache = new LinkedHashMap<>();
+        List<List<RolePort>> result = new ArrayList<>(roles.size());
+        for (ClusterServiceRoleInstanceEntity role : roles) {
+            if (role == null || role.getClusterId() == null) {
+                result.add(List.of());
+                continue;
+            }
+            Integer clusterId = role.getClusterId();
+            String clusterFrame;
+            if (clusterFrameCache.containsKey(clusterId)) {
+                clusterFrame = clusterFrameCache.get(clusterId);
+            } else {
+                clusterFrame = clusterFrameOf(clusterId);
+                clusterFrameCache.put(clusterId, clusterFrame);
+            }
+            result.add(portsOf(clusterFrame, role));
+        }
+        return result;
+    }
+
+    private String clusterFrameOf(Integer clusterId) {
+        ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
+        return cluster == null ? null : cluster.getClusterFrame();
     }
 
     private List<RolePort> portsOf(String clusterFrame, ClusterServiceRoleInstanceEntity role) {

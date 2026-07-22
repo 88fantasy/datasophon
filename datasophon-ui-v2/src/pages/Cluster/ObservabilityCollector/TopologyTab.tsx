@@ -146,15 +146,10 @@ export function toGraphData(
     const displayName = node.external
       ? `${externalLabel}\n${node.serviceName.split('@')[1] ?? node.serviceName}`
       : node.serviceName;
-    // dbSystem 是 db.system → rpc.system（如 grpc）→ http → other 四级兜底的结果，只有落到
-    // 真实 db.system（如 mysql）才是数据库调用；rpc.system/http/other 都是非数据库的外部依赖，
-    // 其中 rpc.system 单独识别出来打 GRPC 徽标（如 datasophon-api↔datasophon-worker 走 gRPC）。
-    const isDb =
-      Boolean(node.external) &&
-      Boolean(node.dbSystem) &&
-      node.dbSystem !== 'http' &&
-      node.dbSystem !== 'other' &&
-      node.dbSystem !== 'grpc';
+    // dbSystem 是 db.system → rpc.system（如 grpc）→ http → other 四级兜底后的展示用标签，不能直接拿它
+    // 反推"是不是数据库"——排除 http/other/grpc 会把非 grpc 的 rpc.system（如 thrift/dubbo）误判成数据库。
+    // isDatabase 由后端在合并外部依赖时按是否真的落到 db.system 显式标注，DB 徽标改用它判定。
+    const isDb = Boolean(node.external) && Boolean(node.isDatabase);
     const isGrpc = Boolean(node.external) && node.dbSystem === 'grpc';
     return {
       id: node.serviceName,
