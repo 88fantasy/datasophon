@@ -66,8 +66,9 @@ const AreaPanel: FC<AreaPanelProps> = ({
           x: {
             labelFormatter: (value: number) => dayjs(value).format('HH:mm'),
             tickCount: 5,
+            grid: false,
           },
-          y: { labelFormatter: yFormatter },
+          y: { labelFormatter: yFormatter, grid: false },
         }}
         scale={{
           x: { type: 'time' },

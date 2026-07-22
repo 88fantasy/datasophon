@@ -147,6 +147,18 @@ export default defineConfig({
       theme: {
         token: {
           fontFamily: 'AlibabaSans, sans-serif',
+          // 以下 token 对齐监控平台设计稿的整体观感：更大的圆角、
+          // 更柔和的卡片阴影、偏冷的浅灰底色。应用内容区没有接入
+          // antd 的 darkAlgorithm（暗色仅切换 ProLayout 顶栏），
+          // 因此这些 token 可以安全地全局写死，不会影响暗色顶栏。
+          borderRadius: 8,
+          borderRadiusLG: 12,
+          colorBgLayout: '#f5f7fa',
+          boxShadowTertiary:
+            '0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 16px -6px rgba(0, 0, 0, 0.08)',
+          // antd Card 组件内部默认阴影读的就是这个别名 token。
+          boxShadowCard:
+            '0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 16px -6px rgba(0, 0, 0, 0.08)',
         },
       },
     },

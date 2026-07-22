@@ -1,4 +1,4 @@
-import { Line } from '@ant-design/plots';
+import { Area, Line } from '@ant-design/plots';
 import { Empty } from 'antd';
 import dayjs from 'dayjs';
 import type { FC } from 'react';
@@ -61,9 +61,14 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   const chartKey =
     data.length > 0 ? `${data[0].time}-${data[data.length - 1].time}` : 'empty';
 
+  // 单序列图对齐设计稿的柔和渐变面积填充；多序列图（如 p50/p75/p99 分位数）
+  // 保持纯线条，避免半透明填充相互重叠把颜色叠脏。
+  const isSingleSeries = seriesNames.length === 1;
+  const ChartComponent = isSingleSeries ? Area : Line;
+
   return (
     <MonitorPanelCard title={title}>
-      <Line
+      <ChartComponent
         key={chartKey}
         data={data}
         xField="time"
@@ -71,12 +76,14 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
         seriesField="series"
         height={height}
         smooth
+        style={isSingleSeries ? { fillOpacity: 0.3 } : undefined}
         axis={{
           x: {
             labelFormatter: (value: number) => dayjs(value).format('HH:mm'),
             tickCount: 5,
+            grid: false,
           },
-          y: { labelFormatter: yFormatter },
+          y: { labelFormatter: yFormatter, grid: false },
         }}
         scale={{
           x: { type: 'time' },
