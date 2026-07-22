@@ -382,82 +382,87 @@ const ClusterLayout: React.FC = () => {
           />
         </>
       )}
-      <Layout style={{ minHeight: 'calc(100vh - 56px)' }}>
-        <Sider
-          width={200}
-          style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}
-        >
-          <div
-            style={{
-              padding: '16px',
-              fontWeight: 600,
-              borderBottom: '1px solid #f0f0f0',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
+      <PageContainer
+        pageHeaderRender={false}
+        childrenContentStyle={{ padding: 0 }}
+      >
+        <Layout style={{ minHeight: 'calc(100vh - 56px)' }}>
+          <Sider
+            width={200}
+            style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}
           >
-            {clusterInfo.clusterName}
-          </div>
-          {/* 上传部署 / 添加服务工具栏 —— 仅物理集群可见 */}
-          {clusterInfo.archType !== 'k8s' && (
             <div
               style={{
-                padding: '8px 12px',
+                padding: '16px',
+                fontWeight: 600,
                 borderBottom: '1px solid #f0f0f0',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 6,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: 'manifest',
-                      label: '部署清单',
-                      onClick: () => setManifestModalOpen(true),
-                    },
-                    {
-                      key: 'package',
-                      label: '部署包',
-                      onClick: () => setPackageModalOpen(true),
-                    },
-                  ],
+              {clusterInfo.clusterName}
+            </div>
+            {/* 上传部署 / 添加服务工具栏 —— 仅物理集群可见 */}
+            {clusterInfo.archType !== 'k8s' && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  borderBottom: '1px solid #f0f0f0',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 6,
                 }}
               >
+                <Dropdown
+                  menu={{
+                    items: [
+                      {
+                        key: 'manifest',
+                        label: '部署清单',
+                        onClick: () => setManifestModalOpen(true),
+                      },
+                      {
+                        key: 'package',
+                        label: '部署包',
+                        onClick: () => setPackageModalOpen(true),
+                      },
+                    ],
+                  }}
+                >
+                  <Button
+                    size="small"
+                    icon={<UploadOutlined />}
+                    style={{ width: '100%', paddingInline: 6, fontSize: 12 }}
+                  >
+                    上传部署
+                  </Button>
+                </Dropdown>
                 <Button
                   size="small"
-                  icon={<UploadOutlined />}
+                  icon={<PlusOutlined />}
                   style={{ width: '100%', paddingInline: 6, fontSize: 12 }}
+                  onClick={() => setAddServiceModalOpen(true)}
                 >
-                  上传部署
+                  添加服务
                 </Button>
-              </Dropdown>
-              <Button
-                size="small"
-                icon={<PlusOutlined />}
-                style={{ width: '100%', paddingInline: 6, fontSize: 12 }}
-                onClick={() => setAddServiceModalOpen(true)}
-              >
-                添加服务
-              </Button>
-            </div>
-          )}
-          <Menu
-            mode="inline"
-            selectedKeys={[currentPath]}
-            items={menuItems}
-            onClick={({ key }) => {
-              if (!key.startsWith('/')) return;
-              history.push(key);
-            }}
-          />
-        </Sider>
-        <Content style={{ padding: 16, background: '#f5f5f5' }}>
-          <Outlet />
-        </Content>
-      </Layout>
+              </div>
+            )}
+            <Menu
+              mode="inline"
+              selectedKeys={[currentPath]}
+              items={menuItems}
+              onClick={({ key }) => {
+                if (!key.startsWith('/')) return;
+                history.push(key);
+              }}
+            />
+          </Sider>
+          <Content style={{ padding: 16, background: '#f5f5f5' }}>
+            <Outlet />
+          </Content>
+        </Layout>
+      </PageContainer>
     </ClusterContext.Provider>
   );
 };
