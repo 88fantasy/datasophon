@@ -9,8 +9,11 @@ import (
 )
 
 const (
-	defaultOtlpHTTPPort       = "4318"
-	defaultOtlpGRPCPort       = "4317"
+	// 4317/4318 是纳管 OTELCOLLECTOR（datasophon-worker/.../templates/otelcol.ftl）硬编码
+	// 监听的 OTLP 端口；base collector 与它常共存于同一节点（如 ddh-01），默认值必须避开，
+	// 否则纳管 collector 后装时会 bind 失败。
+	defaultOtlpHTTPPort       = "5318"
+	defaultOtlpGRPCPort       = "5317"
 	defaultSelfMetricsPort    = "8899"
 	defaultS3Bucket           = "otel"
 	defaultS3Prefix           = "otel-base"

@@ -200,10 +200,13 @@ func (t *mysqldExporterTask) ensureMonitorAccount(exec executor.Executor) error 
 	account := mysqlStringLiteral(t.MonitorUser)
 	password := mysqlStringLiteral(t.MonitorPassword)
 	sqlPath := tempDir + "/account.sql"
+	// grantee host 用 127.0.0.1 而非 localhost：exporter 走 TCP 连 127.0.0.1（见下方
+	// .my.cnf 的 host=127.0.0.1），MySQL 里 @'localhost' 只匹配 unix socket 连接，
+	// 两者不一致会导致 Access denied，账号永远连不上。
 	accountSQL := strings.Join([]string{
-		fmt.Sprintf("CREATE USER IF NOT EXISTS '%s'@'localhost' IDENTIFIED BY '%s' WITH MAX_USER_CONNECTIONS 3;", account, password),
-		fmt.Sprintf("ALTER USER '%s'@'localhost' IDENTIFIED BY '%s' WITH MAX_USER_CONNECTIONS 3;", account, password),
-		fmt.Sprintf("GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '%s'@'localhost';", account),
+		fmt.Sprintf("CREATE USER IF NOT EXISTS '%s'@'127.0.0.1' IDENTIFIED BY '%s' WITH MAX_USER_CONNECTIONS 3;", account, password),
+		fmt.Sprintf("ALTER USER '%s'@'127.0.0.1' IDENTIFIED BY '%s' WITH MAX_USER_CONNECTIONS 3;", account, password),
+		fmt.Sprintf("GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '%s'@'127.0.0.1';", account),
 		"FLUSH PRIVILEGES;",
 	}, "\n") + "\n"
 	if result := executor.WriteFileAtomic(exec, []byte(accountSQL), sqlPath, 0o600); !result.Success {

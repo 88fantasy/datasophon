@@ -80,14 +80,14 @@ rustfs:
     password: "{{.RustfsPassword}}"
     installType: "SNSD" #可选SNSD(单节点单盘模式)，SNMD(单节点多磁盘模式)，MNMD(多节点多磁盘模式)
     volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
-    obsEndpoint: "" #可选，本节点 OTel Collector 的 OTLP/HTTP 端点，如 http://127.0.0.1:4318；留空则不上报指标
+    obsEndpoint: "" #可选，本节点 OTel Collector 的 OTLP/HTTP 端点，如 http://127.0.0.1:5318；留空则不上报指标
   nodes: ["app6"]
 
 baseOtelCollector:
   enable: false #引导期基础设施采集，默认关闭以保持向后兼容
   node: "app6"
-  otlpHttpPort: 4318
-  otlpGrpcPort: 4317
+  otlpHttpPort: 5318 #避开纳管 OTELCOLLECTOR 硬编码的 4318，两者可能同节点共存
+  otlpGrpcPort: 5317 #避开纳管 OTELCOLLECTOR 硬编码的 4317，两者可能同节点共存
   selfMetricsPort: 8899
   s3Bucket: "otel"
   s3Prefix: "otel-base"

@@ -122,8 +122,8 @@ global:
 |---|---|---|---|
 | `enable` | bool | `false` | 是否安装引导期基础 Collector |
 | `node` | string | 必填 | Collector 运行节点 hostname |
-| `otlpHttpPort` | string | `"4318"` | RustFS OTLP/HTTP 上报端口 |
-| `otlpGrpcPort` | string | `"4317"` | OTLP/gRPC 接收端口 |
+| `otlpHttpPort` | string | `"5318"` | RustFS OTLP/HTTP 上报端口（刻意避开纳管 OTELCOLLECTOR 硬编码的 4318，两者可能同节点共存） |
+| `otlpGrpcPort` | string | `"5317"` | OTLP/gRPC 接收端口（同上，避开纳管 OTELCOLLECTOR 的 4317） |
 | `selfMetricsPort` | string | `"8899"` | Collector 自监控指标端口 |
 | `s3Bucket` | string | `"otel"` | RustFS S3 bucket；Collector 安装前会使用配置凭据幂等创建或确认可访问 |
 | `s3Prefix` | string | `"otel-base"` | S3 对象前缀 |

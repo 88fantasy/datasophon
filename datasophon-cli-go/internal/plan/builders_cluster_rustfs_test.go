@@ -97,7 +97,7 @@ func TestBuildRustfs_DefaultsCollectorHTTPPort(t *testing.T) {
 	actions, err := buildRustfs(ctx)
 	require.NoError(t, err)
 	require.Len(t, actions, 1)
-	assert.Equal(t, "http://10.0.0.2:4318", actions[0].Handler.(*rustfsTask).ObsEndpoint)
+	assert.Equal(t, "http://10.0.0.2:5318", actions[0].Handler.(*rustfsTask).ObsEndpoint)
 }
 
 func TestBuildRustfs_CollectorDisabledLeavesEndpointEmpty(t *testing.T) {

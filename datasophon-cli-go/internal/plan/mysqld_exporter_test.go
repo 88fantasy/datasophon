@@ -158,10 +158,10 @@ func TestMysqldExporterTaskInstallsAccountAndExporter(t *testing.T) {
 
 	sql := strings.Join(exec.writes["/tmp/datasophon-mysqld-exporter.ABC123/account.sql"], "\n")
 	for _, expected := range []string{
-		"CREATE USER IF NOT EXISTS 'exporter'@'localhost'",
-		"ALTER USER 'exporter'@'localhost' IDENTIFIED BY 'exporter#password' WITH MAX_USER_CONNECTIONS 3",
+		"CREATE USER IF NOT EXISTS 'exporter'@'127.0.0.1'",
+		"ALTER USER 'exporter'@'127.0.0.1' IDENTIFIED BY 'exporter#password' WITH MAX_USER_CONNECTIONS 3",
 		"WITH MAX_USER_CONNECTIONS 3",
-		"GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'localhost'",
+		"GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'127.0.0.1'",
 	} {
 		if !strings.Contains(sql, expected) {
 			t.Fatalf("SQL missing %q:\n%s", expected, sql)
