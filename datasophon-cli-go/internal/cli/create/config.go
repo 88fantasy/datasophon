@@ -22,12 +22,14 @@ const (
 )
 
 type templateData struct {
-	ClusterType       string
-	IsKubernetes      bool
-	RegistryPassword  string
-	MySQLRootPassword string
-	RustfsPassword    string
-	CurrentNodeIP     string
+	ClusterType           string
+	IsKubernetes          bool
+	RegistryPassword      string
+	MySQLRootPassword     string
+	RustfsPassword        string
+	MySQLExporterPassword string
+	NexusMetricsPassword  string
+	CurrentNodeIP         string
 }
 
 type createConfigCmd struct {
@@ -86,6 +88,14 @@ func (c *createConfigCmd) run() error {
 	if err != nil {
 		return err
 	}
+	mysqlExporterPwd, err := generatePassword(passwordLength)
+	if err != nil {
+		return err
+	}
+	nexusMetricsPwd, err := generatePassword(passwordLength)
+	if err != nil {
+		return err
+	}
 	localIP, err := detectLocalIP()
 	if err != nil {
 		return err
@@ -98,12 +108,14 @@ func (c *createConfigCmd) run() error {
 
 	var rendered bytes.Buffer
 	if err := tpl.Execute(&rendered, templateData{
-		ClusterType:       c.typeFlag,
-		IsKubernetes:      c.typeFlag == "kubernetes",
-		RegistryPassword:  regPwd,
-		MySQLRootPassword: mysqlPwd,
-		RustfsPassword:    rustfsPwd,
-		CurrentNodeIP:     localIP,
+		ClusterType:           c.typeFlag,
+		IsKubernetes:          c.typeFlag == "kubernetes",
+		RegistryPassword:      regPwd,
+		MySQLRootPassword:     mysqlPwd,
+		RustfsPassword:        rustfsPwd,
+		MySQLExporterPassword: mysqlExporterPwd,
+		NexusMetricsPassword:  nexusMetricsPwd,
+		CurrentNodeIP:         localIP,
 	}); err != nil {
 		return fmt.Errorf("渲染配置模板失败: %w", err)
 	}

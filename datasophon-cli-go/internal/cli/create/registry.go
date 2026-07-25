@@ -50,7 +50,7 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 		return nil
 	}
 
-	if !exec.Exists(t.InstallPath).Success {
+	if executor.InspectPath(exec, t.InstallPath) == executor.PathMissing {
 		exec.ExecShell(fmt.Sprintf("mkdir -p %s", t.InstallPath))
 	}
 	home := fmt.Sprintf("%s/nexusDir", t.InstallPath)
@@ -64,12 +64,12 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 	if exec.GetArch() == osinfo.ArchAarch64 {
 		tarPath = fmt.Sprintf("%s/%s", t.PackagePath, t.Aarch64Tar)
 	}
-	if !exec.Exists(tarPath).Success {
+	if executor.InspectPath(exec, tarPath) == executor.PathMissing {
 		slog.Error("安装包不存在", "path", tarPath)
 		return errors.New("安装包不存在")
 	}
 
-	if exec.Exists(nexusPath).Success {
+	if executor.InspectPath(exec, nexusPath) == executor.PathExists {
 		slog.Info("nexus 目录已存在", "path", nexusPath)
 	} else {
 		exec.ExecShell(fmt.Sprintf("mkdir -p %s", home))
@@ -94,6 +94,10 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 			exec.ExecShell("sleep 10")
 		}
 	}
+	if executor.IsDryRun(exec) {
+		slog.Info("[dry-run] registry shell 安装步骤已预演，跳过文件读取与 REST 初始化")
+		return nil
+	}
 
 	if t.checkStart(exec) {
 		if exec.Exists(passwordPath).Success {
@@ -102,8 +106,8 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 				return errors.New("nexus 修改管理员密码失败")
 			}
 		}
-		if err := bootstrap.AcceptNexusEULA(baseURL, t.Username, t.Password,
-			registryHTTPGet, registryHTTPPost); err != nil {
+		nexusClient := bootstrap.NewNexusClient(baseURL, t.Username, t.Password)
+		if err := nexusClient.AcceptEULA(); err != nil {
 			return fmt.Errorf("nexus 接受 EULA 失败: %w", err)
 		}
 		t.repoCreateByList(baseURL)
@@ -115,6 +119,9 @@ func (t *registryTask) doRun(exec executor.Executor) error {
 }
 
 func (t *registryTask) checkStart(exec executor.Executor) bool {
+	if executor.IsDryRun(exec) {
+		return false
+	}
 	r := exec.ExecShell("ps -ef | grep nexus | grep sonatype-work | grep -v datasophon-cli | grep -v grep")
 	if r.Success {
 		slog.Info("nexus 已在运行")
@@ -175,7 +182,8 @@ func (t *registryTask) repoCreateByList(baseURL string) {
 
 func (t *registryTask) postRepo(baseURL, path string, payload interface{}) bool {
 	body, _ := json.Marshal(payload)
-	resp, err := registryHTTPPost(baseURL, path, t.Username, t.Password, "application/json", bytes.NewReader(body))
+	client := bootstrap.NewNexusClient(baseURL, t.Username, t.Password)
+	resp, err := client.Do(http.MethodPost, path, "application/json", bytes.NewReader(body))
 	if err != nil {
 		slog.Error("创建仓库请求失败", "path", path, "err", err)
 		return false
@@ -217,8 +225,8 @@ func (t *registryTask) dockerCreate(baseURL, repoName string) bool {
 
 func (t *registryTask) realmsDocker(baseURL string) bool {
 	payload, _ := json.Marshal([]string{"DockerToken", "NexusAuthenticatingRealm"})
-	resp, err := registryHTTPPut(baseURL, "/service/rest/v1/security/realms/active",
-		t.Username, t.Password, "application/json", bytes.NewReader(payload))
+	client := bootstrap.NewNexusClient(baseURL, t.Username, t.Password)
+	resp, err := client.Do(http.MethodPut, "/service/rest/v1/security/realms/active", "application/json", bytes.NewReader(payload))
 	if err != nil {
 		slog.Error("realms 配置请求失败", "err", err)
 		return false
@@ -230,37 +238,6 @@ func (t *registryTask) realmsDocker(baseURL string) bool {
 	}
 	slog.Error("realms 配置失败", "status", resp.StatusCode)
 	return false
-}
-
-func registryHTTPGet(baseURL, path, username, password string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, baseURL+path, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	return http.DefaultClient.Do(req)
-}
-
-func registryHTTPPost(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
-	url := baseURL + path
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	req.Header.Set("Content-Type", contentType)
-	return http.DefaultClient.Do(req)
-}
-
-func registryHTTPPut(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
-	url := baseURL + path
-	req, err := http.NewRequest(http.MethodPut, url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	req.Header.Set("Content-Type", contentType)
-	return http.DefaultClient.Do(req)
 }
 
 // ── 命令实现 ────────────────────────────────────────────────────────────────

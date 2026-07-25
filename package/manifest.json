@@ -190,6 +190,26 @@
     "note": "同上，对应 packages.mysql.aarch64"
   },
   {
+    "service": "MYSQLD_EXPORTER",
+    "arch": "x86_64",
+    "packageName": "mysqld_exporter-0.16.0.linux-amd64.tar.gz",
+    "decompressPackageName": "mysqld_exporter-0.16.0.linux-amd64",
+    "downloadUrl": "https://github.com/prometheus/mysqld_exporter/releases/download/v0.16.0/mysqld_exporter-0.16.0.linux-amd64.tar.gz",
+    "status": "public",
+    "repoType": "base",
+    "note": "CLI 引导期 MySQL 指标采集组件，对应 packages.mysqldExporter.x86_64"
+  },
+  {
+    "service": "MYSQLD_EXPORTER",
+    "arch": "aarch64",
+    "packageName": "mysqld_exporter-0.16.0.linux-arm64.tar.gz",
+    "decompressPackageName": "mysqld_exporter-0.16.0.linux-arm64",
+    "downloadUrl": "https://github.com/prometheus/mysqld_exporter/releases/download/v0.16.0/mysqld_exporter-0.16.0.linux-arm64.tar.gz",
+    "status": "public",
+    "repoType": "base",
+    "note": "CLI 引导期 MySQL 指标采集组件，对应 packages.mysqldExporter.aarch64"
+  },
+  {
     "service": "NACOS",
     "arch": "common",
     "packageName": "nacos-server-3.2.2.tar.gz",
@@ -233,6 +253,7 @@
     "decompressPackageName": "otelcol-contrib_0.156.0",
     "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.156.0/otelcol-contrib_0.156.0_linux_amd64.tar.gz",
     "status": "public",
+    "repoTypes": ["raw", "base"],
     "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.156.0/ 目录"
   },
   {
@@ -242,6 +263,7 @@
     "decompressPackageName": "otelcol-contrib_0.156.0",
     "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.156.0/otelcol-contrib_0.156.0_linux_arm64.tar.gz",
     "status": "public",
+    "repoTypes": ["raw", "base"],
     "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.156.0/ 目录"
   },
   {

@@ -134,7 +134,7 @@ Datasophon 是典型的「控制面 + 工作面」结构:
 
 - **Master 控制面** = `datasophon-api`(Spring Boot 进程,同时跑 HTTP `8081/ddh` 与 gRPC `18081`)。包含 `master/DAGExecutor`(物理集群 DAG 调度)、`master/K8SDAGExecutor`(K8s 集群 DAG 调度)、`master/MasterScheduledService`(`@Scheduled` 巡检,30s/300s 节点存活、15s/30s 角色状态、30s/60s 集群状态)、`grpc/WorkerRegistry`(内存 `hostname → WorkerEndpoint` 注册表 + 90s 心跳超时)、`grpc/WorkerCommandClient`(按 hostname 懒建/缓存 gRPC Channel,监听 `WorkerOfflineEvent` 主动 shutdown 避免句柄泄漏)、`load/LoadServiceMeta`(`ApplicationRunner` 把 `meta/datacluster/**/service_ddl.json` 解析入库)。
 - **Worker 工作面** = `datasophon-worker`(每节点 1 个非 Spring Boot 的 `main()` 进程,监听 gRPC `18082`)。包含 `grpc/WorkerGrpcServer`(有界线程池 `max(8, 2 * cores)`)、`grpc/WorkerCommandGrpcService`(分发到 `strategy/ServiceRoleStrategyContext`)、`grpc/MasterRegistryClient`(30s 心跳 + 失败重注册)、`grpc/MasterCallbackClient`(OLAP 反向回调静态单例)、`strategy/*HandlerStrategy`(约 30 个服务角色策略,实现 `ServiceRoleStrategy.handler(ServiceRoleOperateCommand)` 统一接口)。
-- **CLI 工具** = `datasophon-cli-go`(Go 1.21 + Cobra),通过 SSH/sftp 初始化裸机节点,采用 plan/apply 两阶段与持久化 `state/initALL.plan.json`,33 个 Step 声明式定义,`clusterHash` 校验配置一致性。
+- **CLI 工具** = `datasophon-cli-go`(Go 1.21 + Cobra),通过 SSH/sftp 初始化裸机节点,采用 plan/apply 两阶段与持久化 `state/initALL.plan.json`,36 个 Step 声明式定义,`clusterHash` 校验配置一致性。
 - **K8s Agent** = `datasophon-k8s-agent`(Spring Boot Web Pod),Master 持 RSA 私钥,Agent 持公钥;`timestamp + nonce` + `RSA-SHA256` 签名,`replay window` 防重放;`/api/v1/health`、`/api/v1/ready` 不走签名。
 - **元数据驱动**:每种服务 = 一份 `meta/datacluster/<SERVICE>/service_ddl.json`(参数、模板、角色拓扑、告警) + 一个 Worker 端 `*HandlerStrategy` 类;DDL 决定 UI 表单与 DAG 依赖,策略类承担运行期动作。
 - **跨进程通信契约** 在 `datasophon-grpc-api`(4 个 `.proto`:`common` / `registry` / `worker` / `master`),stub 已 checked-in,日常 `./mvnw compile` 不必重跑 protoc。

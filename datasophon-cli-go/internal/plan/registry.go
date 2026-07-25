@@ -5,7 +5,7 @@ import (
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 )
 
-// InitALLRegistry 对应 initALL 的 34 步 DAG。
+// InitALLRegistry 对应 initALL 的 36 步 DAG。
 // 顺序即执行顺序；Condition 全部从 cfg.* 读。
 var InitALLRegistry = []Step{
 	{ID: "init-bin-package", Name: "分发资源包",
@@ -18,10 +18,12 @@ var InitALLRegistry = []Step{
 		Build: buildTar(allNodes)},
 
 	{ID: "init-rustfs", Name: "安装 rustfs",
-		Condition: func(ctx *BuildContext) bool {
-			return ctx.Cfg.Registry.Enable && ctx.Cfg.Rustfs.Enable
-		},
-		Build: buildRustfs},
+		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Rustfs.Enable },
+		Build:     buildRustfs},
+
+	{ID: "init-base-otel-collector", Name: "安装基础采集 collector",
+		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.BaseOtelCollector.Enable },
+		Build:     buildBaseOtelCollector},
 
 	{ID: "init-registry", Name: "安装 registry",
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Registry.Enable },
@@ -101,6 +103,13 @@ var InitALLRegistry = []Step{
 	{ID: "init-mysql-app-db", Name: "初始化 MySQL 数据库和账号",
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Mysql.Enable },
 		Build:     buildMysqlAppDb},
+
+	{ID: "init-mysqld-exporter", Name: "安装 mysqld_exporter",
+		Condition: func(ctx *BuildContext) bool {
+			return ctx.Cfg.BaseOtelCollector.Enable && ctx.Cfg.Mysql.Enable &&
+				ctx.Cfg.BaseOtelCollector.MysqldExporter.Enable
+		},
+		Build: buildMysqldExporter},
 
 	{ID: "k8s-base-services", Name: "安装 K8s 集群",
 		Scope:     ScopeKubernetesOnly,

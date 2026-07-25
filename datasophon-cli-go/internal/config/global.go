@@ -57,6 +57,34 @@ type RustfsConfig struct {
 	ObsEndpoint string `yaml:"obsEndpoint"`
 }
 
+// BaseOtelCollector 配置引导期基础设施使用的独立 OTel Collector。
+type BaseOtelCollector struct {
+	Enable          bool           `yaml:"enable"`
+	Node            string         `yaml:"node"`
+	OtlpHTTPPort    string         `yaml:"otlpHttpPort"`
+	OtlpGRPCPort    string         `yaml:"otlpGrpcPort"`
+	SelfMetricsPort string         `yaml:"selfMetricsPort"`
+	S3Bucket        string         `yaml:"s3Bucket"`
+	S3Prefix        string         `yaml:"s3Prefix"`
+	S3Region        string         `yaml:"s3Region"`
+	MemLimitMiB     int            `yaml:"memLimitMiB"`
+	MysqldExporter  MysqldExporter `yaml:"mysqldExporter"`
+	NexusMetrics    NexusMetrics   `yaml:"nexusMetrics"`
+}
+
+type MysqldExporter struct {
+	Enable          bool   `yaml:"enable"`
+	Port            string `yaml:"port"`
+	MonitorUser     string `yaml:"monitorUser"`
+	MonitorPassword string `yaml:"monitorPassword"`
+}
+
+type NexusMetrics struct {
+	MetricsUser     string `yaml:"metricsUser"`
+	MetricsPassword string `yaml:"metricsPassword"`
+	MetricsPath     string `yaml:"metricsPath"`
+}
+
 type MysqlConfig struct {
 	Enable   bool         `yaml:"enable"`
 	Force    bool         `yaml:"force"` // 承接 --mysqlInstallForce
@@ -126,23 +154,25 @@ type Package struct {
 
 // Packages 对应 Java GlobalConfig.Packages。
 type Packages struct {
-	OS          string  `yaml:"os"`
-	Config      string  `yaml:"config"`
-	Soft        string  `yaml:"soft"`
-	Nexus       Package `yaml:"nexus"`
-	Mysql       Package `yaml:"mysql"`
-	Rustfs      Package `yaml:"rustfs"`
-	Sealos      Package `yaml:"sealos"`
-	KubernetesI Package `yaml:"kubernetesI"`
-	HelmI       Package `yaml:"helmI"`
-	CalicoI     Package `yaml:"calicoI"`
-	IngressI    Package `yaml:"ingressI"`
-	KuboardI    Package `yaml:"kuboardI"`
-	Helmify     Package `yaml:"helmify"`
-	Docker      Package `yaml:"docker"`
-	Containerd  Package `yaml:"containerd"`
-	Runc        Package `yaml:"runc"`
-	Cni         Package `yaml:"cni"`
-	Helm        Package `yaml:"helm"`
-	Kubectl     Package `yaml:"kubectl"`
+	OS             string  `yaml:"os"`
+	Config         string  `yaml:"config"`
+	Soft           string  `yaml:"soft"`
+	Nexus          Package `yaml:"nexus"`
+	Mysql          Package `yaml:"mysql"`
+	Rustfs         Package `yaml:"rustfs"`
+	OtelColContrib Package `yaml:"otelColContrib"`
+	MysqldExporter Package `yaml:"mysqldExporter"`
+	Sealos         Package `yaml:"sealos"`
+	KubernetesI    Package `yaml:"kubernetesI"`
+	HelmI          Package `yaml:"helmI"`
+	CalicoI        Package `yaml:"calicoI"`
+	IngressI       Package `yaml:"ingressI"`
+	KuboardI       Package `yaml:"kuboardI"`
+	Helmify        Package `yaml:"helmify"`
+	Docker         Package `yaml:"docker"`
+	Containerd     Package `yaml:"containerd"`
+	Runc           Package `yaml:"runc"`
+	Cni            Package `yaml:"cni"`
+	Helm           Package `yaml:"helm"`
+	Kubectl        Package `yaml:"kubectl"`
 }

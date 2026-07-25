@@ -28,13 +28,47 @@ func stubCfg() *config.ClusterConfig {
 			{Hostname: "node1", IP: "10.0.0.1", Port: 22, User: "root", Password: "pass"},
 			{Hostname: "node2", IP: "10.0.0.2", Port: 22, User: "root", Password: "pass"},
 		},
-		Registry:   config.Registry{Enable: true, Node: "node1"},
-		Mysql:      config.MysqlConfig{Enable: true, Node: "node1"},
+		Registry: config.Registry{
+			Enable: true,
+			Node:   "node1",
+			Config: config.RegistryConfig{WebPort: "8081", User: "admin", Password: "registry-pass"},
+		},
+		Mysql:      config.MysqlConfig{Enable: true, Node: "node1", Port: 3306, Password: "mysql-root-pass"},
 		NtpServer:  config.NodeRef{Enable: true, Node: "node1"},
 		NmapServer: config.NodeRef{Enable: true, Node: "node1"},
 		YumServer:  config.YumServer{Enable: true, Node: "node1"},
 		Kubernetes: config.Kubernetes{Enable: false},
-		Rustfs:     config.Rustfs{Enable: true, Nodes: []string{"node1"}},
+		Rustfs: config.Rustfs{
+			Enable: true,
+			Nodes:  []string{"node1"},
+			Config: config.RustfsConfig{WebPort: "9041", APIPort: "9040", User: "rustfs", Password: "rustfs-pass"},
+		},
+		Packages: config.Packages{
+			Rustfs: config.Package{
+				X86_64:  "rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
+				Aarch64: "rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+			},
+			OtelColContrib: config.Package{
+				X86_64:  "otelcol-contrib_0.156.0_linux_amd64.tar.gz",
+				Aarch64: "otelcol-contrib_0.156.0_linux_arm64.tar.gz",
+			},
+			MysqldExporter: config.Package{
+				X86_64:  "mysqld_exporter-0.16.0.linux-amd64.tar.gz",
+				Aarch64: "mysqld_exporter-0.16.0.linux-arm64.tar.gz",
+			},
+		},
+	}
+}
+
+func enableValidBaseOtel(cfg *config.ClusterConfig) {
+	cfg.BaseOtelCollector = config.BaseOtelCollector{
+		Enable: true,
+		Node:   "node2",
+		MysqldExporter: config.MysqldExporter{
+			Enable:          true,
+			MonitorPassword: "mysql-metrics-pass",
+		},
+		NexusMetrics: config.NexusMetrics{MetricsPassword: "nexus-metrics-pass"},
 	}
 }
 
@@ -94,7 +128,7 @@ func TestGeneratePlan_RegistryDisabled(t *testing.T) {
 
 	for _, s := range pf.Steps {
 		switch s.ID {
-		case "init-rustfs", "init-registry", "init-docker-for-registry", "init-registry-upload":
+		case "init-registry", "init-docker-for-registry", "init-registry-upload":
 			assert.Equal(t, StatusSkipped, s.Status, "step %s should be skipped", s.ID)
 		}
 	}
@@ -109,10 +143,40 @@ func TestGeneratePlan_MysqlDisabled(t *testing.T) {
 
 	for _, s := range pf.Steps {
 		switch s.ID {
-		case "init-mysql", "init-mysql-app-db":
+		case "init-mysql", "init-mysql-app-db", "init-mysqld-exporter":
 			assert.Equal(t, StatusSkipped, s.Status, "step %s should be skipped", s.ID)
 		}
 	}
+}
+
+func TestGeneratePlan_BaseCollectorDisabledSkipsBootstrapMonitoring(t *testing.T) {
+	cfg := stubCfg()
+	cfg.BaseOtelCollector.MysqldExporter.Enable = true
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+
+	assertStepStatus(t, pf, "init-base-otel-collector", StatusSkipped)
+	assertStepStatus(t, pf, "init-mysqld-exporter", StatusSkipped)
+}
+
+func TestGeneratePlan_BaseCollectorStepsHaveExpectedOrderAndTargets(t *testing.T) {
+	cfg := stubCfg()
+	enableValidBaseOtel(cfg)
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+
+	collectorIndex := planStepIndex(t, pf, "init-base-otel-collector")
+	rustomIndex := planStepIndex(t, pf, "init-rustfs")
+	registryIndex := planStepIndex(t, pf, "init-registry")
+	mysqlAppIndex := planStepIndex(t, pf, "init-mysql-app-db")
+	exporterIndex := planStepIndex(t, pf, "init-mysqld-exporter")
+	assert.Less(t, rustomIndex, collectorIndex)
+	assert.Less(t, collectorIndex, registryIndex)
+	assert.Less(t, mysqlAppIndex, exporterIndex)
+	assert.Equal(t, []string{"node2"}, pf.Steps[collectorIndex].Targets)
+	assert.Equal(t, []string{"node1"}, pf.Steps[exporterIndex].Targets)
 }
 
 func TestGeneratePlan_TypeHadoop_SkipsK8sSteps(t *testing.T) {
@@ -289,6 +353,17 @@ func assertStepStatus(t *testing.T, pf *PlanFile, id string, want Status) {
 	t.Errorf("step %s not found in plan", id)
 }
 
+func planStepIndex(t *testing.T, pf *PlanFile, id string) int {
+	t.Helper()
+	for i, step := range pf.Steps {
+		if step.ID == id {
+			return i
+		}
+	}
+	t.Fatalf("step %s not found in plan", id)
+	return -1
+}
+
 func TestGeneratePlan_NtpServerDisabled(t *testing.T) {
 	cfg := stubCfg()
 	cfg.NtpServer.Enable = false
@@ -319,14 +394,14 @@ func TestGeneratePlan_OfflineNodesNotSkippedWhenRegistryEnabled(t *testing.T) {
 	assertStepStatus(t, pf, "init-offline-nodes", StatusPending)
 }
 
-func TestGeneratePlan_RustfsSkippedWhenRegistryDisabled(t *testing.T) {
+func TestGeneratePlan_RustfsRunsWhenRegistryDisabled(t *testing.T) {
 	cfg := stubCfg()
 	cfg.Rustfs.Enable = true
 	cfg.Registry.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
-	assertStepStatus(t, pf, "init-rustfs", StatusSkipped)
+	assertStepStatus(t, pf, "init-rustfs", StatusPending)
 }
 
 func TestGeneratePlan_KuboardSkippedWhenKuboardDisabled(t *testing.T) {

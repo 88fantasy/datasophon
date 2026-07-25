@@ -47,27 +47,30 @@ datasophon-cli --help
 
 ## 第二步：准备目录结构
 
-datasophon-cli 依赖固定的目录布局。以 `DATASOPHON_PATH=/data/datasophon` 为例：
+datasophon-cli 需要运行目录和产品制品目录。以 `DATASOPHON_PATH=/data/datasophon`、`productPackagesPath=/data/install_datasophon/package` 为例：
 
 ```
 /data/datasophon/
 └── datasophon-init/
-    ├── config/
-    │   └── cluster-sample.yml      # 集群配置文件（第三步生成）
-    └── packages/                   # 组件安装包目录
-        ├── openEuler-22.03-LTS-SP3.tar.gz
-        ├── nexus-3.85.0-03-linux-x86_64.tar.gz
-        ├── mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar
-        └── ...
+    └── config/
+        └── cluster-sample.yml      # 集群配置文件（第三步生成）
+
+/data/install_datasophon/package/
+├── base/                            # CLI 直接消费的基础设施制品
+│   ├── nexus-*.tar.gz
+│   ├── mysql-*.tar
+│   ├── otelcol-contrib_*.tar.gz
+│   └── mysqld_exporter-*.tar.gz
+└── raw/                             # 上传到 Nexus 的服务元数据与制品
 ```
 
 创建目录：
 
 ```bash
-mkdir -p /data/datasophon/datasophon-init/{config,packages}
+mkdir -p /data/datasophon/datasophon-init/config
 ```
 
-将安装包放入 `packages/` 目录，包名必须与配置文件中 `global.packages.*` 字段的值一致。
+可在仓库根目录执行 `package/download.sh --dir base` 准备公开基础设施制品；包名必须与配置文件中 `packages.*` 字段一致。
 
 ## 第三步：生成配置文件
 
@@ -86,17 +89,19 @@ datasophon-cli create config \
 
 ```yaml
 global:
-  registry:
-    node: "app6"          # 运行 Nexus 的节点 hostname
-    enable: true          # 是否启用制品库
-  mysql:
-    enable: true
-    node: "app6"          # 运行 MySQL 的节点 hostname
-  ntpServer:
-    enable: true
-    node: "app6"          # NTP 服务端节点
-  kubernetes:
-    enable: true          # 是否部署 K8s（不需要则设为 false）
+  cluster-type: hadoop
+
+registry:
+  node: "app6"          # 运行 Nexus 的节点 hostname
+  enable: true          # 是否启用制品库
+mysql:
+  enable: true
+  node: "app6"          # 运行 MySQL 的节点 hostname
+ntpServer:
+  enable: true
+  node: "app6"          # NTP 服务端节点
+kubernetes:
+  enable: false         # Hadoop 集群不部署 K8s
 
 nodes:                    # 集群所有节点（至少 1 个）
   - ip: 192.168.1.10
@@ -114,7 +119,7 @@ nodes:                    # 集群所有节点（至少 1 个）
 datasophon-cli create cluster --dry-run \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 `--dry-run` 会打印每一步将要执行的 shell 命令，**不实际在任何节点上执行**。
@@ -125,7 +130,7 @@ datasophon-cli create cluster --dry-run \
 datasophon-cli create cluster plan \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 计划文件保存到：`/data/datasophon/datasophon-init/state/initALL.plan.json`
@@ -133,7 +138,7 @@ datasophon-cli create cluster plan \
 输出示例：
 
 ```
-[Plan] initALL  步骤总数: 33  待执行: 33  已完成: 0
+[Plan] initALL  步骤总数: 36  待执行: 36  已完成: 0
   [  1] init-bin-package         ✔ 待执行   (targets: app6)
   [  2] init-bash                ✔ 待执行   (targets: app6)
   ...
@@ -147,7 +152,7 @@ datasophon-cli create cluster plan \
 datasophon-cli create cluster \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 # 输出计划摘要后提示：确认执行以上计划? [y/N]
 # 输入 y 回车即开始执行
 ```
@@ -158,7 +163,7 @@ datasophon-cli create cluster \
 datasophon-cli create cluster -y \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 **方式 C — plan 和 apply 分开执行（推荐生产）**
@@ -168,13 +173,13 @@ datasophon-cli create cluster -y \
 datasophon-cli create cluster plan \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 
 # 审阅计划后，apply（支持断点续跑）
 datasophon-cli create cluster apply \
   -p /data/datasophon \
   --installPath /opt/install \
-  -n /data/datasophon/datasophon-init/packages
+  -n /data/install_datasophon/package
 ```
 
 > 如果 apply 中途失败，再次执行 apply 会从上次失败的步骤重新开始，已成功的步骤不会重复执行。详见 [退出码与断点续跑](./reference/exit-codes.md)。
@@ -185,7 +190,7 @@ datasophon-cli create cluster apply \
 答：配置文件 `nodes[*].ip` 没有一个匹配当前执行机器的本机 IP。请检查 `cluster-sample.yml` 中至少有一个节点的 `ip` 字段等于本机 IP。
 
 **问：如何只初始化部分功能（不装 K8s）？**
-答：在 `cluster-sample.yml` 中把对应模块的 `enable` 设为 `false`（如 `global.kubernetes.enable: false`），DAG 中相关步骤会自动跳过。
+答：在 `cluster-sample.yml` 中把对应模块的 `enable` 设为 `false`（如 `kubernetes.enable: false`），DAG 中相关步骤会自动跳过。
 
 **问：如何新增节点而不重跑全量初始化？**
 答：用 `create node --ip <IP> --user <user> --password <pass> --port <port> --hostname <hn>`，对单节点执行 10 步基础初始化。详见 [`create node`](./commands/create/node.md)。安装成功后该节点会自动追加到 `cluster-sample.yml` 的 `nodes` 列表。
