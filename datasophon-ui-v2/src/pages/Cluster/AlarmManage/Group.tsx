@@ -70,6 +70,7 @@ const GroupTab: React.FC<Props> = ({ clusterId, onViewMetrics }) => {
       <ProTable<DATASOPHON.AlertGroupResponse>
         actionRef={actionRef}
         rowKey="id"
+        locale={{ emptyText: '暂无告警组' }}
         columns={columns}
         request={async (params) => {
           const res = await listAlertGroups(clusterId, {

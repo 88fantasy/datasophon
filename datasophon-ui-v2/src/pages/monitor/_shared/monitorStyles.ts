@@ -13,14 +13,28 @@ const useStyles = createStyles(({ token }) => ({
   header: {
     marginBottom: 16,
   },
+  headerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    [`@media screen and (max-width: ${token.screenLG}px)`]: {
+      alignItems: 'stretch',
+      flexDirection: 'column',
+    },
+  },
   title: {
-    margin: '0 0 16px',
+    flexShrink: 0,
+    margin: '0 !important',
     color: token.colorTextHeading,
     fontWeight: 600,
   },
   meta: {
     display: 'block',
-    margin: '-4px 0 16px',
+    width: 'fit-content',
+    margin: '8px 0 0',
+    padding: '3px 8px',
+    borderRadius: token.borderRadiusSM,
+    background: token.colorFillQuaternary,
     fontSize: 12,
     lineHeight: '20px',
   },
@@ -36,6 +50,7 @@ const useStyles = createStyles(({ token }) => ({
   },
   panelCard: {
     height: '100%',
+    borderColor: token.colorBorderSecondary,
     borderRadius: token.borderRadiusLG,
     boxShadow: token.boxShadowTertiary,
   },
@@ -73,11 +88,13 @@ const useStyles = createStyles(({ token }) => ({
   },
   toolbar: {
     display: 'flex',
+    flex: 1,
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
-    padding: '12px 16px',
+    minWidth: 0,
+    marginBottom: 0,
+    padding: '10px 12px',
     border: `1px solid ${token.colorBorderSecondary}`,
     borderRadius: token.borderRadiusLG,
     background: token.colorBgContainer,
@@ -88,8 +105,9 @@ const useStyles = createStyles(({ token }) => ({
     minWidth: 12,
   },
   toolbarCountdown: {
-    margin: 0,
-    borderRadius: token.borderRadiusSM,
+    marginLeft: 4,
+    color: token.colorPrimary,
+    fontSize: 12,
   },
   sectionHeader: {
     margin: '24px 0 12px',

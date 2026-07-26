@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { Progress } from 'antd';
+import { Progress, theme } from 'antd';
 import type { FC } from 'react';
 import { colorByThreshold } from '../../../monitor/_shared/charts/formatters';
 import MonitorPanelCard from '../../../monitor/_shared/MonitorPanelCard';
@@ -44,34 +44,43 @@ function clampPercent(value: number) {
   return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
 }
 
-/**
- * CPU/内存/磁盘三个独立仪表环。
- *
- * 参考图的「资源使用占比」环形图把三者拼成一个饼图，但饼图的弧长天然表示
- * “占总和的比例”，CPU/内存/磁盘三个互不相干的使用率强行拼一起会被饼图
- * 自动归一化（如 2%+35%+8%=45 会被拉伸显示成约 4.4%/78%/18%），数值失真。
- * 改成三个独立的 dashboard 环，每个环各自 0-100% 展示，语义正确——
- * 与 K8sDashboard（同仓库 `Cluster/K8sDashboard/index.tsx`）的 capacity 环用法一致。
- */
-const ResourceGaugePanel: FC<ResourceGaugePanelProps> = ({ title, items }) => (
-  <MonitorPanelCard title={title}>
-    <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
-      {items.map((item) => (
-        <div key={item.label} style={{ textAlign: 'center', padding: '0 8px' }}>
-          <Progress
-            type="dashboard"
-            size={92}
-            percent={clampPercent(item.percent)}
-            format={() => formatPercent(item.percent)}
-            strokeColor={colorByThreshold(clampPercent(item.percent), [70, 90])}
-          />
-          <div style={{ marginTop: 8, color: '#8c8c8c', fontSize: 13 }}>
-            {item.label}
-          </div>
-        </div>
-      ))}
-    </div>
-  </MonitorPanelCard>
-);
+/** 横向进度条比仪表环更适合并列比较三个独立的资源使用率。 */
+const ResourceGaugePanel: FC<ResourceGaugePanelProps> = ({ title, items }) => {
+  const { token } = theme.useToken();
+
+  return (
+    <MonitorPanelCard title={title}>
+      <div style={{ display: 'grid', gap: 22, padding: '4px 2px 2px' }}>
+        {items.map((item) => {
+          const percent = clampPercent(item.percent);
+          return (
+            <div key={item.label}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 8,
+                }}
+              >
+                <span style={{ color: token.colorText }}>{item.label}</span>
+                <strong style={{ color: token.colorTextHeading }}>
+                  {formatPercent(item.percent)}
+                </strong>
+              </div>
+              <Progress
+                percent={percent}
+                showInfo={false}
+                strokeColor={colorByThreshold(percent, [70, 90])}
+              railColor={token.colorFillSecondary}
+                size={['100%', 8]}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </MonitorPanelCard>
+  );
+};
 
 export default ResourceGaugePanel;

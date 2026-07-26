@@ -37,6 +37,7 @@ const AreaPanel: FC<AreaPanelProps> = ({
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           className={styles.empty}
           style={{ height }}
+          description="暂无指标数据，请检查实例筛选和 Collector 采集状态"
         />
       </MonitorPanelCard>
     );

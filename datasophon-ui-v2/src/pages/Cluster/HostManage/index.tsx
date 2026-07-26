@@ -65,6 +65,11 @@ const HostManage: React.FC = () => {
   const { clusterId } = clusterCtx;
   const actionRef = useRef<ActionType>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
+  const [hostSummary, setHostSummary] = useState({
+    total: 0,
+    healthy: 0,
+    abnormal: 0,
+  });
   const [_selectedRows, setSelectedRows] = useState<DATASOPHON.HostResponse[]>(
     [],
   );
@@ -75,6 +80,7 @@ const HostManage: React.FC = () => {
       title: '序号',
       valueType: 'indexBorder',
       width: 48,
+      fixed: 'left',
       search: false,
     },
     {
@@ -82,16 +88,20 @@ const HostManage: React.FC = () => {
       dataIndex: 'hostname',
       ellipsis: true,
       sorter: true,
+      width: 120,
+      fixed: 'left',
     },
     {
       title: 'IP地址',
       dataIndex: 'ip',
-      ellipsis: true,
+      width: 140,
+      fixed: 'left',
     },
     {
       title: '状态',
       dataIndex: 'hostState',
       ellipsis: true,
+      width: 88,
       search: false,
       render: (_, record) => {
         const state = HOST_STATE_MAP[record.hostState ?? -1] ?? {
@@ -105,22 +115,26 @@ const HostManage: React.FC = () => {
       title: '创建时间',
       dataIndex: 'createTime',
       valueType: 'dateTime',
+      width: 168,
       search: false,
     },
     {
       title: '检查时间',
       dataIndex: 'checkTime',
       valueType: 'dateTime',
+      width: 168,
       search: false,
     },
     {
       title: '核数',
       dataIndex: 'coreNum',
+      width: 72,
       search: false,
     },
     {
       title: '内存使用',
       dataIndex: 'usedMem',
+      width: 132,
       search: false,
       sorter: true,
       render: (_, record) => (
@@ -133,6 +147,7 @@ const HostManage: React.FC = () => {
     {
       title: '磁盘使用',
       dataIndex: 'usedDisk',
+      width: 132,
       search: false,
       sorter: true,
       render: (_, record) => (
@@ -145,29 +160,35 @@ const HostManage: React.FC = () => {
     {
       title: '平均负载',
       dataIndex: 'averageLoad',
+      width: 92,
       search: false,
       sorter: true,
     },
     {
       title: '标签',
       dataIndex: 'nodeLabel',
+      width: 100,
       search: false,
     },
     {
       title: '机架',
       dataIndex: 'rack',
+      width: 112,
       search: false,
     },
     {
       title: 'CPU架构',
       dataIndex: 'cpuArchitecture',
       ellipsis: true,
+      width: 100,
       search: false,
       valueEnum: CPU_ARCH_MAP,
     },
     {
       title: '角色',
       dataIndex: 'serviceRoleNum',
+      width: 72,
+      fixed: 'right',
       search: false,
       render: (_, record) => (
         <RoleListModal
@@ -250,7 +271,16 @@ const HostManage: React.FC = () => {
       cardProps={{ style: { minHeight: '100%' } }}
       actionRef={actionRef}
       rowKey="id"
-      headerTitle="主机列表"
+      headerTitle={
+        <Space size={8}>
+          <span>主机列表</span>
+          <Tag color="blue">共 {hostSummary.total} 台</Tag>
+          <Tag color="success">当前页正常 {hostSummary.healthy}</Tag>
+          {hostSummary.abnormal > 0 && (
+            <Tag color="warning">当前页异常 {hostSummary.abnormal}</Tag>
+          )}
+        </Space>
+      }
       toolBarRender={() => [
         <LabelManageModal
           key="label-manage"
@@ -271,13 +301,30 @@ const HostManage: React.FC = () => {
           sortField,
           sortOrder,
         });
+        const rows = result.data.records ?? [];
+        setHostSummary({
+          total: result.data.total ?? rows.length,
+          healthy: rows.filter((host) => host.hostState === 1).length,
+          abnormal: rows.filter((host) => host.hostState !== 1).length,
+        });
         return {
-          data: result.data.records ?? [],
+          data: rows,
           total: result.data.total ?? 0,
           success: true,
         };
       }}
       columns={columns}
+      locale={{ emptyText: '暂无主机' }}
+      columnsState={{
+        defaultValue: {
+          createTime: { show: false },
+          nodeLabel: { show: false },
+          rack: { show: false },
+          cpuArchitecture: { show: false },
+        },
+        persistenceKey: `cluster-${clusterId}-host-columns`,
+        persistenceType: 'localStorage',
+      }}
       rowSelection={{
         selectedRowKeys,
         onChange: (keys, rows) => {
@@ -293,8 +340,9 @@ const HostManage: React.FC = () => {
           </Dropdown>
         </Space>
       )}
-      pagination={{ pageSize: 20 }}
-      scroll={{ x: 1300 }}
+      pagination={{ pageSize: 20, showSizeChanger: false }}
+      scroll={{ x: 1420 }}
+      size="small"
     />
   );
 };

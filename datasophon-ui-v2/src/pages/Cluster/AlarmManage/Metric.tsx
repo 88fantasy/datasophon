@@ -140,6 +140,7 @@ const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
       <ProTable<DATASOPHON.AlertQuotaResponse>
         actionRef={actionRef}
         rowKey="id"
+        locale={{ emptyText: '暂无告警指标' }}
         columns={columns}
         params={{ defaultGroupId }}
         request={async (params) => {
