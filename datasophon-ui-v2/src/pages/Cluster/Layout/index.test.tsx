@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import type { CSSProperties, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { listClusters } from '@/services/cluster';
+import { listK8sInstances, listK8sNamespaces } from '@/services/k8s';
 import { listClusterServices } from '@/services/service';
 import ClusterLayout from './index';
 
@@ -9,12 +10,14 @@ vi.mock('@umijs/max', () => ({
   history: {
     location: { pathname: '/cluster/7/host' },
     push: vi.fn(),
+    replace: vi.fn(),
   },
   Outlet: () => <div>cluster page</div>,
   useIntl: () => ({
     formatMessage: ({ defaultMessage }: { defaultMessage: string }) =>
       defaultMessage,
   }),
+  useLocation: () => ({ pathname: '/cluster/7/host' }),
   useParams: () => ({ clusterId: '7' }),
 }));
 
@@ -56,7 +59,15 @@ vi.mock('antd', async () => {
     ),
     Dropdown: ({ children }: { children: ReactNode }) => <>{children}</>,
     Layout,
-    Menu: () => <nav />,
+    Menu: ({ items }: { items: Array<{ key?: string }> }) => (
+      <nav data-testid="cluster-menu">
+        {items.map((item, index) => (
+          <div key={item.key ?? `divider-${index}`} data-testid="menu-item">
+            {item.key ?? ''}
+          </div>
+        ))}
+      </nav>
+    ),
     Spin: () => <div>loading</div>,
     Tag: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   };
@@ -87,5 +98,31 @@ describe('ClusterLayout', () => {
     expect(shell).toHaveAttribute('data-page-header-render', 'false');
     expect(shell).toHaveStyle({ padding: '0' });
     expect(screen.getByText('cluster page')).toBeInTheDocument();
+  });
+
+  it('puts the cluster overview dashboard first in the menu for physical clusters, ahead of host management', async () => {
+    render(<ClusterLayout />);
+
+    const menuItemKeys = (await screen.findAllByTestId('menu-item')).map(
+      (el) => el.textContent,
+    );
+    expect(menuItemKeys[0]).toBe('/cluster/7/overview');
+    expect(menuItemKeys[1]).toBe('/cluster/7/host');
+  });
+
+  it('does not show the cluster overview dashboard for K8s clusters', async () => {
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [{ id: 7, clusterName: 'test', archType: 'k8s' }],
+    } as never);
+    vi.mocked(listK8sNamespaces).mockResolvedValue({ data: [] } as never);
+    vi.mocked(listK8sInstances).mockResolvedValue({ data: [] } as never);
+
+    render(<ClusterLayout />);
+
+    const menuItemKeys = (await screen.findAllByTestId('menu-item')).map(
+      (el) => el.textContent,
+    );
+    expect(menuItemKeys).not.toContain('/cluster/7/overview');
+    expect(menuItemKeys[0]).toBe('/cluster/7/host');
   });
 });

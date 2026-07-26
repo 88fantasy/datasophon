@@ -126,7 +126,11 @@ const ColonyManage: React.FC = () => {
             type="link"
             size="small"
             icon={<RightCircleOutlined />}
-            onClick={() => history.push(`/cluster/${cluster.id}/host`)}
+            onClick={() =>
+              history.push(
+                `/cluster/${cluster.id}/${isK8s ? 'host' : 'overview'}`,
+              )
+            }
           >
             进入
           </Button>,

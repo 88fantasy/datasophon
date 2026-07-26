@@ -62,6 +62,7 @@ export default {
   'menu.colony': '集群管理',
   'menu.colony.manage': '集群列表',
   'menu.frame': '集群框架',
+  'menu.cluster-overview': '集群看板',
   'menu.host': '主机管理',
   'menu.observability-collector': '链路跟踪',
   'menu.user': '用户管理',
