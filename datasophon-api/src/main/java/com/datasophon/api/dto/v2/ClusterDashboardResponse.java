@@ -51,8 +51,10 @@ public class ClusterDashboardResponse {
     @Builder
     public static class Stats {
         private long hostTotal;
+        /** 今日新增主机数 − 昨日新增主机数，可为负。 */
         private long hostDelta;
         private long serviceTotal;
+        /** 今日新增服务数 − 昨日新增服务数，可为负。 */
         private long serviceDelta;
         /** 未处理告警总数（{@code is_enabled=1}）。 */
         private long alertTotal;

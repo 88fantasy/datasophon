@@ -41,6 +41,8 @@ interface ClusterStatCardProps {
    */
   delta?: number;
   deltaLabel: string;
+  /** 正增量是否代表改善；告警类指标应传 false。 */
+  positiveIsGood?: boolean;
 }
 
 const ClusterStatCard: FC<ClusterStatCardProps> = ({
@@ -50,9 +52,17 @@ const ClusterStatCard: FC<ClusterStatCardProps> = ({
   icon,
   delta,
   deltaLabel,
+  positiveIsGood = true,
 }) => {
   const { styles } = useStyles();
   const noData = !Number.isFinite(value);
+  const deltaIsPositive = (delta ?? 0) > 0;
+  const deltaColor =
+    delta === 0
+      ? '#8c8c8c'
+      : deltaIsPositive === positiveIsGood
+        ? '#52c41a'
+        : '#ff4d4f';
 
   return (
     <MonitorPanelCard compact>
@@ -89,7 +99,7 @@ const ClusterStatCard: FC<ClusterStatCardProps> = ({
           {delta !== undefined && (
             <div style={{ fontSize: 12, marginTop: 4 }}>
               {Number.isFinite(delta) ? (
-                <span style={{ color: delta >= 0 ? '#52c41a' : '#ff4d4f' }}>
+                <span style={{ color: deltaColor }}>
                   {delta >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}{' '}
                   {delta >= 0 ? `+${delta}` : delta}
                 </span>

@@ -9,8 +9,10 @@ declare namespace DATASOPHON {
 
   interface ClusterDashboardStats {
     hostTotal: number;
+    /** 今日新增主机数 - 昨日新增主机数，可为负 */
     hostDelta: number;
     serviceTotal: number;
+    /** 今日新增服务数 - 昨日新增服务数，可为负 */
     serviceDelta: number;
     /** 未处理告警总数 */
     alertTotal: number;

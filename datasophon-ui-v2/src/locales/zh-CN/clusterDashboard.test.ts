@@ -3,6 +3,7 @@ import messages from './clusterDashboard';
 
 const REQUIRED_KEYS = [
   'pages.clusterDashboard.title',
+  'pages.clusterDashboard.partialLoadError',
   'pages.clusterDashboard.stat.hostTotal',
   'pages.clusterDashboard.stat.serviceTotal',
   'pages.clusterDashboard.stat.alertTotal',

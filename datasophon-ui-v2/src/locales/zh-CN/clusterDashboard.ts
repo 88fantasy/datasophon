@@ -1,5 +1,6 @@
 export default {
   'pages.clusterDashboard.title': '集群看板',
+  'pages.clusterDashboard.partialLoadError': '部分看板数据加载失败',
   'pages.clusterDashboard.stat.hostTotal': '主机数量',
   'pages.clusterDashboard.stat.serviceTotal': '服务数量',
   'pages.clusterDashboard.stat.alertTotal': '告警数量',

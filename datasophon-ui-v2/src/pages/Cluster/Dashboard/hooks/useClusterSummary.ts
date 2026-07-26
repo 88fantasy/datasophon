@@ -60,26 +60,41 @@ export function useClusterSummary({
 
     setData((prev) => ({ ...prev, loading: true }));
 
-    Promise.all([
+    Promise.allSettled([
       getClusterDashboardSummary(clusterId),
       getRecentAlerts(clusterId, RECENT_ALERTS_PAGE_SIZE),
-    ])
-      .then(([summaryRes, alertsRes]) => {
-        if (cancelled) return;
-        setData({
-          summary: summaryRes.data,
-          recentAlerts: alertsRes.data ?? [],
-          loading: false,
-        });
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setData((prev) => ({
-          ...prev,
-          loading: false,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        }));
-      });
+    ]).then(([summaryResult, alertsResult]) => {
+      if (cancelled) return;
+
+      const errors: string[] = [];
+      if (summaryResult.status === 'rejected') {
+        errors.push(
+          summaryResult.reason instanceof Error
+            ? summaryResult.reason.message
+            : 'Unknown error',
+        );
+      }
+      if (alertsResult.status === 'rejected') {
+        errors.push(
+          alertsResult.reason instanceof Error
+            ? alertsResult.reason.message
+            : 'Unknown error',
+        );
+      }
+
+      setData((prev) => ({
+        summary:
+          summaryResult.status === 'fulfilled'
+            ? summaryResult.value.data
+            : prev.summary,
+        recentAlerts:
+          alertsResult.status === 'fulfilled'
+            ? (alertsResult.value.data ?? [])
+            : prev.recentAlerts,
+        loading: false,
+        error: errors.length > 0 ? errors.join('; ') : undefined,
+      }));
+    });
 
     return () => {
       cancelled = true;

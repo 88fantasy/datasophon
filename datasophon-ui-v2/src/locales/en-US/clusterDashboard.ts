@@ -1,5 +1,6 @@
 export default {
   'pages.clusterDashboard.title': 'Cluster Overview',
+  'pages.clusterDashboard.partialLoadError': 'Some dashboard data failed to load',
   'pages.clusterDashboard.stat.hostTotal': 'Hosts',
   'pages.clusterDashboard.stat.serviceTotal': 'Services',
   'pages.clusterDashboard.stat.alertTotal': 'Alerts',

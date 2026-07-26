@@ -28,7 +28,7 @@ import {
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { history, useIntl } from '@umijs/max';
-import { Row } from 'antd';
+import { Alert, Row } from 'antd';
 import { type FC, useCallback, useContext, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import { CHART_COLORS, formatBytes } from '../../monitor/_shared/charts/formatters';
@@ -67,10 +67,12 @@ const ClusterDashboard: FC = () => {
   const handleRefresh = useCallback(() => setRefreshKey((key) => key + 1), []);
 
   const otel = useClusterOtelPanels({ clusterId, timeRange, refreshKey });
-  const { summary, recentAlerts, loading: summaryLoading } = useClusterSummary({
-    clusterId,
-    refreshKey,
-  });
+  const {
+    summary,
+    recentAlerts,
+    loading: summaryLoading,
+    error: summaryError,
+  } = useClusterSummary({ clusterId, refreshKey });
 
   const stats = summary?.stats;
   const changeLabel = t('pages.clusterDashboard.stat.changeLabel');
@@ -95,6 +97,15 @@ const ClusterDashboard: FC = () => {
         }
         loading={summaryLoading || otel.loading}
       >
+        {summaryError && (
+          <Alert
+            type="warning"
+            showIcon
+            title={t('pages.clusterDashboard.partialLoadError')}
+            description={summaryError}
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Row gutter={MONITOR_ROW_GUTTER}>
           <PanelCol span={6}>
             <ClusterStatCard
@@ -124,6 +135,7 @@ const ClusterDashboard: FC = () => {
               icon={<AlertOutlined />}
               delta={stats?.alertDelta}
               deltaLabel={changeLabel}
+              positiveIsGood={false}
             />
           </PanelCol>
           <PanelCol span={6}>
@@ -134,6 +146,7 @@ const ClusterDashboard: FC = () => {
               icon={<BellOutlined />}
               delta={stats?.criticalAlertDelta}
               deltaLabel={changeLabel}
+              positiveIsGood={false}
             />
           </PanelCol>
         </Row>

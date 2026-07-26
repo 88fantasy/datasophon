@@ -71,9 +71,12 @@ describe('useClusterSummary', () => {
     expect(mocks.getClusterDashboardSummary).not.toHaveBeenCalled();
   });
 
-  it('surfaces a readable error message when the request fails', async () => {
+  it('keeps recent alerts when the summary request fails', async () => {
     mocks.getClusterDashboardSummary.mockRejectedValue(new Error('boom'));
-    mocks.getRecentAlerts.mockResolvedValue({ data: [], total: 0 });
+    mocks.getRecentAlerts.mockResolvedValue({
+      data: [{ id: 1, alertTargetName: 'CPU 使用率过高' }],
+      total: 1,
+    });
 
     const { result } = renderHook(() =>
       useClusterSummary({ clusterId: 1, refreshKey: 0 }),
@@ -81,5 +84,23 @@ describe('useClusterSummary', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe('boom');
+    expect(result.current.summary).toBeUndefined();
+    expect(result.current.recentAlerts).toHaveLength(1);
+  });
+
+  it('keeps the summary when the recent-alerts request fails', async () => {
+    mocks.getClusterDashboardSummary.mockResolvedValue({
+      data: { stats: { hostTotal: 5 } },
+    });
+    mocks.getRecentAlerts.mockRejectedValue(new Error('alerts unavailable'));
+
+    const { result } = renderHook(() =>
+      useClusterSummary({ clusterId: 1, refreshKey: 0 }),
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.summary?.stats.hostTotal).toBe(5);
+    expect(result.current.recentAlerts).toEqual([]);
+    expect(result.current.error).toBe('alerts unavailable');
   });
 });

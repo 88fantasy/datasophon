@@ -80,19 +80,19 @@ class ClusterDashboardServiceImplTest {
         Date todayStart = new Date();
         Date yesterdayStart = new Date(todayStart.getTime() - 86_400_000L);
 
-        // 调用顺序见 buildStats 源码：hostTotal, hostDelta
-        when(hostMapper.selectCount(any())).thenReturn(5L, 1L);
-        // serviceTotal, serviceDelta
-        when(serviceInstanceMapper.selectCount(any())).thenReturn(10L, 2L);
+        // 调用顺序见 buildStats 源码：hostTotal, todayHosts, yesterdayHosts
+        when(hostMapper.selectCount(any())).thenReturn(5L, 2L, 5L);
+        // serviceTotal, todayServices, yesterdayServices
+        when(serviceInstanceMapper.selectCount(any())).thenReturn(10L, 4L, 1L);
         // alertTotal, criticalAlertTotal, todayAlerts, yesterdayAlerts, todayCritical, yesterdayCritical
         when(alertHistoryMapper.selectCount(any())).thenReturn(8L, 3L, 4L, 9L, 1L, 2L);
 
         ClusterDashboardResponse.Stats stats = service.buildStats(1, todayStart, yesterdayStart);
 
         assertThat(stats.getHostTotal()).isEqualTo(5);
-        assertThat(stats.getHostDelta()).isEqualTo(1);
+        assertThat(stats.getHostDelta()).isEqualTo(-3);
         assertThat(stats.getServiceTotal()).isEqualTo(10);
-        assertThat(stats.getServiceDelta()).isEqualTo(2);
+        assertThat(stats.getServiceDelta()).isEqualTo(3);
         assertThat(stats.getAlertTotal()).isEqualTo(8);
         assertThat(stats.getCriticalAlertTotal()).isEqualTo(3);
         // todayAlerts(4) - yesterdayAlerts(9)，参考图允许出现 -5 这种负增量

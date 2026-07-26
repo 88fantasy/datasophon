@@ -103,13 +103,21 @@ public class ClusterDashboardServiceImpl implements ClusterDashboardService {
                 .eq(Constants.CLUSTER_ID, clusterId));
         long hostDelta = hostMapper.selectCount(new QueryWrapper<ClusterHostDO>()
                 .eq(Constants.CLUSTER_ID, clusterId)
-                .ge(Constants.CREATE_TIME, todayStart));
+                .ge(Constants.CREATE_TIME, todayStart))
+                - hostMapper.selectCount(new QueryWrapper<ClusterHostDO>()
+                        .eq(Constants.CLUSTER_ID, clusterId)
+                        .ge(Constants.CREATE_TIME, yesterdayStart)
+                        .lt(Constants.CREATE_TIME, todayStart));
 
         long serviceTotal = serviceInstanceMapper.selectCount(new QueryWrapper<ClusterServiceInstanceEntity>()
                 .eq(Constants.CLUSTER_ID, clusterId));
         long serviceDelta = serviceInstanceMapper.selectCount(new QueryWrapper<ClusterServiceInstanceEntity>()
                 .eq(Constants.CLUSTER_ID, clusterId)
-                .ge(Constants.CREATE_TIME, todayStart));
+                .ge(Constants.CREATE_TIME, todayStart))
+                - serviceInstanceMapper.selectCount(new QueryWrapper<ClusterServiceInstanceEntity>()
+                        .eq(Constants.CLUSTER_ID, clusterId)
+                        .ge(Constants.CREATE_TIME, yesterdayStart)
+                        .lt(Constants.CREATE_TIME, todayStart));
 
         long alertTotal = alertHistoryMapper.selectCount(new QueryWrapper<ClusterAlertHistory>()
                 .eq(Constants.CLUSTER_ID, clusterId)

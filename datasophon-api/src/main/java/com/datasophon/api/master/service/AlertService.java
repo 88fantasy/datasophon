@@ -55,21 +55,21 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class AlertService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AlertService.class);
-    
+
     private static final String FIRING = "firing";
     private static final String RESOLVED = "resolved";
     private static final String NODE = "node";
     private static final String WARNING = "warning";
     private static final String EXCEPTION = "exception";
-    
+
     private final AlertHistoryGateway alertHistoryGateway;
     private final ClusterHostService hostService;
     private final ClusterAlertHistoryService alertHistoryService;
     private final ClusterServiceInstanceService serviceInstanceService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
-    
+
     public AlertService(AlertHistoryGateway alertHistoryGateway,
                         ClusterHostService hostService,
                         ClusterAlertHistoryService alertHistoryService,
@@ -81,7 +81,7 @@ public class AlertService {
         this.serviceInstanceService = serviceInstanceService;
         this.roleInstanceService = roleInstanceService;
     }
-    
+
     /**
      * 异步处理 Prometheus 告警消息（替代 AlertActor.tell(message)）。
      */
@@ -92,7 +92,7 @@ public class AlertService {
             handleAlert(alert);
         }
     }
-    
+
     private void handleAlert(Alerts alertInfo) {
         String status = alertInfo.getStatus();
         if (FIRING.equals(status)) {
@@ -102,16 +102,16 @@ public class AlertService {
             handleResolvedAlert(alertInfo);
         }
     }
-    
+
     private void handleFiringAlert(Alerts alertInfo) {
         AlertLabels labels = alertInfo.getLabels();
         String alertName = labels.getAlertname();
         int clusterId = labels.getClusterId();
         String hostname = labels.getInstance().split(":")[0];
         String serviceRoleName = labels.getServiceRoleName();
-        
+
         boolean hasHistory = alertHistoryGateway.hasEnabledAlertHistory(alertName, clusterId, hostname);
-        
+
         if (NODE.equals(serviceRoleName)) {
             ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
             clusterHost.setHostState(EXCEPTION.equals(labels.getSeverity())
@@ -119,7 +119,7 @@ public class AlertService {
                     : HostState.EXISTS_ALARM);
             hostService.updateById(clusterHost);
             if (!hasHistory) {
-                addAlertHistory(alertInfo);
+                addAlertHistory(alertInfo, null);
             }
         } else {
             ClusterServiceRoleInstanceEntity roleInstance =
@@ -131,19 +131,19 @@ public class AlertService {
                     ? ServiceRoleState.STOP
                     : ServiceRoleState.EXISTS_ALARM);
             roleInstanceService.updateById(roleInstance);
-            
+
             ClusterServiceInstanceEntity serviceInstance = serviceInstanceService.getById(roleInstance.getServiceId());
             serviceInstance.setServiceState(EXCEPTION.equals(labels.getSeverity())
                     ? ServiceState.EXISTS_EXCEPTION
                     : ServiceState.EXISTS_ALARM);
             serviceInstanceService.updateById(serviceInstance);
-            
+
             if (!hasHistory) {
-                addAlertHistory(alertInfo);
+                addAlertHistory(alertInfo, roleInstance);
             }
         }
     }
-    
+
     private void handleResolvedAlert(Alerts alertInfo) {
         AlertLabels labels = alertInfo.getLabels();
         String hostname = labels.getInstance().split(":")[0];
@@ -155,7 +155,7 @@ public class AlertService {
         AlertHistory alertHistory = alertHistoryOpt.get();
         boolean nodeHasWarn = alertHistoryGateway.nodeHasWarnAlertList(
                 hostname, labels.getServiceRoleName(), alertHistory.getId());
-        
+
         if (NODE.equals(labels.getServiceRoleName())) {
             ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
             clusterHost.setHostState(nodeHasWarn ? HostState.EXISTS_ALARM : HostState.RUNNING);
@@ -172,8 +172,8 @@ public class AlertService {
         }
         alertHistoryGateway.updateAlertHistoryToDisabled(alertHistory.getId());
     }
-    
-    private void addAlertHistory(Alerts alertInfo) {
+
+    private void addAlertHistory(Alerts alertInfo, ClusterServiceRoleInstanceEntity roleInstance) {
         AlertLabels labels = alertInfo.getLabels();
         String hostname = labels.getInstance().split(":")[0];
         ClusterAlertHistory history = ClusterAlertHistory.builder()
@@ -187,6 +187,8 @@ public class AlertService {
                 .alertAdvice(alertInfo.getAnnotations().getSummary())
                 .hostname(hostname)
                 .isEnabled(1)
+                .serviceRoleInstanceId(roleInstance == null ? null : roleInstance.getId())
+                .serviceInstanceId(roleInstance == null ? null : roleInstance.getServiceId())
                 .build();
         alertHistoryService.save(history);
     }
