@@ -45,17 +45,25 @@ vi.mock('antd', async () => {
   const Layout = ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   );
-  Layout.Sider = ({ children }: { children: ReactNode }) => (
-    <aside>{children}</aside>
+  Layout.Sider = ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => (
+    <aside className={className} data-testid="cluster-sider">
+      {children}
+    </aside>
   );
   Layout.Content = ({
     children,
-    style,
+    className,
   }: {
     children: ReactNode;
-    style?: CSSProperties;
+    className?: string;
   }) => (
-    <main data-testid="cluster-content" style={style}>
+    <main data-testid="cluster-content" className={className}>
       {children}
     </main>
   );
@@ -90,6 +98,16 @@ vi.mock('@/services/service', () => ({ listClusterServices: vi.fn() }));
 vi.mock('../AddService/AddServiceModal', () => ({ default: () => null }));
 vi.mock('../Deploy/UploadManifestModal', () => ({ default: () => null }));
 vi.mock('../Deploy/UploadPackageModal', () => ({ default: () => null }));
+vi.mock('./style', () => ({
+  default: () => ({
+    styles: new Proxy(
+      {},
+      {
+        get: (_target, property) => `style-${String(property)}`,
+      },
+    ),
+  }),
+}));
 
 describe('ClusterLayout', () => {
   beforeEach(() => {
@@ -105,15 +123,13 @@ describe('ClusterLayout', () => {
     const shell = await screen.findByTestId('cluster-page-shell');
     expect(shell).toHaveAttribute('data-page-header-render', 'false');
     expect(shell).toHaveStyle({ padding: '0' });
-    expect(screen.getByTestId('cluster-content')).toHaveStyle({
-      padding: '16px',
-      display: 'flex',
-    });
-    expect(screen.getByText('cluster page').parentElement).toHaveStyle({
-      flex: '1',
-      minWidth: '0',
-      minHeight: '0',
-    });
+    expect(screen.getByTestId('cluster-content')).toHaveClass('style-content');
+    expect(screen.getByTestId('cluster-sider')).toHaveClass('style-sider');
+    expect(screen.getByText('cluster page').parentElement).toHaveClass(
+      'style-outlet',
+    );
+    expect(screen.getByText('上传部署')).toBeInTheDocument();
+    expect(screen.getByText('添加服务')).toBeInTheDocument();
     expect(screen.getByText('cluster page')).toBeInTheDocument();
   });
 

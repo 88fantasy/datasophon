@@ -115,6 +115,7 @@ const HistoryTab: React.FC<Props> = ({ clusterId }) => {
   return (
     <ProTable<DATASOPHON.AlertHistoryResponse, HistoryTableParams>
       rowKey="id"
+      locale={{ emptyText: '暂无告警记录' }}
       columns={columns}
       request={async (params) => {
         const response = await listAlertHistory(clusterId, {

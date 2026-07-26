@@ -1,6 +1,6 @@
 import { ReloadOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
-import { Button, Segmented, Select, Space, Tag, Tooltip } from 'antd';
+import { Button, Select, Space, Tooltip } from 'antd';
 import { type FC, type ReactNode, useEffect, useRef, useState } from 'react';
 import useStyles from './monitorStyles';
 import type { RefreshInterval, TimeRange } from './types';
@@ -128,18 +128,21 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
 
       <div className={styles.toolbarSpacer} />
 
-      <Segmented
+      <Select
+        aria-label={t('pages.prometheusMonitor.toolbar.timeRange.last1h')}
         options={TIME_RANGE_OPTIONS}
         value={timeRange}
         onChange={(value) => onTimeRangeChange(value as TimeRange)}
         size="small"
+        style={{ width: 132 }}
       />
 
       <Select
+        aria-label={t('pages.prometheusMonitor.toolbar.refresh.30s')}
         value={refreshInterval}
         onChange={onRefreshIntervalChange}
         options={REFRESH_OPTIONS}
-        style={{ width: 80 }}
+        style={{ width: 96 }}
         size="small"
       />
 
@@ -148,13 +151,9 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
           icon={<ReloadOutlined />}
           onClick={onRefresh}
           size="small"
-          type={countdown > 0 ? 'primary' : 'default'}
-          ghost={countdown > 0}
         >
           {countdown > 0 ? (
-            <Tag color="processing" className={styles.toolbarCountdown}>
-              {countdown}s
-            </Tag>
+            <span className={styles.toolbarCountdown}>{countdown}s</span>
           ) : null}
         </Button>
       </Tooltip>

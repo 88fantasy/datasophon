@@ -29,12 +29,14 @@ const MonitorDashboardLayout: FC<MonitorDashboardLayoutProps> = ({
       className={cx(styles.dashboard, embedded && styles.embeddedDashboard)}
     >
       <div className={styles.header}>
-        {title && (
-          <Title level={4} className={styles.title}>
-            {title}
-          </Title>
-        )}
-        {toolbar}
+        <div className={styles.headerRow}>
+          {title && (
+            <Title level={4} className={styles.title}>
+              {title}
+            </Title>
+          )}
+          {toolbar}
+        </div>
         {(meta || loading) && (
           <Text type="secondary" className={styles.meta}>
             {meta}

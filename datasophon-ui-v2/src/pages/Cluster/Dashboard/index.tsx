@@ -184,24 +184,6 @@ const ClusterDashboard: FC = () => {
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={10}>
-          <TimeSeriesPanel
-            title={panelTitle('network')}
-            data={otel.networkSeries}
-            yFormatter={rateFormatter}
-          />
-        </PanelCol>
-        <PanelCol span={14}>
-          <AlertTrendPanel
-            title={panelTitle('alertTrend')}
-            warningLabel={alertLevelLabels.warning}
-            exceptionLabel={alertLevelLabels.exception}
-            data={summary?.alertTrend ?? []}
-          />
-        </PanelCol>
-      </Row>
-
-      <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <RecentAlertsPanel
             title={panelTitle('recentAlerts')}
@@ -234,6 +216,24 @@ const ClusterDashboard: FC = () => {
             viewMoreLabel={t('pages.clusterDashboard.viewMore')}
             data={summary?.serviceHealth ?? []}
             onViewMore={() => history.push(`/cluster/${clusterId}/service`)}
+          />
+        </PanelCol>
+      </Row>
+
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={10}>
+          <TimeSeriesPanel
+            title={panelTitle('network')}
+            data={otel.networkSeries}
+            yFormatter={rateFormatter}
+          />
+        </PanelCol>
+        <PanelCol span={14}>
+          <AlertTrendPanel
+            title={panelTitle('alertTrend')}
+            warningLabel={alertLevelLabels.warning}
+            exceptionLabel={alertLevelLabels.exception}
+            data={summary?.alertTrend ?? []}
           />
         </PanelCol>
       </Row>

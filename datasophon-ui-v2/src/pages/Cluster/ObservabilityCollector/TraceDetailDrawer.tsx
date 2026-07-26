@@ -5,12 +5,13 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
-import { Drawer, Empty, Segmented, Spin, Statistic, Tag } from 'antd';
+import { Button, Drawer, Empty, Segmented, Spin, Statistic, Tag } from 'antd';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { useObservabilityStyles } from './observabilityStyles';
 import { getTraceDetail, type SpanNode } from './service';
+import { formatDuration } from './traceVisual';
 
 interface TraceDetailDrawerProps {
   clusterId: number;
@@ -26,16 +27,8 @@ interface SpanTreeNode extends SpanNode {
 }
 
 function parseTime(value: string) {
-  const parsed = dayjs.utc(value);
+  const parsed = dayjs(value);
   return parsed.isValid() ? parsed.valueOf() : 0;
-}
-
-export function formatDuration(durationNs: number) {
-  if (!durationNs) return '-';
-  const ms = durationNs / 1_000_000;
-  if (ms < 1) return `${(durationNs / 1_000).toFixed(1)} us`;
-  if (ms < 1000) return `${ms.toFixed(ms < 10 ? 2 : 1)} ms`;
-  return `${(ms / 1000).toFixed(2)} s`;
 }
 
 function statusIsError(statusCode?: string) {
@@ -144,7 +137,7 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
         ...flattenedSpans.map((span) =>
           span.endTime
             ? parseTime(span.endTime)
-            : parseTime(span.timestamp) + span.duration / 1_000_000,
+            : parseTime(span.timestamp) + span.duration / 1_000,
         ),
       )
     : 0;
@@ -170,13 +163,16 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
     }
     if (detailTab === 'logs') {
       return (
-        <Tag
-          color="blue"
-          style={{ cursor: 'pointer' }}
+        <Button
+          type="primary"
+          icon={<FileTextOutlined />}
           onClick={() => traceId && onShowLogs(traceId)}
         >
-          {traceId}
-        </Tag>
+          {t(
+            'pages.observabilityCollector.viewCorrelatedLogs',
+            '查看该 Trace 的关联日志',
+          )}
+        </Button>
       );
     }
     return renderAttributes(selectedSpan.spanAttributes, styles);
@@ -188,7 +184,7 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
         'pages.observabilityCollector.traceDetailsTitle',
         'Trace details',
       )}
-      size={920}
+      size={1040}
       open={open}
       onClose={onClose}
       destroyOnHidden
@@ -199,34 +195,60 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                gap: 16,
-                marginBottom: 16,
-              }}
-            >
-              <Statistic
-                title={t('pages.observabilityCollector.duration', 'Duration')}
-                value={formatDuration(Math.round(totalMs * 1_000_000))}
-              />
-              <Statistic
-                title={t('pages.observabilityCollector.spans', 'Spans')}
-                value={spans.length}
-              />
-              <Statistic
-                title={t(
-                  'pages.observabilityCollector.errorSpans',
-                  'Error spans',
+            <div className={styles.drawerContext}>
+              <div className={styles.drawerContextMain}>
+                <Tag color="blue">{flattenedSpans[0]?.serviceName}</Tag>
+                <Tag>
+                  {dayjs(flattenedSpans[0]?.timestamp).format(
+                    'YYYY-MM-DD HH:mm:ss.SSS',
+                  )}
+                </Tag>
+                <Tag color={errorCount > 0 ? 'red' : 'green'}>
+                  {errorCount > 0 ? 'ERROR' : 'OK'}
+                </Tag>
+              </div>
+              <Button
+                size="small"
+                icon={<FileTextOutlined />}
+                onClick={() => traceId && onShowLogs(traceId)}
+              >
+                {t(
+                  'pages.observabilityCollector.viewCorrelatedLogs',
+                  '查看关联日志',
                 )}
-                value={errorCount}
-                styles={{ content: { color: '#cf1322' } }}
-              />
-              <Statistic
-                title={t('pages.observabilityCollector.services', 'Services')}
-                value={serviceCount}
-              />
+              </Button>
+            </div>
+            <div className={styles.traceSummary}>
+              <div>
+                <Statistic
+                  title={t('pages.observabilityCollector.duration', 'Duration')}
+                  value={formatDuration(Math.round(totalMs * 1_000))}
+                />
+              </div>
+              <div>
+                <Statistic
+                  title={t('pages.observabilityCollector.spans', 'Spans')}
+                  value={spans.length}
+                />
+              </div>
+              <div>
+                <Statistic
+                  title={t(
+                    'pages.observabilityCollector.errorSpans',
+                    'Error spans',
+                  )}
+                  value={errorCount}
+                  styles={{
+                    content: { color: errorCount > 0 ? '#cf1322' : '#389e0d' },
+                  }}
+                />
+              </div>
+              <div>
+                <Statistic
+                  title={t('pages.observabilityCollector.services', 'Services')}
+                  value={serviceCount}
+                />
+              </div>
             </div>
 
             <div className={styles.waterfallHeader}>
@@ -254,7 +276,7 @@ const TraceDetailDrawer: React.FC<TraceDetailDrawerProps> = ({
                   parseTime(span.timestamp) - rootStart,
                   0,
                 );
-                const widthMs = Math.max(span.duration / 1_000_000, 1);
+                const widthMs = Math.max(span.duration / 1_000, 1);
                 const left = Math.min((startMs / totalMs) * 100, 100);
                 const width = Math.max(
                   Math.min((widthMs / totalMs) * 100, 100 - left),

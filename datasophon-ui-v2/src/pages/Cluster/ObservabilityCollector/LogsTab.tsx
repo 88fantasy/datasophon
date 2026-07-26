@@ -2,34 +2,30 @@ import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Button, DatePicker, Form, Input, Select, Space, Tag } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
+import { Button, Form, Input, Select, Space, Tag } from 'antd';
+import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import OverviewStats from './OverviewStats';
 import { useObservabilityStyles } from './observabilityStyles';
+import type { ObservabilityTabContext } from './observabilityTypes';
 import { type LogRow, listLogs, listTraceServices } from './service';
 
-interface LogsTabProps {
+interface LogsTabProps extends ObservabilityTabContext {
   clusterId: number;
   traceId?: string;
   onTraceIdConsumed: () => void;
 }
 
 interface LogFilters {
-  timeRange: [Dayjs, Dayjs];
   serviceName?: string;
   severities?: string[];
   bodyKeyword?: string;
   traceId?: string;
 }
 
-const { RangePicker } = DatePicker;
 const severityOptions = ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'];
 
-function defaultRange(): [Dayjs, Dayjs] {
-  return [dayjs().subtract(1, 'hour'), dayjs()];
-}
-
-function toSeconds(value: Dayjs) {
+function toSeconds(value: ObservabilityTabContext['timeRange'][number]) {
   return Math.floor(value.valueOf() / 1000);
 }
 
@@ -59,6 +55,8 @@ const LogsTab: React.FC<LogsTabProps> = ({
   clusterId,
   traceId,
   onTraceIdConsumed,
+  timeRange,
+  refreshKey,
 }) => {
   const intl = useIntl();
   const t = useCallback(
@@ -70,30 +68,36 @@ const LogsTab: React.FC<LogsTabProps> = ({
   const actionRef = useRef<ActionType>(null);
   const [form] = Form.useForm<LogFilters>();
   const [filters, setFilters] = useState<LogFilters>({
-    timeRange: defaultRange(),
     severities: ['INFO', 'WARN', 'ERROR'],
   });
   const filtersRef = useRef(filters);
   const [services, setServices] = useState<string[]>([]);
+  const [logTotal, setLogTotal] = useState(0);
+  const [pageRows, setPageRows] = useState<LogRow[]>([]);
 
   useEffect(() => {
-    const [start, end] = filters.timeRange;
+    if (!clusterId) return;
+    const [start, end] = timeRange;
     listTraceServices(clusterId, toSeconds(start), toSeconds(end)).then(
       (result) => {
         setServices(result.data ?? []);
       },
     );
-  }, [clusterId, filters.timeRange]);
+  }, [clusterId, refreshKey, timeRange]);
+
+  useEffect(() => {
+    actionRef.current?.reload();
+  }, [refreshKey, timeRange]);
 
   useEffect(() => {
     if (!traceId) return;
-    const nextFilters = { ...filters, traceId };
+    const nextFilters = { ...filtersRef.current, traceId };
     form.setFieldsValue(nextFilters);
     filtersRef.current = nextFilters;
     setFilters(nextFilters);
     actionRef.current?.reload();
     onTraceIdConsumed();
-  }, [filters, form, onTraceIdConsumed, traceId]);
+  }, [form, onTraceIdConsumed, traceId]);
 
   const columns = useMemo<ProColumns<LogRow>[]>(
     () => [
@@ -102,7 +106,7 @@ const LogsTab: React.FC<LogsTabProps> = ({
         dataIndex: 'timestamp',
         width: 180,
         search: false,
-        renderText: (value) => dayjs.utc(value).local().format('HH:mm:ss.SSS'),
+        renderText: (value) => dayjs(value).format('HH:mm:ss.SSS'),
       },
       {
         title: t('pages.observabilityCollector.severity', 'Severity'),
@@ -150,7 +154,10 @@ const LogsTab: React.FC<LogsTabProps> = ({
               size="small"
               className={styles.traceId}
               onClick={() => {
-                const nextFilters = { ...filters, traceId: record.traceId };
+                const nextFilters = {
+                  ...filtersRef.current,
+                  traceId: record.traceId,
+                };
                 form.setFieldsValue(nextFilters);
                 filtersRef.current = nextFilters;
                 setFilters(nextFilters);
@@ -164,7 +171,7 @@ const LogsTab: React.FC<LogsTabProps> = ({
           ),
       },
     ],
-    [filters, form, styles, t],
+    [form, styles, t],
   );
 
   const applyFilters = (values: LogFilters) => {
@@ -187,6 +194,55 @@ const LogsTab: React.FC<LogsTabProps> = ({
 
   return (
     <div className={styles.panel}>
+      <OverviewStats
+        items={[
+          {
+            title: t('pages.observabilityCollector.logTotal', '日志总数'),
+            value: logTotal,
+            hint: t(
+              'pages.observabilityCollector.currentQueryWindow',
+              '当前查询时间窗口',
+            ),
+          },
+          {
+            title: 'INFO',
+            value: pageRows.filter((row) => row.severityText === 'INFO').length,
+            hint: t(
+              'pages.observabilityCollector.currentPageCount',
+              '当前页数量',
+            ),
+          },
+          {
+            title: 'WARN',
+            value: pageRows.filter((row) => row.severityText === 'WARN').length,
+            hint: t(
+              'pages.observabilityCollector.currentPageCount',
+              '当前页数量',
+            ),
+            tone: 'warning',
+          },
+          {
+            title: 'ERROR / FATAL',
+            value: pageRows.filter((row) =>
+              ['ERROR', 'FATAL'].includes(row.severityText),
+            ).length,
+            hint: filters.traceId
+              ? t(
+                  'pages.observabilityCollector.linkedTraceActive',
+                  '已按 TraceID 关联筛选',
+                )
+              : t(
+                  'pages.observabilityCollector.currentPageCount',
+                  '当前页数量',
+                ),
+            tone: pageRows.some((row) =>
+              ['ERROR', 'FATAL'].includes(row.severityText),
+            )
+              ? 'danger'
+              : 'success',
+          },
+        ]}
+      />
       <Form
         form={form}
         layout="vertical"
@@ -194,13 +250,6 @@ const LogsTab: React.FC<LogsTabProps> = ({
         onFinish={applyFilters}
         className={styles.filterBar}
       >
-        <Form.Item
-          label={t('pages.observabilityCollector.timeRange', 'Time range')}
-          name="timeRange"
-          style={{ marginBottom: 0 }}
-        >
-          <RangePicker showTime allowClear={false} />
-        </Form.Item>
         <Form.Item
           label={t('pages.observabilityCollector.service', 'Service')}
           name="serviceName"
@@ -263,7 +312,6 @@ const LogsTab: React.FC<LogsTabProps> = ({
               icon={<ReloadOutlined />}
               onClick={() => {
                 const nextFilters = {
-                  timeRange: defaultRange(),
                   severities: ['INFO', 'WARN', 'ERROR'],
                 };
                 form.resetFields();
@@ -294,44 +342,50 @@ const LogsTab: React.FC<LogsTabProps> = ({
           );
         })}
       </div>
-      <ProTable<LogRow>
-        actionRef={actionRef}
-        rowKey={(record) =>
-          `${record.timestamp}-${record.traceId}-${record.spanId}`
-        }
-        columns={columns}
-        search={false}
-        options={{ reload: true, density: false, setting: false }}
-        pagination={{ defaultPageSize: 50, showSizeChanger: true }}
-        expandable={{
-          expandedRowRender: (record) => (
-            <pre className={styles.logDetail}>
-              {JSON.stringify(logDetail(record), null, 2)}
-            </pre>
-          ),
-          rowExpandable: () => true,
-        }}
-        request={async (params) => {
-          const currentFilters = filtersRef.current;
-          const [start, end] = currentFilters.timeRange;
-          const result = await listLogs({
-            clusterId,
-            start: toSeconds(start),
-            end: toSeconds(end),
-            serviceName: currentFilters.serviceName,
-            severities: currentFilters.severities,
-            bodyKeyword: currentFilters.bodyKeyword,
-            traceId: currentFilters.traceId,
-            page: params.current,
-            pageSize: params.pageSize,
-          });
-          return {
-            data: result.data ?? [],
-            success: result.code === 200,
-            total: result.total ?? 0,
-          };
-        }}
-      />
+      <div className={styles.tableWrap}>
+        <ProTable<LogRow>
+          actionRef={actionRef}
+          rowKey={(record) =>
+            `${record.timestamp}-${record.traceId}-${record.spanId}`
+          }
+          columns={columns}
+          search={false}
+          size="small"
+          options={{ reload: true, density: false, setting: false }}
+          pagination={{ defaultPageSize: 50, showSizeChanger: true }}
+          expandable={{
+            expandedRowRender: (record) => (
+              <pre className={styles.logDetail}>
+                {JSON.stringify(logDetail(record), null, 2)}
+              </pre>
+            ),
+            rowExpandable: () => true,
+          }}
+          request={async (params) => {
+            const currentFilters = filtersRef.current;
+            const [start, end] = timeRange;
+            const result = await listLogs({
+              clusterId,
+              start: toSeconds(start),
+              end: toSeconds(end),
+              serviceName: currentFilters.serviceName,
+              severities: currentFilters.severities,
+              bodyKeyword: currentFilters.bodyKeyword,
+              traceId: currentFilters.traceId,
+              page: params.current,
+              pageSize: params.pageSize,
+            });
+            const rows = result.data ?? [];
+            setPageRows(rows);
+            setLogTotal(result.total ?? 0);
+            return {
+              data: rows,
+              success: result.code === 200,
+              total: result.total ?? 0,
+            };
+          }}
+        />
+      </div>
     </div>
   );
 };

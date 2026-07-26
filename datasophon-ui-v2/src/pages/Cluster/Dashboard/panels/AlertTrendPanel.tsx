@@ -58,6 +58,7 @@ const AlertTrendPanel: FC<AlertTrendPanelProps> = ({
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           className={styles.empty}
           style={{ height }}
+          description="当前时间范围内暂无告警趋势"
         />
       </MonitorPanelCard>
     );

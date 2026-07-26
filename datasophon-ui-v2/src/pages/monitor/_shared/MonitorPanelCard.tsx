@@ -26,7 +26,7 @@ const MonitorPanelCard: FC<MonitorPanelCardProps> = ({
 
   return (
     <Card
-      variant="borderless"
+      variant="outlined"
       className={clsx(styles.panelCard, className)}
       classNames={{ title: styles.panelCardTitle, ...cardClassNames }}
       styles={{

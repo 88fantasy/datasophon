@@ -90,7 +90,9 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
         formatter={() => (
           <Badge
             status={noData ? 'default' : hasError ? 'warning' : 'success'}
-            text={noData ? 'No Data' : hasError ? `${value} errors` : 'OK'}
+            text={
+              noData ? '暂无数据' : hasError ? `${value} 个采集错误` : '采集正常'
+            }
           />
         )}
         styles={{

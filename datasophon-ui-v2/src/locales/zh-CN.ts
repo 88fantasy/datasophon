@@ -5,6 +5,7 @@ import dolphinSchedulerMonitor from './zh-CN/dolphinSchedulerMonitor';
 import dorisMonitor from './zh-CN/dorisMonitor';
 import globalHeader from './zh-CN/globalHeader';
 import juicefsMonitor from './zh-CN/juicefsMonitor';
+import additionalMonitor from './zh-CN/additionalMonitor';
 import menu from './zh-CN/menu';
 import nacosMonitor from './zh-CN/nacosMonitor';
 import network from './zh-CN/network';
@@ -40,5 +41,6 @@ export default {
   ...apisixMonitor,
   ...rustfsMonitor,
   ...juicefsMonitor,
+  ...additionalMonitor,
   ...clusterDashboard,
 };

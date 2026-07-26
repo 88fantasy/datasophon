@@ -1,3 +1,4 @@
+import { useIntl } from '@umijs/max';
 import { Row } from 'antd';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -71,6 +72,7 @@ function maxSeriesValue(data: TimeSeriesPoint[], series: string): number {
 }
 
 const KyuubiDashboard: FC = () => {
+  const intl = useIntl();
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -125,7 +127,10 @@ const KyuubiDashboard: FC = () => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title="Kyuubi Monitor"
+      title={intl.formatMessage({
+        id: 'pages.kyuubiMonitor.title',
+        defaultMessage: 'Kyuubi Monitor',
+      })}
       toolbar={
         <KyuubiDashboardToolbar
           timeRange={timeRange}

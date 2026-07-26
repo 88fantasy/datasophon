@@ -1,77 +1,37 @@
+import { DownloadOutlined } from '@ant-design/icons';
 import {
-  DownloadOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
-import { Circle } from '@antv/g';
-import {
-  type BaseEdgeStyleProps,
-  CubicHorizontal,
   type ElementDatum,
-  ExtensionCategory,
   type Fullscreen,
   Graph,
   type IElementEvent,
-  type NodeData,
-  register,
-  subStyleProps,
 } from '@antv/g6';
 import { useIntl } from '@umijs/max';
 import {
   Alert,
   Button,
   Checkbox,
-  DatePicker,
   Empty,
-  Form,
   Input,
   message,
-  Space,
   Spin,
+  Tag,
 } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import OverviewStats from './OverviewStats';
 import { useObservabilityStyles } from './observabilityStyles';
+import type {
+  ObservabilityTabContext,
+  ObservabilityTimeRange,
+} from './observabilityTypes';
 import ServiceDetailDrawer from './ServiceDetailDrawer';
 import { getTraceTopology, type TopologyGraph } from './service';
 import { serviceIconFor } from './serviceIcon';
-import { formatDuration } from './TraceDetailDrawer';
+import { formatDuration } from './traceVisual';
 
-// 边上流动的小圆点动效,参考 G6 官方示例 animation/persistence#fly-marker:
-// 圆点的 offsetPath 绑定到边的 key shape(路径),动画 offsetDistance 0→1 使其沿边循环移动。
-class FlyMarkerCubic extends CubicHorizontal {
-  private getMarkerStyle(attributes: BaseEdgeStyleProps) {
-    return {
-      r: 3,
-      fill: '#5b8ff9',
-      offsetPath: this.shapeMap.key,
-      ...subStyleProps(attributes, 'marker'),
-    };
-  }
-
-  onCreate() {
-    const marker = this.upsert(
-      'marker',
-      Circle,
-      this.getMarkerStyle(this.attributes),
-      this,
-    );
-    marker?.animate([{ offsetDistance: 0 }, { offsetDistance: 1 }], {
-      duration: 2500,
-      iterations: Infinity,
-    });
-  }
-}
-
-register(ExtensionCategory.EDGE, 'fly-marker-cubic', FlyMarkerCubic);
-
-interface TopologyTabProps {
+interface TopologyTabProps extends ObservabilityTabContext {
   clusterId: number;
   onShowTraces: (serviceName: string) => void;
-}
-
-interface TopologyFilters {
-  timeRange: [Dayjs, Dayjs];
 }
 
 interface ViewFilters {
@@ -80,13 +40,7 @@ interface ViewFilters {
   showAvg: boolean;
 }
 
-const { RangePicker } = DatePicker;
-
-function defaultRange(): [Dayjs, Dayjs] {
-  return [dayjs().subtract(1, 'hour'), dayjs()];
-}
-
-function toSeconds(value: Dayjs) {
+function toSeconds(value: ObservabilityTimeRange[number]) {
   return Math.floor(value.valueOf() / 1000);
 }
 
@@ -189,9 +143,31 @@ export function toGraphData(
   return { nodes, edges };
 }
 
+export function summarizeTopology(topology?: TopologyGraph) {
+  if (!topology) {
+    return {
+      serviceCount: 0,
+      callCount: 0,
+      errorCount: 0,
+      maxP99DurationNs: 0,
+    };
+  }
+  return {
+    serviceCount: topology.nodes.length,
+    callCount: topology.edges.reduce((sum, edge) => sum + edge.callCount, 0),
+    errorCount: topology.edges.reduce((sum, edge) => sum + edge.errorCount, 0),
+    maxP99DurationNs: Math.max(
+      0,
+      ...topology.nodes.map((node) => node.p99DurationNs),
+    ),
+  };
+}
+
 const TopologyTab: React.FC<TopologyTabProps> = ({
   clusterId,
   onShowTraces,
+  timeRange,
+  refreshKey,
 }) => {
   const intl = useIntl();
   const t = useCallback(
@@ -200,12 +176,9 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
     [intl],
   );
   const { styles } = useObservabilityStyles();
-  const [form] = Form.useForm<TopologyFilters>();
-  const [filters, setFilters] = useState<TopologyFilters>({
-    timeRange: defaultRange(),
-  });
   const [topology, setTopology] = useState<TopologyGraph>();
   const [loading, setLoading] = useState(false);
+  const [renderFailed, setRenderFailed] = useState(false);
   const [viewFilters, setViewFilters] = useState<ViewFilters>({
     onlyError: false,
     slowTop5: false,
@@ -216,18 +189,22 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph>(undefined);
 
+  const slowNodes = useMemo(
+    () =>
+      [...(topology?.nodes ?? [])]
+        .sort((a, b) => b.p99DurationNs - a.p99DurationNs)
+        .slice(0, 5),
+    [topology],
+  );
   const slowTop5Ids = useMemo(() => {
     if (!viewFilters.slowTop5 || !topology) return undefined;
-    return new Set(
-      [...topology.nodes]
-        .sort((a, b) => b.p99DurationNs - a.p99DurationNs)
-        .slice(0, 5)
-        .map((node) => node.serviceName),
-    );
-  }, [topology, viewFilters.slowTop5]);
+    return new Set(slowNodes.map((node) => node.serviceName));
+  }, [slowNodes, topology, viewFilters.slowTop5]);
+  const summary = useMemo(() => summarizeTopology(topology), [topology]);
 
   useEffect(() => {
-    const [start, end] = filters.timeRange;
+    if (!clusterId) return;
+    const [start, end] = timeRange;
     setLoading(true);
     getTraceTopology(clusterId, toSeconds(start), toSeconds(end))
       .then((result) => {
@@ -236,7 +213,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
       .finally(() => {
         setLoading(false);
       });
-  }, [clusterId, filters.timeRange]);
+  }, [clusterId, refreshKey, timeRange]);
 
   useEffect(() => {
     if (!topology || topology.nodes.length === 0) {
@@ -250,29 +227,73 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
       slowTop5Ids,
       highlightId,
     });
+    const renderGraph = (graph: Graph) => {
+      setRenderFailed(false);
+      void Promise.resolve(graph.render())
+        .then(async () => {
+          await graph.fitView();
+          if (graph.getZoom() < 0.68) {
+            await graph.zoomTo(0.68);
+            const focusId =
+              topology.nodes.find((node) => !node.external)?.serviceName ??
+              topology.nodes[0]?.serviceName;
+            if (focusId) {
+              await graph.focusElement(focusId);
+            }
+          }
+        })
+        .catch(() => setRenderFailed(true));
+    };
     if (graphRef.current) {
       graphRef.current.setData(data);
-      graphRef.current.render();
+      renderGraph(graphRef.current);
       return;
     }
     if (!containerRef.current) return;
     const graph = new Graph({
       container: containerRef.current,
-      autoFit: 'view',
       padding: 24,
       data,
       node: {
-        type: 'image',
+        type: 'rect',
         style: {
-          size: (d: NodeData) => [
-            ((d.data?.iconWidth as number) ?? 18) * 2,
-            ((d.data?.iconHeight as number) ?? 18) * 2,
-          ],
-          src: (d: NodeData) => (d.data?.iconSrc as string) ?? '',
+          size: [208, 68],
+          radius: 12,
+          fill: (d) =>
+            ((d.data?.errorRate as number) ?? 0) > 0
+              ? '#fff2f0'
+              : d.data?.external
+                ? '#f9f0ff'
+                : '#f0f5ff',
+          stroke: (d) =>
+            d.data?.highlighted
+              ? '#faad14'
+              : ((d.data?.errorRate as number) ?? 0) > 0
+                ? '#ff7875'
+                : d.data?.external
+                  ? '#b37feb'
+                  : '#85a5ff',
+          lineWidth: (d) => (d.data?.highlighted ? 3 : 1.5),
           opacity: (d) => (d.data?.dimmed ? 0.35 : 1),
           cursor: 'pointer',
-          labelText: (d) => (d.data?.displayName as string) ?? String(d.id),
+          iconSrc: (d) => String(d.data?.iconSrc ?? ''),
+          iconWidth: (d) => Number(d.data?.iconWidth ?? 18),
+          iconHeight: (d) => Number(d.data?.iconHeight ?? 18),
+          iconX: -78,
+          iconY: 0,
+          labelText: (d) => {
+            const name = (d.data?.displayName as string) ?? String(d.id);
+            const metrics = String(d.data?.metricsText ?? '');
+            return `${name}\n${metrics.split(' · ')[0] ?? ''}`;
+          },
+          labelPlacement: 'center',
+          labelOffsetX: 18,
+          labelWordWrap: true,
+          labelMaxWidth: 144,
           labelFontSize: 12,
+          labelFontWeight: 500,
+          labelLineHeight: 17,
+          labelFill: '#1f1f1f',
           badgeFontSize: 9,
           badgePadding: [1, 4],
           badges: (d) => {
@@ -319,7 +340,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
         },
       },
       edge: {
-        type: 'fly-marker-cubic',
+        type: 'cubic-horizontal',
         style: {
           endArrow: true,
           lineWidth: 1.5,
@@ -352,7 +373,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
           getContent: async (_event: IElementEvent, items: ElementDatum[]) => {
             const item = items[0];
             const data = item && 'data' in item ? item.data : undefined;
-            if (!data || !('iconSrc' in data)) {
+            if (!data || !('displayName' in data)) {
               return '';
             }
             const container = document.createElement('div');
@@ -440,8 +461,8 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
       if (nodeDatum?.data?.external) return;
       setSelectedService(id);
     });
-    graph.render();
     graphRef.current = graph;
+    renderGraph(graph);
   }, [topology, viewFilters, slowTop5Ids, highlightId, t]);
 
   useEffect(() => {
@@ -450,12 +471,6 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
       graphRef.current = undefined;
     };
   }, []);
-
-  const setPreset = (amount: number, unit: 'minute' | 'hour') => {
-    const nextRange: [Dayjs, Dayjs] = [dayjs().subtract(amount, unit), dayjs()];
-    form.setFieldsValue({ timeRange: nextRange });
-    setFilters({ timeRange: nextRange });
-  };
 
   const handleSearch = (value: string) => {
     const trimmed = value.trim();
@@ -507,60 +522,52 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
 
   return (
     <div className={styles.panel}>
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={filters}
-        onFinish={setFilters}
-        className={styles.filterBar}
-      >
-        <Form.Item
-          label={t('pages.observabilityCollector.timeRange', 'Time range')}
-          name="timeRange"
-          style={{ marginBottom: 0 }}
-        >
-          <RangePicker showTime allowClear={false} />
-        </Form.Item>
-        <Form.Item style={{ marginBottom: 0 }}>
-          <Space>
-            <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-              {t('pages.observabilityCollector.query', 'Query')}
-            </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                const nextFilters = { timeRange: defaultRange() };
-                form.setFieldsValue(nextFilters);
-                setFilters(nextFilters);
-              }}
-            >
-              {t('pages.observabilityCollector.reset', 'Reset')}
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-      <div className={styles.quickBar}>
-        <span style={{ color: '#8c8c8c', fontSize: 12 }}>
-          {t('pages.observabilityCollector.quick', 'Quick')}:
-        </span>
-        <Button size="small" onClick={() => setPreset(15, 'minute')}>
-          {t('pages.observabilityCollector.presetLast15m', 'Last 15m')}
-        </Button>
-        <Button
-          size="small"
-          type="primary"
-          ghost
-          onClick={() => setPreset(1, 'hour')}
-        >
-          {t('pages.observabilityCollector.presetLast1h', 'Last 1h')}
-        </Button>
-        <Button size="small" onClick={() => setPreset(6, 'hour')}>
-          {t('pages.observabilityCollector.presetLast6h', 'Last 6h')}
-        </Button>
-        <Button size="small" onClick={() => setPreset(24, 'hour')}>
-          {t('pages.observabilityCollector.presetLast24h', 'Last 24h')}
-        </Button>
-      </div>
+      <OverviewStats
+        items={[
+          {
+            title: t(
+              'pages.observabilityCollector.topologyServiceCount',
+              '服务与依赖',
+            ),
+            value: summary.serviceCount,
+            hint: t(
+              'pages.observabilityCollector.topologyServiceCountHint',
+              '当前时间窗口内参与调用的节点',
+            ),
+          },
+          {
+            title: t(
+              'pages.observabilityCollector.topologyCallCount',
+              '跨服务调用',
+            ),
+            value: summary.callCount,
+            hint: `${topology?.edges.length ?? 0} ${t(
+              'pages.observabilityCollector.topologyRelations',
+              '条调用关系',
+            )}`,
+          },
+          {
+            title: t(
+              'pages.observabilityCollector.topologyErrorCount',
+              '异常调用',
+            ),
+            value: summary.errorCount,
+            hint:
+              summary.callCount > 0
+                ? `${((summary.errorCount / summary.callCount) * 100).toFixed(
+                    2,
+                  )}%`
+                : '0%',
+            tone: summary.errorCount > 0 ? 'danger' : 'success',
+          },
+          {
+            title: 'P99 Max',
+            value: formatDuration(summary.maxP99DurationNs),
+            hint: slowNodes[0]?.serviceName ?? '-',
+            tone: 'warning',
+          },
+        ]}
+      />
       <div className={styles.quickBar}>
         <Checkbox
           checked={viewFilters.onlyError}
@@ -612,27 +619,61 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
             )}
           />
         ) : (
-          <>
-            {topology && hasNodes && topology.edges.length === 0 && (
-              <Alert
-                type="info"
-                showIcon
-                style={{ marginBottom: 12 }}
-                title={t(
-                  'pages.observabilityCollector.topologyNoEdgesAlert',
-                  'No cross-service calls found in this time range. If edges are expected, check the Doris job otel_traces_graph_job.',
+          <div className={styles.topologyWorkspace}>
+            <div className={styles.topologyCanvas}>
+              {topology && hasNodes && topology.edges.length === 0 && (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  title={t(
+                    'pages.observabilityCollector.topologyNoEdgesAlert',
+                    'No cross-service calls found in this time range. If edges are expected, check the Doris job otel_traces_graph_job.',
+                  )}
+                />
+              )}
+              {renderFailed && (
+                <Alert
+                  type="error"
+                  showIcon
+                  title={t(
+                    'pages.observabilityCollector.topologyRenderFailed',
+                    '拓扑图渲染失败，请刷新后重试。',
+                  )}
+                />
+              )}
+              <div ref={containerRef} style={{ height: 560 }} />
+            </div>
+            <aside className={styles.insightPanel}>
+              <div className={styles.insightTitle}>
+                {t(
+                  'pages.observabilityCollector.slowServiceInsight',
+                  '慢服务 Top 5',
                 )}
-              />
-            )}
-            <div ref={containerRef} style={{ height: 560 }} />
-          </>
+              </div>
+              {slowNodes.map((node, index) => (
+                <div className={styles.insightItem} key={node.serviceName}>
+                  <span className={styles.insightRank}>{index + 1}</span>
+                  <span
+                    className={styles.insightService}
+                    title={node.serviceName}
+                  >
+                    {node.serviceName}
+                  </span>
+                  <Tag color={index === 0 ? 'orange' : 'blue'}>
+                    {formatDuration(node.p99DurationNs)}
+                  </Tag>
+                </div>
+              ))}
+            </aside>
+          </div>
         )}
       </Spin>
       <ServiceDetailDrawer
         clusterId={clusterId}
         serviceName={selectedService}
         open={Boolean(selectedService)}
-        timeRange={filters.timeRange}
+        timeRange={timeRange}
         onClose={() => setSelectedService(undefined)}
         onShowTraces={(serviceName) => {
           onShowTraces(serviceName);

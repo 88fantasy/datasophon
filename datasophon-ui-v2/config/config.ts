@@ -153,12 +153,22 @@ export default defineConfig({
           // 因此这些 token 可以安全地全局写死，不会影响暗色顶栏。
           borderRadius: 8,
           borderRadiusLG: 12,
-          colorBgLayout: '#f5f7fa',
+          colorPrimary: '#2563eb',
+          colorInfo: '#2563eb',
+          colorSuccess: '#16a36a',
+          colorWarning: '#f59e0b',
+          colorError: '#ef4444',
+          colorBgLayout: '#f4f7fb',
+          colorBorderSecondary: '#e5eaf2',
+          colorText: '#1f2937',
+          colorTextSecondary: '#64748b',
+          colorTextTertiary: '#94a3b8',
+          controlHeight: 36,
           boxShadowTertiary:
-            '0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 16px -6px rgba(0, 0, 0, 0.08)',
+            '0 1px 2px rgba(15, 31, 61, 0.03), 0 8px 24px -12px rgba(15, 31, 61, 0.18)',
           // antd Card 组件内部默认阴影读的就是这个别名 token。
           boxShadowCard:
-            '0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 16px -6px rgba(0, 0, 0, 0.08)',
+            '0 1px 2px rgba(15, 31, 61, 0.03), 0 8px 24px -12px rgba(15, 31, 61, 0.18)',
         },
       },
     },

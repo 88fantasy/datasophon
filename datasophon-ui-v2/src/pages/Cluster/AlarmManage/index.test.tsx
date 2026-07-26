@@ -16,6 +16,18 @@ vi.mock('@ant-design/pro-components', () => ({
 vi.mock('./Group', () => ({ default: () => <div>alarm groups</div> }));
 vi.mock('./Metric', () => ({ default: () => <div>alarm metrics</div> }));
 vi.mock('./History', () => ({ default: () => <div>alarm history</div> }));
+vi.mock('../Dashboard/hooks/useClusterSummary', () => ({
+  useClusterSummary: () => ({
+    summary: {
+      stats: {
+        alertTotal: 3,
+        criticalAlertTotal: 1,
+      },
+    },
+    recentAlerts: [],
+    loading: false,
+  }),
+}));
 
 describe('AlarmManage', () => {
   beforeEach(() => {
@@ -32,6 +44,11 @@ describe('AlarmManage', () => {
     expect(screen.getByRole('tab', { name: '告警组' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '告警指标' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '告警历史' })).toBeInTheDocument();
+    expect(screen.getByText('活跃告警')).toBeInTheDocument();
+    expect(screen.getByText('严重告警')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '查看告警历史' }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByTestId('nested-page-container'),
     ).not.toBeInTheDocument();
