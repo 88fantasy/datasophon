@@ -33,6 +33,7 @@ export interface TraceRow {
   spanName: string;
   traceId: string;
   spanCount: number;
+  /** dorisexporter otel_traces.duration 原始值，单位为微秒。 */
   duration: number;
   status: 'OK' | 'ERROR' | string;
 }
@@ -45,6 +46,7 @@ export interface SpanNode {
   serviceName: string;
   timestamp: string;
   endTime: string;
+  /** dorisexporter otel_traces.duration 原始值，单位为微秒。 */
   duration: number;
   statusCode: string;
   statusMessage: string;
@@ -68,6 +70,7 @@ export interface TopologyNode {
   serviceName: string;
   spanCount: number;
   errorCount: number;
+  /** 后端历史字段名保留 Ns 后缀，实际沿用 Doris duration 的微秒值。 */
   avgDurationNs: number;
   p99DurationNs: number;
   maxDurationNs: number;

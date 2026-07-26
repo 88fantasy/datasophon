@@ -7,7 +7,7 @@ import StatPanel from '../../monitor/_shared/panels/StatPanel';
 import TimeSeriesPanel from '../../monitor/_shared/panels/TimeSeriesPanel';
 import type { TimeSeriesPoint } from '../../monitor/_shared/types';
 import { getServiceSummary, type ServiceSummary } from './service';
-import { formatDuration } from './TraceDetailDrawer';
+import { formatDuration } from './traceVisual';
 
 interface ServiceDetailDrawerProps {
   clusterId: number;
@@ -85,7 +85,7 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
   );
   const seriesData: TimeSeriesPoint[] = (summary?.series ?? []).flatMap(
     (point) => {
-      const time = dayjs.utc(point.time).valueOf();
+      const time = dayjs(point.time).valueOf();
       return [
         { time, value: point.spanCount, series: requestCountLabel },
         { time, value: point.errorCount, series: errorCountLabel },
@@ -97,13 +97,17 @@ const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
     <Drawer
       title={serviceName}
       placement="right"
-      size={440}
+      size={520}
       open={open}
       onClose={onClose}
       destroyOnHidden
       extra={
         serviceName && (
-          <Button size="small" onClick={() => onShowTraces(serviceName)}>
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => onShowTraces(serviceName)}
+          >
             {t('pages.observabilityCollector.viewTraces', 'View traces')}
           </Button>
         )

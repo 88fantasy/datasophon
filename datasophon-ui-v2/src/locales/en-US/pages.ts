@@ -25,9 +25,16 @@ export default {
   'pages.login.registerAccount': 'Register Account',
   'pages.404.subTitle': 'Sorry, the page you visited does not exist.',
   'pages.404.buttonText': 'Back Home',
-  'pages.observabilityCollector.topology': 'Topology',
-  'pages.observabilityCollector.traces': 'Traces',
-  'pages.observabilityCollector.logs': 'Logs',
+  'pages.observabilityCollector.topology': 'Service topology',
+  'pages.observabilityCollector.traces': 'Trace search',
+  'pages.observabilityCollector.logs': 'Log search',
+  'pages.observabilityCollector.workspaceTitle': 'Distributed tracing',
+  'pages.observabilityCollector.workspaceSubtitle':
+    'Investigate dependencies, requests, and correlated logs in one workspace.',
+  'pages.observabilityCollector.autoRefreshOff': 'Auto refresh: off',
+  'pages.observabilityCollector.autoRefresh30s': 'Refresh every 30s',
+  'pages.observabilityCollector.autoRefresh60s': 'Refresh every 60s',
+  'pages.observabilityCollector.refresh': 'Refresh',
   'pages.observabilityCollector.timeRange': 'Time range',
   'pages.observabilityCollector.service': 'Service',
   'pages.observabilityCollector.status': 'Status',
@@ -86,6 +93,27 @@ export default {
     'No topology data in this time range. Ensure the Doris job otel_traces_graph_job is running (data is aggregated every 10 minutes).',
   'pages.observabilityCollector.topologyNoEdgesAlert':
     'No cross-service calls found in this time range. If edges are expected, check the Doris job otel_traces_graph_job.',
+  'pages.observabilityCollector.topologyServiceCount':
+    'Services & dependencies',
+  'pages.observabilityCollector.topologyServiceCountHint':
+    'Nodes participating in the current window',
+  'pages.observabilityCollector.topologyCallCount': 'Cross-service calls',
+  'pages.observabilityCollector.topologyRelations': 'relations',
+  'pages.observabilityCollector.topologyErrorCount': 'Failed calls',
+  'pages.observabilityCollector.topologyRenderFailed':
+    'Failed to render the topology. Refresh and try again.',
+  'pages.observabilityCollector.slowServiceInsight': 'Slow services Top 5',
+  'pages.observabilityCollector.traceTotal': 'Total traces',
+  'pages.observabilityCollector.currentQueryWindow': 'Current query window',
+  'pages.observabilityCollector.traceServices': 'Reporting services',
+  'pages.observabilityCollector.allServices': 'All services',
+  'pages.observabilityCollector.pageErrors': 'Errors on page',
+  'pages.observabilityCollector.pageRows': 'rows on this page',
+  'pages.observabilityCollector.pageSlowest': 'Slowest on page',
+  'pages.observabilityCollector.logTotal': 'Total logs',
+  'pages.observabilityCollector.currentPageCount': 'Current page count',
+  'pages.observabilityCollector.linkedTraceActive':
+    'Filtered by linked TraceID',
   'pages.observabilityCollector.spanNameSearchPlaceholder': 'Search span name',
   'pages.observabilityCollector.traceIdFullPlaceholder': 'Full TraceID',
   'pages.observabilityCollector.bodyKeywordPlaceholder': 'Search body keyword',
@@ -108,4 +136,5 @@ export default {
   'pages.observabilityCollector.resourceTab': 'Resource',
   'pages.observabilityCollector.eventsTab': 'Events ({count})',
   'pages.observabilityCollector.logsTab': 'Logs',
+  'pages.observabilityCollector.viewCorrelatedLogs': 'View correlated logs',
 };

@@ -117,9 +117,10 @@ describe('ObservabilityCollector', () => {
   it('renders its tabs without a nested page container', () => {
     render(<ObservabilityCollector />);
 
-    expect(screen.getByRole('tab', { name: 'Topology' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Traces' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Logs' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '服务拓扑' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Trace 检索' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '日志检索' })).toBeInTheDocument();
+    expect(screen.getByText('链路跟踪工作台')).toBeInTheDocument();
     expect(
       screen.queryByTestId('nested-page-container'),
     ).not.toBeInTheDocument();

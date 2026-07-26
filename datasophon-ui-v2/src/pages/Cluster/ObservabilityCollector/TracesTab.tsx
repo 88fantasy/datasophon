@@ -2,14 +2,17 @@ import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Button, DatePicker, Form, Input, Select, Space, Tag } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
+import { Button, Form, Input, Select, Space, Tag } from 'antd';
+import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import OverviewStats from './OverviewStats';
 import { useObservabilityStyles } from './observabilityStyles';
+import type { ObservabilityTabContext } from './observabilityTypes';
 import { listTraceServices, listTraces, type TraceRow } from './service';
-import TraceDetailDrawer, { formatDuration } from './TraceDetailDrawer';
+import TraceDetailDrawer from './TraceDetailDrawer';
+import { durationBarWidth, formatDuration } from './traceVisual';
 
-interface TracesTabProps {
+interface TracesTabProps extends ObservabilityTabContext {
   clusterId: number;
   onShowLogs: (traceId: string) => void;
   serviceName?: string;
@@ -17,20 +20,13 @@ interface TracesTabProps {
 }
 
 interface TraceFilters {
-  timeRange: [Dayjs, Dayjs];
   serviceName?: string;
   status?: string;
   spanName?: string;
   traceId?: string;
 }
 
-const { RangePicker } = DatePicker;
-
-function defaultRange(): [Dayjs, Dayjs] {
-  return [dayjs().subtract(1, 'hour'), dayjs()];
-}
-
-function toSeconds(value: Dayjs) {
+function toSeconds(value: ObservabilityTabContext['timeRange'][number]) {
   return Math.floor(value.valueOf() / 1000);
 }
 
@@ -47,6 +43,8 @@ const TracesTab: React.FC<TracesTabProps> = ({
   onShowLogs,
   serviceName,
   onServiceNameConsumed,
+  timeRange,
+  refreshKey,
 }) => {
   const intl = useIntl();
   const t = useCallback(
@@ -57,31 +55,37 @@ const TracesTab: React.FC<TracesTabProps> = ({
   const { styles } = useObservabilityStyles();
   const actionRef = useRef<ActionType>(null);
   const [form] = Form.useForm<TraceFilters>();
-  const [filters, setFilters] = useState<TraceFilters>({
-    timeRange: defaultRange(),
-  });
+  const [filters, setFilters] = useState<TraceFilters>({});
   const filtersRef = useRef(filters);
   const [services, setServices] = useState<string[]>([]);
   const [drawerTraceId, setDrawerTraceId] = useState<string>();
+  const [traceTotal, setTraceTotal] = useState(0);
+  const [pageRows, setPageRows] = useState<TraceRow[]>([]);
+  const maxPageDuration = Math.max(0, ...pageRows.map((row) => row.duration));
 
   useEffect(() => {
-    const [start, end] = filters.timeRange;
+    if (!clusterId) return;
+    const [start, end] = timeRange;
     listTraceServices(clusterId, toSeconds(start), toSeconds(end)).then(
       (result) => {
         setServices(result.data ?? []);
       },
     );
-  }, [clusterId, filters.timeRange]);
+  }, [clusterId, refreshKey, timeRange]);
+
+  useEffect(() => {
+    actionRef.current?.reload();
+  }, [refreshKey, timeRange]);
 
   useEffect(() => {
     if (!serviceName) return;
-    const nextFilters = { ...filters, serviceName };
+    const nextFilters = { ...filtersRef.current, serviceName };
     form.setFieldsValue(nextFilters);
     filtersRef.current = nextFilters;
     setFilters(nextFilters);
     actionRef.current?.reload();
     onServiceNameConsumed();
-  }, [filters, form, onServiceNameConsumed, serviceName]);
+  }, [form, onServiceNameConsumed, serviceName]);
 
   const columns = useMemo<ProColumns<TraceRow>[]>(
     () => [
@@ -90,8 +94,7 @@ const TracesTab: React.FC<TracesTabProps> = ({
         dataIndex: 'timestamp',
         width: 180,
         search: false,
-        renderText: (value) =>
-          dayjs.utc(value).local().format('MM-DD HH:mm:ss.SSS'),
+        renderText: (value) => dayjs(value).format('MM-DD HH:mm:ss.SSS'),
       },
       {
         title: t('pages.observabilityCollector.service', 'Service'),
@@ -143,7 +146,7 @@ const TracesTab: React.FC<TracesTabProps> = ({
             <span
               className={styles.durationBar}
               style={{
-                width: Math.min(Math.max(record.duration / 10_000_000, 8), 120),
+                width: durationBarWidth(record.duration, maxPageDuration),
                 background: record.status === 'ERROR' ? '#ffccc7' : undefined,
               }}
             />
@@ -159,7 +162,7 @@ const TracesTab: React.FC<TracesTabProps> = ({
         render: (_, record) => statusTag(record.status),
       },
     ],
-    [styles, t],
+    [maxPageDuration, styles, t],
   );
 
   const applyFilters = (values: TraceFilters) => {
@@ -168,14 +171,46 @@ const TracesTab: React.FC<TracesTabProps> = ({
     actionRef.current?.reload();
   };
 
-  const setPreset = (amount: number, unit: 'minute' | 'hour') => {
-    const nextRange: [Dayjs, Dayjs] = [dayjs().subtract(amount, unit), dayjs()];
-    form.setFieldsValue({ ...filters, timeRange: nextRange });
-    applyFilters({ ...filters, timeRange: nextRange });
-  };
-
   return (
     <div className={styles.panel}>
+      <OverviewStats
+        items={[
+          {
+            title: t('pages.observabilityCollector.traceTotal', 'Trace 总数'),
+            value: traceTotal,
+            hint: t(
+              'pages.observabilityCollector.currentQueryWindow',
+              '当前查询时间窗口',
+            ),
+          },
+          {
+            title: t('pages.observabilityCollector.traceServices', '上报服务'),
+            value: services.length,
+            hint:
+              filters.serviceName ??
+              t('pages.observabilityCollector.allServices', '全部服务'),
+          },
+          {
+            title: t('pages.observabilityCollector.pageErrors', '本页异常'),
+            value: pageRows.filter((row) => row.status === 'ERROR').length,
+            hint: `${pageRows.length} ${t(
+              'pages.observabilityCollector.pageRows',
+              '条当前页记录',
+            )}`,
+            tone: pageRows.some((row) => row.status === 'ERROR')
+              ? 'danger'
+              : 'success',
+          },
+          {
+            title: t('pages.observabilityCollector.pageSlowest', '本页最慢'),
+            value: formatDuration(maxPageDuration),
+            hint:
+              pageRows.find((row) => row.duration === maxPageDuration)
+                ?.serviceName ?? '-',
+            tone: 'warning',
+          },
+        ]}
+      />
       <Form
         form={form}
         layout="vertical"
@@ -183,13 +218,6 @@ const TracesTab: React.FC<TracesTabProps> = ({
         onFinish={applyFilters}
         className={styles.filterBar}
       >
-        <Form.Item
-          label={t('pages.observabilityCollector.timeRange', 'Time range')}
-          name="timeRange"
-          style={{ marginBottom: 0 }}
-        >
-          <RangePicker showTime allowClear={false} />
-        </Form.Item>
         <Form.Item
           label={t('pages.observabilityCollector.service', 'Service')}
           name="serviceName"
@@ -253,9 +281,8 @@ const TracesTab: React.FC<TracesTabProps> = ({
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {
-                const nextFilters = { timeRange: defaultRange() };
+                const nextFilters = {};
                 form.resetFields();
-                form.setFieldsValue(nextFilters);
                 applyFilters(nextFilters);
               }}
             >
@@ -264,62 +291,49 @@ const TracesTab: React.FC<TracesTabProps> = ({
           </Space>
         </Form.Item>
       </Form>
-      <div className={styles.quickBar}>
-        <span style={{ color: '#8c8c8c', fontSize: 12 }}>
-          {t('pages.observabilityCollector.quick', 'Quick')}:
-        </span>
-        <Button size="small" onClick={() => setPreset(15, 'minute')}>
-          {t('pages.observabilityCollector.presetLast15m', 'Last 15m')}
-        </Button>
-        <Button
+      <div className={styles.tableWrap}>
+        <ProTable<TraceRow>
+          actionRef={actionRef}
+          rowKey="traceId"
+          columns={columns}
+          search={false}
           size="small"
-          type="primary"
-          ghost
-          onClick={() => setPreset(1, 'hour')}
-        >
-          {t('pages.observabilityCollector.presetLast1h', 'Last 1h')}
-        </Button>
-        <Button size="small" onClick={() => setPreset(6, 'hour')}>
-          {t('pages.observabilityCollector.presetLast6h', 'Last 6h')}
-        </Button>
-        <Button size="small" onClick={() => setPreset(24, 'hour')}>
-          {t('pages.observabilityCollector.presetLast24h', 'Last 24h')}
-        </Button>
+          options={{ reload: true, density: false, setting: false }}
+          pagination={{ defaultPageSize: 20, showSizeChanger: true }}
+          request={async (params) => {
+            const currentFilters = filtersRef.current;
+            const [start, end] = timeRange;
+            const result = await listTraces({
+              clusterId,
+              start: toSeconds(start),
+              end: toSeconds(end),
+              serviceName: currentFilters.serviceName,
+              status: currentFilters.status,
+              spanName: currentFilters.spanName,
+              traceId: currentFilters.traceId,
+              page: params.current,
+              pageSize: params.pageSize,
+            });
+            const rows = result.data ?? [];
+            setPageRows(rows);
+            setTraceTotal(result.total ?? 0);
+            return {
+              data: rows,
+              success: result.code === 200,
+              total: result.total ?? 0,
+            };
+          }}
+        />
       </div>
-      <ProTable<TraceRow>
-        actionRef={actionRef}
-        rowKey="traceId"
-        columns={columns}
-        search={false}
-        options={{ reload: true, density: false, setting: false }}
-        pagination={{ defaultPageSize: 20, showSizeChanger: true }}
-        request={async (params) => {
-          const currentFilters = filtersRef.current;
-          const [start, end] = currentFilters.timeRange;
-          const result = await listTraces({
-            clusterId,
-            start: toSeconds(start),
-            end: toSeconds(end),
-            serviceName: currentFilters.serviceName,
-            status: currentFilters.status,
-            spanName: currentFilters.spanName,
-            traceId: currentFilters.traceId,
-            page: params.current,
-            pageSize: params.pageSize,
-          });
-          return {
-            data: result.data ?? [],
-            success: result.code === 200,
-            total: result.total ?? 0,
-          };
-        }}
-      />
       <TraceDetailDrawer
         clusterId={clusterId}
         traceId={drawerTraceId}
         open={!!drawerTraceId}
         onClose={() => setDrawerTraceId(undefined)}
-        onShowLogs={onShowLogs}
+        onShowLogs={(traceId) => {
+          setDrawerTraceId(undefined);
+          onShowLogs(traceId);
+        }}
       />
     </div>
   );

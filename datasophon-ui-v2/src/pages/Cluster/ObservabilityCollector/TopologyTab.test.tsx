@@ -5,9 +5,11 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getServiceSummary, getTraceTopology } from './service';
-import TopologyTab, { toGraphData } from './TopologyTab';
+import { serviceIconFor } from './serviceIcon';
+import TopologyTab, { summarizeTopology, toGraphData } from './TopologyTab';
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({
@@ -36,7 +38,9 @@ vi.mock('@antv/g6', () => ({
     handlers: Record<string, (event: unknown) => void> = {};
     data: { nodes?: Array<{ id: string; data?: unknown }> };
 
-    constructor(options: { data?: { nodes?: Array<{ id: string; data?: unknown }> } }) {
+    constructor(options: {
+      data?: { nodes?: Array<{ id: string; data?: unknown }> };
+    }) {
       graphInstances.push(this);
       this.data = options.data ?? {};
     }
@@ -46,6 +50,16 @@ vi.mock('@antv/g6', () => ({
     }
 
     render() {}
+
+    fitView() {}
+
+    getZoom() {
+      return 1;
+    }
+
+    zoomTo() {}
+
+    focusElement() {}
 
     setData(data: { nodes?: Array<{ id: string; data?: unknown }> }) {
       this.data = data;
@@ -74,9 +88,9 @@ describe('toGraphData', () => {
           serviceName: 'datasophon-api',
           spanCount: 100,
           errorCount: 5,
-          avgDurationNs: 1_500_000,
-          p99DurationNs: 9_000_000,
-          maxDurationNs: 20_000_000,
+          avgDurationNs: 1_500,
+          p99DurationNs: 9_000,
+          maxDurationNs: 20_000,
         },
       ],
       edges: [],
@@ -88,6 +102,9 @@ describe('toGraphData', () => {
     expect(nodes[0].data.metricsText).toContain('p99 9.00 ms');
     expect(nodes[0].data.metricsText).toContain('avg 1.50 ms');
     expect(nodes[0].data.metricsText).toContain('err 5.0%');
+    expect(nodes[0].data.iconSrc).toBe(
+      serviceIconFor('datasophon-api').src,
+    );
   });
 
   it('maps calls to directed edges and marks errors on the label', () => {
@@ -157,6 +174,9 @@ describe('toGraphData', () => {
     expect(nodes[0].data.external).toBe(true);
     expect(nodes[0].data.isDb).toBe(true);
     expect(nodes[0].data.displayName).toBe('mysql\n127.0.0.1:3306');
+    expect(nodes[0].data.iconSrc).toBe(
+      serviceIconFor('mysql@127.0.0.1:3306').src,
+    );
   });
 
   it('does not mark http/other/grpc external nodes as DB (only real db.system calls)', () => {
@@ -268,6 +288,7 @@ describe('toGraphData', () => {
     });
 
     expect(nodes[0].data.displayName).toBe('doris\n192.168.10.131:9030');
+    expect(nodes[0].data.iconSrc).toBe(serviceIconFor('doris').src);
   });
 
   it('keeps both endpoints of error edges in error-only mode', () => {
@@ -331,6 +352,41 @@ describe('toGraphData', () => {
   });
 });
 
+describe('summarizeTopology', () => {
+  it('summarizes services, calls, errors and the highest p99', () => {
+    expect(
+      summarizeTopology({
+        nodes: [
+          {
+            serviceName: 'api',
+            spanCount: 10,
+            errorCount: 1,
+            avgDurationNs: 100,
+            p99DurationNs: 900,
+            maxDurationNs: 1000,
+          },
+          {
+            serviceName: 'worker',
+            spanCount: 8,
+            errorCount: 0,
+            avgDurationNs: 80,
+            p99DurationNs: 700,
+            maxDurationNs: 800,
+          },
+        ],
+        edges: [
+          { caller: 'api', callee: 'worker', callCount: 8, errorCount: 1 },
+        ],
+      }),
+    ).toEqual({
+      serviceCount: 2,
+      callCount: 8,
+      errorCount: 1,
+      maxP99DurationNs: 900,
+    });
+  });
+});
+
 describe('TopologyTab', () => {
   beforeEach(() => {
     graphInstances.length = 0;
@@ -344,7 +400,14 @@ describe('TopologyTab', () => {
       data: { nodes: [], edges: [] },
     });
 
-    render(<TopologyTab clusterId={7} onShowTraces={vi.fn()} />);
+    render(
+      <TopologyTab
+        clusterId={7}
+        onShowTraces={vi.fn()}
+        timeRange={[dayjs().subtract(1, 'hour'), dayjs()]}
+        refreshKey={0}
+      />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText(/otel_traces_graph_job/)).toBeTruthy();
@@ -391,7 +454,14 @@ describe('TopologyTab', () => {
     });
     const onShowTraces = vi.fn();
 
-    render(<TopologyTab clusterId={7} onShowTraces={onShowTraces} />);
+    render(
+      <TopologyTab
+        clusterId={7}
+        onShowTraces={onShowTraces}
+        timeRange={[dayjs().subtract(1, 'hour'), dayjs()]}
+        refreshKey={0}
+      />,
+    );
 
     await waitFor(() => {
       expect(graphInstances).toHaveLength(1);
