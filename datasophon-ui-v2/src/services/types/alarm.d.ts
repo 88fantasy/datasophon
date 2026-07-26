@@ -102,4 +102,27 @@ declare namespace DATASOPHON {
   interface UpdateAlertQuotaRequest extends SaveAlertQuotaRequest {
     id: number;
   }
+
+  /** 告警历史响应体（v2） */
+  interface AlertHistoryResponse {
+    id: number;
+    alertGroupName: string;
+    alertTargetName: string;
+    alertInfo: string;
+    alertAdvice: string;
+    hostname: string;
+    /** "warning" | "exception" */
+    alertLevel: string;
+    alertLevelCode: number;
+    /** "firing" | "resolved" */
+    status: string;
+    statusCode: number;
+    createTime: string;
+  }
+
+  /** 告警历史分页响应体（v2） */
+  interface AlertHistoryPageResponse {
+    totalList: AlertHistoryResponse[];
+    totalCount: number;
+  }
 }

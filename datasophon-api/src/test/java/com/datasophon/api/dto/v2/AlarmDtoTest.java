@@ -25,6 +25,7 @@ package com.datasophon.api.dto.v2;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datasophon.dao.entity.AlertGroupEntity;
+import com.datasophon.dao.entity.ClusterAlertHistory;
 import com.datasophon.dao.entity.ClusterAlertQuota;
 import com.datasophon.dao.enums.AlertLevel;
 import com.datasophon.dao.enums.QuotaState;
@@ -34,30 +35,32 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 /**
  * 纯 Java 单测（无 Spring），验证 alarm 域 DTO 的字段映射。
  */
 class AlarmDtoTest {
-    
+
     // ─── SaveAlertGroupRequest.toEntity() ────────────────────────────────────
-    
+
     @Test
     void saveAlertGroupRequest_toEntity_mapsCorrectFields() {
         SaveAlertGroupRequest req = new SaveAlertGroupRequest();
         req.setAlertGroupName("测试告警组");
         req.setAlertGroupCategory("HDFS");
-        
+
         AlertGroupEntity entity = req.toEntity(42);
-        
+
         assertThat(entity.getAlertGroupName()).isEqualTo("测试告警组");
         assertThat(entity.getAlertGroupCategory()).isEqualTo("HDFS");
         assertThat(entity.getClusterId()).isEqualTo(42);
         assertThat(entity.getCreateTime()).isNotNull();
         assertThat(entity.getId()).isNull();
     }
-    
+
     // ─── AlertGroupResponse.from() ────────────────────────────────────────────
-    
+
     @Test
     void alertGroupResponse_from_allFieldsMapped() {
         Date now = new Date();
@@ -68,9 +71,9 @@ class AlarmDtoTest {
         entity.setAlertQuotaNum(3);
         entity.setClusterId(10);
         entity.setCreateTime(now);
-        
+
         AlertGroupResponse resp = AlertGroupResponse.from(entity);
-        
+
         assertThat(resp.getId()).isEqualTo(1);
         assertThat(resp.getAlertGroupName()).isEqualTo("HDFS 告警组");
         assertThat(resp.getAlertGroupCategory()).isEqualTo("HDFS");
@@ -78,28 +81,28 @@ class AlarmDtoTest {
         assertThat(resp.getClusterId()).isEqualTo(10);
         assertThat(resp.getCreateTime()).isEqualTo(now);
     }
-    
+
     @Test
     void alertGroupResponse_fromList_nullInput_returnsEmptyList() {
         List<AlertGroupResponse> list = AlertGroupResponse.fromList(null);
         assertThat(list).isNotNull().isEmpty();
     }
-    
+
     // ─── AlertGroupPageResponse.of() ─────────────────────────────────────────
-    
+
     @Test
     void alertGroupPageResponse_of_setsTotalListAndCount() {
         AlertGroupResponse item = new AlertGroupResponse();
         item.setId(1);
-        
+
         AlertGroupPageResponse page = AlertGroupPageResponse.of(List.of(item), 5L);
-        
+
         assertThat(page.getTotalList()).hasSize(1);
         assertThat(page.getTotalCount()).isEqualTo(5L);
     }
-    
+
     // ─── SaveAlertQuotaRequest.toEntity() ────────────────────────────────────
-    
+
     @Test
     void saveAlertQuotaRequest_toEntity_mapsCorrectFields() {
         SaveAlertQuotaRequest req = new SaveAlertQuotaRequest();
@@ -115,9 +118,9 @@ class AlarmDtoTest {
         req.setIntervalDuration(10);
         req.setTriggerDuration(30);
         req.setAlertAdvice("请检查节点");
-        
+
         ClusterAlertQuota entity = req.toEntity();
-        
+
         assertThat(entity.getAlertQuotaName()).isEqualTo("HDFS 指标");
         assertThat(entity.getAlertExpr()).isEqualTo("node_cpu_usage");
         assertThat(entity.getCompareMethod()).isEqualTo(">");
@@ -134,47 +137,47 @@ class AlarmDtoTest {
         assertThat(entity.getQuotaState()).isNull();
         assertThat(entity.getId()).isNull();
     }
-    
+
     @Test
     void saveAlertQuotaRequest_toEntity_exceptionLevel() {
         SaveAlertQuotaRequest req = new SaveAlertQuotaRequest();
         req.setAlertQuotaName("test");
         req.setAlertLevel("exception");
-        
+
         ClusterAlertQuota entity = req.toEntity();
-        
+
         assertThat(entity.getAlertLevel()).isEqualTo(AlertLevel.EXCEPTION);
     }
-    
+
     @Test
     void saveAlertQuotaRequest_toEntity_nullAlertLevel() {
         SaveAlertQuotaRequest req = new SaveAlertQuotaRequest();
         req.setAlertQuotaName("test");
         req.setAlertLevel(null);
-        
+
         ClusterAlertQuota entity = req.toEntity();
-        
+
         assertThat(entity.getAlertLevel()).isNull();
     }
-    
+
     // ─── UpdateAlertQuotaRequest.toEntity() ──────────────────────────────────
-    
+
     @Test
     void updateAlertQuotaRequest_toEntity_setsIdAndWaitToUpdateState() {
         UpdateAlertQuotaRequest req = new UpdateAlertQuotaRequest();
         req.setId(99);
         req.setAlertQuotaName("updated name");
         req.setAlertLevel("warning");
-        
+
         ClusterAlertQuota entity = req.toEntity();
-        
+
         assertThat(entity.getId()).isEqualTo(99);
         assertThat(entity.getQuotaState()).isEqualTo(QuotaState.WAIT_TO_UPDATE);
         assertThat(entity.getAlertQuotaName()).isEqualTo("updated name");
     }
-    
+
     // ─── AlertQuotaResponse.from() ────────────────────────────────────────────
-    
+
     @Test
     void alertQuotaResponse_from_allFieldsMapped() {
         ClusterAlertQuota entity = new ClusterAlertQuota();
@@ -194,9 +197,9 @@ class AlarmDtoTest {
         entity.setAlertAdvice("重启服务");
         entity.setQuotaState(QuotaState.RUNNING);
         entity.setQuotaStateCode(1);
-        
+
         AlertQuotaResponse resp = AlertQuotaResponse.from(entity);
-        
+
         assertThat(resp.getId()).isEqualTo(7);
         assertThat(resp.getAlertQuotaName()).isEqualTo("CPU 告警");
         assertThat(resp.getAlertExpr()).isEqualTo("cpu_usage");
@@ -214,23 +217,82 @@ class AlarmDtoTest {
         assertThat(resp.getQuotaState()).isEqualTo("启用");
         assertThat(resp.getQuotaStateCode()).isEqualTo(1);
     }
-    
+
     @Test
     void alertQuotaResponse_fromList_nullInput_returnsEmptyList() {
         List<AlertQuotaResponse> list = AlertQuotaResponse.fromList(null);
         assertThat(list).isNotNull().isEmpty();
     }
-    
+
     // ─── AlertQuotaPageResponse.of() ─────────────────────────────────────────
-    
+
     @Test
     void alertQuotaPageResponse_of_setsTotalListAndCount() {
         AlertQuotaResponse item = new AlertQuotaResponse();
         item.setId(1);
-        
+
         AlertQuotaPageResponse page = AlertQuotaPageResponse.of(List.of(item), 100L);
-        
+
         assertThat(page.getTotalList()).hasSize(1);
         assertThat(page.getTotalCount()).isEqualTo(100L);
+    }
+
+    // ─── AlertHistoryResponse.from() ─────────────────────────────────────────
+
+    @Test
+    void alertHistoryResponse_from_mapsLevelAndFiringStatus() {
+        Date createTime = new Date();
+        ClusterAlertHistory entity = ClusterAlertHistory.builder()
+                .id(8)
+                .alertGroupName("hdfs")
+                .alertTargetName("NameNode Survive")
+                .alertInfo("NameNode 不可用")
+                .alertAdvice("检查 NameNode 进程")
+                .hostname("node-1")
+                .alertLevel(AlertLevel.EXCEPTION)
+                .isEnabled(1)
+                .createTime(createTime)
+                .build();
+
+        AlertHistoryResponse response = AlertHistoryResponse.from(entity);
+
+        assertThat(response.getId()).isEqualTo(8);
+        assertThat(response.getAlertGroupName()).isEqualTo("hdfs");
+        assertThat(response.getAlertTargetName()).isEqualTo("NameNode Survive");
+        assertThat(response.getAlertInfo()).isEqualTo("NameNode 不可用");
+        assertThat(response.getAlertAdvice()).isEqualTo("检查 NameNode 进程");
+        assertThat(response.getHostname()).isEqualTo("node-1");
+        assertThat(response.getAlertLevel()).isEqualTo("exception");
+        assertThat(response.getAlertLevelCode()).isEqualTo(2);
+        assertThat(response.getStatus()).isEqualTo("firing");
+        assertThat(response.getStatusCode()).isEqualTo(1);
+        assertThat(response.getCreateTime()).isEqualTo(createTime);
+    }
+
+    @Test
+    void alertHistoryResponse_from_mapsResolvedStatus() {
+        ClusterAlertHistory entity = ClusterAlertHistory.builder()
+                .alertLevel(AlertLevel.WARN)
+                .isEnabled(2)
+                .build();
+
+        AlertHistoryResponse response = AlertHistoryResponse.from(entity);
+
+        assertThat(response.getAlertLevel()).isEqualTo("warning");
+        assertThat(response.getAlertLevelCode()).isEqualTo(1);
+        assertThat(response.getStatus()).isEqualTo("resolved");
+        assertThat(response.getStatusCode()).isEqualTo(2);
+    }
+
+    @Test
+    void alertHistoryPageResponse_from_mapsRecordsAndTotal() {
+        ClusterAlertHistory entity = ClusterAlertHistory.builder().id(9).build();
+        Page<ClusterAlertHistory> source = new Page<>(2, 20, 41);
+        source.setRecords(List.of(entity));
+
+        AlertHistoryPageResponse response = AlertHistoryPageResponse.from(source);
+
+        assertThat(response.getTotalList()).extracting(AlertHistoryResponse::getId).containsExactly(9);
+        assertThat(response.getTotalCount()).isEqualTo(41L);
     }
 }

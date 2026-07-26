@@ -102,3 +102,25 @@ export function listQuotaRoles(clusterId: number, alertGroupId: number) {
     { method: 'GET', params: { alertGroupId } },
   );
 }
+
+// ─── 告警历史 ───────────────────────────────────────────────
+
+/** 告警历史列表（分页，包含告警中和已恢复记录） */
+export function listAlertHistory(
+  clusterId: number,
+  params: {
+    alertTargetName?: string;
+    hostname?: string;
+    alertLevel?: number;
+    status?: number;
+    startTime?: string;
+    endTime?: string;
+    page: number;
+    pageSize: number;
+  },
+) {
+  return request<{ data: DATASOPHON.AlertHistoryPageResponse }>(
+    `/cluster/${clusterId}/alert/history/list`,
+    { method: 'GET', params },
+  );
+}

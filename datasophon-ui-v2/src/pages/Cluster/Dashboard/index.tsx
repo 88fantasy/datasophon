@@ -215,7 +215,9 @@ const ClusterDashboard: FC = () => {
             emptyText={t('pages.clusterDashboard.emptyText.alerts')}
             viewAllLabel={t('pages.clusterDashboard.viewAll')}
             data={recentAlerts}
-            onViewAll={() => history.push(`/cluster/${clusterId}/alarm`)}
+            onViewAll={() =>
+              history.push(`/cluster/${clusterId}/alarm?tab=history`)
+            }
           />
         </PanelCol>
         <PanelCol span={12}>

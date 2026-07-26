@@ -1,18 +1,38 @@
+import { useSearchParams } from '@umijs/max';
 import { Tabs, Typography } from 'antd';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import GroupTab from './Group';
+import HistoryTab from './History';
 import MetricTab from './Metric';
+
+const TAB_KEYS = new Set(['group', 'metric', 'history']);
 
 const AlarmManage: React.FC = () => {
   const ctx = useContext(ClusterContext);
   const clusterId = ctx?.clusterId ?? 0;
-  const [activeTab, setActiveTab] = useState('group');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    initialTab && TAB_KEYS.has(initialTab) ? initialTab : 'group',
+  );
   const [filterGroupId, setFilterGroupId] = useState<number | undefined>();
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    setActiveTab(tab && TAB_KEYS.has(tab) ? tab : 'group');
+  }, [searchParams]);
+
+  const selectTab = (key: string) => {
+    setActiveTab(key);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', key);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   const handleViewMetrics = (groupId: number) => {
     setFilterGroupId(groupId);
-    setActiveTab('metric');
+    selectTab('metric');
   };
 
   const items = [
@@ -30,6 +50,11 @@ const AlarmManage: React.FC = () => {
         <MetricTab clusterId={clusterId} defaultGroupId={filterGroupId} />
       ),
     },
+    {
+      key: 'history',
+      label: '告警历史',
+      children: <HistoryTab clusterId={clusterId} />,
+    },
   ];
 
   return (
@@ -40,7 +65,7 @@ const AlarmManage: React.FC = () => {
       <Tabs
         activeKey={activeTab}
         onChange={(key) => {
-          setActiveTab(key);
+          selectTab(key);
           if (key === 'group') setFilterGroupId(undefined);
         }}
         items={items}

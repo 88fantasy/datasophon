@@ -29,10 +29,14 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterAlertHistory;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.AlertLevel;
 import com.datasophon.dao.mapper.ClusterAlertHistoryMapper;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
 import com.datasophon.domain.alert.model.AlertMessage;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -42,7 +46,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 @Service("clusterAlertHistoryService")
@@ -50,25 +57,25 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHistoryMapper, ClusterAlertHistory>
         implements
             ClusterAlertHistoryService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ClusterAlertHistoryServiceImpl.class);
-    
+
     @Autowired
     private ClusterServiceRoleInstanceMapper roleInstanceMapper;
-    
+
     @Autowired
     private AlertService alertService;
-    
+
     @Autowired
     private OtelCollectorConfigService otelCollectorConfigService;
-    
+
     @Override
     public void saveAlertHistory(String alertMessage) {
         logger.warn("Receive Alert Message : {}", alertMessage);
         AlertMessage message = JSONObject.parseObject(alertMessage, AlertMessage.class);
         alertService.handleAlertMessage(message);
     }
-    
+
     @Override
     public Result getAlertList(Integer serviceInstanceId) {
         List<ClusterAlertHistory> list = this.list(new QueryWrapper<ClusterAlertHistory>()
@@ -77,7 +84,7 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
                 .orderByDesc(Constants.CREATE_TIME));
         return Result.success(list);
     }
-    
+
     @Override
     public Result getAllAlertList(Integer clusterId, Integer page, Integer pageSize) {
         int offset = (page - 1) * pageSize;
@@ -91,7 +98,30 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
                 .eq(Constants.IS_ENABLED, 1));
         return Result.success(list).put(Constants.TOTAL, count);
     }
-    
+
+    @Override
+    public IPage<ClusterAlertHistory> getHistoryPage(Integer clusterId, String alertTargetName, String hostname,
+                                                     AlertLevel alertLevel, Integer status, Date startTime,
+                                                     Date endTime, Integer page, Integer pageSize) {
+        int offset = (page - 1) * pageSize;
+        LambdaQueryWrapper<ClusterAlertHistory> query = new LambdaQueryWrapper<ClusterAlertHistory>()
+                .eq(ClusterAlertHistory::getClusterId, clusterId)
+                .like(StringUtils.isNotBlank(alertTargetName),
+                        ClusterAlertHistory::getAlertTargetName, alertTargetName)
+                .like(StringUtils.isNotBlank(hostname), ClusterAlertHistory::getHostname, hostname)
+                .eq(alertLevel != null, ClusterAlertHistory::getAlertLevel, alertLevel)
+                .eq(status != null, ClusterAlertHistory::getIsEnabled, status)
+                .ge(startTime != null, ClusterAlertHistory::getCreateTime, startTime)
+                .le(endTime != null, ClusterAlertHistory::getCreateTime, endTime)
+                .orderByDesc(ClusterAlertHistory::getCreateTime)
+                .orderByDesc(ClusterAlertHistory::getId);
+        long total = this.count(query);
+        List<ClusterAlertHistory> records = this.list(query.last("limit " + offset + "," + pageSize));
+        Page<ClusterAlertHistory> result = new Page<>(page, pageSize, total);
+        result.setRecords(records);
+        return result;
+    }
+
     @Override
     public void removeAlertByRoleInstanceIds(List<Integer> ids) {
         ClusterServiceRoleInstanceEntity roleInstanceEntity = roleInstanceMapper.selectById(ids.get(0));

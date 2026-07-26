@@ -20,34 +20,29 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.service;
+package com.datasophon.api.dto.v2;
 
-import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterAlertHistory;
-import com.datasophon.dao.enums.AlertLevel;
 
-import java.util.Date;
 import java.util.List;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.IService;
+
+import lombok.Data;
 
 /**
- * 集群告警历史表 
- *
- * @author gaodayu
+ * 告警历史分页响应体（v2）。
  */
-public interface ClusterAlertHistoryService extends IService<ClusterAlertHistory> {
+@Data
+public class AlertHistoryPageResponse {
 
-    void saveAlertHistory(String alertMessage);
+    private List<AlertHistoryResponse> totalList;
+    private Long totalCount;
 
-    Result getAlertList(Integer serviceInstanceId);
-
-    Result getAllAlertList(Integer clusterId, Integer page, Integer pageSize);
-
-    IPage<ClusterAlertHistory> getHistoryPage(Integer clusterId, String alertTargetName, String hostname,
-                                              AlertLevel alertLevel, Integer status, Date startTime, Date endTime,
-                                              Integer page, Integer pageSize);
-
-    void removeAlertByRoleInstanceIds(List<Integer> ids);
+    public static AlertHistoryPageResponse from(IPage<ClusterAlertHistory> page) {
+        AlertHistoryPageResponse response = new AlertHistoryPageResponse();
+        response.setTotalList(AlertHistoryResponse.fromList(page.getRecords()));
+        response.setTotalCount(page.getTotal());
+        return response;
+    }
 }

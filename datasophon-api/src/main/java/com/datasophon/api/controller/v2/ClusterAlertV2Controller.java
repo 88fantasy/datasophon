@@ -27,6 +27,7 @@ import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.AlertCategoryResponse;
 import com.datasophon.api.dto.v2.AlertGroupPageResponse;
 import com.datasophon.api.dto.v2.AlertGroupResponse;
+import com.datasophon.api.dto.v2.AlertHistoryPageResponse;
 import com.datasophon.api.dto.v2.AlertQuotaPageResponse;
 import com.datasophon.api.dto.v2.AlertQuotaResponse;
 import com.datasophon.api.dto.v2.SaveAlertGroupRequest;
@@ -34,17 +35,20 @@ import com.datasophon.api.dto.v2.SaveAlertQuotaRequest;
 import com.datasophon.api.dto.v2.UpdateAlertQuotaRequest;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.service.AlertGroupService;
+import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterAlertQuotaService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.AlertGroupEntity;
+import com.datasophon.dao.entity.ClusterAlertHistory;
 import com.datasophon.dao.entity.ClusterAlertQuota;
+import com.datasophon.dao.enums.AlertLevel;
 
-import jakarta.validation.Valid;
-
+import java.util.Date;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,33 +59,41 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+
+import jakarta.validation.Valid;
+
 /**
- * v2 告警管理接口（告警组 + 告警指标）。
+ * v2 告警管理接口（告警组 + 告警指标 + 告警历史）。
  */
 @RestController
 @RequestMapping("/v2/cluster/{clusterId}/alert")
 public class ClusterAlertV2Controller extends ApiController {
-    
+
     private final AlertGroupService alertGroupService;
-    
+
     private final ClusterAlertQuotaService clusterAlertQuotaService;
-    
+
+    private final ClusterAlertHistoryService clusterAlertHistoryService;
+
     private final FrameServiceService frameServiceService;
-    
+
     private final FrameServiceRoleService frameServiceRoleService;
-    
+
     public ClusterAlertV2Controller(AlertGroupService alertGroupService,
                                     ClusterAlertQuotaService clusterAlertQuotaService,
+                                    ClusterAlertHistoryService clusterAlertHistoryService,
                                     FrameServiceService frameServiceService,
                                     FrameServiceRoleService frameServiceRoleService) {
         this.alertGroupService = alertGroupService;
         this.clusterAlertQuotaService = clusterAlertQuotaService;
+        this.clusterAlertHistoryService = clusterAlertHistoryService;
         this.frameServiceService = frameServiceService;
         this.frameServiceRoleService = frameServiceRoleService;
     }
-    
+
     // ── 告警组 ──────────────────────────────────────────────────
-    
+
     /**
      * 告警组列表（分页）。
      */
@@ -98,7 +110,7 @@ public class ClusterAlertV2Controller extends ApiController {
         List<AlertGroupResponse> list = AlertGroupResponse.fromList(entities);
         return ApiResponse.ok(AlertGroupPageResponse.of(list, total));
     }
-    
+
     /**
      * 新建告警组。
      */
@@ -108,7 +120,7 @@ public class ClusterAlertV2Controller extends ApiController {
         alertGroupService.saveAlertGroup(request.toEntity(clusterId));
         return ApiResponse.ok();
     }
-    
+
     /**
      * 删除告警组（批量）。若已绑定告警指标则拒绝删除。
      */
@@ -123,7 +135,7 @@ public class ClusterAlertV2Controller extends ApiController {
         alertGroupService.removeByIds(ids);
         return ApiResponse.ok();
     }
-    
+
     /**
      * 告警组类别下拉（服务列表，用于新建告警组时选择关联服务）。
      */
@@ -131,9 +143,9 @@ public class ClusterAlertV2Controller extends ApiController {
     public ApiResponse<List<AlertCategoryResponse>> listCategories(@PathVariable Integer clusterId) {
         return ApiResponse.ok(AlertCategoryResponse.fromList(frameServiceService.getFrameServiceList(clusterId)));
     }
-    
+
     // ── 告警指标 ──────────────────────────────────────────────────
-    
+
     /**
      * 告警指标列表（分页，可按 alertGroupId / quotaName 过滤）。
      */
@@ -152,7 +164,7 @@ public class ClusterAlertV2Controller extends ApiController {
         List<AlertQuotaResponse> list = AlertQuotaResponse.fromList(entities);
         return ApiResponse.ok(AlertQuotaPageResponse.of(list, total));
     }
-    
+
     /**
      * 新建告警指标。
      */
@@ -162,7 +174,7 @@ public class ClusterAlertV2Controller extends ApiController {
         clusterAlertQuotaService.saveAlertQuota(request.toEntity());
         return ApiResponse.ok();
     }
-    
+
     /**
      * 修改告警指标。
      */
@@ -171,7 +183,7 @@ public class ClusterAlertV2Controller extends ApiController {
         clusterAlertQuotaService.updateById(request.toEntity());
         return ApiResponse.ok();
     }
-    
+
     /**
      * 删除告警指标（批量）。
      */
@@ -180,7 +192,7 @@ public class ClusterAlertV2Controller extends ApiController {
         clusterAlertQuotaService.removeByIds(ids);
         return ApiResponse.ok();
     }
-    
+
     /**
      * 启用告警指标（批量，alertQuotaIds 逗号分隔）。
      */
@@ -190,7 +202,7 @@ public class ClusterAlertV2Controller extends ApiController {
         clusterAlertQuotaService.start(clusterId, alertQuotaIds);
         return ApiResponse.ok();
     }
-    
+
     /**
      * 停用告警指标（批量，alertQuotaIds 逗号分隔）。
      */
@@ -200,7 +212,7 @@ public class ClusterAlertV2Controller extends ApiController {
         clusterAlertQuotaService.stop(clusterId, alertQuotaIds);
         return ApiResponse.ok();
     }
-    
+
     /**
      * 按告警组查询可绑定的服务角色列表（用于新建告警指标时选择绑定角色）。
      */
@@ -210,5 +222,38 @@ public class ClusterAlertV2Controller extends ApiController {
         AlertGroupEntity alertGroup = alertGroupService.getById(alertGroupId);
         Result result = frameServiceRoleService.getServiceRoleByServiceName(clusterId, alertGroup.getAlertGroupCategory());
         return ApiResponse.ok(result.get("data"));
+    }
+
+    // ── 告警历史 ──────────────────────────────────────────────────
+
+    /**
+     * 告警历史列表（分页，包含告警中和已恢复记录）。
+     */
+    @GetMapping("/history/list")
+    public ApiResponse<AlertHistoryPageResponse> listHistory(@PathVariable Integer clusterId,
+                                                             @RequestParam(required = false) String alertTargetName,
+                                                             @RequestParam(required = false) String hostname,
+                                                             @RequestParam(required = false) Integer alertLevel,
+                                                             @RequestParam(required = false) Integer status,
+                                                             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date startTime,
+                                                             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date endTime,
+                                                             @RequestParam(defaultValue = "1") Integer page,
+                                                             @RequestParam(defaultValue = "20") Integer pageSize) {
+        AlertLevel level = toAlertLevel(alertLevel);
+        IPage<ClusterAlertHistory> historyPage = clusterAlertHistoryService.getHistoryPage(
+                clusterId, alertTargetName, hostname, level, status, startTime, endTime, page, pageSize);
+        return ApiResponse.ok(AlertHistoryPageResponse.from(historyPage));
+    }
+
+    private static AlertLevel toAlertLevel(Integer value) {
+        if (value == null) {
+            return null;
+        }
+        for (AlertLevel level : AlertLevel.values()) {
+            if (level.getValue() == value) {
+                return level;
+            }
+        }
+        return null;
     }
 }
