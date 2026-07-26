@@ -1,4 +1,3 @@
-import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import { Tabs } from 'antd';
 import { useContext, useState } from 'react';
@@ -18,62 +17,61 @@ const ObservabilityCollector: React.FC = () => {
   const [linkedServiceName, setLinkedServiceName] = useState<string>();
 
   return (
-    <PageContainer title={false}>
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          {
-            key: 'topology',
-            label: intl.formatMessage({
-              id: 'pages.observabilityCollector.topology',
-              defaultMessage: 'Topology',
-            }),
-            children: (
-              <TopologyTab
-                clusterId={clusterId}
-                onShowTraces={(serviceName) => {
-                  setLinkedServiceName(serviceName);
-                  setActiveTab('traces');
-                }}
-              />
-            ),
-          },
-          {
-            key: 'traces',
-            label: intl.formatMessage({
-              id: 'pages.observabilityCollector.traces',
-              defaultMessage: 'Traces',
-            }),
-            children: (
-              <TracesTab
-                clusterId={clusterId}
-                onShowLogs={(traceId) => {
-                  setLinkedTraceId(traceId);
-                  setActiveTab('logs');
-                }}
-                serviceName={linkedServiceName}
-                onServiceNameConsumed={() => setLinkedServiceName(undefined)}
-              />
-            ),
-          },
-          {
-            key: 'logs',
-            label: intl.formatMessage({
-              id: 'pages.observabilityCollector.logs',
-              defaultMessage: 'Logs',
-            }),
-            children: (
-              <LogsTab
-                clusterId={clusterId}
-                traceId={linkedTraceId}
-                onTraceIdConsumed={() => setLinkedTraceId(undefined)}
-              />
-            ),
-          },
-        ]}
-      />
-    </PageContainer>
+    <Tabs
+      style={{ height: '100%' }}
+      activeKey={activeTab}
+      onChange={setActiveTab}
+      items={[
+        {
+          key: 'topology',
+          label: intl.formatMessage({
+            id: 'pages.observabilityCollector.topology',
+            defaultMessage: 'Topology',
+          }),
+          children: (
+            <TopologyTab
+              clusterId={clusterId}
+              onShowTraces={(serviceName) => {
+                setLinkedServiceName(serviceName);
+                setActiveTab('traces');
+              }}
+            />
+          ),
+        },
+        {
+          key: 'traces',
+          label: intl.formatMessage({
+            id: 'pages.observabilityCollector.traces',
+            defaultMessage: 'Traces',
+          }),
+          children: (
+            <TracesTab
+              clusterId={clusterId}
+              onShowLogs={(traceId) => {
+                setLinkedTraceId(traceId);
+                setActiveTab('logs');
+              }}
+              serviceName={linkedServiceName}
+              onServiceNameConsumed={() => setLinkedServiceName(undefined)}
+            />
+          ),
+        },
+        {
+          key: 'logs',
+          label: intl.formatMessage({
+            id: 'pages.observabilityCollector.logs',
+            defaultMessage: 'Logs',
+          }),
+          children: (
+            <LogsTab
+              clusterId={clusterId}
+              traceId={linkedTraceId}
+              onTraceIdConsumed={() => setLinkedTraceId(undefined)}
+            />
+          ),
+        },
+      ]}
+    />
   );
 };
 

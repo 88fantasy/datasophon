@@ -26,11 +26,15 @@ import { maxProcessUptime, queueUsage, sumFailedDropped } from './summary';
 
 interface MonitorTabProps {
   clusterId: number;
+  embedded?: boolean;
 }
 
 const secondsFormatter = (value: number) => formatDuration(value);
 
-const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
+const MonitorTab: React.FC<MonitorTabProps> = ({
+  clusterId,
+  embedded = false,
+}) => {
   const intl = useIntl();
   const actionRef = useRef<ActionType>(null);
   const [nodes, setNodes] = useState<CollectorNodeMetrics[]>([]);
@@ -142,6 +146,7 @@ const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
 
   return (
     <MonitorDashboardLayout
+      embedded={embedded}
       key={refreshKey}
       toolbar={
         <DashboardToolbar

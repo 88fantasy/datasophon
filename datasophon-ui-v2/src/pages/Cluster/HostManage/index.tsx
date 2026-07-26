@@ -246,6 +246,8 @@ const HostManage: React.FC = () => {
 
   return (
     <ProTable<DATASOPHON.HostResponse>
+      style={{ minHeight: '100%' }}
+      cardProps={{ style: { minHeight: '100%' } }}
       actionRef={actionRef}
       rowKey="id"
       headerTitle="主机列表"

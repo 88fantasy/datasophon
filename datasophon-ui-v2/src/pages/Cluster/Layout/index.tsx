@@ -408,7 +408,7 @@ const ClusterLayout: React.FC = () => {
         pageHeaderRender={false}
         childrenContentStyle={{ padding: 0 }}
       >
-        <Layout style={{ minHeight: 'calc(100vh - 56px)' }}>
+        <Layout style={{ minHeight: 'calc(100vh - 60px)' }}>
           <Sider
             width={200}
             style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}
@@ -480,8 +480,22 @@ const ClusterLayout: React.FC = () => {
               }}
             />
           </Sider>
-          <Content style={{ padding: 16, background: '#f5f5f5' }}>
-            <Outlet />
+          <Content
+            style={{
+              display: 'flex',
+              padding: 16,
+              background: '#f5f5f5',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                minHeight: 0,
+              }}
+            >
+              <Outlet />
+            </div>
           </Content>
         </Layout>
       </PageContainer>

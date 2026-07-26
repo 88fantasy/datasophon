@@ -26,12 +26,14 @@ import {
   DesktopOutlined,
   InboxOutlined,
 } from '@ant-design/icons';
-import { PageContainer } from '@ant-design/pro-components';
 import { history, useIntl } from '@umijs/max';
 import { Alert, Row } from 'antd';
 import { type FC, useCallback, useContext, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
-import { CHART_COLORS, formatBytes } from '../../monitor/_shared/charts/formatters';
+import {
+  CHART_COLORS,
+  formatBytes,
+} from '../../monitor/_shared/charts/formatters';
 import DashboardToolbar, {
   type RefreshInterval,
   type TimeRange,
@@ -57,7 +59,8 @@ const ClusterDashboard: FC = () => {
   const clusterId = ctx?.clusterId ?? 0;
 
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
-  const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>('30s');
+  const [refreshInterval, setRefreshInterval] =
+    useState<RefreshInterval>('30s');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const intl = useIntl();
@@ -82,179 +85,178 @@ const ClusterDashboard: FC = () => {
   };
 
   return (
-    <PageContainer title={false}>
-      <MonitorDashboardLayout
-        key={refreshKey}
-        title={t('pages.clusterDashboard.title')}
-        toolbar={
-          <DashboardToolbar
-            timeRange={timeRange}
-            onTimeRangeChange={setTimeRange}
-            refreshInterval={refreshInterval}
-            onRefreshIntervalChange={setRefreshInterval}
-            onRefresh={handleRefresh}
+    <MonitorDashboardLayout
+      key={refreshKey}
+      embedded
+      title={t('pages.clusterDashboard.title')}
+      toolbar={
+        <DashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          onRefresh={handleRefresh}
+        />
+      }
+      loading={summaryLoading || otel.loading}
+    >
+      {summaryError && (
+        <Alert
+          type="warning"
+          showIcon
+          title={t('pages.clusterDashboard.partialLoadError')}
+          description={summaryError}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={6}>
+          <ClusterStatCard
+            title={t('pages.clusterDashboard.stat.hostTotal')}
+            value={stats?.hostTotal ?? Number.NaN}
+            color={CHART_COLORS.primary}
+            icon={<DesktopOutlined />}
+            delta={stats?.hostDelta}
+            deltaLabel={changeLabel}
           />
-        }
-        loading={summaryLoading || otel.loading}
-      >
-        {summaryError && (
-          <Alert
-            type="warning"
-            showIcon
-            title={t('pages.clusterDashboard.partialLoadError')}
-            description={summaryError}
-            style={{ marginBottom: 16 }}
+        </PanelCol>
+        <PanelCol span={6}>
+          <ClusterStatCard
+            title={t('pages.clusterDashboard.stat.serviceTotal')}
+            value={stats?.serviceTotal ?? Number.NaN}
+            color={CHART_COLORS.success}
+            icon={<InboxOutlined />}
+            delta={stats?.serviceDelta}
+            deltaLabel={changeLabel}
           />
-        )}
-        <Row gutter={MONITOR_ROW_GUTTER}>
-          <PanelCol span={6}>
-            <ClusterStatCard
-              title={t('pages.clusterDashboard.stat.hostTotal')}
-              value={stats?.hostTotal ?? Number.NaN}
-              color={CHART_COLORS.primary}
-              icon={<DesktopOutlined />}
-              delta={stats?.hostDelta}
-              deltaLabel={changeLabel}
-            />
-          </PanelCol>
-          <PanelCol span={6}>
-            <ClusterStatCard
-              title={t('pages.clusterDashboard.stat.serviceTotal')}
-              value={stats?.serviceTotal ?? Number.NaN}
-              color={CHART_COLORS.success}
-              icon={<InboxOutlined />}
-              delta={stats?.serviceDelta}
-              deltaLabel={changeLabel}
-            />
-          </PanelCol>
-          <PanelCol span={6}>
-            <ClusterStatCard
-              title={t('pages.clusterDashboard.stat.alertTotal')}
-              value={stats?.alertTotal ?? Number.NaN}
-              color={CHART_COLORS.warning}
-              icon={<AlertOutlined />}
-              delta={stats?.alertDelta}
-              deltaLabel={changeLabel}
-              positiveIsGood={false}
-            />
-          </PanelCol>
-          <PanelCol span={6}>
-            <ClusterStatCard
-              title={t('pages.clusterDashboard.stat.criticalAlertTotal')}
-              value={stats?.criticalAlertTotal ?? Number.NaN}
-              color={CHART_COLORS.error}
-              icon={<BellOutlined />}
-              delta={stats?.criticalAlertDelta}
-              deltaLabel={changeLabel}
-              positiveIsGood={false}
-            />
-          </PanelCol>
-        </Row>
+        </PanelCol>
+        <PanelCol span={6}>
+          <ClusterStatCard
+            title={t('pages.clusterDashboard.stat.alertTotal')}
+            value={stats?.alertTotal ?? Number.NaN}
+            color={CHART_COLORS.warning}
+            icon={<AlertOutlined />}
+            delta={stats?.alertDelta}
+            deltaLabel={changeLabel}
+            positiveIsGood={false}
+          />
+        </PanelCol>
+        <PanelCol span={6}>
+          <ClusterStatCard
+            title={t('pages.clusterDashboard.stat.criticalAlertTotal')}
+            value={stats?.criticalAlertTotal ?? Number.NaN}
+            color={CHART_COLORS.error}
+            icon={<BellOutlined />}
+            delta={stats?.criticalAlertDelta}
+            deltaLabel={changeLabel}
+            positiveIsGood={false}
+          />
+        </PanelCol>
+      </Row>
 
-        <Row gutter={MONITOR_ROW_GUTTER}>
-          <PanelCol span={14}>
-            <TimeSeriesPanel
-              title={panelTitle('cpu')}
-              data={otel.cpuSeries}
-              yFormatter={percentFormatter}
-            />
-          </PanelCol>
-          <PanelCol span={10}>
-            <ResourceGaugePanel
-              title={panelTitle('resourceUsage')}
-              items={[
-                {
-                  label: t('pages.clusterDashboard.resource.cpu'),
-                  percent: otel.cpuPercent,
-                },
-                {
-                  label: t('pages.clusterDashboard.resource.memory'),
-                  percent: otel.memoryPercent,
-                },
-                {
-                  label: t('pages.clusterDashboard.resource.disk'),
-                  percent: otel.diskPercent,
-                },
-              ]}
-            />
-          </PanelCol>
-        </Row>
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={14}>
+          <TimeSeriesPanel
+            title={panelTitle('cpu')}
+            data={otel.cpuSeries}
+            yFormatter={percentFormatter}
+          />
+        </PanelCol>
+        <PanelCol span={10}>
+          <ResourceGaugePanel
+            title={panelTitle('resourceUsage')}
+            items={[
+              {
+                label: t('pages.clusterDashboard.resource.cpu'),
+                percent: otel.cpuPercent,
+              },
+              {
+                label: t('pages.clusterDashboard.resource.memory'),
+                percent: otel.memoryPercent,
+              },
+              {
+                label: t('pages.clusterDashboard.resource.disk'),
+                percent: otel.diskPercent,
+              },
+            ]}
+          />
+        </PanelCol>
+      </Row>
 
-        <Row gutter={MONITOR_ROW_GUTTER}>
-          <PanelCol span={10}>
-            <TimeSeriesPanel
-              title={panelTitle('network')}
-              data={otel.networkSeries}
-              yFormatter={rateFormatter}
-            />
-          </PanelCol>
-          <PanelCol span={14}>
-            <AlertTrendPanel
-              title={panelTitle('alertTrend')}
-              warningLabel={alertLevelLabels.warning}
-              exceptionLabel={alertLevelLabels.exception}
-              data={summary?.alertTrend ?? []}
-            />
-          </PanelCol>
-        </Row>
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={10}>
+          <TimeSeriesPanel
+            title={panelTitle('network')}
+            data={otel.networkSeries}
+            yFormatter={rateFormatter}
+          />
+        </PanelCol>
+        <PanelCol span={14}>
+          <AlertTrendPanel
+            title={panelTitle('alertTrend')}
+            warningLabel={alertLevelLabels.warning}
+            exceptionLabel={alertLevelLabels.exception}
+            data={summary?.alertTrend ?? []}
+          />
+        </PanelCol>
+      </Row>
 
-        <Row gutter={MONITOR_ROW_GUTTER}>
-          <PanelCol span={12}>
-            <RecentAlertsPanel
-              title={panelTitle('recentAlerts')}
-              levelLabels={alertLevelLabels}
-              columnLabels={{
-                level: t('pages.clusterDashboard.column.level'),
-                target: t('pages.clusterDashboard.column.target'),
-                hostname: t('pages.clusterDashboard.column.hostname'),
-                createTime: t('pages.clusterDashboard.column.createTime'),
-              }}
-              emptyText={t('pages.clusterDashboard.emptyText.alerts')}
-              viewAllLabel={t('pages.clusterDashboard.viewAll')}
-              data={recentAlerts}
-              onViewAll={() => history.push(`/cluster/${clusterId}/alarm`)}
-            />
-          </PanelCol>
-          <PanelCol span={12}>
-            <ServiceHealthPanel
-              title={panelTitle('serviceHealth')}
-              columnLabels={{
-                service: t('pages.clusterDashboard.column.service'),
-                roles: t('pages.clusterDashboard.column.roles'),
-                health: t('pages.clusterDashboard.column.health'),
-                alertNum: t('pages.clusterDashboard.column.alertNum'),
-                state: t('pages.clusterDashboard.column.state'),
-              }}
-              emptyText={t('pages.clusterDashboard.emptyText.services')}
-              viewMoreLabel={t('pages.clusterDashboard.viewMore')}
-              data={summary?.serviceHealth ?? []}
-              onViewMore={() => history.push(`/cluster/${clusterId}/service`)}
-            />
-          </PanelCol>
-        </Row>
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={12}>
+          <RecentAlertsPanel
+            title={panelTitle('recentAlerts')}
+            levelLabels={alertLevelLabels}
+            columnLabels={{
+              level: t('pages.clusterDashboard.column.level'),
+              target: t('pages.clusterDashboard.column.target'),
+              hostname: t('pages.clusterDashboard.column.hostname'),
+              createTime: t('pages.clusterDashboard.column.createTime'),
+            }}
+            emptyText={t('pages.clusterDashboard.emptyText.alerts')}
+            viewAllLabel={t('pages.clusterDashboard.viewAll')}
+            data={recentAlerts}
+            onViewAll={() => history.push(`/cluster/${clusterId}/alarm`)}
+          />
+        </PanelCol>
+        <PanelCol span={12}>
+          <ServiceHealthPanel
+            title={panelTitle('serviceHealth')}
+            columnLabels={{
+              service: t('pages.clusterDashboard.column.service'),
+              roles: t('pages.clusterDashboard.column.roles'),
+              health: t('pages.clusterDashboard.column.health'),
+              alertNum: t('pages.clusterDashboard.column.alertNum'),
+              state: t('pages.clusterDashboard.column.state'),
+            }}
+            emptyText={t('pages.clusterDashboard.emptyText.services')}
+            viewMoreLabel={t('pages.clusterDashboard.viewMore')}
+            data={summary?.serviceHealth ?? []}
+            onViewMore={() => history.push(`/cluster/${clusterId}/service`)}
+          />
+        </PanelCol>
+      </Row>
 
-        <Row gutter={MONITOR_ROW_GUTTER}>
-          <PanelCol span={24}>
-            <ClusterProfilePanel
-              title={panelTitle('profile')}
-              labels={{
-                frame: t('pages.clusterDashboard.profile.frame'),
-                cpuArchitecture: t(
-                  'pages.clusterDashboard.profile.cpuArchitecture',
-                ),
-                nodeCount: t('pages.clusterDashboard.profile.nodeCount'),
-                totalCores: t('pages.clusterDashboard.profile.totalCores'),
-                totalMem: t('pages.clusterDashboard.profile.totalMem'),
-                totalDisk: t('pages.clusterDashboard.profile.totalDisk'),
-                clusterState: t('pages.clusterDashboard.profile.clusterState'),
-                createTime: t('pages.clusterDashboard.profile.createTime'),
-              }}
-              profile={summary?.profile}
-            />
-          </PanelCol>
-        </Row>
-      </MonitorDashboardLayout>
-    </PageContainer>
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={24}>
+          <ClusterProfilePanel
+            title={panelTitle('profile')}
+            labels={{
+              frame: t('pages.clusterDashboard.profile.frame'),
+              cpuArchitecture: t(
+                'pages.clusterDashboard.profile.cpuArchitecture',
+              ),
+              nodeCount: t('pages.clusterDashboard.profile.nodeCount'),
+              totalCores: t('pages.clusterDashboard.profile.totalCores'),
+              totalMem: t('pages.clusterDashboard.profile.totalMem'),
+              totalDisk: t('pages.clusterDashboard.profile.totalDisk'),
+              clusterState: t('pages.clusterDashboard.profile.clusterState'),
+              createTime: t('pages.clusterDashboard.profile.createTime'),
+            }}
+            profile={summary?.profile}
+          />
+        </PanelCol>
+      </Row>
+    </MonitorDashboardLayout>
   );
 };
 

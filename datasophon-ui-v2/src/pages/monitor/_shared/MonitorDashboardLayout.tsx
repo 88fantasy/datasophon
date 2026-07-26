@@ -10,6 +10,7 @@ interface MonitorDashboardLayoutProps {
   toolbar?: ReactNode;
   meta?: ReactNode;
   loading?: boolean;
+  embedded?: boolean;
   children: ReactNode;
 }
 
@@ -18,12 +19,15 @@ const MonitorDashboardLayout: FC<MonitorDashboardLayoutProps> = ({
   toolbar,
   meta,
   loading,
+  embedded = false,
   children,
 }) => {
-  const { styles } = useStyles();
+  const { styles, cx } = useStyles();
 
   return (
-    <GridContent className={styles.dashboard}>
+    <GridContent
+      className={cx(styles.dashboard, embedded && styles.embeddedDashboard)}
+    >
       <div className={styles.header}>
         {title && (
           <Title level={4} className={styles.title}>

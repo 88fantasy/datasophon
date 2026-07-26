@@ -183,17 +183,21 @@ const ServiceInstance: React.FC = () => {
   if (hasPrimaryMonitor) {
     let primaryMonitor: React.ReactNode = null;
     if (isApisix) {
-      primaryMonitor = <ApisixDashboard clusterId={numericClusterId} />;
+      primaryMonitor = (
+        <ApisixDashboard clusterId={numericClusterId} embedded />
+      );
     } else if (isValkey) {
-      primaryMonitor = <ValkeyDashboard clusterId={numericClusterId} />;
+      primaryMonitor = (
+        <ValkeyDashboard clusterId={numericClusterId} embedded />
+      );
     } else if (isDS) {
-      primaryMonitor = <DSDashboard clusterId={numericClusterId} />;
+      primaryMonitor = <DSDashboard clusterId={numericClusterId} embedded />;
     } else if (isDoris) {
       primaryMonitor = <DorisDashboard clusterId={numericClusterId} embedded />;
     } else if (isNacos) {
-      primaryMonitor = <NacosDashboard clusterId={numericClusterId} />;
+      primaryMonitor = <NacosDashboard clusterId={numericClusterId} embedded />;
     } else if (isOtelCollector) {
-      primaryMonitor = <MonitorTab clusterId={numericClusterId} />;
+      primaryMonitor = <MonitorTab clusterId={numericClusterId} embedded />;
     }
     items.push({
       key: 'monitor',

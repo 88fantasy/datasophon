@@ -73,9 +73,13 @@ const THREAD_COLORS = {
 
 export interface NacosDashboardProps {
   clusterId: number;
+  embedded?: boolean;
 }
 
-const NacosDashboard: FC<NacosDashboardProps> = ({ clusterId }) => {
+const NacosDashboard: FC<NacosDashboardProps> = ({
+  clusterId,
+  embedded = false,
+}) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -108,6 +112,7 @@ const NacosDashboard: FC<NacosDashboardProps> = ({ clusterId }) => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
+      embedded={embedded}
       toolbar={
         <NacosDashboardToolbar
           timeRange={timeRange}

@@ -7,6 +7,9 @@ const useStyles = createStyles(({ token }) => ({
       padding: 16,
     },
   },
+  embeddedDashboard: {
+    padding: '0 !important',
+  },
   header: {
     marginBottom: 16,
   },

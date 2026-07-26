@@ -104,9 +104,13 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
 
 export interface ApisixDashboardProps {
   clusterId: number;
+  embedded?: boolean;
 }
 
-const ApisixDashboard: FC<ApisixDashboardProps> = ({ clusterId }) => {
+const ApisixDashboard: FC<ApisixDashboardProps> = ({
+  clusterId,
+  embedded = false,
+}) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -143,6 +147,7 @@ const ApisixDashboard: FC<ApisixDashboardProps> = ({ clusterId }) => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
+      embedded={embedded}
       toolbar={
         <ZKDashboardToolbar
           timeRange={timeRange}

@@ -118,6 +118,8 @@ const CommandList: React.FC = () => {
 
   return (
     <ProTable<DagCommand>
+      style={{ minHeight: '100%' }}
+      cardProps={{ style: { minHeight: '100%' } }}
       rowKey="id"
       headerTitle="命令历史"
       actionRef={actionRef}

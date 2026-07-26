@@ -69,9 +69,13 @@ const valkeyKeyTtlColors = {
 
 export interface ValkeyDashboardProps {
   clusterId: number;
+  embedded?: boolean;
 }
 
-const ValkeyDashboard: FC<ValkeyDashboardProps> = ({ clusterId }) => {
+const ValkeyDashboard: FC<ValkeyDashboardProps> = ({
+  clusterId,
+  embedded = false,
+}) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -122,6 +126,7 @@ const ValkeyDashboard: FC<ValkeyDashboardProps> = ({ clusterId }) => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
+      embedded={embedded}
       toolbar={
         <ValkeyDashboardToolbar
           timeRange={timeRange}

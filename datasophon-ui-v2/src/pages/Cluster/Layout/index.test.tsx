@@ -48,8 +48,16 @@ vi.mock('antd', async () => {
   Layout.Sider = ({ children }: { children: ReactNode }) => (
     <aside>{children}</aside>
   );
-  Layout.Content = ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
+  Layout.Content = ({
+    children,
+    style,
+  }: {
+    children: ReactNode;
+    style?: CSSProperties;
+  }) => (
+    <main data-testid="cluster-content" style={style}>
+      {children}
+    </main>
   );
 
   return {
@@ -97,6 +105,15 @@ describe('ClusterLayout', () => {
     const shell = await screen.findByTestId('cluster-page-shell');
     expect(shell).toHaveAttribute('data-page-header-render', 'false');
     expect(shell).toHaveStyle({ padding: '0' });
+    expect(screen.getByTestId('cluster-content')).toHaveStyle({
+      padding: '16px',
+      display: 'flex',
+    });
+    expect(screen.getByText('cluster page').parentElement).toHaveStyle({
+      flex: '1',
+      minWidth: '0',
+      minHeight: '0',
+    });
     expect(screen.getByText('cluster page')).toBeInTheDocument();
   });
 

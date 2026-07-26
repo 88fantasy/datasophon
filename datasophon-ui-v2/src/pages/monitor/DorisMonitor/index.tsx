@@ -141,6 +141,7 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
   return (
     <MonitorDashboardLayout
       key={refreshKey}
+      embedded={embedded}
       toolbar={
         <DorisDashboardToolbar
           hideClusterSelect={embedded}

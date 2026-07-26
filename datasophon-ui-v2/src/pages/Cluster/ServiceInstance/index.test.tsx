@@ -69,7 +69,7 @@ vi.mock('antd', async () => {
 });
 
 vi.mock('@/pages/monitor/ApisixMonitor', () => ({
-  default: (props: { clusterId: number }) => {
+  default: (props: { clusterId: number; embedded?: boolean }) => {
     apisixDashboardSpy(props);
     return <div>APISIX dashboard cluster {props.clusterId}</div>;
   },
@@ -82,25 +82,25 @@ vi.mock('@/pages/monitor/DorisMonitor', () => ({
   },
 }));
 vi.mock('@/pages/monitor/NacosMonitor', () => ({
-  default: (props: { clusterId: number }) => {
+  default: (props: { clusterId: number; embedded?: boolean }) => {
     nacosDashboardSpy(props);
     return <div>Nacos dashboard cluster {props.clusterId}</div>;
   },
 }));
 vi.mock('@/pages/monitor/ValkeyMonitor', () => ({
-  default: (props: { clusterId: number }) => {
+  default: (props: { clusterId: number; embedded?: boolean }) => {
     valkeyDashboardSpy(props);
     return <div>Valkey dashboard cluster {props.clusterId}</div>;
   },
 }));
 vi.mock('@/pages/monitor/DolphinSchedulerMonitor', () => ({
-  default: (props: { clusterId: number }) => {
+  default: (props: { clusterId: number; embedded?: boolean }) => {
     dsDashboardSpy(props);
     return <div>DS dashboard cluster {props.clusterId}</div>;
   },
 }));
 vi.mock('@/pages/Cluster/ObservabilityCollector/MonitorTab', () => ({
-  default: (props: { clusterId: number }) => {
+  default: (props: { clusterId: number; embedded?: boolean }) => {
     otelCollectorMonitorSpy(props);
     return <div>OTel collector monitor cluster {props.clusterId}</div>;
   },
@@ -148,7 +148,10 @@ describe('APISIX service instance tabs', () => {
       'monitor',
     );
     await waitFor(() =>
-      expect(apisixDashboardSpy).toHaveBeenCalledWith({ clusterId: 7 }),
+      expect(apisixDashboardSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
     );
   });
 
@@ -230,7 +233,10 @@ describe('VALKEY service instance tabs', () => {
       'monitor',
     );
     await waitFor(() =>
-      expect(valkeyDashboardSpy).toHaveBeenCalledWith({ clusterId: 7 }),
+      expect(valkeyDashboardSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
     );
   });
 
@@ -312,7 +318,10 @@ describe('DS service instance tabs', () => {
       'monitor',
     );
     await waitFor(() =>
-      expect(dsDashboardSpy).toHaveBeenCalledWith({ clusterId: 7 }),
+      expect(dsDashboardSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
     );
   });
 
@@ -431,7 +440,10 @@ describe('OTELCOLLECTOR service instance tabs', () => {
       'monitor',
     );
     await waitFor(() =>
-      expect(otelCollectorMonitorSpy).toHaveBeenCalledWith({ clusterId: 7 }),
+      expect(otelCollectorMonitorSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
     );
   });
 });
@@ -468,7 +480,10 @@ describe('NACOS service instance tabs', () => {
       'monitor',
     );
     await waitFor(() =>
-      expect(nacosDashboardSpy).toHaveBeenCalledWith({ clusterId: 7 }),
+      expect(nacosDashboardSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
     );
   });
 });

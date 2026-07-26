@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import ObservabilityCollector from './index';
 import MonitorTab from './MonitorTab';
 import { getCollectorMonitor } from './service';
 
@@ -22,6 +23,9 @@ vi.mock('@ant-design/pro-components', async () => {
     GridContent: ({ children }: { children: React.ReactNode }) => (
       <div>{children}</div>
     ),
+    PageContainer: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="nested-page-container">{children}</div>
+    ),
     ProTable: ({
       request,
     }: {
@@ -38,6 +42,15 @@ vi.mock('@ant-design/pro-components', async () => {
 
 vi.mock('./service', () => ({
   getCollectorMonitor: vi.fn(),
+}));
+vi.mock('./TopologyTab', () => ({
+  default: () => <div>topology content</div>,
+}));
+vi.mock('./TracesTab', () => ({
+  default: () => <div>traces content</div>,
+}));
+vi.mock('./LogsTab', () => ({
+  default: () => <div>logs content</div>,
 }));
 
 vi.mock('./hooks/useCollectorDashboard', () => ({
@@ -99,5 +112,16 @@ describe('ObservabilityCollector', () => {
 
     await waitFor(() => expect(getCollectorMonitor).toHaveBeenCalledWith(7));
     expect(getCollectorMonitor).not.toHaveBeenCalledWith(0);
+  });
+
+  it('renders its tabs without a nested page container', () => {
+    render(<ObservabilityCollector />);
+
+    expect(screen.getByRole('tab', { name: 'Topology' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Traces' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Logs' })).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('nested-page-container'),
+    ).not.toBeInTheDocument();
   });
 });

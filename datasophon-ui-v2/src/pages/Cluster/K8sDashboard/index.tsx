@@ -1,16 +1,17 @@
 import { Bar, Line } from '@ant-design/plots';
-import { PageContainer } from '@ant-design/pro-components';
 import {
   Alert,
   Card,
   Col,
   Empty,
+  Flex,
   Progress,
   Row,
   Segmented,
   Statistic,
   Table,
   Tag,
+  Typography,
 } from 'antd';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
@@ -107,9 +108,15 @@ const K8sDashboard: React.FC = () => {
   ]);
 
   return (
-    <PageContainer
-      title={
-        <span>
+    <div style={{ minHeight: '100%' }}>
+      <Flex
+        align="center"
+        justify="space-between"
+        gap={16}
+        wrap
+        style={{ marginBottom: 16 }}
+      >
+        <Typography.Title level={4} style={{ margin: 0 }}>
           K8s 集群运行概览
           {data?.observedAt && (
             <span
@@ -123,16 +130,13 @@ const K8sDashboard: React.FC = () => {
               更新时间：{dayjs(data.observedAt).format('YYYY-MM-DD HH:mm:ss')}
             </span>
           )}
-        </span>
-      }
-      extra={
+        </Typography.Title>
         <Segmented
           value={range}
           onChange={(value) => setRange(value.toString())}
           options={['1h', '6h', '24h']}
         />
-      }
-    >
+      </Flex>
       {data?.telemetry.status === 'UNAVAILABLE' && (
         <Alert
           type="warning"
@@ -416,7 +420,7 @@ const K8sDashboard: React.FC = () => {
           </Card>
         </Col>
       </Row>
-    </PageContainer>
+    </div>
   );
 };
 
