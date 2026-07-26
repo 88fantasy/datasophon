@@ -1,6 +1,7 @@
 import {
   AlertOutlined,
   ClusterOutlined,
+  DashboardOutlined,
   DesktopOutlined,
   FundProjectionScreenOutlined,
   HistoryOutlined,
@@ -10,7 +11,7 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
-import { history, Outlet, useIntl, useParams } from '@umijs/max';
+import { history, Outlet, useIntl, useLocation, useParams } from '@umijs/max';
 import { Badge, Button, Dropdown, Layout, Menu, Spin, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
@@ -132,6 +133,7 @@ const ServiceMenuItem: React.FC<ServiceMenuItemProps> = ({ service }) => {
 
 const ClusterLayout: React.FC = () => {
   const intl = useIntl();
+  const location = useLocation();
   const { clusterId } = useParams<{ clusterId: string }>();
   const numericClusterId = Number(clusterId);
 
@@ -165,6 +167,16 @@ const ClusterLayout: React.FC = () => {
       cancelled = true;
     };
   }, [numericClusterId]);
+
+  // ── K8s 集群没有集群看板页，落到 /overview 时兜底回主机管理 ────────
+  useEffect(() => {
+    if (
+      clusterInfo?.archType === 'k8s' &&
+      location.pathname === `/cluster/${numericClusterId}/overview`
+    ) {
+      history.replace(`/cluster/${numericClusterId}/host`);
+    }
+  }, [clusterInfo?.archType, location.pathname, numericClusterId]);
 
   // ── 物理集群：服务列表轮询（3 秒间隔）────────────────────────────
   const [serviceList, setServiceList] = useState<
@@ -253,6 +265,16 @@ const ClusterLayout: React.FC = () => {
       label: '主机管理',
     };
 
+    // 仅物理集群有集群看板；K8s 集群的落地页/首位菜单仍是「监控概览」（K8sDashboard）。
+    const overviewItem = {
+      key: `/cluster/${numericClusterId}/overview`,
+      icon: <DashboardOutlined />,
+      label: intl.formatMessage({
+        id: 'menu.cluster-overview',
+        defaultMessage: '集群看板',
+      }),
+    };
+
     const bottomItems = [
       { type: 'divider' as const },
       {
@@ -313,7 +335,7 @@ const ClusterLayout: React.FC = () => {
     }
 
     // 物理集群：按 catalog 分组（原有逻辑不变）
-    const items: any[] = [baseItem];
+    const items: any[] = [overviewItem, baseItem];
     const catalogOrder = ['ENVIRONMENT', 'MIDDLEWARE', 'APPLICATION'];
     for (const cat of catalogOrder) {
       const services = groupedServices[cat];

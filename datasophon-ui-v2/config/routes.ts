@@ -124,7 +124,12 @@ export default [
         routes: [
           {
             path: '/cluster/:clusterId',
-            redirect: '/cluster/:clusterId/host',
+            redirect: '/cluster/:clusterId/overview',
+          },
+          {
+            path: '/cluster/:clusterId/overview',
+            name: 'cluster-overview',
+            component: './Cluster/Dashboard',
           },
           {
             path: '/cluster/:clusterId/host',

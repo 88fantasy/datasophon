@@ -163,6 +163,14 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_includeHostNetworkDirectionDimension() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("direction");
+        String sql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, null, null, List.of("direction"), "otel_metrics_sum");
+        assertThat(sql).contains("attributes['direction']").contains("PARTITION BY instance, job, direction");
+    }
+
+    @Test
     void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
         String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("gc", "G1 Young Generation"), null,

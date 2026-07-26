@@ -1,4 +1,5 @@
 import apisixMonitor from './en-US/apisixMonitor';
+import clusterDashboard from './en-US/clusterDashboard';
 import component from './en-US/component';
 import dolphinSchedulerMonitor from './en-US/dolphinSchedulerMonitor';
 import dorisMonitor from './en-US/dorisMonitor';
@@ -39,4 +40,5 @@ export default {
   ...apisixMonitor,
   ...rustfsMonitor,
   ...juicefsMonitor,
+  ...clusterDashboard,
 };

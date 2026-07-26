@@ -81,14 +81,14 @@ public class OtelMetricsQueryService {
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause", "cmd", "db");
+                    "area", "result", "status", "level", "cause", "cmd", "db", "direction");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause", "cmd", "db");
+                    "area", "result", "status", "level", "cause", "cmd", "db", "direction");
 
     static final List<String> LABEL_ATTR_KEYS = List.of("vol_name", "mp", "method", "cmd", "db");
 
