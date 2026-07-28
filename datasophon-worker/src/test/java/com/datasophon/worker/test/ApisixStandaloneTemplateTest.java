@@ -3,6 +3,7 @@ package com.datasophon.worker.test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,15 +15,18 @@ import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
+import freemarker.cache.FileTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 
 public class ApisixStandaloneTemplateTest {
 
-    private Configuration buildCfg() {
+    private Configuration buildCfg() throws IOException {
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_30);
-        cfg.setClassForTemplateLoading(ApisixStandaloneTemplateTest.class, "/templates");
+        // 模板已随迁移搬到 package/raw/meta/datacluster-physical/APISIX/templates/
+        cfg.setTemplateLoader(new FileTemplateLoader(
+                Path.of("..", "package", "raw", "meta", "datacluster-physical", "APISIX", "templates").toFile()));
         cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         return cfg;

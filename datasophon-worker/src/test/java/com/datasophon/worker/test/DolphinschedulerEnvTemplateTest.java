@@ -3,11 +3,13 @@ package com.datasophon.worker.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import freemarker.cache.FileTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
@@ -16,7 +18,9 @@ public class DolphinschedulerEnvTemplateTest {
 
     private Configuration buildCfg() throws Exception {
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_30);
-        cfg.setClassForTemplateLoading(DolphinschedulerEnvTemplateTest.class, "/templates");
+        // 模板已随迁移搬到 package/raw/meta/datacluster-physical/DS/templates/
+        cfg.setTemplateLoader(new FileTemplateLoader(
+                Path.of("..", "package", "raw", "meta", "datacluster-physical", "DS", "templates").toFile()));
         cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         return cfg;

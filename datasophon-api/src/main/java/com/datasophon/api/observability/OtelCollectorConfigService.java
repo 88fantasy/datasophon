@@ -97,6 +97,7 @@ public class OtelCollectorConfigService {
         GenerateServiceConfigCommand cmd = new GenerateServiceConfigCommand();
         cmd.setClusterId(clusterId);
         cmd.setServiceName(SERVICE_NAME);
+        cmd.setFrameCode(OtelSchema.FRAMEWORK);
         cmd.setServiceRoleName(ROLE_NAME);
         cmd.setCofigFileMap(fileMap);
         cmd.setDecompressPackageName(decompressPackageName());

@@ -71,6 +71,12 @@ mvn -pl datasophon-worker test
 
 这些策略由 `WorkerCommandGrpcService` 在收到资源类指令时分发；不要把它们和 `strategy/` 下的服务角色策略混为一谈，二者解决的是不同维度（角色生命周期 vs 资源动作）的问题。
 
+### 配置模板加载（`utils/FreemakerUtils.java`）
+
+`src/main/resources/templates/` 下现在**只保留两类模板**：① `FreemakerUtils.determinateTplName()` 按 `configFormat` 硬编码选取的引擎级格式模板（`xml.ftl` / `properties.ftl` / `properties2.ftl` / `properties3.ftl`，不属于任何单个服务）；② 无宿主的历史模板（对应服务的 `service_ddl.json` 已不在本仓库，暂原地保留）。**各服务自己的配置模板已迁到 `package/raw/meta/datacluster-physical/<SERVICE>/templates/`**，与该服务的 DDL 同源同版本，通过 Nexus 下发，不再随 worker jar 打包——这样改一次模板只需重新上传 Nexus + 重新下发配置，不必逐节点同步 jar、重启 worker。
+
+`FreemakerUtils.initConfiguration()` 的 `MultiTemplateLoader` 三级回退顺序不变：① 安装包内 `templates/`（三方组件自带）② `RemoteTemplateLoader` 按 `frameCode`/`serviceName` 向 Master `/ddh/api/service/install/downloadTemplate` 请求（Master 侧先查 meta 存储，再回退历史扁平路径，都取不到才返回 404）③ 本模块 classpath `/templates`（引擎级 + 历史模板兜底）。`ConfigureServiceHandler.configure()` 负责把 `command.getFrameCode()` / `srvRoleResource.getServiceName()` 传给 `RemoteTemplateLoader`；新增服务模板时**不要**再往这个目录加文件，去对应服务的 meta 目录下建 `templates/`。
+
 ### 关键文件速查
 
 - `WorkerApplicationServer.java:59` —— main 入口，启动顺序的唯一权威。

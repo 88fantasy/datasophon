@@ -171,9 +171,11 @@ public class ConfigureServiceHandler {
                     if (extTemplateDir.exists() && extTemplateDir.isDirectory()) {
                         // 3rd app, load ext templates
                         logger.info("Add ext app template path: {} to loader path.", extTemplateDir.getAbsolutePath());
-                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome, extTemplateDir.getAbsolutePath());
+                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome, extTemplateDir.getAbsolutePath(),
+                                command.getFrameCode(), srvRoleResource.getServiceName());
                     } else {
-                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome);
+                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome, null,
+                                command.getFrameCode(), srvRoleResource.getServiceName());
                     }
                 } else if (!generators.getFilename().endsWith(SH)) {
                     String packagePath = Constants.INSTALL_PATH + Constants.SLASH + pkgInstallHome + Constants.SLASH;

@@ -44,6 +44,7 @@ public class HadoopUtils {
         ServiceRoleInfo serviceRoleInfo = new ServiceRoleInfo();
         serviceRoleInfo.setName("ResourceManager");
         serviceRoleInfo.setParentName("YARN");
+        serviceRoleInfo.setFrameCode(clusterInfo.getClusterFrame());
         serviceRoleInfo.setConfigFileMap(configFileMap);
         serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
         ServiceConfigureHandler configureHandler = new ServiceConfigureHandler();

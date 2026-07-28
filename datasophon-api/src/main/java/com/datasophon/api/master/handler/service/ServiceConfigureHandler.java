@@ -46,6 +46,7 @@ public class ServiceConfigureHandler extends ServiceHandler {
         cmd.setPackageName(packageName);
         cmd.setClusterId(serviceRoleInfo.getClusterId());
         cmd.setServiceName(serviceRoleInfo.getParentName());
+        cmd.setFrameCode(serviceRoleInfo.getFrameCode());
         cmd.setCofigFileMap(serviceRoleInfo.getConfigFileMap());
         cmd.setDecompressPackageName(resolveDecompressPackageName(serviceRoleInfo));
         cmd.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());

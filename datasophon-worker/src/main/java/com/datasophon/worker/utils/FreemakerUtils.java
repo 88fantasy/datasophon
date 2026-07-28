@@ -91,13 +91,19 @@ public class FreemakerUtils {
     
     public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
                                           String serviceInstallHome) throws IOException, TemplateException {
-        generateConfigFile(generators, configs, serviceInstallHome, null);
+        generateConfigFile(generators, configs, serviceInstallHome, null, null, null);
     }
-    
+
     public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
                                           String serviceInstallHome, String extPath) throws IOException, TemplateException {
-        Configuration config = initConfiguration(extPath);
-        
+        generateConfigFile(generators, configs, serviceInstallHome, extPath, null, null);
+    }
+
+    public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
+                                          String serviceInstallHome, String extPath, String frameCode,
+                                          String serviceName) throws IOException, TemplateException {
+        Configuration config = initConfiguration(extPath, frameCode, serviceName);
+
         // 获取模板的名称
         String tplName = determinateTplName(generators);
         logger.info("begin to generate config file, tplName: {}, additional tpl path is: {}", tplName, extPath);
@@ -117,11 +123,11 @@ public class FreemakerUtils {
         
     }
     
-    private static Configuration initConfiguration(String extPath) throws IOException {
+    private static Configuration initConfiguration(String extPath, String frameCode, String serviceName) throws IOException {
         // 创建核心配置对象
         Configuration config = new Configuration(Configuration.getVersion());
         List<TemplateLoader> loaderList = new ArrayList<>();
-        
+
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
         // 安装包的模板优先
@@ -129,8 +135,8 @@ public class FreemakerUtils {
             // 如果 三方的 package 中存在 templates 模版，则直接加载
             loaderList.add(new FileTemplateLoader(new File(extPath)));
         }
-        // master的下发的模板优先
-        loaderList.add(new RemoteTemplateLoader(String.format("http://%s:%s", masterHost, masterPort)));
+        // master的下发的模板优先，服务级模板从 meta 存储按 frameCode/serviceName 坐标解析
+        loaderList.add(new RemoteTemplateLoader(String.format("http://%s:%s", masterHost, masterPort), frameCode, serviceName));
         loaderList.add(new ClassTemplateLoader(FreemakerUtils.class, "/templates"));
         
         MultiTemplateLoader loader = new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0]));

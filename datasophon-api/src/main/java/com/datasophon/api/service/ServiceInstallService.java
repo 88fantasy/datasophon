@@ -44,7 +44,8 @@ public interface ServiceInstallService {
     
     Result getServiceRoleDeployOverview(Integer clusterId);
     
-    void downloadTemplate(String templateName, HttpServletResponse response) throws IOException;
+    void downloadTemplate(String frameCode, String serviceName, String templateName, HttpServletResponse response)
+        throws IOException;
     
     Result getServiceRoleHostMapping(Integer clusterId);
     

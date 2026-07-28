@@ -29,6 +29,7 @@ import com.datasophon.worker.utils.RemoteTemplateLoader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,15 +41,26 @@ class RemoteTemplateLoaderTest {
 
     private HttpServer server;
     private RemoteTemplateLoader loader;
+    private AtomicReference<String> lastQuery;
 
     @BeforeEach
     void setUp() throws Exception {
+        lastQuery = new AtomicReference<>();
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/ddh/api/service/install/downloadTemplate", exchange -> {
             String query = exchange.getRequestURI().getQuery();
+            lastQuery.set(query);
             byte[] body = query != null && query.contains("valid.ftl")
                     ? "template-content".getBytes()
                     : new byte[0];
+            // 404 场景：Master 端 downloadTemplate 找不到资源时按约定返回非 2xx 且不写 body（见
+            // ServiceInstallServiceImpl.downloadTemplate），这里用空 body + 200 模拟"资源不存在"分支，
+            // 用专门的 notfound.ftl 名称模拟真实的非 2xx 状态码分支
+            if (query != null && query.contains("notfound.ftl")) {
+                exchange.sendResponseHeaders(404, -1);
+                exchange.close();
+                return;
+            }
             exchange.sendResponseHeaders(200, body.length);
             exchange.getResponseBody().write(body);
             exchange.close();
@@ -68,6 +80,11 @@ class RemoteTemplateLoaderTest {
     }
 
     @Test
+    void masterNotFoundResponseFallsBackToNextLoader() throws Exception {
+        assertThat(loader.findTemplateSource("notfound.ftl")).isNull();
+    }
+
+    @Test
     void nonEmptyRemoteTemplateCanBeRead() throws Exception {
         Object source = loader.findTemplateSource("valid.ftl");
         try (Reader reader = loader.getReader(source, "UTF-8")) {
@@ -75,5 +92,26 @@ class RemoteTemplateLoaderTest {
             reader.transferTo(content);
             assertThat(content).hasToString("template-content");
         }
+    }
+
+    @Test
+    void frameCodeAndServiceNameAreAppendedAsQueryParams() throws Exception {
+        RemoteTemplateLoader scopedLoader = new RemoteTemplateLoader(
+                "http://127.0.0.1:" + server.getAddress().getPort(), "datacluster-physical", "APISIX");
+        scopedLoader.findTemplateSource("valid.ftl");
+
+        assertThat(lastQuery.get())
+                .contains("templateName=valid.ftl")
+                .contains("frameCode=datacluster-physical")
+                .contains("serviceName=APISIX");
+    }
+
+    @Test
+    void blankFrameCodeAndServiceNameAreOmittedFromQuery() throws Exception {
+        RemoteTemplateLoader scopedLoader = new RemoteTemplateLoader(
+                "http://127.0.0.1:" + server.getAddress().getPort(), "", "");
+        scopedLoader.findTemplateSource("valid.ftl");
+
+        assertThat(lastQuery.get()).doesNotContain("frameCode=").doesNotContain("serviceName=");
     }
 }
