@@ -44,6 +44,12 @@ public class GenerateServiceConfigCommand implements Serializable, ServiceRoleRe
 
     private String serviceName;
 
+    /**
+     * 所属框架代码（如 datacluster-physical），用于 Worker 向 Master 按服务坐标下载模板，
+     * 对应 meta 存储路径 /meta/{frameCode}/{serviceName}/templates/{templateName}
+     */
+    private String frameCode;
+
     private String decompressPackageName;
     /**
      * 创建解压目录

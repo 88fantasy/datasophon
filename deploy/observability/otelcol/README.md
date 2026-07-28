@@ -29,7 +29,7 @@ Phase A1 数据面运行物。非 Maven 产物,手动 vendoring 后经 `datasoph
 
 ## 配置校验(A1 验收的一部分)
 
-`datasophon-worker/src/main/resources/templates/otelcol.ftl` 的渲染产物已用真实二进制
+`package/raw/meta/datacluster-physical/OTELCOLLECTOR/templates/otelcol.ftl` 的渲染产物已用真实二进制
 `otelcol-contrib validate` 通过(EXIT=0)。首次校验(v0.154.0)时发现并修复两处配置缺陷,复核确认 v0.156.0 下仍然必需:
 1. `service.telemetry.metrics.address` 已废弃 → 改 `readers/pull/prometheus`(host+port);
 2. `file_storage` 目录不存在即拒启 → 加 `create_directory: true`。

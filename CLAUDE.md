@@ -160,7 +160,7 @@ Datasophon 是典型的「控制面 + 工作面」结构:
 ## 6. 跨模块关键约定(踩坑高发区)
 
 - **gRPC 端口/心跳 SSOT** 在 `datasophon-grpc-api/.../GrpcConstants`:`MASTER_GRPC_PORT=18081`、`WORKER_GRPC_PORT=18082`、`HEARTBEAT_INTERVAL_SECONDS=30`、`HEARTBEAT_TIMEOUT_SECONDS=90`。两端引用,禁止各自硬编码。
-- **元数据驱动新增服务** 工作流:① `datasophon-api/src/main/resources/meta/datacluster/<SERVICE>/service_ddl.json` 写完整字段(parameters / configWriter / roles / dependencies / prometheus / alert);② `datasophon-worker/strategy/` 实现 `*HandlerStrategy`(必要时 `@Override` `handler(...)` 走 `command.getCommandType()` 分支);③ UI 通过 `LoadServiceMeta` 自动渲染表单,无需改 controller。
+- **元数据驱动新增服务** 工作流:① `package/raw/meta/datacluster-physical/<SERVICE>/service_ddl.json` 写完整字段(parameters / configWriter / roles / dependencies / prometheus / alert),配置模板放同目录下 `templates/<name>.ftl`(与 DDL 同源同版本,通过 Nexus 下发,不再随 worker jar 打包);② `datasophon-worker/strategy/` 实现 `*HandlerStrategy`(必要时 `@Override` `handler(...)` 走 `command.getCommandType()` 分支);③ UI 通过 `LoadServiceMeta` 自动渲染表单,无需改 controller。
 - **二进制名 `datasophon-cli` 不重命名**:跨语言重写不改命令名,Java CLI 兼容路径、`/usr/local/bin/` 软链、systemd 单元、文档中的命令示例都依赖此名。
 - **Java 21 强制**(父 pom `maven-compiler-plugin` `<release>21</release>`);Lombok 强依赖(`<scope>provided</scope>`,IDE 需装插件);数据库迁移自 1.1.0 演进到 2.1.0,新增 DDL/DML 放 `db/migration/<version>/V<version>__DDL.sql` + `V<version>__DML.sql`(注意:此迁移不是 Flyway,而是 `datasophon-api/.../migration/DatabaseMigration` 自研执行器;`flyway-core` 不在依赖中,集成测试配置里残留的 "Flyway" 字样是历史命名)。
 - **前端重构**:`datasophon-ui` 大部分功能已迁移到 `datasophon-ui-v2` , 前端默认使用 `datasophon-ui-v2`。

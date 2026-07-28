@@ -46,8 +46,10 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
+import com.datasophon.common.storage.MetaStorage;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.HostUtils;
-import com.datasophon.common.utils.IOUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.common.utils.nexus.NexusFacade;
@@ -61,7 +63,10 @@ import com.datasophon.dao.enums.ServiceState;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -310,17 +315,78 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     }
 
     @Override
-    public void downloadTemplate(String templateName, HttpServletResponse response) throws IOException {
-        try {
-            String url = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(String.format("/template/%s", templateName));
-            response.reset();
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-Disposition", "attachment;filename=" + templateName.replace("/", "_"));
-            NexusFacade.getCommonClient().download(url, response.getOutputStream());
-        } finally {
-            IOUtils.closeQuietly(response.getOutputStream());
+    public void downloadTemplate(String frameCode, String serviceName, String templateName, HttpServletResponse response)
+        throws IOException {
+        if (StringUtils.isBlank(frameCode) && StringUtils.isNotBlank(serviceName)) {
+            FrameServiceEntity entity = frameService.lambdaQuery()
+                    .eq(FrameServiceEntity::getServiceName, serviceName)
+                    .last("limit 1")
+                    .one();
+            if (entity != null) {
+                frameCode = entity.getFrameCode();
+            }
         }
 
+        byte[] content = null;
+        if (StringUtils.isNotBlank(frameCode) && StringUtils.isNotBlank(serviceName)) {
+            content = downloadTemplateFromMeta(frameCode, serviceName, templateName);
+        }
+        if (content == null) {
+            content = downloadTemplateFromFlatPath(templateName);
+        }
+        if (content == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        response.reset();
+        response.setContentType("application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment;filename=" + templateName.replace("/", "_"));
+        try (OutputStream out = response.getOutputStream()) {
+            out.write(content);
+        }
+    }
+
+    /**
+     * 按服务坐标从 meta 存储读取模板，对应 package/raw/meta/{frameCode}/{serviceName}/templates/{templateName}
+     * 取不到（资源不存在 / meta 存储未启用）返回 null，交由调用方回退到扁平模板路径。
+     */
+    private byte[] downloadTemplateFromMeta(String frameCode, String serviceName, String templateName) {
+        try {
+            MetaStorage metaStorage = StorageUtils.getMetaStorage();
+            ServiceMetaItem item = new ServiceMetaItem();
+            item.setFramework(frameCode);
+            item.setServiceName(serviceName);
+            item.setType(MetaStorage.PHYSICAL);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            metaStorage.downResource(item, "templates/" + templateName, () -> out);
+            return out.toByteArray();
+        } catch (FileNotFoundException e) {
+            return null;
+        } catch (IllegalStateException e) {
+            logger.warn("meta storage unavailable, fallback to flat template path, templateName: {}, {}", templateName, e.getMessage());
+            return null;
+        } catch (IOException e) {
+            logger.warn("download template {} from meta ({}/{}) failed: {}", templateName, frameCode, serviceName, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 兼容三方安装包（config/template/ 上传约定）的历史扁平路径 /template/{templateName}。
+     */
+    private byte[] downloadTemplateFromFlatPath(String templateName) {
+        try {
+            String url = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(String.format("/template/%s", templateName));
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            NexusFacade.getCommonClient().download(url, out);
+            return out.toByteArray();
+        } catch (FileNotFoundException e) {
+            return null;
+        } catch (IOException e) {
+            logger.warn("download template {} from flat nexus path failed: {}", templateName, e.getMessage());
+            return null;
+        }
     }
 
     @Override

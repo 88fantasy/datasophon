@@ -3,20 +3,29 @@ package com.datasophon.worker.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import freemarker.cache.FileTemplateLoader;
+import freemarker.cache.MultiTemplateLoader;
+import freemarker.cache.TemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 
 public class ExporterScriptTemplateTest {
-    
+
     private Configuration buildCfg() throws Exception {
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_30);
-        cfg.setClassForTemplateLoading(ExporterScriptTemplateTest.class, "/templates");
+        // control_es_exporter.ftl 迁到 ELASTICSEARCH/templates/，control_valkey.ftl 迁到 VALKEY/templates/
+        Path meta = Path.of("..", "package", "raw", "meta", "datacluster-physical");
+        cfg.setTemplateLoader(new MultiTemplateLoader(new TemplateLoader[] {
+                new FileTemplateLoader(meta.resolve("ELASTICSEARCH").resolve("templates").toFile()),
+                new FileTemplateLoader(meta.resolve("VALKEY").resolve("templates").toFile())
+        }));
         cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         return cfg;

@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.fastjson2.JSONArray;
@@ -111,8 +112,10 @@ public class ServiceInstallController extends ApiController {
      * 下载模板
      */
     @GetMapping("/downloadTemplate")
-    public void downloadResource(String templateName, HttpServletResponse response) throws IOException {
-        serviceInstallService.downloadTemplate(templateName, response);
+    public void downloadResource(@RequestParam(required = false) String frameCode,
+                                 @RequestParam(required = false) String serviceName,
+                                 String templateName, HttpServletResponse response) throws IOException {
+        serviceInstallService.downloadTemplate(frameCode, serviceName, templateName, response);
     }
     
     /**

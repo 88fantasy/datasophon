@@ -517,7 +517,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 
 ## 十一、大数据服务组件端口清单
 
-> 梳理依据：`package/raw/meta/datacluster-physical/<SERVICE>/service_ddl.json`（parameters + roles.jmxPortParam，元数据真相之源）+ `datasophon-worker/src/main/resources/templates/*.ftl`（配置模板中读取该参数渲染出的端口）。
+> 梳理依据：`package/raw/meta/datacluster-physical/<SERVICE>/service_ddl.json`（parameters + roles.jmxPortParam，元数据真相之源）+ `package/raw/meta/datacluster-physical/<SERVICE>/templates/*.ftl`（服务级配置模板，读取该参数渲染出端口；`xml`/`properties`/`properties2`/`properties3` 等引擎级格式模板仍在 `datasophon-worker/src/main/resources/templates/`）。
 > mw1 中间件组件（datasophon-api / datasophon-worker / Nexus / MySQL / Rustfs / NTP）端口已在**二、端口速查表**列出，此处不重复。
 > **端口来源**列标注：`项目配置` = service_ddl.json 显式参数值；`项目配置(可配置参数)` = 角色声明了 jmxPortParam，指向某个 Web UI 可配置参数，OTel Collector 优先读该参数的实时值，读不到时退回其 ddl defaultValue 动态生成 scrape 配置；`官方默认` = 组件官方文档默认值，本项目未在 service_ddl 中显式暴露/覆盖该参数，实际以打包内静态配置文件为准。
 > **配置项**列标注该端口对应的 `service_ddl.json` `parameters[].name`（Web UI 安装/修改配置向导里可见的参数）；标注"端口固化在地址字符串里"表示该参数值是 `host:port` 或 URI 形式（如 `${nn1}:8020`），改端口需要连同主机部分一起改写整段值，无法单独只改端口数字；标注"无对应参数"表示该端口未被抽象为可配置参数，实际值来自组件官方默认或写死在 `.ftl`/脚本模板里，只能通过改模板或组件自带配置文件调整。
