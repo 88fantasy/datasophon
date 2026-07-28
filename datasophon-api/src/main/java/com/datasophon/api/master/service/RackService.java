@@ -96,6 +96,7 @@ public class RackService {
             ServiceRoleInfo serviceRoleInfo = new ServiceRoleInfo();
             serviceRoleInfo.setName("NameNode");
             serviceRoleInfo.setParentName("HDFS");
+            serviceRoleInfo.setFrameCode(clusterInfo.getClusterFrame());
             serviceRoleInfo.setConfigFileMap(configFileMap);
             serviceRoleInfo.setHostname(roleInstance.getHostname());
             try {

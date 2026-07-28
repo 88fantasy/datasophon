@@ -49,14 +49,18 @@ import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.utils.nexus.NexusFacade;
 import com.datasophon.common.utils.nexus.client.CommonNexusClient;
 import com.datasophon.common.utils.nexus.client.RawRepoClient;
+import com.datasophon.dao.entity.FrameServiceEntity;
 
 import java.io.FileNotFoundException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.mock.web.MockHttpServletResponse;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 /**
  * 覆盖 downloadTemplate 迁移后的三级回退：meta 存储命中 / 回退历史扁平路径 / 两者皆无返回 404。
@@ -64,10 +68,12 @@ import org.springframework.mock.web.MockHttpServletResponse;
  */
 class ServiceInstallServiceImplDownloadTemplateTest {
 
+    private final FrameServiceService frameService = mock(FrameServiceService.class);
+
     private final ServiceInstallServiceImpl service = new ServiceInstallServiceImpl(
             mock(ClusterInfoService.class),
             mock(FrameInfoService.class),
-            mock(FrameServiceService.class),
+            frameService,
             mock(FrameServiceRoleService.class),
             mock(ClusterServiceCommandService.class),
             mock(ClusterServiceInstanceService.class),
@@ -102,6 +108,56 @@ class ServiceInstallServiceImplDownloadTemplateTest {
                     eq("templates/apisix-config.ftl"),
                     any());
         }
+    }
+
+    @Test
+    void resolvesFrameCodeOnlyWhenServiceBelongsToOneFramework() throws Exception {
+        when(frameService.list(any(QueryWrapper.class))).thenReturn(List.of(
+                new FrameServiceEntity().setFrameCode("datacluster-physical")));
+
+        MetaStorage metaStorage = mock(MetaStorage.class);
+        doAnswer(invocation -> {
+            MetaStorage.OutputStreamSupplier supplier = invocation.getArgument(2);
+            supplier.get().write("meta-content".getBytes(StandardCharsets.UTF_8));
+            return null;
+        }).when(metaStorage).downResource(any(), anyString(), any());
+
+        try (MockedStatic<StorageUtils> storageUtils = mockStatic(StorageUtils.class)) {
+            storageUtils.when(StorageUtils::getMetaStorage).thenReturn(metaStorage);
+
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            service.downloadTemplate(null, "YARN", "fair-scheduler.ftl", response);
+
+            assertThat(response.getStatus()).isEqualTo(200);
+            verify(metaStorage).downResource(
+                    argThat(item -> "datacluster-physical".equals(item.getFramework())
+                            && "YARN".equals(item.getServiceName())),
+                    eq("templates/fair-scheduler.ftl"),
+                    any());
+        }
+    }
+
+    @Test
+    void rejectsAmbiguousServiceNameWithoutFrameCode() throws Exception {
+        when(frameService.list(any(QueryWrapper.class))).thenReturn(List.of(
+                new FrameServiceEntity().setFrameCode("datacluster-physical-v1"),
+                new FrameServiceEntity().setFrameCode("datacluster-physical-v2")));
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        service.downloadTemplate(null, "YARN", "fair-scheduler.ftl", response);
+
+        assertThat(response.getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void rejectsUnsafeTemplateAndCoordinatePaths() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        service.downloadTemplate("datacluster-physical", "YARN", "../service_ddl.json", response);
+        assertThat(response.getStatus()).isEqualTo(400);
+
+        response = new MockHttpServletResponse();
+        service.downloadTemplate("../datacluster-physical", "YARN", "yarn-env.ftl", response);
+        assertThat(response.getStatus()).isEqualTo(400);
     }
 
     @Test

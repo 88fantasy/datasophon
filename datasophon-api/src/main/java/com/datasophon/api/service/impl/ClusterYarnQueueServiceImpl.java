@@ -27,6 +27,7 @@ import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterYarnQueueService;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -89,6 +90,7 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
     public Result refreshQueues(Integer clusterId) throws Exception {
         List<ClusterYarnQueue> list = this.list(new QueryWrapper<ClusterYarnQueue>()
                 .eq(Constants.CLUSTER_ID, clusterId));
+        String frameCode = ServiceConfigUtils.getClusterInfo(clusterId).getClusterFrame();
         // 查询resourcemanager节点
         List<ClusterServiceRoleInstanceEntity> roleList =
                 roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, "ResourceManager");
@@ -127,6 +129,7 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
             ServiceRoleInfo serviceRoleInfo = new ServiceRoleInfo();
             serviceRoleInfo.setName("ResourceManager");
             serviceRoleInfo.setParentName("YARN");
+            serviceRoleInfo.setFrameCode(frameCode);
             serviceRoleInfo.setConfigFileMap(configFileMap);
             serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
             ServiceConfigureHandler configureHandler = new ServiceConfigureHandler();

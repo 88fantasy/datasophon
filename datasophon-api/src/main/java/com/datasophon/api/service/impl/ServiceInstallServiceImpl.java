@@ -63,7 +63,6 @@ import com.datasophon.dao.enums.ServiceState;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -317,76 +316,104 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     @Override
     public void downloadTemplate(String frameCode, String serviceName, String templateName, HttpServletResponse response)
         throws IOException {
-        if (StringUtils.isBlank(frameCode) && StringUtils.isNotBlank(serviceName)) {
-            FrameServiceEntity entity = frameService.lambdaQuery()
-                    .eq(FrameServiceEntity::getServiceName, serviceName)
-                    .last("limit 1")
-                    .one();
-            if (entity != null) {
-                frameCode = entity.getFrameCode();
-            }
+        if (!isSafeTemplatePath(templateName)
+                || (StringUtils.isNotBlank(frameCode) && !isSafePathSegment(frameCode))
+                || (StringUtils.isNotBlank(serviceName) && !isSafePathSegment(serviceName))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "invalid template path");
+            return;
         }
 
-        byte[] content = null;
-        if (StringUtils.isNotBlank(frameCode) && StringUtils.isNotBlank(serviceName)) {
-            content = downloadTemplateFromMeta(frameCode, serviceName, templateName);
-        }
-        if (content == null) {
-            content = downloadTemplateFromFlatPath(templateName);
-        }
-        if (content == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
+        if (StringUtils.isBlank(frameCode) && StringUtils.isNotBlank(serviceName)) {
+            List<String> frameCodes = frameService
+                    .list(new QueryWrapper<FrameServiceEntity>()
+                            .select("frame_code")
+                            .eq("service_name", serviceName))
+                    .stream()
+                    .map(FrameServiceEntity::getFrameCode)
+                    .filter(StringUtils::isNotBlank)
+                    .distinct()
+                    .toList();
+            if (frameCodes.size() > 1) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "frameCode is required when serviceName exists in multiple frameworks");
+                return;
+            }
+            if (frameCodes.size() == 1) {
+                frameCode = frameCodes.get(0);
+            }
         }
 
         response.reset();
         response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment;filename=" + templateName.replace("/", "_"));
         try (OutputStream out = response.getOutputStream()) {
-            out.write(content);
+            boolean found = StringUtils.isNotBlank(frameCode)
+                    && StringUtils.isNotBlank(serviceName)
+                    && downloadTemplateFromMeta(frameCode, serviceName, templateName, out);
+            if (!found) {
+                found = downloadTemplateFromFlatPath(templateName, out);
+            }
+            if (!found) {
+                response.reset();
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            }
         }
     }
 
     /**
      * 按服务坐标从 meta 存储读取模板，对应 package/raw/meta/{frameCode}/{serviceName}/templates/{templateName}
-     * 取不到（资源不存在 / meta 存储未启用）返回 null，交由调用方回退到扁平模板路径。
+     * 取不到（资源不存在 / meta 存储未启用）返回 false，交由调用方回退到扁平模板路径。
      */
-    private byte[] downloadTemplateFromMeta(String frameCode, String serviceName, String templateName) {
+    private boolean downloadTemplateFromMeta(String frameCode, String serviceName, String templateName, OutputStream out)
+        throws IOException {
         try {
             MetaStorage metaStorage = StorageUtils.getMetaStorage();
             ServiceMetaItem item = new ServiceMetaItem();
             item.setFramework(frameCode);
             item.setServiceName(serviceName);
             item.setType(MetaStorage.PHYSICAL);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
             metaStorage.downResource(item, "templates/" + templateName, () -> out);
-            return out.toByteArray();
+            return true;
         } catch (FileNotFoundException e) {
-            return null;
+            return false;
         } catch (IllegalStateException e) {
             logger.warn("meta storage unavailable, fallback to flat template path, templateName: {}, {}", templateName, e.getMessage());
-            return null;
-        } catch (IOException e) {
-            logger.warn("download template {} from meta ({}/{}) failed: {}", templateName, frameCode, serviceName, e.getMessage());
-            return null;
+            return false;
         }
     }
 
     /**
      * 兼容三方安装包（config/template/ 上传约定）的历史扁平路径 /template/{templateName}。
      */
-    private byte[] downloadTemplateFromFlatPath(String templateName) {
+    private boolean downloadTemplateFromFlatPath(String templateName, OutputStream out) throws IOException {
         try {
             String url = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(String.format("/template/%s", templateName));
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
             NexusFacade.getCommonClient().download(url, out);
-            return out.toByteArray();
+            return true;
         } catch (FileNotFoundException e) {
-            return null;
-        } catch (IOException e) {
-            logger.warn("download template {} from flat nexus path failed: {}", templateName, e.getMessage());
-            return null;
+            return false;
         }
+    }
+
+    private boolean isSafePathSegment(String value) {
+        if (StringUtils.isBlank(value) || ".".equals(value) || "..".equals(value)) {
+            return false;
+        }
+        return value.chars().noneMatch(c -> c == '/' || c == '\\' || c == '?' || c == '#' || Character.isISOControl(c));
+    }
+
+    private boolean isSafeTemplatePath(String value) {
+        if (StringUtils.isBlank(value) || value.startsWith("/") || value.contains("\\")
+                || value.indexOf('?') >= 0 || value.indexOf('#') >= 0
+                || value.chars().anyMatch(Character::isISOControl)) {
+            return false;
+        }
+        for (String segment : value.split("/", -1)) {
+            if (segment.isEmpty() || ".".equals(segment) || "..".equals(segment)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

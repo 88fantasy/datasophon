@@ -115,6 +115,7 @@ public class ServiceLifecycleUtils {
         ServiceRoleInfo serviceRoleInfo = new ServiceRoleInfo();
         serviceRoleInfo.setName(roleInstanceEntity.getServiceRoleName());
         serviceRoleInfo.setParentName(roleInstanceEntity.getServiceName());
+        serviceRoleInfo.setFrameCode(clusterInfo.getClusterFrame());
         serviceRoleInfo.setConfigFileMap(configFileMap);
         serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
         ServiceConfigureHandler configureHandler = new ServiceConfigureHandler();
