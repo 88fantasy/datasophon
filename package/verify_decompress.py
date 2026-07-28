@@ -12,10 +12,54 @@ import zipfile
 from collections import Counter
 from pathlib import Path
 
-BASE = Path(__file__).parent.parent
 PKG_DIR = Path(__file__).parent
-META_BASE = BASE / "datasophon-api/src/main/resources/meta/datacluster"
+META_BASE = PKG_DIR / "raw/meta/datacluster-physical"
 MANIFEST_PATH = PKG_DIR / "manifest.json"
+
+
+def infer_repo_type(name):
+    """与 download.sh 的 infer_repo_type 保持一致，manifest 未显式声明 repoType 时的推断规则。"""
+    if name.endswith(".rpm"):
+        return "yum"
+    if name.endswith(".deb"):
+        return "apt"
+    if name.endswith(".tar"):
+        return "docker"
+    return "raw"
+
+
+def repo_types_for(entry):
+    """与 download.sh 的 repo_types_for 保持一致：优先 repoTypes 数组，否则回退单个 repoType/推断值。"""
+    values = entry.get("repoTypes")
+    if values is None:
+        values = [entry.get("repoType") or infer_repo_type(entry["packageName"])]
+    return values
+
+
+def dest_dir_for(entry, rtype):
+    """与 download.sh 的 dest_dir_for 保持一致，决定该 repoType 落盘的目标目录。"""
+    arch = entry.get("arch", "common")
+    if rtype == "yum":
+        return PKG_DIR / "yum" / arch / entry.get("os", "common")
+    if rtype == "apt":
+        return PKG_DIR / "apt" / arch / entry.get("os", "common")
+    if rtype == "helm":
+        return PKG_DIR / "helm"
+    if rtype == "docker":
+        return PKG_DIR / "docker"
+    if rtype == "base":
+        return PKG_DIR / "base"
+    return PKG_DIR / "raw" / "packages"
+
+
+def find_package_path(entry):
+    """按 download.sh 的落盘规则定位已下载的包；repoTypes 声明了多个目的地时，任一命中即可。"""
+    name = entry["packageName"]
+    for rtype in repo_types_for(entry):
+        candidate = dest_dir_for(entry, rtype) / name
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def get_top_level_dir(pkg_path, pkg_name):
@@ -129,7 +173,7 @@ def main():
     for entry in manifest:
         service_packages.setdefault(entry["service"], set()).add(entry["packageName"])
 
-    # packageName → (decompressPackageName, is_multi_arch)
+    # packageName → (decompressPackageName, is_multi_arch, 首次出现的完整 entry，供路径路由使用)
     # 同时记录 packageName → {service: decompressPackageName}，用于跨服务一致性检查
     seen = {}
     pkg_service_decompress = {}
@@ -140,7 +184,7 @@ def main():
         is_multi_arch = len(service_packages[svc]) > 1
         pkg_service_decompress.setdefault(name, {})[svc] = decomp
         if name not in seen:
-            seen[name] = (decomp, is_multi_arch)
+            seen[name] = (decomp, is_multi_arch, entry)
 
     # 同一包被多个服务共用但 decompressPackageName 不一致时报警
     for pkg_name, svc_map in pkg_service_decompress.items():
@@ -156,9 +200,9 @@ def main():
     errors = []
     skipped_multi_arch = []
 
-    for pkg_name, (expected, is_multi_arch) in seen.items():
-        pkg_path = PKG_DIR / pkg_name
-        if not pkg_path.exists():
+    for pkg_name, (expected, is_multi_arch, entry) in seen.items():
+        pkg_path = find_package_path(entry)
+        if pkg_path is None:
             missing.append(pkg_name)
             continue
 
@@ -213,7 +257,7 @@ def main():
         for pkg, old, new in mismatches:
             print(f"  {pkg}")
             print(f"    {old!r} → {new!r}")
-        print("\n请执行：git diff datasophon-api/src/main/resources/meta/datacluster/")
+        print("\n请执行：git diff package/raw/meta/datacluster-physical/")
 
     if skipped_multi_arch:
         print("\n多架构包（归一化名称保留）：")
