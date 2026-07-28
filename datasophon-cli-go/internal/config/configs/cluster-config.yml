@@ -65,6 +65,9 @@ mysql:
     - account: "datart"
       password: "fI5sQ4yQ4fP5"
       dbName: "datart"
+    - account: "gravitino"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "gravitino"
   node: "app6"
 
 ntpServer:

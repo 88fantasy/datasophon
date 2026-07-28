@@ -69,6 +69,7 @@ public class OtelScrapeConfigBuilder {
         PATH_OVERRIDES.put("NacosServer", "/nacos/actuator/prometheus");
         PATH_OVERRIDES.put("Apisix", "/apisix/prometheus/metrics");
         PATH_OVERRIDES.put("Minio", "/minio/v2/metrics/cluster");
+        PATH_OVERRIDES.put("GravitinoServer", "/prometheus/metrics");
     }
 
     private final ClusterServiceRoleInstanceService roleService;

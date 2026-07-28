@@ -1,0 +1,254 @@
+{
+  "name": "GRAVITINO",
+  "type": "MIDDLEWARE",
+  "label": "Gravitino",
+  "description": "统一元数据管理与开放数据目录",
+  "version": "1.3.0",
+  "sortNum": 82,
+  "dependencies": [],
+  "roles": [
+    {
+      "name": "GravitinoServer",
+      "label": "GravitinoServer",
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "logs/gravitino-server.log",
+      "jmxPortParam": "gravitino.server.webserver.httpPort",
+      "portParams": ["gravitino.server.webserver.httpPort"],
+      "startRunner": {
+        "timeout": "120",
+        "program": "bin/gravitino.sh",
+        "args": ["start"]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/gravitino.sh",
+        "args": ["stop"]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/gravitino.sh",
+        "args": ["status"]
+      },
+      "restartRunner": {
+        "timeout": "120",
+        "program": "bin/gravitino.sh",
+        "args": ["restart"]
+      },
+      "externalLink": {
+        "name": "Gravitino UI",
+        "label": "Gravitino UI",
+        "url": "http://${host}:${GRAVITINO.gravitino.server.webserver.httpPort}/"
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 49,
+            "text": "    exit 1 # datasophon: propagate status exit code",
+            "source": "bin/gravitino.sh"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/V1.3.0__DDL.sql",
+            "to": "db/migration/V1.3.0__DDL.sql",
+            "md5": "c2b983facc83a01b522c4ec585213125"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/lib/mysql-connector-j-8.2.0.jar",
+            "target": "libs/mysql-connector-j-8.2.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
+            "target": "otel/opentelemetry-javaagent.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "initDb",
+          "params": {
+            "resourceKey": "GRAVITINO",
+            "metaStorage": "datasophon",
+            "driver": "com.mysql.cj.jdbc.Driver",
+            "url": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/gravitino?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true",
+            "username": "gravitino",
+            "password": "fI5sQ4yQ4fP5"
+          }
+        }
+      ]
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "gravitino.conf",
+        "configFormat": "properties",
+        "outputDirectory": "conf",
+        "includeParams": [
+          "gravitino.server.webserver.host",
+          "gravitino.server.webserver.httpPort",
+          "gravitino.entity.store",
+          "gravitino.entity.store.relational",
+          "gravitino.entity.store.relational.jdbcUrl",
+          "gravitino.entity.store.relational.jdbcDriver",
+          "gravitino.entity.store.relational.jdbcUser",
+          "gravitino.entity.store.relational.jdbcPassword",
+          "gravitino.audit.enabled"
+        ]
+      },
+      {
+        "filename": "gravitino-env.sh",
+        "configFormat": "custom",
+        "outputDirectory": "conf",
+        "templateName": "gravitino-env.ftl",
+        "includeParams": [
+          "javaHome",
+          "gravitinoMem"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "gravitino.server.webserver.host",
+      "label": "监听地址",
+      "description": "Web Server 监听地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "0.0.0.0"
+    },
+    {
+      "name": "gravitino.server.webserver.httpPort",
+      "port": true,
+      "register": true,
+      "label": "端口",
+      "description": "Web Server 监听端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "8090"
+    },
+    {
+      "name": "gravitino.entity.store",
+      "label": "元数据存储类型",
+      "description": "元数据存储类型，目前仅支持 relational",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "relational"
+    },
+    {
+      "name": "gravitino.entity.store.relational",
+      "label": "元数据存储后端",
+      "description": "元数据存储后端实现，目前仅支持 JDBCBackend",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "JDBCBackend"
+    },
+    {
+      "name": "gravitino.entity.store.relational.jdbcUrl",
+      "label": "元数据库 JDBC URL",
+      "description": "元数据库 JDBC URL，复用平台 MySQL",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/gravitino?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true"
+    },
+    {
+      "name": "gravitino.entity.store.relational.jdbcDriver",
+      "label": "JDBC 驱动类名",
+      "description": "JDBC 驱动类名",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "com.mysql.cj.jdbc.Driver"
+    },
+    {
+      "name": "gravitino.entity.store.relational.jdbcUser",
+      "label": "数据库用户名",
+      "description": "数据库用户名",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "gravitino"
+    },
+    {
+      "name": "gravitino.entity.store.relational.jdbcPassword",
+      "label": "数据库密码",
+      "description": "数据库密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "fI5sQ4yQ4fP5"
+    },
+    {
+      "name": "gravitino.audit.enabled",
+      "label": "是否启用审计日志",
+      "description": "是否启用审计日志",
+      "required": true,
+      "configType": "map",
+      "type": "switch",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": false
+    },
+    {
+      "name": "javaHome",
+      "label": "java安装路径",
+      "description": "java安装路径，Gravitino 1.3.0 强制要求 Java 17+",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": false,
+      "defaultValue": "$JAVA_HOME17"
+    },
+    {
+      "name": "gravitinoMem",
+      "label": "JVM 内存参数",
+      "description": "GRAVITINO_MEM 环境变量，控制堆内存与元空间大小",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "-Xms1024m -Xmx2048m -XX:MaxMetaspaceSize=512m"
+    }
+  ],
+  "arch": {
+    "common": {
+      "packageName": "gravitino-1.3.0-bin.tar.gz",
+      "decompressPackageName": "gravitino-1.3.0-bin"
+    }
+  }
+}
