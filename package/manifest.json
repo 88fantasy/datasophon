@@ -58,6 +58,14 @@
     "note": "备用镜像：https://archive.apache.org/dist/flink/flink-2.3.0/flink-2.3.0-bin-scala_2.12.tgz（代理环境下连接易中断，可直接使用此链接重试）"
   },
   {
+    "service": "GRAVITINO",
+    "arch": "common",
+    "packageName": "gravitino-1.3.0-bin.tar.gz",
+    "decompressPackageName": "gravitino-1.3.0-bin",
+    "downloadUrl": "https://downloads.apache.org/gravitino/1.3.0/gravitino-1.3.0-bin.tar.gz",
+    "status": "public"
+  },
+  {
     "service": "HDFS",
     "arch": "x86_64",
     "packageName": "hadoop-3.5.0.tar.gz",

@@ -74,6 +74,7 @@
 | 10 | 阶段 A 业务与故障演练 | PASSED WITH DEVIATIONS | 每次停止实例前单独审批 | §10.3：2026-07-19 完成 Doris/RustFS-OTel/APISIX/Valkey/Nacos/Elasticsearch 六项只读业务验收（另补测 DS），全部通过；§10.4：单 Doris BE 停止/恢复演练已获批准并执行通过。偏差：未做 FE 切换（§5 已知单 FE 限制）、未逐一穷举中间件实例的故障演练（用户按 §10 规则逐项审批，本轮只批准了一项） |
 | 11 | 阶段 A 证据归档与结论 | PASSED WITH DEVIATIONS | PASS / 偏差 / FAIL 审核 | §11.1～§11.3：2026-07-19 归档包存于 `datasophon-deploy-evidence/`（Git 外）；归档前扫描发现并打码两处历史已泄露的真实密码（MySQL root、RustFS secret key，均已 push 未轮换）；最终结论 `PASS WITH DEVIATIONS` |
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
+| 13 | GRAVITINO 元数据服务接入（独立于阶段 A/B，分支 `feat/gravitino-metadata-service`） | PASSED | 每个真实 bug 修复前均现场核对 | §7.13：2026-07-29 ddh-02 实机 11 步全部通过；过程中发现并修复 4 个真实 bug（Nexus md5 sidecar 缺失、`worker.properties` MySQL 连接信息渲染缺失的平台级缺陷、`gravitino-env.ftl` 巡检路径 javaagent 失效、沙箱 Master jar 版本滞后） |
 
 状态只能取 `NOT STARTED`、`IN PROGRESS`、`BLOCKED`、`PASSED`、`FAILED`、`ROLLED BACK`。
 
@@ -755,6 +756,23 @@ No qualifying bean of type 'org.apache.dolphinscheduler.plugin.storage.api.Stora
   - 控制脚本自身日志无 ERROR。
 
 **结论**：openEuler 原生构建的 Valkey 8.1.8 包功能完全验证通过，VALKEY 不再是阶段 A 的已知问题。**拓扑偏差**：实际运行节点是 `ddh-01`，不是 Gate 2 冻结拓扑（§5）指定的 `ddh-02`，原因是 `ddh-02` 现场内存不足，属用户现场批准的偏差，不是安装失败或代码缺陷；`ddh-02` 的可用内存状况需要在后续继续往该节点部署阶段 A 中间件前重新评估。
+
+### 7.13 GRAVITINO 元数据服务现场安装验证（2026-07-29）
+
+与阶段 A/B 主线无关的独立追加——把 Apache Gravitino 1.3.0 作为内置元数据服务接入，分支 `feat/gravitino-metadata-service`，实施计划见 `docs/gravitino-metadata-service-实施计划-2026-07-28.md`。阶段一（DDL/模板/manifest 静态改动）、阶段二（Nexus 上传 + `/internal/meta/refresh`）已在此前 session 完成；本次是阶段三：ddh-02 实机端到端验证。
+
+**安装方式**：用 `deploy/gravitino-deploy.yaml` 单服务部署清单（`app: [{name: GRAVITINO, roles: [{name: GravitinoServer, deployHosts: [ddh-02]}]}]`）走前端"添加服务"向导的清单导入模式，非手动逐步勾选。
+
+**11 步验证结果**：全部通过（安装向导、`append_line` 状态退出码注入生效、`initDb` 建表、配置文件与软链、启动、`status` 退出码正确翻转、停止/重启、快捷链接与 MySQL 后端可写验证、Prometheus 指标全链路、OTel Trace 全链路），详见实施计划文档「验证 / 阶段三：实际执行记录」一节的逐条记录。
+
+**过程中发现并修复的 4 个真实 bug**（全部是"仅真实安装才能暴露"的类型，静态审查看不出来）：
+
+1. **Nexus 上 `gravitino-1.3.0-bin.tar.gz.md5` 缺失**：阶段二上传时 `--files` 精确模式只列了主体安装包，未连带 `.md5` sidecar，Worker 下载前 md5 校验直接报 "does not exists"，安装 1 秒内失败。顺手把 `datasophon-cli-go` 的 `upload registry` 改成自动检测：raw/packages/ 下的安装包本地缺 `.md5` 就自动计算生成并补传（两条上传路径都接入，新增单测）。
+2. **`worker.properties` 里 `mysql.ip=127.0.0.1`/`mysql.password` 为空，从未被正确渲染**——**独立于 Gravitino 的平台级缺陷**：`conf/worker.properties` 是 Maven assembly 从仓库根静态拷贝的模板，五节点用的是同一份文件；`datasophon-cli-go` 全仓找不到任何一处把 `cluster.yml` 的真实 `mysql.node`/`mysql.password` 渲染进各节点 `worker.local.properties`（覆盖层）的逻辑，只有 MySQL 恰好和 Worker 同机部署时才凑巧连得上。GRAVITINO 是本仓库首个真正走到 `InitDbHookAction` 连接逻辑的服务，此前从未暴露。现场先用环境热修复（手工在 `ddh-02` 补写 `worker.local.properties` + 重启 Worker）解除阻塞，再补上代码修复：`datasophon-cli-go` 新增 Step `init-worker-mysql-conf`，initALL DAG 由 36 步变为 37 步，对全部节点写入真实 MySQL IP/密码；本次沙箱是历史初始化产物，未走这条新 Step（已用环境热修复方式绕过并充分验证），**新建集群时会自动生效**。
+3. **`gravitino-env.ftl` 用 `$(pwd)` 定位 javaagent 路径**：Datasophon 对"正式任务命令"（安装/启动）与"周期性巡检"用两条不同的 Worker 执行路径——前者会先 `cd` 进服务安装目录，巡检不会（直接从上级目录拼相对路径执行）。`$(pwd)` 在巡检路径下解析到错误目录，javaagent jar 加载失败拖累 `java -version` 探测崩溃，导致 `bin/gravitino.sh status` 恒判定失败，`GravitinoServer Survive` 告警每 30s 触发一次（进程其实真实健康运行）。改用 `${GRAVITINO_HOME}`（`bin/common.sh` 用 `cd`+`pwd` 稳定算出，不受调用方 cwd 影响）后巡检立即恢复正常。
+4. **沙箱 `ddh-01` 运行的 `datasophon-api` 是编译自本次 DDL 集成之前的旧 jar**：不含 `OtelScrapeConfigBuilder.java` 里 `GravitinoServer → /prometheus/metrics` 这行改动，`otelcol.yaml` 的 `metrics_path` 落到默认 `/metrics`（该路径返回纯 JSON，非 Prometheus 文本格式，采集会解析失败）。现场重新编译打包（`-Dspotless.check.skip=true` 绕开与本任务无关的历史文档格式违规）、替换 `ddh-01` 的 jar 并重启 Master，验证生效——**这是本次会话的现场热修复，非代码库常态问题**，后续任何人从当前分支重新打包部署即可复现同样效果。
+
+**结论**：Gravitino 1.3.0 单实例（`cardinality: "1"`，不做 HA）作为内置元数据服务纳管验证通过，全链路（安装 → 状态巡检 → MySQL entity store 读写 → Prometheus 指标 → OTel Trace）打通。已知限制：catalog 需在 Gravitino UI 手工创建（平台不自动注册已部署的 DORIS/KAFKA 为 catalog）；`jdbcPassword` 明文放在 DDL 默认值里，与 NACOS/DS 既有约定一致，同属 §11.2 #6 记录的待处理遗留问题；升级到 1.4/2.0 时须重新核对 `bin/gravitino.sh` 里 `append_line` 依赖的绝对行号。
 
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 

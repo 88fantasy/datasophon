@@ -104,6 +104,10 @@ var InitALLRegistry = []Step{
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Mysql.Enable },
 		Build:     buildMysqlAppDb},
 
+	{ID: "init-worker-mysql-conf", Name: "写入 Worker MySQL 连接覆盖配置",
+		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Mysql.Enable },
+		Build:     buildWorkerMysqlConf(allNodes)},
+
 	{ID: "init-mysqld-exporter", Name: "安装 mysqld_exporter",
 		Condition: func(ctx *BuildContext) bool {
 			return ctx.Cfg.BaseOtelCollector.Enable && ctx.Cfg.Mysql.Enable &&
