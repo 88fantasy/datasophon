@@ -10,6 +10,7 @@
 > &nbsp;&nbsp;· **F2** `Graphs.hasCycle()` 实测把自环判为环，而本文档同时声明自环"实际一定有" → 告警恒真即失效，须拆 `selfLoopCount` / `hasNonTrivialCycle`（§3.4.4 建图段、验收 20）
 > &nbsp;&nbsp;· **F3** `LineageSnapshotMeta.stale/degraded/lastRebuildError` 三字段恒空且重建失败时不置位 → 是诱饵，须删除并改由查询侧现算（§3.4.5 陈旧性契约）
 > &nbsp;&nbsp;· **F4** `LineageDdlContractTest` 断言"全仓库最新迁移 = 2.2.5" → 后续任何人加 `2.2.6/` 都会让血缘测试变红。**已决定留到第 2 批返工**，见任务清单 §2.1b R4
+> &nbsp;&nbsp;· **F5** `SnapshotLoader` 的「同一只读 REPEATABLE READ 事务、同一连接」契约只在 Javadoc，签名无法强制；第 1 批的读一致性测试用内存 List 模拟翻页，隔离级别配错照样绿 → 事务边界须收归 Coordinator，见任务清单 §2.1b R5 与纪律 ④
 > **仍未验证**：§3.4.2 / §3.4.3 的性能数字全为粗估；§3.4.4 的 watermark 取值依赖 L0 #8 的结论。**L1 第一件事是跑 §3.4.8 基准，不是写功能代码**
 > **分支**：待定（建议 `feat/data-lineage-platform`）
 > **取代范围**：本文档取代 `docs/observability-otel-phaseG-flink-血缘与监控-实施计划-2026-07-27.md` 的 **P4/P5/P6** 三个 Phase；该文档的 P0-P3、P7（Flink 监控看板 / FLINKCDC 服务 / 告警）继续有效，不受影响

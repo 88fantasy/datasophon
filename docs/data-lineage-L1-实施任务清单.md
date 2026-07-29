@@ -9,13 +9,14 @@
 
 ## 0. 开工前必读
 
-### 0.1 三条不可违反的纪律
+### 0.1 四条不可违反的纪律
 
-| # |                                纪律                                |            违反后果            |               验证方式                |
-|---|------------------------------------------------------------------|----------------------------|-----------------------------------|
-| ① | **写侧不修改内存图**                                                     | 内存出现 DB 中不存在的边             | 代码中不存在 `snapshot.addEdge()` 类 API |
-| ② | **写侧不读取内存图** —— 所有 `snapshotHolder.get*()` 必须在 `@GetMapping` 链路内 | 陈旧缓存参与权威写入 → 重复版本、旧事件回滚新结构 | 静态检查调用点（T7-3）                     |
-| ③ | **禁用 `Graphs.transitiveClosure()`**                              | O(V·E) + 超级节点上结果集爆炸 → 进程挂死 | 代码检索确认零调用                         |
+| # |                                纪律                                |                违反后果                |                                  验证方式                                   |
+|---|------------------------------------------------------------------|------------------------------------|-------------------------------------------------------------------------|
+| ① | **写侧不修改内存图**                                                     | 内存出现 DB 中不存在的边                     | 代码中不存在 `snapshot.addEdge()` 类 API                                       |
+| ② | **写侧不读取内存图** —— 所有 `snapshotHolder.get*()` 必须在 `@GetMapping` 链路内 | 陈旧缓存参与权威写入 → 重复版本、旧事件回滚新结构         | 静态检查调用点（T7-3）                                                           |
+| ③ | **禁用 `Graphs.transitiveClosure()`**                              | O(V·E) + 超级节点上结果集爆炸 → 进程挂死         | 代码检索确认零调用                                                               |
+| ④ | **事务边界由 Coordinator 强制**，不由 loader 实现方自觉（见 §2.1b R5）             | 分页跨 `is_current` 翻转 → 撕裂快照，线上偶发难复现 | `SnapshotLoader` 签名不含任何事务控制入口；真实 MySQL 用例在降到 `READ COMMITTED` 时**必须失败** |
 
 ### 0.2 被 L0 阻塞的部分（**不要猜，等实测**）
 
@@ -234,6 +235,41 @@ assertThat(target.getUpgradeDMLFile().getFilename()).isEqualTo("V2.2.5__DML.sql"
 >
 > 一般规律：**一个测试应当只在它保护的行为被破坏时失败。** 若它还会因无关变更而失败，那多出来的失败条件就是负债——它训练团队忽略红灯。
 
+#### R5 — 事务边界收归 Coordinator，不靠 loader 实现方自觉（三轮自审 F5）
+
+**现状**：`SnapshotLoader.load()` 无参，而整条链路最关键的正确性契约 ——「同一只读 REPEATABLE READ
+事务、同一连接内分页」—— 只写在 Javadoc 里（`LineageRebuildCoordinator.java:201-210`）。
+
+**为什么必须改**：T3 实现 loader 时若用了连接池默认隔离级别、或分页跨了两个 `Connection`，
+**代码照样编译、照样通过第 1 批全部 12 个测试** —— 因为
+`repeatableReadLoaderDoesNotMixVersionsWhenCurrentEdgesFlipBetweenPages` 用内存 `List<EdgeRow>`
+模拟翻页，**没有任何真实 JDBC 参与**。它保护的是"假想中正确的实现"，不是接口本身。
+线上则会在并发结构变更时产生撕裂快照 —— 偶发、难复现、难定位。
+
+**改法**：`§2.3` 的伪代码本来就写了 `txTemplate.execute(...)`，第 1 批把它退化成了口头约定。
+把事务边界移回 Coordinator，loader 只管写查询：
+
+```java
+// Coordinator 构造时注入，装配处设定隔离级别与只读
+TransactionTemplate tx = new TransactionTemplate(transactionManager);
+tx.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+tx.setReadOnly(true);
+
+// doRebuild 内部：loader 无从绕过事务边界
+private void doRebuild() {
+    LineageGraphSnapshot next = Objects.requireNonNull(
+            readTransaction.execute(status -> snapshotLoader.load()), "snapshotLoader returned null");
+    publishIfNewer(next);
+}
+```
+
+现有 7 个 Coordinator 单测是纯内存的，**不要为此引入真实数据源**：测试用一个 no-op
+`PlatformTransactionManager` 构造 `TransactionTemplate` 即可，行为退化为直通调用。
+
+> 这条与 F1/F2/F3 是同一类问题的第四个变种：**纪律写在注释里就不是纪律**。
+> §0.1 的三条纪律各自都有机械验证方式（代码检索 / 静态检查调用点），唯独这条没有 ——
+> 补上它，纪律表才是完整的。
+
 ### 2.2 Coordinator（**最容易写错的部分**）
 
 ```java
@@ -325,6 +361,10 @@ private synchronized void publishIfNewer(Snapshot next) {
 - 持续 pending 不饥饿：达到轮数/墙钟预算后让出线程并重新投递
 - 重建失败可恢复：注入异常，`lastRebuildError` 被记录、pending 不丢、下轮恢复
 - 读一致性：分页期间并发翻转 `is_current`，快照不得含同一作业两个版本，也不得一条边都没有
+
+  > ⚠️ **必须跑在真实 MySQL 上**（三轮自审 F5）。第 1 批用内存 `List<EdgeRow>` 模拟翻页的那个测试
+  > **保留但不算数** —— 它验证的是"假想中正确的实现"，隔离级别配错时它照样绿。
+  > 真实用例应能在把隔离级别降到 `READ COMMITTED` 时**失败**，否则它没有在测隔离级别。
 
 > ⚠️ **不要写"慢重建与快重建并发、慢的被丢弃"这种测试** —— single-flight 下两次重建不可能并发，该测试永远无法通过。并发控制测 coordinator，代际保护测 `publishIfNewer` 单元方法。
 
