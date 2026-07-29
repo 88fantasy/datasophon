@@ -382,7 +382,7 @@ GROUP BY metric_name LIMIT 20;
 | 7.5 | 顺带修复 | verify_decompress.py 两处路径 bug | 实跑，DS/valkey/mysqld_exporter 核验通过 | ✅ |
 | 8 | 入库 | 上传 Nexus + meta 热刷新 | frame_service 出现 GRAVITINO | ✅(2026-07-29) |
 | 9 | 端到端 | ddh-02 实机 11 步（重点 #2 注入生效、#3 initDb、#6 退出码） | 浏览器实机 + Doris 查询 | ✅(2026-07-29，详见下方「验证 / 阶段三」实际执行记录) |
-| 10 | 收尾 | PR + 回写手册 | `spotless:apply` 已跑（本任务范围内文件无违规） | ⬜ **下一步从这里开始** |
+| 10 | 收尾 | PR + 回写手册 | `spotless:apply` 已跑（本任务范围内文件无违规）；`deployment-standalone-doris.md` §7.13 已回写 | ✅(2026-07-29) |
 
 第 10 步的「回写手册」：在 `deploy/deployment-standalone-doris.md` 追加一节现场记录（该文档的既有惯例，如 §7.7 NACOS、§7.12 VALKEY），凭据一律用占位符。
 
