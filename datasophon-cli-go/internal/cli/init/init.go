@@ -45,6 +45,7 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 
 	// MySQL（init mysql 已提取为 create mysql；mysql_app_db 仍作为独立工具保留）
 	cmd.AddCommand((&InitMysqlAppDb{}).Command(dryRun))
+	cmd.AddCommand((&InitWorkerLocalProperties{}).Command(dryRun))
 
 	// 制品库 (Nexus)
 	cmd.AddCommand((&InitRegistryDecode{}).Command(dryRun))

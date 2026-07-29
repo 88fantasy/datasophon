@@ -1,6 +1,6 @@
 # init — 单步初始化命令组
 
-`init` 命令组包含 **28 条**独立的初始化子命令，每条对应集群初始化流程中的一个步骤。通常由 `create cluster`（initALL DAG）自动调用；也可单独执行用于故障排查或补跑。
+`init` 命令组包含 **29 条**独立的初始化子命令，每条对应集群初始化流程中的一个步骤。通常由 `create cluster`（initALL DAG）自动调用；也可单独执行用于故障排查或补跑。
 
 `init` 子命令的设计语义是"在已登录的当前节点上单步本地初始化"。涉及"指定某个特定节点远程安装"的命令（如 MySQL / Nexus / Rustfs / NTP Server / nmap / yum 离线源）已统一迁移到 [`create` 命令组](../create/README.md)，并支持配置文件 / 手动双模式入口。
 
@@ -52,13 +52,14 @@
 
 > Nexus 制品库安装请使用 [`create registry`](../create/registry.md)；离线源服务端安装请使用 [`create yum-server`](../create/yum-server.md)；Rustfs 安装请使用 [`create rustfs`](../create/rustfs.md)。
 
-### db — 数据库初始化（1 条）
+### db — 数据库初始化（2 条）
 
-|                  命令                  |           说明            |
-|--------------------------------------|-------------------------|
-| [mysql_app_db](./db/mysql_app_db.md) | 在已安装的 MySQL 上创建应用数据库及账号 |
+|                          命令                            |                    说明                     |
+|----------------------------------------------------------|--------------------------------------------|
+| [mysql_app_db](./db/mysql_app_db.md)                      | 在已安装的 MySQL 上创建应用数据库及账号                |
+| [worker_local_properties](./db/worker_local_properties.md) | 写入 Worker MySQL 连接覆盖配置（`worker.local.properties`） |
 
-> MySQL 自身安装请使用 [`create mysql`](../create/mysql.md)；配置文件模式下会自动依次调用 `mysql_app_db` 创建 `appDbs` 列表中的每个数据库。
+> MySQL 自身安装请使用 [`create mysql`](../create/mysql.md)；配置文件模式下会自动依次调用 `mysql_app_db` 创建 `appDbs` 列表中的每个数据库，并对全部节点调用 `worker_local_properties`。
 
 ### k8s — Kubernetes 生态（7 条）
 

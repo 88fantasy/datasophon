@@ -4,7 +4,7 @@
 
 > `initSingleNode` 17 步 DAG 已随 `addNodes` 批量模式一并移除，新增节点统一通过 `create node` 完成。
 
-## initALL — 36 步（全量集群初始化）
+## initALL — 37 步（全量集群初始化）
 
 由 `create cluster`（默认执行）或 `create cluster apply` 触发，通过 plan 引擎持久化，支持断点续跑。
 
@@ -41,16 +41,17 @@
 | 24 | `init-ntp-slave`           | 配置 NTP Slave           | both            | 全节点           | `ntpServer.enable`                      | [ntpslave](../commands/init/network/ntpslave.md)           |
 | 25 | `init-mysql`               | 安装 MySQL               | both            | MySQL 节点      | `mysql.enable`                          | [create mysql](../commands/create/mysql.md)                |
 | 26 | `init-mysql-app-db`        | 初始化 MySQL 数据库和账号       | both            | MySQL 节点      | `mysql.enable`                          | [mysql_app_db](../commands/init/db/mysql_app_db.md)        |
-| 27 | `init-mysqld-exporter`     | 安装 mysqld_exporter     | both            | MySQL 节点      | Collector、MySQL、exporter 均启用         | —                                                          |
-| 28 | `k8s-base-services`        | 安装 K8s 集群（sealos）      | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [k8sBaseServices](../commands/init/k8s/k8sbaseservices.md) |
-| 29 | `k8s-kuboard`              | 安装 Kuboard             | **k8s-only**    | K8s Master    | `kubernetes.enable && kuboard.enable`   | [kuboard](../commands/init/k8s/kuboard.md)                 |
-| 30 | `k8s-registry-conf`        | 配置 K8s 私有仓库            | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [k8sRegistryConf](../commands/init/k8s/k8sregistryconf.md) |
-| 31 | `k8s-docker`               | 安装 Docker（K8s 阶段）      | **k8s-only**    | K8s 节点        | `kubernetes.enable && !k8sTools.containerd` | [docker](../commands/init/k8s/docker.md)               |
-| 32 | `k8s-containerd`           | 安装 containerd          | **k8s-only**    | K8s 节点        | `kubernetes.enable && k8sTools.containerd` | —                                                       |
-| 33 | `k8s-kubectl`              | 安装 kubectl             | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [kubectl](../commands/init/k8s/kubectl.md)                 |
-| 34 | `k8s-helm`                 | 安装 Helm                | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [helm](../commands/init/k8s/helm.md)                       |
-| 35 | `k8s-helmify`              | 安装 Helmify             | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [helmify](../commands/init/k8s/helmify.md)                 |
-| 36 | `init-hugepage`            | 关闭透明大页                 | both            | 全节点           | 无                                       | [hugePage](../commands/init/system/hugepage.md)            |
+| 27 | `init-worker-mysql-conf`   | 写入 Worker MySQL 连接覆盖配置 | both            | 全节点           | `mysql.enable`                          | [worker_local_properties](../commands/init/db/worker_local_properties.md) |
+| 28 | `init-mysqld-exporter`     | 安装 mysqld_exporter     | both            | MySQL 节点      | Collector、MySQL、exporter 均启用         | —                                                          |
+| 29 | `k8s-base-services`        | 安装 K8s 集群（sealos）      | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [k8sBaseServices](../commands/init/k8s/k8sbaseservices.md) |
+| 30 | `k8s-kuboard`              | 安装 Kuboard             | **k8s-only**    | K8s Master    | `kubernetes.enable && kuboard.enable`   | [kuboard](../commands/init/k8s/kuboard.md)                 |
+| 31 | `k8s-registry-conf`        | 配置 K8s 私有仓库            | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [k8sRegistryConf](../commands/init/k8s/k8sregistryconf.md) |
+| 32 | `k8s-docker`               | 安装 Docker（K8s 阶段）      | **k8s-only**    | K8s 节点        | `kubernetes.enable && !k8sTools.containerd` | [docker](../commands/init/k8s/docker.md)               |
+| 33 | `k8s-containerd`           | 安装 containerd          | **k8s-only**    | K8s 节点        | `kubernetes.enable && k8sTools.containerd` | —                                                       |
+| 34 | `k8s-kubectl`              | 安装 kubectl             | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [kubectl](../commands/init/k8s/kubectl.md)                 |
+| 35 | `k8s-helm`                 | 安装 Helm                | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [helm](../commands/init/k8s/helm.md)                       |
+| 36 | `k8s-helmify`              | 安装 Helmify             | **k8s-only**    | K8s 节点        | `kubernetes.enable`                     | [helmify](../commands/init/k8s/helmify.md)                 |
+| 37 | `init-hugepage`            | 关闭透明大页                 | both            | 全节点           | 无                                       | [hugePage](../commands/init/system/hugepage.md)            |
 
 ## initNode — 12 步（新增节点初始化，配置模式）
 

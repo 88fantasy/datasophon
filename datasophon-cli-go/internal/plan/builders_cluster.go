@@ -426,6 +426,28 @@ func buildMysqlAppDb(ctx *BuildContext) ([]Action, error) {
 	return actions, nil
 }
 
+// buildWorkerMysqlConf 为所有节点写入 datasophon-worker/conf/worker.local.properties，
+// 覆盖 worker.properties 里写死的 mysql.ip=127.0.0.1/mysql.password=空——该默认值假设
+// MySQL 与 Worker 同机部署，多节点集群里除 MySQL 所在节点外，服务安装期的 InitDbHookAction
+// 用这个默认值连接 MySQL 全部会失败。
+func buildWorkerMysqlConf(sel nodeSelector) BuildFunc {
+	return func(ctx *BuildContext) ([]Action, error) {
+		mc := ctx.Cfg.Mysql
+		mysqlNode, err := requireNode(ctx.GlobalNodes, mc.Node)
+		if err != nil {
+			return nil, fmt.Errorf("mysql 节点: %w", err)
+		}
+		t := &initcmd.InitWorkerLocalProperties{
+			InstallPath:   ctx.InstallPath,
+			MysqlIP:       mysqlNode.IP,
+			MysqlPassword: mc.Password,
+		}
+		applyConfig(&t.TaskBase, ctx.ConfigYaml)
+		nodes := sel(ctx)
+		return hostsToActions(hostsToPtr(nodes), t), nil
+	}
+}
+
 // buildMysqldExporter 在 MySQL 节点创建监控账号并安装 exporter。
 func buildMysqldExporter(ctx *BuildContext) ([]Action, error) {
 	mc := ctx.Cfg.Mysql

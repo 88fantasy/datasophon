@@ -41,12 +41,12 @@ go test -cover ./...   # 测试 + 覆盖率
 
 `create cluster` 子命令采用「先 plan 生成计划，再 apply 顺序执行」的两阶段模型：
 
-- `create cluster plan`：调用 `plan.GeneratePlan`，把 36 个 Step 展开为 `PlanFile`（含 `clusterHash`、`steps` 列表、每个 step 的 `targets`），序列化到 `$DDH_HOME/state/initALL.plan.json`（`0600` 权限）。
+- `create cluster plan`：调用 `plan.GeneratePlan`，把 37 个 Step 展开为 `PlanFile`（含 `clusterHash`、`steps` 列表、每个 step 的 `targets`），序列化到 `$DDH_HOME/state/initALL.plan.json`（`0600` 权限）。
 - `create cluster apply`：读取 `plan.json`，按顺序执行；apply 阶段会比对 `clusterHash` 与当前 `cluster-sample.yml` 哈希，不一致直接拒绝。
 - `create cluster`（默认行为）= plan + 打印摘要 + 交互确认（`-y` 跳过）+ apply。
 - 断点续跑：apply 会复用 `PlanFile` 中已 `completed` 的 Step，跳过重做；正在 `running` 的 Step 失败时记录到 `plan.steps[i].error`，下次 apply 可继续。
 
-### 36 个 Step 声明式定义（initALL）
+### 37 个 Step 声明式定义（initALL）
 
 `internal/plan/registry.go` 中 `InitALLRegistry` 数组是 `create cluster` 的核心；`internal/plan/registry_node.go` 中 `InitNodeRegistry` 是 `create node` 配置模式的 12 步 DAG。两者共享相同的 `Step` 结构（含 `ID / Name / Scope / Condition / Build`），按数组顺序即 DAG 顺序执行。
 
@@ -54,7 +54,7 @@ go test -cover ./...   # 测试 + 覆盖率
 - `Condition`：必须从 `ctx.Cfg.*` 读布尔字段（如 `ctx.Cfg.Registry.Enable`、`ctx.Cfg.Kubernetes.Enable`），**禁止**走 CLI flag —— flag 只覆盖 type/auth 等全局项。
 - `Build`：返回 `[]Action`（即 `host × handler` 调用对），仅用于 plan 阶段展示 `targets`；apply 阶段 `runner.runActions` 会再次调用并 SSH 链式执行。
 
-涉及 36 个 Step 的 DAG 完整步骤表与依赖关系见 `docs/reference/init-all-dag.md`。
+涉及 37 个 Step 的 DAG 完整步骤表与依赖关系见 `docs/reference/init-all-dag.md`。
 
 ### clusterHash 校验配置一致性
 
@@ -105,19 +105,19 @@ datasophon-cli [--dry-run]
 │   ├── mysql / nmap-server / ntp-server    # 单节点远程安装命令
 │   ├── registry / rustfs / yum-server
 │   └── ...
-├── init                                    # 28 条独立单步初始化（system/network/packages/repo/db/k8s）
+├── init                                    # 29 条独立单步初始化（system/network/packages/repo/db/k8s）
 │   ├── firewall / selinux / swap / hadoop_user / bash
 │   ├── library / osSafeConf / system-conf / hugePage
 │   ├── hostname / allHost / ntpslave / ssh
 │   ├── bin_packages / tar / jdk8 / jdk17 / jdk21
 │   ├── offlineSlave / registryDecode
-│   ├── mysql_app_db
+│   ├── mysql_app_db / worker_local_properties
 │   └── docker / helm / helmify / kubectl / k8sBaseServices / k8sRegistryConf / kuboard
 └── upload                                  # 离线包上传
     └── registry
 ```
 
-`init` 28 条子命令的完整索引与 flag 公共参数见 `docs/commands/init/README.md`；每条子命令单独文档在 `docs/commands/init/{system,network,packages,repo,db,k8s}/<name>.md`。`init` 子命令语义是「在已登录的当前节点上单步本地初始化」；涉及「指定某个特定节点远程安装」（MySQL/Nexus/Rustfs/NTP Server/nmap/yum 离线源）已统一迁到 `create` 命令组。
+`init` 29 条子命令的完整索引与 flag 公共参数见 `docs/commands/init/README.md`；每条子命令单独文档在 `docs/commands/init/{system,network,packages,repo,db,k8s}/<name>.md`。`init` 子命令语义是「在已登录的当前节点上单步本地初始化」；涉及「指定某个特定节点远程安装」（MySQL/Nexus/Rustfs/NTP Server/nmap/yum 离线源）已统一迁到 `create` 命令组。
 
 `create cluster` 是入口，默认交互式先 plan 后 apply；加 `-y` 跳过确认；加 `--plan-only` 只 plan 不 apply。
 
