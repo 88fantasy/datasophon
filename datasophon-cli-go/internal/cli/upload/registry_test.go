@@ -1,10 +1,13 @@
 package upload
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -87,7 +90,7 @@ func TestRepositoryUploadBatch_DryRunDoesNotHitNetwork(t *testing.T) {
 	success, fail := task.repositoryUploadBatch(server.URL)
 
 	assert.Equal(t, 0, fail)
-	assert.Equal(t, 3, success)
+	assert.Equal(t, 4, success)
 }
 
 // TestResolveRepoTypeAndDir 覆盖 --files 路径推导规则：yum/apt 需要 <arch>/<os>/<file>
@@ -250,6 +253,104 @@ func TestUploadSpecificFiles_AutoGeneratesAndUploadsMissingMD5Sidecar(t *testing
 	wantSum, err := localMD5(pkgPath)
 	require.NoError(t, err)
 	assert.Equal(t, wantSum+"\n", string(md5Bytes))
+}
+
+func TestUploadSpecificFiles_RefreshesMD5AndFailsWhenSidecarUploadFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "raw", "packages")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
+	pkgPath := filepath.Join(pkgDir, "gravitino-1.3.0-bin.tar.gz")
+	require.NoError(t, os.WriteFile(pkgPath, []byte("new-package-content"), 0o644))
+	require.NoError(t, os.WriteFile(pkgPath+".md5", []byte("stale-md5\n"), 0o644))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.ParseMultipartForm(10<<20))
+		filename := r.MultipartForm.Value["asset0.filename"][0]
+		if strings.HasSuffix(filename, ".md5") {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{ProductPackagesPath: tmpDir, Username: "admin", Password: "admin", IsSuccessDelete: true}
+	success, fail := task.uploadSpecificFiles(server.URL, []string{"raw/packages/gravitino-1.3.0-bin.tar.gz"})
+
+	assert.Equal(t, 0, success)
+	assert.Equal(t, 1, fail)
+	assert.FileExists(t, pkgPath, "sidecar 上传失败时不能删除主包")
+	wantSum, err := localMD5(pkgPath)
+	require.NoError(t, err)
+	md5Bytes, err := os.ReadFile(pkgPath + ".md5")
+	require.NoError(t, err)
+	assert.Equal(t, wantSum+"\n", string(md5Bytes), "必须覆盖过期 sidecar")
+}
+
+func TestRepositoryUploadBatch_FailsWhenPackageSidecarUploadFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "raw", "packages")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "gravitino-1.3.0-bin.tar.gz"), []byte("package-content"), 0o644))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/service/rest/v1/search/assets":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		case "/service/rest/internal/ui/upload/raw":
+			require.NoError(t, r.ParseMultipartForm(10<<20))
+			filename := r.MultipartForm.Value["asset0.filename"][0]
+			if strings.HasSuffix(filename, ".md5") {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{ProductPackagesPath: tmpDir, Username: "admin", Password: "admin"}
+	success, fail := task.repositoryUploadBatch(server.URL)
+
+	assert.Equal(t, 1, success)
+	assert.Equal(t, 1, fail)
+}
+
+func TestUploadRegistry_DoRunReturnsErrorWhenSpecificPackageSidecarFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "raw", "packages")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "gravitino-1.3.0-bin.tar.gz"), []byte("package-content"), 0o644))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.ParseMultipartForm(10<<20))
+		filename := r.MultipartForm.Value["asset0.filename"][0]
+		if strings.HasSuffix(filename, ".md5") {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+	host, port, err := net.SplitHostPort(serverURL.Host)
+	require.NoError(t, err)
+
+	task := &UploadRegistry{
+		ProductPackagesPath: tmpDir,
+		WebHost:             host,
+		WebPort:             port,
+		Username:            "admin",
+		Password:            "admin",
+		Files:               []string{"raw/packages/gravitino-1.3.0-bin.tar.gz"},
+	}
+	task.EnableRegistry = true
+
+	require.Error(t, task.doRun(nil))
 }
 
 // TestUploadSpecificFiles_DoesNotGenerateMD5ForMetaFiles 覆盖边界：service_ddl.json /

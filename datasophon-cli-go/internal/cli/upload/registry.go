@@ -172,12 +172,18 @@ func (t *UploadRegistry) doRun(exec executor.Executor) error {
 		slog.Info("制品库上传开始（指定文件模式）", "url", baseURL, "count", len(t.Files))
 		success, fail := t.uploadSpecificFiles(baseURL, t.Files)
 		slog.Info("制品库上传完成", "success", success, "fail", fail)
+		if fail > 0 {
+			return fmt.Errorf("指定文件上传失败: %d 个", fail)
+		}
 		return nil
 	}
 	slog.Info("制品库上传开始", "url", baseURL)
 	success, fail := t.repositoryUploadBatch(baseURL)
 	t.uploadDocker(exec, baseURL)
 	slog.Info("制品库上传完成", "success", success, "fail", fail)
+	if fail > 0 {
+		return fmt.Errorf("安装包上传失败: %d 个", fail)
+	}
 	return nil
 }
 
@@ -262,13 +268,14 @@ func (t *UploadRegistry) uploadSpecificFiles(baseURL string, files []string) (in
 			uploaded = t.uploadHelm(baseURL, fullPath)
 		} else {
 			uploaded = t.uploadFile(baseURL, repoType, fullPath, directory, true)
-			// --files 是精确文件模式，没有整目录扫描兜底，sidecar 缺失时上传后必须
-			// 立即补传，不能像 repositoryUploadBatch 那样依赖后续 walk 顺带处理。
+			// --files 是精确文件模式，没有整目录扫描兜底。主包与当前内容对应的
+			// sidecar 必须都成功上传，Worker 才能完成 MD5 校验。
 			if uploaded && !t.DryRun && needsRawMD5Sidecar(repoType, fullPath, directory) {
-				if _, genErr := ensureLocalMD5Sidecar(repoType, fullPath, directory); genErr != nil {
+				if genErr := refreshLocalMD5Sidecar(fullPath); genErr != nil {
 					slog.Error("自动生成 MD5 sidecar 失败", "file", filepath.Base(fullPath), "err", genErr)
+					uploaded = false
 				} else {
-					t.uploadFile(baseURL, repoType, fullPath+".md5", directory, true)
+					uploaded = t.uploadFile(baseURL, repoType, fullPath+".md5", directory, true)
 				}
 			}
 		}
@@ -406,16 +413,55 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				} else {
 					dir = "/" + dir
 				}
-				// 本地缺 .md5 sidecar 的安装包先自动补算——generated 为 true 时该文件是
-				// 本次新建，不在这次 Walk 的目录快照里，下面的分支必须显式上传它；已存在
-				// 的 sidecar 本身就是 repoDir 下的普通条目，会被 Walk 自然遍历到并上传，
-				// 这里不用重复处理，否则会传两遍。
-				generated := false
-				if !t.DryRun {
-					var genErr error
-					if generated, genErr = ensureLocalMD5Sidecar(repoType, path, dir); genErr != nil {
-						slog.Error("自动生成 MD5 sidecar 失败", "file", filepath.Base(path), "err", genErr)
+				if repoType == "raw" && dir == "/packages" && strings.HasSuffix(path, ".md5") {
+					return nil
+				}
+				if needsRawMD5Sidecar(repoType, path, dir) {
+					if t.DryRun {
+						if t.uploadFile(baseURL, repoType, path, dir, true) {
+							success++
+						} else {
+							fail++
+						}
+						if t.uploadFile(baseURL, repoType, path+".md5", dir, true) {
+							success++
+						} else {
+							fail++
+						}
+						return nil
 					}
+					if genErr := refreshLocalMD5Sidecar(path); genErr != nil {
+						slog.Error("生成 MD5 sidecar 失败", "file", filepath.Base(path), "err", genErr)
+						fail++
+						return nil
+					}
+					assetName := dir + "/" + filepath.Base(path)
+					if remoteMD5 := t.nexusMD5(baseURL, repoType, assetName); remoteMD5 != "" {
+						localSum, readErr := os.ReadFile(path + ".md5")
+						if readErr == nil && strings.EqualFold(strings.TrimSpace(string(localSum)), remoteMD5) {
+							if t.uploadFile(baseURL, repoType, path+".md5", dir, true) {
+								success++
+							} else {
+								fail++
+							}
+							return nil
+						}
+					}
+					if !t.uploadFile(baseURL, repoType, path, dir, true) {
+						fail++
+						return nil
+					}
+					success++
+					if !t.uploadFile(baseURL, repoType, path+".md5", dir, true) {
+						fail++
+						return nil
+					}
+					success++
+					if t.IsSuccessDelete {
+						_ = os.Remove(path)
+						_ = os.Remove(path + ".md5")
+					}
+					return nil
 				}
 				// 优先用同名 .md5 sidecar 文件做幂等检查（dry-run 不发起该只读查询，统一走下方
 				// uploadFile 的 [dry-run] 短路分支）
@@ -427,9 +473,6 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 					}
 					if remoteMD5 := t.nexusMD5(baseURL, repoType, assetName); remoteMD5 != "" && strings.EqualFold(localSum, remoteMD5) {
 						slog.Info("MD5 sidecar 一致，跳过上传", "file", filepath.Base(path))
-						if generated {
-							t.uploadFile(baseURL, repoType, path+".md5", dir, true)
-						}
 						return nil
 					}
 				}
@@ -437,9 +480,6 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				ok := t.uploadFile(baseURL, repoType, path, dir, true)
 				if ok {
 					success++
-					if generated {
-						t.uploadFile(baseURL, repoType, path+".md5", dir, true)
-					}
 					if t.IsSuccessDelete {
 						_ = os.Remove(path)
 					}
@@ -508,9 +548,9 @@ func localMD5(filePath string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-// generateLocalMD5Sidecar 计算 filePath 的本地 MD5，写入 filePath+".md5"（末尾带换行，
-// 与仓库里已有 sidecar 文件的格式一致）。
-func generateLocalMD5Sidecar(filePath string) error {
+// refreshLocalMD5Sidecar 计算 filePath 的当前 MD5 并覆盖写入 sidecar（末尾带换行），
+// 避免安装包被重新下载或替换后仍上传过期校验和。
+func refreshLocalMD5Sidecar(filePath string) error {
 	sum, err := localMD5(filePath)
 	if err != nil {
 		return err
@@ -523,22 +563,6 @@ func generateLocalMD5Sidecar(filePath string) error {
 // 侧下载安装包前才会对 packages/<file>.md5 发起真实 GET 校验，其余文件不受影响。
 func needsRawMD5Sidecar(repoType, filePath, directory string) bool {
 	return repoType == "raw" && directory == "/packages" && !strings.HasSuffix(filePath, ".md5")
-}
-
-// ensureLocalMD5Sidecar 若 filePath 需要 sidecar 且本地缺失，自动计算生成（末尾带换行，
-// 与仓库里已有 sidecar 文件格式一致）。generated=true 表示本次新建，调用方据此判断是否
-// 还需要主动把这个新文件传到 Nexus（已存在的 sidecar 各调用点自有兜底机制，不重复处理）。
-func ensureLocalMD5Sidecar(repoType, filePath, directory string) (generated bool, err error) {
-	if !needsRawMD5Sidecar(repoType, filePath, directory) {
-		return false, nil
-	}
-	if _, statErr := os.Stat(filePath + ".md5"); statErr == nil {
-		return false, nil
-	}
-	if genErr := generateLocalMD5Sidecar(filePath); genErr != nil {
-		return false, genErr
-	}
-	return true, nil
 }
 
 // uploadFile 用 multipart/form-data 上传单个文件到 Nexus 内部 UI 接口。

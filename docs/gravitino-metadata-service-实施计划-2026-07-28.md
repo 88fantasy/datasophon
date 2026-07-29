@@ -35,13 +35,13 @@ e4edaa46 feat(package): 新增 Apache Gravitino 元数据服务
 
 **用户已确认的决策**：
 
-| 决策项 | 选择 |
-|---|---|
-| 集成深度 | **仅作为可部署服务纳管**（DDL + 模板 + hooks），不做平台元数据管理 UI |
-| entity store | **复用平台 MySQL**（新建 `gravitino` 库），不用默认 H2 |
-| Iceberg REST 辅助服务 | **不启用**（只跑 8090 核心 metadata server） |
-| status 退出码修正方式 | **`append_line` 改官方 `bin/gravitino.sh`**，不引入自带 control 脚本 |
-| 验证环境 | **`deploy/deployment-standalone-doris.md` 的五节点集群** |
+|        决策项        |                            选择                             |
+|-------------------|-----------------------------------------------------------|
+| 集成深度              | **仅作为可部署服务纳管**（DDL + 模板 + hooks），不做平台元数据管理 UI             |
+| entity store      | **复用平台 MySQL**（新建 `gravitino` 库），不用默认 H2                  |
+| Iceberg REST 辅助服务 | **不启用**（只跑 8090 核心 metadata server）                       |
+| status 退出码修正方式    | **`append_line` 改官方 `bin/gravitino.sh`**，不引入自带 control 脚本 |
+| 验证环境              | **`deploy/deployment-standalone-doris.md` 的五节点集群**        |
 
 **目标产出**：用户在 Datasophon Web 上能像装 NACOS 一样选中 GRAVITINO、填参数、部署、启停、看状态、点快捷链接进 Gravitino Web UI，指标自动进 OTel → Doris。
 
@@ -86,9 +86,9 @@ e4edaa46 feat(package): 新增 Apache Gravitino 元数据服务
 在 `mysql.appDbs` 数组末尾（现有 datasophon / hive / dolphinscheduler / nacos / datart 等 9 条之后）追加：
 
 ```yaml
-    - account: "gravitino"
-      password: "fI5sQ4yQ4fP5"
-      dbName: "gravitino"
+- account: "gravitino"
+  password: "fI5sQ4yQ4fP5"
+  dbName: "gravitino"
 ```
 
 **库和账号由集群初始化阶段建好，服务安装期只建表**——这是仓库既有的职责划分（NACOS/DS 都如此）。**目标沙箱环境已完成初始化，这条 appDbs 改动不会自动生效到已存在的集群**，需在 `ddh-01` 手工补一次（见验证阶段三第 0 步）。
@@ -125,13 +125,13 @@ e4edaa46 feat(package): 新增 Apache Gravitino 元数据服务
 
 **`hooks`（POST_INSTALL，按数组顺序执行，顺序不能乱）**：
 
-| # | action | 作用 |
-|---|---|---|
-| 1 | `append_line` | 给 `bin/gravitino.sh` 注入 status 退出码（**已实测核对，见下方阶段一**） |
-| 2 | `download` | `script/V1.3.0__DDL.sql` → `db/migration/V1.3.0__DDL.sql`（md5: `c2b983facc83a01b522c4ec585213125`） |
-| 3 | `link` | worker 的 `lib/mysql-connector-j-8.2.0.jar` → `libs/mysql-connector-j-8.2.0.jar` |
-| 4 | `link` | worker 的 `otel/opentelemetry-javaagent.jar` → `otel/opentelemetry-javaagent.jar` |
-| 5 | `initDb` | 建表（见下） |
+| # |    action     |                                                 作用                                                 |
+|---|---------------|----------------------------------------------------------------------------------------------------|
+| 1 | `append_line` | 给 `bin/gravitino.sh` 注入 status 退出码（**已实测核对，见下方阶段一**）                                               |
+| 2 | `download`    | `script/V1.3.0__DDL.sql` → `db/migration/V1.3.0__DDL.sql`（md5: `c2b983facc83a01b522c4ec585213125`） |
+| 3 | `link`        | worker 的 `lib/mysql-connector-j-8.2.0.jar` → `libs/mysql-connector-j-8.2.0.jar`                    |
+| 4 | `link`        | worker 的 `otel/opentelemetry-javaagent.jar` → `otel/opentelemetry-javaagent.jar`                   |
+| 5 | `initDb`      | 建表（见下）                                                                                             |
 
 第 3、4 条的 `source` 直接照抄 `DS/service_ddl.json:74,82` 的 `${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/...` 写法。
 
@@ -188,19 +188,19 @@ e4edaa46 feat(package): 新增 Apache Gravitino 元数据服务
 
 **`parameters`（实际落地，11 项）**：
 
-| name | defaultValue | 备注 |
-|---|---|---|
-| `gravitino.server.webserver.host` | `0.0.0.0` | |
-| `gravitino.server.webserver.httpPort` | `8090` | `port: true`, `register: true` |
-| `gravitino.entity.store` | `relational` | `hidden: true` |
-| `gravitino.entity.store.relational` | `JDBCBackend` | `hidden: true` |
-| `gravitino.entity.store.relational.jdbcUrl` | `jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/gravitino?...` | 照抄 NACOS `nacosDbUrl:148` 的占位符写法 |
-| `gravitino.entity.store.relational.jdbcDriver` | `com.mysql.cj.jdbc.Driver` | 8.x 驱动类名，非 `com.mysql.jdbc.Driver` |
-| `gravitino.entity.store.relational.jdbcUser` | `gravitino` | |
-| `gravitino.entity.store.relational.jdbcPassword` | `fI5sQ4yQ4fP5` | 与 appDbs 一致 |
-| `gravitino.audit.enabled` | `false` | `type: switch` |
-| `javaHome` | `$JAVA_HOME17` | KYUUBI 同款写法，只喂给 env 模板 |
-| `gravitinoMem` | `-Xms1024m -Xmx2048m -XX:MaxMetaspaceSize=512m` | 只喂给 env 模板，不进 gravitino.conf |
+|                       name                       |                       defaultValue                       |                 备注                 |
+|--------------------------------------------------|----------------------------------------------------------|------------------------------------|
+| `gravitino.server.webserver.host`                | `0.0.0.0`                                                |                                    |
+| `gravitino.server.webserver.httpPort`            | `8090`                                                   | `port: true`, `register: true`     |
+| `gravitino.entity.store`                         | `relational`                                             | `hidden: true`                     |
+| `gravitino.entity.store.relational`              | `JDBCBackend`                                            | `hidden: true`                     |
+| `gravitino.entity.store.relational.jdbcUrl`      | `jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/gravitino?...` | 照抄 NACOS `nacosDbUrl:148` 的占位符写法   |
+| `gravitino.entity.store.relational.jdbcDriver`   | `com.mysql.cj.jdbc.Driver`                               | 8.x 驱动类名，非 `com.mysql.jdbc.Driver` |
+| `gravitino.entity.store.relational.jdbcUser`     | `gravitino`                                              |                                    |
+| `gravitino.entity.store.relational.jdbcPassword` | `fI5sQ4yQ4fP5`                                           | 与 appDbs 一致                        |
+| `gravitino.audit.enabled`                        | `false`                                                  | `type: switch`                     |
+| `javaHome`                                       | `$JAVA_HOME17`                                           | KYUUBI 同款写法，只喂给 env 模板             |
+| `gravitinoMem`                                   | `-Xms1024m -Xmx2048m -XX:MaxMetaspaceSize=512m`          | 只喂给 env 模板，不进 gravitino.conf       |
 
 > `gravitino.conf.template` 里还有 shutdown.timeout / minThreads / maxThreads / cache.* 等项。生成的文件会**整体覆盖** `conf/gravitino.conf`，未写进 `includeParams` 的键将不复存在、退回代码内默认值。以「暴露上表 9 个 gravitino.* 项 + 其余走代码内默认」为准；若阶段三实测发现某项代码默认值与模板文件不符且影响运行，再补进 parameters。
 
@@ -305,19 +305,19 @@ curl -XPOST -H "X-Internal-Token: <INTERNAL_TOKEN>" \
 
 按顺序验证，每步都是下一步的前提：
 
-| # | 步骤 | 验收标准 |
-|---|---|---|
-| 0 | 在 **ddh-01** 建库账号：`datasophon-cli init mysql_app_db --rootPassword <MYSQL_ROOT_PASSWORD> -a gravitino -p fI5sQ4yQ4fP5 -d gravitino --mysqlPort 3306` | `mysql -e "SHOW DATABASES"` 可见 `gravitino` |
-| 1 | 前端安装向导选 GRAVITINO，角色分配到 ddh-02 | 5 个 hook 全部成功（Worker 日志） |
-| 2 | **核对 append_line 真的生效**（坑 #2 的验证点，本地已静态核实，仍需在真实安装产物上复核一次） | ddh-02 上 `sed -n '44,55p' <安装目录>/bin/gravitino.sh` 能看到注入的 `exit 1` 行 |
-| 3 | **initDb 建表结果**（本仓库**首次实际使用**该 hook，最大不确定项） | `mysql gravitino -e "SHOW TABLES"` 有 `metalake_meta`/`catalog_meta`/`schema_meta`/`table_meta` 等；datasophon 库 `t_ddh_srv_db_migration_history` 有 `resource_key='GRAVITINO', version='1.3.0', success=1` |
-| 4 | 配置文件与软链 | `conf/gravitino.conf` jdbcUrl 指向 192.168.10.131；`conf/gravitino-env.sh` 含 `JAVA_HOME17` 与 javaagent；`ls -l libs/mysql-connector-j-8.2.0.jar` 软链有效 |
-| 5 | 启动 | 服务变 RUNNING；`curl -H "Accept: application/vnd.gravitino.v1+json" http://192.168.10.132:8090/api/version` 返回 1.3.0 |
-| 6 | **status 退出码**（本次专门修的坑） | 手工 `kill` 掉进程，平台在下一轮巡检（15s/30s）把角色标为**非 RUNNING**。仍显示 RUNNING = 第 2 步的注入没生效 |
-| 7 | 停止 / 重启 | 前端操作，状态正确翻转 |
-| 8 | 快捷链接 | 点 "Gravitino UI" 打开 Web UI，**创建一个 metalake**（验证 MySQL 后端真正可写，比只看首页有意义） |
-| 9 | 指标 | `curl http://192.168.10.132:8090/prometheus/metrics` 有输出；ddh-02 的 `otelcol.yaml` 出现 `job_name: 'GravitinoServer'` + `metrics_path: '/prometheus/metrics'`；等一个抓取周期后查 Doris（见下） |
-| 10 | Trace | 链路跟踪工作台能看到 `otel.service.name=gravitino` 的调用 |
+| #  |                                                                          步骤                                                                          |                                                                                                  验收标准                                                                                                   |
+|----|------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0  | 在 **ddh-01** 建库账号：`datasophon-cli init mysql_app_db --rootPassword <MYSQL_ROOT_PASSWORD> -a gravitino -p fI5sQ4yQ4fP5 -d gravitino --mysqlPort 3306` | `mysql -e "SHOW DATABASES"` 可见 `gravitino`                                                                                                                                                              |
+| 1  | 前端安装向导选 GRAVITINO，角色分配到 ddh-02                                                                                                                       | 5 个 hook 全部成功（Worker 日志）                                                                                                                                                                                |
+| 2  | **核对 append_line 真的生效**（坑 #2 的验证点，本地已静态核实，仍需在真实安装产物上复核一次）                                                                                            | ddh-02 上 `sed -n '44,55p' <安装目录>/bin/gravitino.sh` 能看到注入的 `exit 1` 行                                                                                                                                    |
+| 3  | **initDb 建表结果**（本仓库**首次实际使用**该 hook，最大不确定项）                                                                                                          | `mysql gravitino -e "SHOW TABLES"` 有 `metalake_meta`/`catalog_meta`/`schema_meta`/`table_meta` 等；datasophon 库 `t_ddh_srv_db_migration_history` 有 `resource_key='GRAVITINO', version='1.3.0', success=1` |
+| 4  | 配置文件与软链                                                                                                                                              | `conf/gravitino.conf` jdbcUrl 指向 192.168.10.131；`conf/gravitino-env.sh` 含 `JAVA_HOME17` 与 javaagent；`ls -l libs/mysql-connector-j-8.2.0.jar` 软链有效                                                       |
+| 5  | 启动                                                                                                                                                   | 服务变 RUNNING；`curl -H "Accept: application/vnd.gravitino.v1+json" http://192.168.10.132:8090/api/version` 返回 1.3.0                                                                                       |
+| 6  | **status 退出码**（本次专门修的坑）                                                                                                                              | 手工 `kill` 掉进程，平台在下一轮巡检（15s/30s）把角色标为**非 RUNNING**。仍显示 RUNNING = 第 2 步的注入没生效                                                                                                                             |
+| 7  | 停止 / 重启                                                                                                                                              | 前端操作，状态正确翻转                                                                                                                                                                                             |
+| 8  | 快捷链接                                                                                                                                                 | 点 "Gravitino UI" 打开 Web UI，**创建一个 metalake**（验证 MySQL 后端真正可写，比只看首页有意义）                                                                                                                                  |
+| 9  | 指标                                                                                                                                                   | `curl http://192.168.10.132:8090/prometheus/metrics` 有输出；ddh-02 的 `otelcol.yaml` 出现 `job_name: 'GravitinoServer'` + `metrics_path: '/prometheus/metrics'`；等一个抓取周期后查 Doris（见下）                           |
+| 10 | Trace                                                                                                                                                | 链路跟踪工作台能看到 `otel.service.name=gravitino` 的调用                                                                                                                                                            |
 
 第 9 步的 Doris 查询（在 ddh-01）：
 
@@ -370,19 +370,19 @@ GROUP BY metric_name LIMIT 20;
 
 ## 进度跟踪
 
-| # | 阶段 | 内容 | 验证方式 | 状态 |
-|---|---|---|---|---|
-| 1 | 准备 | 建分支 `feat/gravitino-metadata-service` | `git branch` | ✅ |
-| 2 | 包 | manifest.json 加条目 + 真实下载核实 | 实测行号/唯一性/schema 目录 | ✅ |
-| 3 | 库 | cluster-config.yml appDbs 加 gravitino | `make test` 通过 | ✅ |
-| 4 | 行号核对 | 解压真实包核对 gravitino.sh 第 48/49 行 + 文本唯一性 | `sed` + `grep -c` 结果为 0 | ✅ |
-| 5 | 资源 | V1.3.0__DDL.sql + gravitino-env.ftl | 文件就位，md5 已记入 DDL | ✅ |
-| 6 | DDL | service_ddl.json 全字段（含 5 个 hook） | JSON 可解析 | ✅ |
-| 7 | 监控 | OtelScrapeConfigBuilder PATH_OVERRIDES | `mvnw test` 12/12 绿 + Checkstyle 0 违规 | ✅ |
-| 7.5 | 顺带修复 | verify_decompress.py 两处路径 bug | 实跑，DS/valkey/mysqld_exporter 核验通过 | ✅ |
-| 8 | 入库 | 上传 Nexus + meta 热刷新 | frame_service 出现 GRAVITINO | ✅(2026-07-29) |
-| 9 | 端到端 | ddh-02 实机 11 步（重点 #2 注入生效、#3 initDb、#6 退出码） | 浏览器实机 + Doris 查询 | ✅(2026-07-29，详见下方「验证 / 阶段三」实际执行记录) |
-| 10 | 收尾 | PR + 回写手册 | `spotless:apply` 已跑（本任务范围内文件无违规）；`deployment-standalone-doris.md` §7.13 已回写 | ✅(2026-07-29) |
+|  #  |  阶段  |                     内容                      |                                    验证方式                                     |                 状态                 |
+|-----|------|---------------------------------------------|-----------------------------------------------------------------------------|------------------------------------|
+| 1   | 准备   | 建分支 `feat/gravitino-metadata-service`       | `git branch`                                                                | ✅                                  |
+| 2   | 包    | manifest.json 加条目 + 真实下载核实                  | 实测行号/唯一性/schema 目录                                                          | ✅                                  |
+| 3   | 库    | cluster-config.yml appDbs 加 gravitino       | `make test` 通过                                                              | ✅                                  |
+| 4   | 行号核对 | 解压真实包核对 gravitino.sh 第 48/49 行 + 文本唯一性      | `sed` + `grep -c` 结果为 0                                                     | ✅                                  |
+| 5   | 资源   | V1.3.0__DDL.sql + gravitino-env.ftl         | 文件就位，md5 已记入 DDL                                                            | ✅                                  |
+| 6   | DDL  | service_ddl.json 全字段（含 5 个 hook）            | JSON 可解析                                                                    | ✅                                  |
+| 7   | 监控   | OtelScrapeConfigBuilder PATH_OVERRIDES      | `mvnw test` 12/12 绿 + Checkstyle 0 违规                                       | ✅                                  |
+| 7.5 | 顺带修复 | verify_decompress.py 两处路径 bug               | 实跑，DS/valkey/mysqld_exporter 核验通过                                           | ✅                                  |
+| 8   | 入库   | 上传 Nexus + meta 热刷新                         | frame_service 出现 GRAVITINO                                                  | ✅(2026-07-29)                      |
+| 9   | 端到端  | ddh-02 实机 11 步（重点 #2 注入生效、#3 initDb、#6 退出码） | 浏览器实机 + Doris 查询                                                            | ✅(2026-07-29，详见下方「验证 / 阶段三」实际执行记录) |
+| 10  | 收尾   | PR + 回写手册                                   | `spotless:apply` 已跑（本任务范围内文件无违规）；`deployment-standalone-doris.md` §7.13 已回写 | ✅(2026-07-29)                      |
 
 第 10 步的「回写手册」：在 `deploy/deployment-standalone-doris.md` 追加一节现场记录（该文档的既有惯例，如 §7.7 NACOS、§7.12 VALKEY），凭据一律用占位符。
 
@@ -407,3 +407,4 @@ GROUP BY metric_name LIMIT 20;
    - PR 描述写清楚「已知限制」章节内容 + 本次阶段三额外修复的 3 个平台级 bug（尤其是 worker.local.properties 这条，影响所有服务而不只是 Gravitino，PR 描述要点明这是顺带修复的独立问题）。
    - `deploy/deployment-standalone-doris.md` 追加一节现场记录（参照既有 §7.7 NACOS、§7.12 VALKEY 惯例），凭据用占位符。
    - 沙箱 ddh-01 的 `datasophon-api` 已手动替换为最新 jar 并重启，属于会话内的环境热修复，不需要额外操作；但 `datasophon-cli-go` 新增的 `init-worker-mysql-conf` Step 需要**新建集群**才会自动执行，本次沙箱是历史初始化产物，未走到这一步（已用环境热修复方式绕过，验证充分）。
+
