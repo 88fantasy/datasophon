@@ -56,12 +56,12 @@ T8 (埋点) ─────── 贯穿
 
 **建议交付批次**：
 
-|  批次   |      任务      |                                       理由                                        |
-|-------|--------------|---------------------------------------------------------------------------------|
-| 第 1 批 | T1 · T2 · T0 | 纯结构 + 纯内存逻辑，不依赖 L0，可完整单测。**已交付，但三轮自审提出返工项**：T1 见「唯一键的坑 ①」，T2 见 §2.1b 的 R1/R2/R3 |
-| 第 2 批 | T3 · T6      | 写路径（L0 阻塞项留 TODO）+ 租约。**T3 须配合 F1 改用 `ON DUPLICATE KEY UPDATE` 抢占身份行**          |
-| 第 3 批 | T4 · T5      | 查询 API + BFS                                                                    |
-| 第 4 批 | T7 · T8      | 补齐验收与埋点                                                                         |
+|  批次   |       任务        |                                                                                 理由                                                                                  |
+|-------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 第 1 批 | T1 · T2 · T0    | 纯结构 + 纯内存逻辑，不依赖 L0，可完整单测。**已交付，但三轮自审提出返工项**：T1 见「唯一键的坑 ①」，T2 见 §2.1b 的 R1/R2/R3                                                                                     |
+| 第 2 批 | R1-R5 · T3 · T6 | **先做 §2.1b 的 R1-R5 返工**，再写路径（L0 阻塞项留 TODO）+ 租约。T3 须配合 F1 改用 `ON DUPLICATE KEY UPDATE` 抢占身份行；`MysqlSnapshotLoader` 属于本批（见 §3.0 D12）。开工决策见 **§3.0**、T6 实现定稿见 **§6.1** |
+| 第 3 批 | T4 · T5         | 查询 API + BFS                                                                                                                                                        |
+| 第 4 批 | T7 · T8         | 补齐验收与埋点                                                                                                                                                             |
 
 ---
 
@@ -374,6 +374,167 @@ private synchronized void publishIfNewer(Snapshot next) {
 
 > **架构文档 §3.4.4。本任务含 L0 阻塞项，见 §0.2。**
 
+### 3.0 第 2 批开工决策（2026-07-30 补，填规格沉默处）
+
+> **为什么有这一节**：第 1 批的 F1/F2/F3/F5 四个缺陷**全部源自规格的沉默**（唯一性、环的定义、
+> 字段谁填、事务谁开），实现方照字面做，双方都不觉得自己错。下面 16 条是 T3/T6 里同样
+> 「规格没说、实现必然要默认一个」的位置，**逐条定死**。每条给了理由，与理由冲突的实现不算实现。
+> 标 `L0` 的条目仍按 §0.2 只写骨架 + TODO。
+
+#### D1 端点、路由与拦截器（**最容易漏，且单测不会暴露**）
+
+- `LineageV2Controller extends ApiController` + `@RequestMapping("/v2")`，本批只交付 `POST /v2/lineage`。
+  查询端点与 `POST /v2/lineage/rebuild` **留给 T4**。
+- 外部实际路径是 `/ddh/v2/lineage` —— `/ddh` 前缀由 `AppConfiguration.configurePathMatch()` 对
+  `ApiController` 子类自动追加，**不要在 `@RequestMapping` 里手写 `/ddh`**。
+- **必须**把 `/v2/lineage` 同时加进 `AppConfiguration.addInterceptors()` 的 **login** 与 **csrf**
+  两处 `getRealExcludeUrl(...)`（`AppConfiguration.java:128` 与 `:150`）。
+  漏掉的后果：Gravitino http sink 收到 302/401，而 `@WebMvcTest` 不加载拦截器链，**测试全绿**。
+- 该端点本批**无鉴权**，是已知缺口。加 `// TODO(L2): 接 Gravitino 时补共享 token 校验`，
+  **不要现在自创鉴权机制** —— 与 L2 下发的 sink 配置对不上就是白写。
+- 返回值直接返回 POJO，由 `V2ResponseBodyAdvice` 包 `ApiResponse`；**不要手写信封**。
+
+#### D2 `clusterId` 从哪来
+
+事件体里**没有集群概念**，而 `t_ddh_data_job` 的身份键含 `cluster_id`。
+
+**定**：`POST /v2/lineage?clusterId=N`，必填 query 参数，缺失/非法 → 400。
+理由：sink URL 由 L2 的 `service_ddl.json` 下发，属于「配置即真相」；从 `job.namespace`
+反推集群是臆造映射。标 `// TODO(L0-#2)`：若实机采样显示 namespace 已含集群标识，改为可选覆盖。
+
+#### D3 哪些事件参与结构判定 + 空结构保护
+
+|            eventType             | 写 `t_ddh_lineage_event` | 参与结构判定 |
+|----------------------------------|-------------------------|--------|
+| `START` / `RUNNING` / `COMPLETE` | ✅                       | ✅      |
+| `FAIL` / `ABORT`                 | ✅                       | ❌      |
+
+`FAIL`/`ABORT` 只记 event + `parse_log`：作业失败时其声明的结构未必生效，让失败运行改写 current
+等于用未完成的事实覆盖已完成的事实。
+
+**空结构保护（硬要求）**：解析后 inputs 与 outputs **同时为空** → 记
+`parse_log(status='SKIPPED_EMPTY')` 并返回 200，**绝不进入结构判定**。
+缺这条时，Spark `START` 事件常见的空 dataset 列表会把已有结构整体清空，
+而"结构变了"的判定逻辑会认为这是一次合法的结构变更。
+
+#### D4 幂等插入必须在主事务内
+
+`INSERT IGNORE INTO t_ddh_lineage_event` **与结构写入同事务、同生共死**。
+
+放事务外的后果：死锁重试时幂等行已存在 → 重试被判定为"重复投递"直接返回 → **该事件永久丢失**，
+且 event 表里留下一条看起来处理成功的记录。影响行数 = 0 时事务内直接返回即可（无副作用）。
+
+#### D5 死锁重试
+
+- 触发条件：`SQLState 40001`、`MySQLTransactionRollbackException`、Spring 的
+  `CannotAcquireLockException` / `DeadlockLoserDataAccessException`。**其他异常一律不重试**。
+- 3 次，退避 50 / 100 / 200 ms + ±20% 抖动。重试的是**整个事务**（含 D4 的幂等 INSERT）。
+- 重试用尽 → 抛出 → 端点 500，让上游重投；幂等表保证重投不会写重。
+
+#### D6 作业身份抢占（配合 F1）
+
+```sql
+INSERT INTO t_ddh_data_job (cluster_id, engine, job_name, job_type, state)
+VALUES (?, ?, ?, 'UNKNOWN', 'UNKNOWN')
+ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id);
+-- 再用拿到的 id：
+SELECT current_structural_hash, current_watermark FROM t_ddh_data_job WHERE id = ? FOR UPDATE;
+```
+
+- **不得**用 `SELECT ... FOR UPDATE` 打头再 INSERT（行不存在时锁不住任何东西，见 T1「唯一键的坑 ①」）。
+- `job_type` 是 `NOT NULL` **且无默认值**，事件里推不出来 → 显式写 `'UNKNOWN'`。
+  漏了会在运行期报 1364，而不是编译期。
+
+#### D7 节点 upsert 与固定加锁顺序
+
+本次事件涉及的全部 `canonical_name` 先 **去重 + 字典序排序**，再逐个 upsert（这就是 §3.2 加锁顺序的落地）：
+
+```sql
+INSERT INTO t_ddh_lineage_node (connector, catalog_name, database_name, table_name,
+                                canonical_name, dw_layer, first_seen, last_seen)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?) AS new
+ON DUPLICATE KEY UPDATE last_seen = GREATEST(t_ddh_lineage_node.last_seen, new.last_seen),
+                        id = LAST_INSERT_ID(id);
+```
+
+- 用 8.0.19+ 的行别名 `AS new` 语法（本机 MySQL 8.0.39 支持），不要用已弃用的 `VALUES()`。
+- `first_seen` 只在 INSERT 时写入，永不更新。
+- `last_seen` 用 `GREATEST` 而非直接赋值 —— 乱序到达时直接赋值会让时间**回退**。
+
+#### D8 两个 hash 的定义（决定验收 6 能否通过）
+
+|         量         |                                                       定义                                                       |
+|-------------------|----------------------------------------------------------------------------------------------------------------|
+| `structural_hash` | `sha256(sorted(distinct(input canonical_name)) + "->" + sorted(distinct(output canonical_name)))`，UTF-8，小写 hex |
+| `content_hash`    | `sha256(definition_text)`                                                                                      |
+| `definition_text` | 优先 `job.facets.sql.query`；缺失时用字段顺序固定的 `{"inputs":[...],"outputs":[...]}` JSON                                  |
+
+两者**不是同一个东西**，不要合并。验收 6（A→B→A 产生 version 3 且 `content_hash` 与 version 1 相同）
+只有在 `content_hash` 由 `definition_text` 决定、且 `definition_text` 对相同结构稳定时才成立。
+
+#### D9 `watermark`（L0-#8 阻塞）
+
+`WatermarkExtractor` 接口 + 默认实现，取值优先级：
+`run.facets.nominalTime.nominalStartTime` → `eventTime` → `received_at`（`System.currentTimeMillis()`）。
+单位统一为 epoch 毫秒。**降级到 `received_at` 时必须写 `parse_log(status='DEGRADED_WATERMARK')`** ——
+否则乱序恢复时的误判在事后完全不可追溯。标 `// TODO(L0-#8)`。
+
+#### D10 `canonical_name`（L0-#2 阻塞，**整个 epic 的生死点**）
+
+`CanonicalNameResolver` 接口 + 一个默认实现，按 §3.3 的
+`<connector>://<catalog>/<database>/<table>` 从 `dataset.namespace` / `dataset.name` 切分。
+
+**只写一种最直白的切分**并标 `// TODO(L0-#2): 拼写未实机确认`。
+**不要写多分支猜测** —— 猜错时多分支会让错误静默兜住，实机采样后反而看不出哪条是对的。
+解析不出 → `parse_log(status='UNRESOLVED_DATASET')` + 整个事件 SKIPPED，**不做部分写入**
+（半张图比没有图更难排查）。
+
+#### D11 structural hash 归一（L0-#7 阻塞）
+
+`StructuralHashCalculator` 内预留 `NameNormalizer` 策略接口，默认恒等实现 + `// TODO(L0-#7)`。
+**不要现在写日期分区 / 临时表正则**。
+
+#### D12 `MysqlSnapshotLoader` 属于本批（别漏）
+
+第 1 批的 `SnapshotLoader` 只有接口。**R5 的真实 MySQL 读一致性验收没有它就无法执行**，
+且第 1 批 commit 已声明「权威 DB 读取属于 T3」。本批必须交付：
+
+- 单次 `load()` 内先读 generation，再分页读 node 与 `is_current = 1` 的 edge（按 `id` 范围，每批 1 万）
+- 事务边界**由 Coordinator 的 `TransactionTemplate` 提供**（R5）；loader 内**不得**出现
+  `@Transactional`、不得自取连接 —— 这是纪律 ④ 的机械验证点
+- 同一 `(src, dst)` 多作业 → 图上一条逻辑边 + 多个 `JobRef`
+- 分页大小必须是 package-private 构造参数，否则 R5 的撕裂用例造不出竞态
+
+#### D13 Coordinator 装配
+
+本批新增配置类把 `LineageRebuildCoordinator` 注册为 `@Bean`（`@Component` 一直没加是有意为之，
+见交接文档）：注入 `TransactionTemplate`（`ISOLATION_REPEATABLE_READ` + `readOnly`）、
+`MysqlSnapshotLoader`、`LineageGraphSnapshotHolder`。`@EnableScheduling` 已在
+`DataSophonApplicationServer.java:49` 开启，无需再加。启动加载失败**整体 try-catch，不阻断 Master 启动**。
+
+#### D14 埋点：不引入新依赖
+
+仓库**没有** micrometer / actuator 依赖。四个计数器（`event_total` · `structure_change_total` ·
+`edge_rows_written_total` · `last_seen_rows_updated_total`）+ `deadlockRetry` 沿用
+`RebuildMetrics` 的「接口 + `NOOP` 默认实现」模式新增 `IngestMetrics`，T8 再接真实 registry。
+**不要为了埋点引入 spring-boot-starter-actuator。**
+
+#### D15 测试约定（真实 MySQL）
+
+本机 MySQL 8.0.39 已就绪：`127.0.0.1:3306`，`root` / `localmysql`，默认隔离级别 `REPEATABLE-READ`。
+
+- 真实 MySQL 用例一律打 `@Tag("mysql")`；`datasophon-api/pom.xml` 的 surefire 增加
+  `<excludedGroups>mysql</excludedGroups>`，保证无 MySQL 环境 `./mvnw test` 仍全绿
+- 测试基类自建 `HikariDataSource`，连接串从系统属性 `lineage.test.mysql.url` 读，
+  默认 `jdbc:mysql://127.0.0.1:3306/datasophon_lineage_test?...`；
+  `@BeforeAll` 里 `CREATE DATABASE IF NOT EXISTS` + **执行 classpath 上的 `V2.2.5__DDL.sql`**
+  （与生产迁移同源，禁止在测试里手抄一份建表语句 —— 抄本会随 DDL 演进而失真）
+- **独立测试库**，不要往 `datasophon` 主库里灌并发/死锁数据
+- **不新增 `@SpringBootTest`**；ingest 端点用 `@WebMvcTest` + mock service（验收 23）
+- R5 隔离级别用例按隔离级别**参数化**：`REPEATABLE_READ` 断言快照一致，
+  `READ_COMMITTED` 断言**出现撕裂**。若 `READ_COMMITTED` 下也没撕裂，说明用例没造出竞态，
+  同样判定为失败 —— 否则它只是又一个"验证假想中正确实现"的测试（F5 的教训）
+
 ### 产出
 
 ```text
@@ -585,9 +746,34 @@ Guava 邻接集合的迭代顺序**不是稳定契约**。不排序会导致同�
 
 **要点**：租约必须用**独立连接**持有（连接归还池即释放锁，不能复用业务连接）。部署文档需补充升级交接流程与租约超时时长，避免蓝绿发布期间新实例长时间不可用。
 
+### 6.1 实现定稿（2026-07-30 补）
+
+**选 `GET_LOCK`，不建租约表** —— 会话锁在连接断开时由 MySQL 自动释放，省掉租约表方案必须自己写对的
+「过期判定 + fencing token + 时钟漂移」三件事。本仓库是确定的单 Master（见上方「背景」），不需要
+fencing token 防脑裂写入。
+
+|  项   |                                                                  定稿                                                                  |
+|------|--------------------------------------------------------------------------------------------------------------------------------------|
+| 锁名   | `datasophon:lineage:master`                                                                                                          |
+| 获取   | `SELECT GET_LOCK('datasophon:lineage:master', 0)` —— 超时 0，**立即返回**，启动不被拖住                                                            |
+| 连接   | `DriverManager.getConnection()` 取**独占连接并长期持有**，连接参数从 `spring.datasource.*` 读                                                         |
+| 心跳   | 单线程 scheduler 每 30s 校验连接可用且 `IS_USED_LOCK()` 仍等于本连接的 `CONNECTION_ID()`；断线 → 标记非 owner 并尝试重获取                                         |
+| 拒绝服务 | `LineageLeaseGuard.isOwner()`，血缘所有端点入口检查，非 owner → **503** + 明确 message（本批只有 ingest 端点，T4 的端点沿用同一守卫）                                 |
+| 就绪表达 | 新增 `GET /v2/lineage/readiness` 返回持有状态 + ERROR 日志。**不要引入 spring-boot-starter-actuator** —— 仓库当前没有该依赖，为一个状态位引入它会顺带暴露一整套 `/actuator` 端点 |
+| 关闭   | `RELEASE_LOCK` + 关闭连接                                                                                                                |
+| 开关   | `datasophon.lineage.lease.enabled`，默认 `true`；关闭时 `isOwner()` 恒 `true`（供本地开发与非 MySQL 测试用）                                             |
+
+**绝对不要用连接池取这个连接**：Hikari 的 `idleTimeout` / `maxLifetime`、Druid 的 `keepAlive` 回收
+都会静默换掉底层会话，锁随之释放，而 `isOwner()` 仍是 `true` —— 表现为"两个实例都自认为 owner"，
+比不加租约更危险。
+
 ### 验收（对应架构文档 L1 验收 16）
 
 启动第二个实例时：获取租约失败 → readiness DOWN → 血缘端点拒绝服务。
+
+真实 MySQL 用例（`@Tag("mysql")`）：同一 JVM 内构造两个 `LineageMasterLease` 实例（各自独立连接），
+第二个获取失败 → `isOwner()` 为 `false` → 经由 guard 的 ingest 调用返回 503。
+第一个 `close()` 后，第二个下一次心跳应能接管。
 
 ---
 
