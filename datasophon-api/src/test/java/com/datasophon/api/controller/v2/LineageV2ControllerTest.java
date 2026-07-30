@@ -53,7 +53,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @WebMvcTest(useDefaultFilters = false)
-@Import({LineageV2ControllerTest.WebConfiguration.class, V2ResponseBodyAdvice.class})
+@Import({LineageV2ControllerTest.WebConfiguration.class, V2ResponseBodyAdvice.class, V2ApiExceptionHandler.class})
 @TestExecutionListeners(listeners = {
         ServletTestExecutionListener.class,
         DependencyInjectionTestExecutionListener.class,
