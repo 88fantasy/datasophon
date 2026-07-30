@@ -60,7 +60,7 @@ T8 (埋点) ─────── 贯穿
 |-------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 第 1 批 | T1 · T2 · T0    | 纯结构 + 纯内存逻辑，不依赖 L0，可完整单测。**已交付，但三轮自审提出返工项**：T1 见「唯一键的坑 ①」，T2 见 §2.1b 的 R1/R2/R3                                                                                     |
 | 第 2 批 | R1-R5 · T3 · T6 | **先做 §2.1b 的 R1-R5 返工**，再写路径（L0 阻塞项留 TODO）+ 租约。T3 须配合 F1 改用 `ON DUPLICATE KEY UPDATE` 抢占身份行；`MysqlSnapshotLoader` 属于本批（见 §3.0 D12）。开工决策见 **§3.0**、T6 实现定稿见 **§6.1** |
-| 第 3 批 | T4 · T5         | 查询 API + BFS                                                                                                                                                        |
+| 第 3 批 | T4 · T5         | 查询 API + BFS。开工决策见 **§4.0**（含已修复的生产缺陷 E1）、**§5.0**                                                                                                                  |
 | 第 4 批 | T7 · T8         | 补齐验收与埋点                                                                                                                                                             |
 
 ---
@@ -653,6 +653,111 @@ void onLineageChanged(LineageStructureChangedEvent e) {
 
 > **架构文档 §3.4.5（陈旧性契约）/ §3.4.6（禁全图）**
 
+### 4.0 第 3 批开工决策（2026-07-30 补，填规格沉默/自相矛盾处）
+
+> 同样的模式第三次出现：架构文档在**同一节内**用同一个字段名指了两个不同的东西
+> （`targetGeneration`），且给出的三分支 staleness 公式里有一支
+> （`rebuildFailedAfterTargetGeneration`）找不到对应的已实现字段。逐条定死，
+> 照单实现不会踩坑；不看这节直接照字面读 §3.4.5 会在这两处卡住或猜错。
+
+#### E1 生产缺陷：`V2ApiExceptionHandler` 吞掉真实状态码（已修复，commit `86856178`）
+
+**T4 开工前必须知道**：`ResponseStatusException`（503/404/409 都靠它抛）此前会被
+`V2ApiExceptionHandler` 的兜底 `Exception` handler 捕获，HTTP 状态码退化成 200——
+已用真实 Spring 上下文实测坐实并修复。**这不是 T4 要重新踩的坑**，写 `/impact`
+等严格接口时直接依赖 `ResponseStatusException` 即可，状态码会正确透传。
+
+#### E2 `observedDbGeneration` 从哪来，不能走 Coordinator 的重建事务
+
+`t_ddh_lineage_generation` 是单行表，直接 `SELECT generation FROM t_ddh_lineage_generation
+WHERE id = 1` 即可，**不需要事务、不需要 REPEATABLE READ**——这条读跟"读一致性"完全无关，
+它只是"现在 DB 声称到了第几代"这一个数字。
+
+**新增一个独立的轻量组件**（例如 `LineageGenerationReader`，直接持有 `JdbcTemplate`），
+T4 查询侧每次 GET 都调用它；**不要**复用 `MysqlSnapshotLoader` 内部已有的同名查询——
+那条读是 Coordinator 重建事务的一部分，混进查询路径会导致每次 GET 都参与
+（或被误认为需要参与）single-flight 重建的事务边界，违反纪律 ②的精神（查询侧不该
+拖慢/干扰权威写入与重建路径）。两处 SQL 文本相同是巧合，用途完全不同，保持两份代码。
+
+#### E3 `stale` 的三分支公式，第三支不是新字段
+
+架构文档给的公式：
+
+```text
+snapshotStale = publishedGeneration < observedDbGeneration
+             || rebuildFailedAfterTargetGeneration
+             || ageSeconds > threshold
+```
+
+`rebuildFailedAfterTargetGeneration` **不需要新增任何 Coordinator 字段**。
+`LineageRebuildCoordinator.lastRebuildError()` 已经是"最近一次重建尝试是否失败"
+（`drainPending()` 里失败时置位、下一次**成功**时才清零，中间任意时长内持续非空）——
+直接把它当第二支用：
+
+```java
+boolean stale = publishedGeneration < observedDbGeneration
+        || coordinator.lastRebuildError().isPresent()
+        || ageSeconds > staleThresholdSeconds;
+```
+
+**不要**为了凑"targetGeneration"这个名字去 Coordinator 里再加一个
+`lastAttemptedGeneration` 字段——那需要改 `MysqlSnapshotLoader`/`doRebuild()` 的失败路径
+把「尝试到的代际」也带出来，属于对 T2/T3 已交付、已验证代码的侵入式改动，且完全不必要：
+`lastRebuildError().isPresent()` 已经覆盖"最近一次尝试失败"这件事，而"失败后 DB 是否已经
+比发布的快照更新"由第一支 `publishedGeneration < observedDbGeneration` 覆盖（因为
+`observedDbGeneration` 是每次查询现查的，必然 ≥ 任何失败尝试当时看到的代际）。
+
+#### E4 JSON 响应里的 `targetGeneration` ≠ `LineageSnapshotMeta.targetGeneration()`
+
+架构文档 §3.4.5 的 JSON 示例：`"generation": 4471, "targetGeneration": 4472`——两个数字
+**不同**，4472 代表"DB 现在比发布的快照新一代"。但 T2 交付的
+`LineageSnapshotMeta.targetGeneration()` 按 R2 的决定"保留"，实际语义是"这次重建**成功**时
+读到的代际"，`fresh()` 恒传 `(generation, generation)`——**两者永远相等**，因为
+`copyOf()`/`fresh()` 只在成功构建时才被调用，此时"读到的代际"必然等于"构建出的代际"。
+
+也就是说，**`snapshot.meta().targetGeneration()` 在当前实现下不可能与
+`generation()` 不同，它提供不了架构文档示例想展示的信息**。
+
+**定**：T4 响应体的 `snapshot.targetGeneration` 字段绑定到 **E2 新增的 `observedDbGeneration`**
+（每次查询现查的值），**不是** `snapshot.meta().targetGeneration()`（T2 那个恒等字段）。
+`LineageSnapshotMeta.targetGeneration()` 不必删——它仍是"这次重建构建到了哪一代"的事实
+记录，只是不作为 T4 响应体 `targetGeneration` 字段的数据源，命名撞车是架构文档本身的
+表述问题，不是实现缺陷，此处只需要知道绑定到哪个数据源。
+
+#### E5 `rootNodeId` 不存在于图中：404，不是 503/400
+
+503 表示"整个系统未就绪"，400 表示"请求格式不对"，`rootNodeId` 合法但查无此节点是
+**资源不存在**，用 404。空图（`snapshot == null`）与"有图但查无此节点"是两个不同的 503/404
+边界，都要覆盖到验收里。
+
+#### E6 `/v2/lineage/impact` 的响应形状
+
+架构文档只规定了它的**行为**（严格接口，`stale=true` 时 503），没规定独立的响应 schema。
+**定**：复用 `/graph` 完全相同的请求参数（`rootNodeId`/`depth`）与响应体形状，仅两点不同：
+`direction` 固定为 `downstream`（不接受调用方传入）、`stale=true` 时直接 503 而不是像
+`/graph` 那样正常返回并打 stale 标记。**不要**为 `/impact` 发明一套新的聚合/列表响应格式——
+L1 的验收范围（17-18、21）只要求行为契约，节外生枝的响应格式后续没有消费方。
+
+#### E7 `/v2/lineage/graph` 的展开参数
+
+架构文档没提"二次展开折叠节点"走哪个端点。**定**：复用同一个 `GET /v2/lineage/graph`，
+新增可选参数 `expand=<token>`——传了 `expand` 时，本次请求只针对该 token 对应的折叠节点
+做一次展开（重新做一轮商余分配、只覆盖这一个节点此前隐藏的邻居），不重新遍历整棵树；
+`token` 内 generation 与当前快照不匹配 → 409。不新增独立端点。
+
+#### E8 `depth`/`direction` 越界：400，不做静默 clamp
+
+`depth` 超出 `[1,5]` 或 `direction` 不是三选一之一 → 400 Bad Request。**不要**静默 clamp 到
+边界值——clamp 会把调用方的参数错误伪装成"正常返回了一个较小的图"，排查时无从查起。
+
+#### E9 `/v2/lineage/overview` 的层间边聚合要覆盖全部真实组合
+
+架构文档的示例图是 `ODS→DWD→DWS→ADS` 一条链，但真实边可能跨层（`ODS→ADS`）、
+反向（`DWS→DWD`）、或端点 `dw_layer` 为 `NULL`（`NodeMeta.dwLayer()` 本就是可选字段）。
+**定**：按图中实际出现的全部 `(srcLayer, dstLayer)` 组合分别计数（`NULL` 归入
+`"UNKNOWN"` 桶），**不要**只实现示例图里那 3 条边、把其余组合默认丢弃或报错——
+示例是插图不是穷举。
+
 ### 产出
 
 `datasophon-api/src/main/java/com/datasophon/api/controller/v2/LineageV2Controller.java`（照抄同目录现有 `*V2Controller` 的风格）
@@ -712,6 +817,31 @@ snapshotStale = publishedGeneration < observedDbGeneration     // 已知落后
 ## T5 — 分层 BFS 与度数折叠
 
 > **架构文档 §3.4.6**
+
+### 5.0 第 3 批开工决策（续 T4 §4.0）
+
+#### E10 "阈值必须动态"不是独立机制，就是 §5.1 的商余分配本身
+
+架构文档在 §3.4.6 先说"若某节点度数超过**阈值**不展开"、"阈值必须动态不能固定"，
+后面又单独一节讲"预算必须按 frontier 分摊"——读起来像两个机制（一个统计意义上的度数
+阈值 + 一个预算分配算法）。**它们是同一个机制**：不存在任何独立于本轮预算分配之外、
+预先算好的"度数阈值"。**定**：某节点是否折叠，只看**它在本轮商余分配里分到的预算**是否
+覆盖它的实际度数，没有第二套判据。不要在实现 5.1 的商余分配之外，另外再实现一个基于
+统计（如 p95 度数）的"是否算超级节点"的判断——那是发明了规格里不存在的第二套机制。
+
+#### E11 实际度数 > 分配预算但预算不为 0：整节点仍是全折叠，不做部分展开
+
+§5.1 步骤 3/4 只写了两种情况——预算为 0（全折叠）、实际度数 ≤ 预算（全展开，余额转手）。
+**没写**"预算 > 0 但小于实际度数"这种情况该怎么办。**定**：只要
+`实际度数 > 本节点分到的预算`，这个节点在当前方向**整体折叠**（展开 0 个邻居，
+`hiddenCount = 实际度数`），跟预算恰好为 0 时处理方式相同——**不做"展开一部分、剩下的包一个
+子折叠节点"这种部分展开**。理由：折叠节点契约（§5.2）只有 `hiddenCount` 一个数字字段，
+没有"已展示的是哪几个"这类排序/游标信息，部分展开需要额外定义"展示哪 K 个"的确定性规则，
+规格没给，属于臆造复杂度；且分配失败的预算会在步骤 4"退还"给同层其他节点，全折叠不浪费。
+
+#### E12 根节点计入 300 总节点预算
+
+`rootNodeId` 本身算作已用掉的第 1 个节点名额，不是"预算之外多送一个"。
 
 ### 产出
 
