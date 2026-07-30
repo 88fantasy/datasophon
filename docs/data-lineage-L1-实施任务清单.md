@@ -940,6 +940,44 @@ fencing token 防脑裂写入。
 
 > `@WebMvcTest` + mock service 绕开 gRPC 18081 端口冲突。**新增 `@SpringBootTest` 必须加 `@DirtiesContext`**。
 
+### 7.0 第 4 批开工决策（2026-07-30 补，T7 覆盖审计结论）
+
+> T7 名义上是"补测试"，但逐条核对后发现**第 1-3 批交付时已经把 1-21、23 全部测过了**——每批
+> 任务都在同一次提交里带走了自己名下的验收号。T7 剩下的唯一真实缺口就是 **22 号**（指标），
+> 而 22 号的实现属于 T8。**T7 不再需要写新测试**，本节只是把审计结论钉死，避免重新猜一遍
+> "哪条验收还没测"。第 22 条的测试与 T8 实现一起交付（见 §8.0 F6）。
+
+|         L1 验收          |                                                                                           落地测试                                                                                            |                  结论                   |
+|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
+| 1 真实事件样本入库             | `LineageIngestMysqlTest#realEventPersistsAndDuplicateDeliveryIsIdempotent`                                                                                                                | 已覆盖                                   |
+| 2 投递幂等                 | 同上                                                                                                                                                                                        | 已覆盖                                   |
+| 3 结构未变不写新版本            | `LineageIngestMysqlTest#unchangedStructureAcrossOneHundredRunsDoesNotCreateDefinitions`                                                                                                   | 已覆盖                                   |
+| 4 晚到旧 run 不改 current   | `LineageIngestMysqlTest#lateAndOverlappingRunsCannotRollBackCurrentStructure`                                                                                                             | 已覆盖                                   |
+| 5 重叠 run               | 同上                                                                                                                                                                                        | 已覆盖                                   |
+| 6 A→B→A 合法回退           | `LineageIngestMysqlTest#aToBToAProducesVersionThreeWithRepeatedContentHash`                                                                                                               | 已覆盖                                   |
+| 7 写路径不读快照              | `LineageIngestComponentsTest#ingestServiceHasNoSnapshotDependency`                                                                                                                        | 已覆盖                                   |
+| 8 并发写不产生多个 current     | `LineageIngestMysqlTest#twentyConcurrentFirstEventsCreateOneJobAndOneCurrentVersion`                                                                                                      | 已覆盖                                   |
+| 8b 并发首次事件只建一个作业        | 同上；反证实验（删 `uk_data_job_identity` 后必须失败）已在第 2 批**人工做过一次**，见交接文档 §5，非常驻 CI 用例                                                                                                               | 已覆盖（人工审计类）                            |
+| 9 死锁可恢复                | `LineageDeadlockRetryMysqlTest#inverseNodeUpdatesDeadlockAndWholeTransactionRetryRecovers`                                                                                                | 已覆盖恢复语义；`deadlock count` **真实埋点**待 T8 |
+| 10 coordinator 并发度恒为 1 | `LineageRebuildCoordinatorTest#coordinatorConcurrencyIsAlwaysOneAndConcurrentRequestsAreCoalesced`                                                                                        | 已覆盖                                   |
+| 11 `publishIfNewer`    | `LineageRebuildCoordinatorTest#publishIfNotOlderDiscardsOlderGenerationAndIncrementsMetric`                                                                                               | 已覆盖                                   |
+| 12 异步 202              | `LineageV2ControllerTest#rebuildReturnsAcceptedBeforeLoaderCompletes`                                                                                                                     | 已覆盖                                   |
+| 13 持续 pending 不饥饿      | `LineageRebuildCoordinatorTest#continuousPendingYieldsAtDrainBudgetAndIsResubmitted` + `#continuousPendingAlsoYieldsAtWallClockBudget`                                                    | 已覆盖                                   |
+| 14 重建失败可恢复             | `LineageRebuildCoordinatorTest#failedRebuildRecordsErrorAndPendingRetryRecovers`                                                                                                          | 已覆盖                                   |
+| 15 读一致性                | `LineageRebuildCoordinatorTest#repeatableReadLoaderDoesNotMixVersionsWhenCurrentEdgesFlipBetweenPages` + `LineageSnapshotIsolationMysqlTest`                                              | 已覆盖                                   |
+| 16 单 Master 租约         | `LineageMasterLeaseMysqlTest#secondMasterIsRejectedAndTakesOverAfterOwnerCloses` + `LineageV2ControllerTest#nonOwnerRejectsLineageEndpointsAndReportsReadinessDown`/`#ownerReadinessIsUp` | 已覆盖                                   |
+| 17 逻辑边口径（含并行边）         | `LineageQueryMysqlTest#logicalAndPhysicalEdgeCountsMatchCurrentMysqlRows`（两个 job 写同一 `src,dst`，构成真正的并行边样本）                                                                                | 已覆盖                                   |
+| 18 两层新鲜度               | `LineageV2ControllerTest#coordinatorErrorParticipatesInFreshnessAndImpactFailsClosed` + `#snapshotAgeIsTheThirdIndependentStalenessBranch`                                                | 已覆盖                                   |
+| 19 BFS 确定性与预算边界        | `LineageGraphQueryTest`（`queryIsDeterministicAcrossRepeatedRunsAndInsertionOrders` 等 6 个方法）                                                                                               | 已覆盖                                   |
+| 20 环检测三组样本分级           | `LineageGraphQueryTest#dagSelfLoopAndNonTrivialCycleRemainQueryableAndAreClassifiedSeparately`——逐字核对三组样本的 `selfLoopCount`/`hasNonTrivialCycle` 期望值，与架构文档表格完全一致                            | 已覆盖                                   |
+| 21 启动失败不阻断 / 503 而非空图  | `LineageRebuildCoordinatorTest#startupLoadFailureIsRecordedWithoutBlockingApplicationRunner` + `LineageV2ControllerTest#missingSnapshotReturnsServiceUnavailableInsteadOfEmptyGraph`      | 已覆盖                                   |
+| 22 分段耗时 + 锁指标          | 无——接口仍是 `NOOP` 默认实现，无真实 `MeterRegistry` 接入，也没有分段计时代码                                                                                                                                      | **T8 待做**                             |
+| 23 `@WebMvcTest` 隔离    | `LineageV2ControllerTest` 类上 `@WebMvcTest(useDefaultFilters = false)`；血缘测试目录零 `@SpringBootTest`，不存在漏加 `@DirtiesContext` 的风险                                                               | 已覆盖                                   |
+
+**核对方式**：逐个测试方法读源码断言，不是只看方法名猜测；20 号额外核对了断言值与架构文档
+表格逐行比对（纯 DAG / `INSERT OVERWRITE t SELECT FROM t` 自环 / A→B→A 跨作业环），
+三组期望值完全一致，不是"测了但测错了"。
+
 ---
 
 ## T8 — 可观测埋点
@@ -952,6 +990,99 @@ fencing token 防脑裂写入。
 | 锁          | `lock_wait` p95/p99 · deadlock count · `history_list_length`                                          |
 
 **没有分段打点，架构文档 §3.4.8 的三条回头触发点全是摆设** —— 半年后没人知道重建已从 500ms 涨到 3s。
+
+### 8.0 第 4 批开工决策（2026-07-30 补，填 T8 的规格沉默处）
+
+> 架构文档从未点名指标库、导出方式、`history_list_length` 的采集手段——`datasophon-api`
+> 目前**零 Micrometer / 零 actuator / 零 OTel SDK 依赖**（已用 `grep -rn "micrometer\|actuator\|opentelemetry"`
+> 核实为空），这是本 epic 第一次给它自己引入运行时指标能力，照单实现会在选型上卡住或各写一套。
+
+#### F1 指标库 = Micrometer + `spring-boot-starter-actuator`（`/actuator/prometheus` 拉模式）
+
+`.claude/rules/springboot.md` 已明文规定"Emit custom metrics through Micrometer"、"Include
+spring-boot-starter-actuator"——不是本节新造的规则，是项目既有规则第一次真正被血缘模块用到。
+
+导出方式**定为拉模式**（`micrometer-registry-prometheus` + `/actuator/prometheus`），
+**不用**推模式（`micrometer-registry-otlp` 主动推给本地 otelcol）。理由：
+worker 已有的 JMX exporter（`:8585`）就是拉模式先例，跟平台既有约定一致；拉模式对
+`datasophon-api` **零新增出站网络行为**，不会在没有 otelcol 的部署（大多数生产环境未必跑
+`deploy/compose/docker-compose.observability.yml`）里产生连接失败噪音或阻塞启动。
+otelcol 要不要真的去抓这个端点、抓到的数据要不要转 Doria 落盘、要不要在血缘图页面上展示，
+是后续独立工作（可能是某个监控看板迁移任务的范畴），**T8 不做，也不用等它**：只要
+`/actuator/prometheus` 能输出正确的数字，T8 的验收（22 号）就算完成。
+
+**只暴露 `/actuator/prometheus` + 血缘相关 `/actuator/health`**，不要因为加了 actuator
+就顺手把所有 endpoint 都打开——`management.endpoints.web.exposure.include` 精确列出这两个。
+
+#### F2 `lock_wait` 的定义域：只测 `t_ddh_data_job` 行锁，不测租约、不用 performance_schema
+
+架构文档 §3.4.4"锁与并发"（Codex 二轮 P1-6 纠正）明确风险点是 `t_ddh_data_job` 的
+`SELECT ... FOR UPDATE`（**不是**共享维表，那是原文已被推翻的错误定位）。
+
+**定**：`lock_wait` 只测这一处——应用侧掐表（发起 `FOR UPDATE` 前 `nanoTime()`，拿到行锁后
+再 `nanoTime()`），记入 Micrometer `Timer`，p95/p99 由 `Timer` 自带的百分位直方图给。
+**不包含** `LineageMasterLease.tryAcquire()` 的 `GET_LOCK` 等待——那是租约获取
+（成功/失败布尔量，已被验收 16 完整覆盖），跟行锁竞争是两个不同的资源类别，架构文档也从未
+把它归进"必须埋的指标"（§3.4.4 line 628-632 只列了四个写路径计数器）。**不用**
+MySQL `performance_schema` 的锁等待事件表——需要额外授权、且应用侧计时已经能回答
+"写路径慢不慢"这个问题，没有理由为这条指标多要一次数据库权限。
+
+#### F3 `history_list_length`：尽力而为，启动期一次性探测，失败则永久禁用并只 warn 一次
+
+来源是 `information_schema.INNODB_METRICS` 的 `trx_rseg_history_len`，但该项默认
+**disabled**，需要先 `SET GLOBAL innodb_monitor_enable = 'trx_rseg_history_len'`——这需要
+`SUPER` 或 `SYSTEM_VARIABLES_ADMIN`，**当前所有已验证环境都没有核实过血缘应用的 DB 账号
+是否具备该权限**（沙箱已释放，无法现场测）。按 §0.2 同样的纪律处理：**不要猜**。
+
+**定**：启动时（`ApplicationRunner` 里，紧跟 T2 的启动加载之后）尝试执行一次
+`SET GLOBAL ...` + 首次 `SELECT`；捕获到权限类 `SQLException` 就把这个 gauge 标记为
+`unavailable`，日志 warn **一次**，此后该 gauge 恒返回空（Micrometer 允许 `Gauge` 不产出
+样本），**不重试、不轮询失败、不阻断启动**——这是可观测性的一环，不是正确性的一环，
+不该拖 Master 启动或占用调度线程。真正核实权限是 L0 现场核查的自然延伸，等下次有沙箱时
+一并测；本决策只保证"权限不够时优雅降级"这一条硬要求。
+
+#### F4 重建六段计时的精确边界（现有代码结构决定，不能照字面拆）
+
+逐段核对 `MysqlSnapshotLoader`/`LineageGraphSnapshot` 现有实现后，六段里有两对不能直接按
+方法调用边界切：
+
+- **DB read vs 映射**：`loadNodes()`/`loadCurrentEdges()` 用 `JdbcTemplate` 的 `RowMapper`，
+  SQL 执行与行到对象的反序列化是同一次调用完成的，`JdbcTemplate` 不提供两者之间的天然切点。
+  **不要**为了拆开这两段去重写分页读取逻辑——那段代码是验收 15 的读一致性核心，改动有真实
+  回归风险。**做法**：包一层 `RowMapper`，在委托调用前后各打一次 `nanoTime()` 累加"映射内部
+  耗时"；总耗时减去映射耗时 = DB read（网络 IO + 分页协调开销）。分页/事务/一致性逻辑本身
+  一行不改。
+- **`copyOf` vs `hasCycle`**：读代码确认 `Graphs.hasCycle()` 是在 `LineageGraphSnapshot.copyOf()`
+  **内部**被急切调用的（`copyOf()` 构建 `LineageSnapshotMeta` 时就算好了
+  `hasNonTrivialCycle`），`load()` 里后续那次 `snapshot.meta().hasNonTrivialCycle()`
+  只是读一个已算好的字段，**不是**第二次计算。要把这两段拆成独立指标，**必须在
+  `copyOf()` 方法内部插桩**（`ImmutableValueGraph.copyOf` + selfLoop 扫描算一段，
+  `Graphs.hasCycle()` 算另一段），不能在调用方包一层——包在调用方只会把两段计成一段。
+- **建图**、**publish** 边界清晰，直接在 `load()` / `LineageRebuildCoordinator` 现有调用点
+  前后插 `nanoTime()` 即可，无需额外说明。
+
+#### F5 接口扩展方式：只加 `default` 方法，不动已有测试
+
+`IngestMetrics`/`RebuildMetrics` 都已经是"`default` 空方法 + `NOOP` 常量"模式。T8 新增的
+分段计时、lock_wait、history_list_length 方法**同样用 `default` 空实现**——Java 的
+`default` 方法对已有的匿名子类是源兼容与二进制兼容的，第 2/3 批交付、已通过验证的
+`LineageDeadlockRetryMysqlTest`/`LineageRebuildCoordinatorTest` 等测试文件**不需要因为
+接口新增方法而改动一行**。
+
+#### F6 验收 22 的测试形态：默认组单测 + 复用 `LineageDeadlockRetryMysqlTest` 断言真实计数
+
+- **分段计时 + 重建结果 + 写路径计数器**：绑定 `SimpleMeterRegistry`（Micrometer 官方测试
+  惯例），跑一次真实（或已有 fixture 的）重建 / ingest 调用链，断言对应 `Timer`/`Counter`
+  确实被记录且 `count()`/次数符合预期。**不需要真实 MySQL**——这条测的是"埋点代码路径被
+  正确触发"，不是"MySQL 真的慢"，放进默认测试组。
+- **`lock_wait`**：默认组用 mock/fixture 验证 Timer 记录逻辑本身即可；**真实的行锁等待
+  数值**留给已有的 `@Tag("mysql")` 并发用例做人工审计（不新增用例）。
+- **deadlock count**：直接扩展现有 `LineageDeadlockRetryMysqlTest`——它已经手工构造了一个
+  匿名 `IngestMetrics` 断言 `deadlockRetry` 被调用，T8 落地后**换成真实 `MeterRegistry`**，
+  额外断言 `registry.get("lineage.ingest.deadlock").counter().count() == 1`，比新增一个
+  测试文件更贴近"验证真实死锁场景下指标确实+1"这条验收原文。
+- **`history_list_length` 权限不足降级路径**：默认组构造一个会抛权限异常的 `DataSource`
+  桩，断言启动不阻断、gauge 标记为 `unavailable`、日志只 warn 一次（不是每次轮询都 warn）。
 
 ---
 
