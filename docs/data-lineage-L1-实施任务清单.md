@@ -479,15 +479,35 @@ ON DUPLICATE KEY UPDATE last_seen = GREATEST(t_ddh_lineage_node.last_seen, new.l
 单位统一为 epoch 毫秒。**降级到 `received_at` 时必须写 `parse_log(status='DEGRADED_WATERMARK')`** ——
 否则乱序恢复时的误判在事后完全不可追溯。标 `// TODO(L0-#8)`。
 
-#### D10 `canonical_name`（L0-#2 阻塞，**整个 epic 的生死点**）
+#### D10 `canonical_name`（L0-#2，**JDBC 已实机采样，第 2 批已交付的实现按字面规格已被证实是错的**）
 
-`CanonicalNameResolver` 接口 + 一个默认实现，按 §3.3 的
-`<connector>://<catalog>/<database>/<table>` 从 `dataset.namespace` / `dataset.name` 切分。
+> **2026-07-30 更新**：`CanonicalNameResolver` 接口 + `Default` 实现已在第 2 批交付，但按的是
+> 本节原描述的 `<connector>://<catalog>/<database>/<table>` 猜测切分。随后在
+> `deploy/deployment-standalone-doris.md` 沙箱用真实 Spark + `openlineage-spark` 1.29.0
+> 采样确认：**JDBC 场景下这个猜测是错的**，`Default` 会拒绝 100% 真实事件。
+> 详细证据见架构文档 §3.3 的 2026-07-30 采样区块与
+> [`docs/monitoring/data-lineage-verification.md`](../monitoring/data-lineage-verification.md) §3.5。
 
-**只写一种最直白的切分**并标 `// TODO(L0-#2): 拼写未实机确认`。
-**不要写多分支猜测** —— 猜错时多分支会让错误静默兜住，实机采样后反而看不出哪条是对的。
-解析不出 → `parse_log(status='UNRESOLVED_DATASET')` + 整个事件 SKIPPED，**不做部分写入**
-（半张图比没有图更难排查）。
+**JDBC 实测格式**（`openlineage-spark` 1.29.0，START/RUNNING/COMPLETE 三阶段一致）：
+
+```text
+namespace = <scheme>://<host>:<port>          # 不含 database，scheme 恒为驱动类决定的协议名
+                                               # （Doris 走标准 JDBC 时 scheme 是 mysql，不是 doris）
+name      = <database>.<table>                # 点号分隔，不是斜杠
+```
+
+**Hive / Paimon / Iceberg 仍未采样**（阶段 B 未部署，无 Hive metastore / Paimon warehouse /
+Iceberg REST catalog）——这三类的 facet 构建走 Spark `TableCatalog` 反射，JDBC 的采样结果
+**不能外推**到它们。
+
+**给第 3 批实现的指引**：
+- JDBC 分支可以按上面的实测格式直接实现（不再是猜测），但**仍不要**把 Doris 的
+`mysql://host:port` 硬编码改写成 `doris://` ——除非确认了生产环境的 Doris FE
+host:port 列表，否则这条改写规则本身又是一次猜测
+- Hive/Paimon/Iceberg 三个分支**继续保持骨架 + `TODO(L0-#2)`**，不要因为 JDBC 已经采样
+就顺手把其余分支也按同一套猜测补全
+- 解析不出 → `parse_log(status='UNRESOLVED_DATASET')` + 整个事件 SKIPPED，**不做部分写入**
+（半张图比没有图更难排查）——这条纪律不受本次采样影响，继续保留
 
 #### D11 structural hash 归一（L0-#7 阻塞）
 

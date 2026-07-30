@@ -332,9 +332,32 @@ mysql-cdc://10.0.0.5:3306/app_db/orders
 > 因此规范化责任本就在我方 `CanonicalNameResolver`，好处是不必逆向 Gravitino 的拼写。
 > 证据见 [`docs/monitoring/data-lineage-verification.md`](./monitoring/data-lineage-verification.md) §3。
 >
-> **L0 仍待核实（#2 剩余部分，整个 epic 的生死点）**：`openlineage-spark` 对实际使用的
+> **L0 #2 剩余部分（整个 epic 的生死点）**：`openlineage-spark` 对实际使用的
 > catalog 类型（Hive / Paimon / Iceberg / JDBC）产出的 `namespace` / `name` 确切拼写。
 > **必须实机采样确认，不能推断** —— 各 catalog 的解析存在版本差异与回退分支。
+>
+> **2026-07-30 JDBC 已完成实机采样**（借用 `deploy/deployment-standalone-doris.md` 沙箱，
+> `openlineage-spark` 1.29.0 + Spark 3.5.3 local 模式，真实读写 MySQL 与 Doris）：
+>
+> |    场景     |          实测 `namespace`           |            实测 `name`             |
+> |-----------|-----------------------------------|----------------------------------|
+> | MySQL     | `mysql://192.168.10.131:3306`     | `datasophon.t_ddh_frame_service` |
+> | **Doris** | **`mysql://192.168.10.131:9030`** | `l0_probe.doris_output`          |
+>
+> 两条与本节示例**都不符**：① `namespace` 只到 `scheme://host:port`，不含 database；
+> `name` = `db.table`（**点号**分隔，不是本节示例假设的斜杠 path）。
+> ② **Doris 经标准 JDBC 访问时 scheme 是 `mysql`，不是 `doris`**——`openlineage-spark` 的
+> JDBC facet 完全由驱动类/连接串决定，不识别后端产品身份；本节 `doris://ddh/ads/ads_gmv`
+> 是**目标格式**（我方想要的存储形态），不是 provider 会直接产出的原始格式，`CanonicalNameResolver`
+> 必须承担这个改写（例如按 host:port 白名单把已知 Doris FE 端点映射到 `doris` scheme）。
+>
+> 已用真实数据核对现有 `CanonicalNameResolver.Default`：它假设 `namespace` 恰好两段
+> `connector://catalog/database`，代入实测值后**恒判定为 `UNRESOLVED_DATASET`** ——
+> 即当前实现会拒绝 100% 真实 JDBC 血缘事件。这是已被数据证实的实现缺陷，修法留给实现批次决策。
+>
+> Hive / Paimon / Iceberg 三种 catalog 仍未采样（阶段 B 未部署，沙箱无 Hive metastore /
+> Paimon warehouse / Iceberg REST catalog）。完整证据与方法见
+> [`docs/monitoring/data-lineage-verification.md`](./monitoring/data-lineage-verification.md) §3.5-3.6。
 > 前置条件：沙箱当前**没有 Spark**（L0 #3 已确认）。
 
 `dw_layer` 由**可配置正则规则**推导（默认按 database 名 `ods`/`dwd`/`dws`/`ads`，其次按表名前缀），支持人工覆盖存 MySQL——**不要把 `ods_` 前缀硬编码进 Java**。
