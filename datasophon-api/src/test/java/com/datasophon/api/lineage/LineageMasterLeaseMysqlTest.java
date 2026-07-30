@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 class LineageMasterLeaseMysqlTest extends LineageMysqlTestSupport {
@@ -44,12 +45,19 @@ class LineageMasterLeaseMysqlTest extends LineageMysqlTestSupport {
     void secondMasterIsRejectedAndTakesOverAfterOwnerCloses() {
         Duration manualHeartbeat = Duration.ofHours(1);
         AtomicBoolean ingestCalled = new AtomicBoolean();
+        LineageGraphSnapshotHolder holder = new LineageGraphSnapshotHolder();
 
         try (
                 LineageMasterLease first =
                         new LineageMasterLease(MYSQL_URL, MYSQL_USERNAME, MYSQL_PASSWORD, true, manualHeartbeat);
                 LineageMasterLease second =
-                        new LineageMasterLease(MYSQL_URL, MYSQL_USERNAME, MYSQL_PASSWORD, true, manualHeartbeat)) {
+                        new LineageMasterLease(MYSQL_URL, MYSQL_USERNAME, MYSQL_PASSWORD, true, manualHeartbeat);
+                LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(
+                        holder,
+                        () -> {
+                            throw new UnsupportedOperationException("not used by this lease test");
+                        },
+                        new TransactionTemplate(transactionManager))) {
             first.start();
             second.start();
 
@@ -61,7 +69,12 @@ class LineageMasterLeaseMysqlTest extends LineageMysqlTestSupport {
                         ingestCalled.set(true);
                         return LineageIngestService.IngestResult.of(LineageIngestService.Status.CHANGED);
                     },
-                    new LineageLeaseGuard(second));
+                    new LineageLeaseGuard(second),
+                    holder,
+                    coordinator,
+                    new LineageGenerationReader(jdbcTemplate),
+                    new LineageGraphQuery(),
+                    600);
 
             assertThatThrownBy(() -> controller.ingest(CLUSTER_ID, event(
                     "blocked-second-master", "COMPLETE", BASE_TIME, "orders")))

@@ -122,6 +122,11 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
         return Optional.ofNullable(lastRebuildError);
     }
 
+    /** 返回当前已发布快照代际；尚未发布时为 {@code -1}。 */
+    public long currentGeneration() {
+        return snapshotHolder.currentGeneration();
+    }
+
     boolean publishIfNotOlder(LineageGraphSnapshot next) {
         LineageGraphSnapshotHolder.PublishResult result = snapshotHolder.publishIfNotOlder(next);
         if (!result.published()) {

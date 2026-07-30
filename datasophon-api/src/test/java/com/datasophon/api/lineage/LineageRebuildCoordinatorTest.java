@@ -246,6 +246,25 @@ class LineageRebuildCoordinatorTest {
     }
 
     @Test
+    void startupLoadFailureIsRecordedWithoutBlockingApplicationRunner() throws Exception {
+        CountDownLatch loadAttempted = new CountDownLatch(1);
+        try (
+                LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(
+                        new LineageGraphSnapshotHolder(), () -> {
+                            loadAttempted.countDown();
+                            throw new IllegalStateException("startup load failed");
+                        }, readTransaction())) {
+            coordinator.run(null);
+
+            assertThat(loadAttempted.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
+            await(() -> coordinator.lastRebuildError().isPresent());
+            assertThat(coordinator.lastRebuildError()).get()
+                    .extracting(Throwable::getMessage)
+                    .isEqualTo("startup load failed");
+        }
+    }
+
+    @Test
     void repeatableReadLoaderDoesNotMixVersionsWhenCurrentEdgesFlipBetweenPages() throws Exception {
         List<EdgeRow> versionOne = List.of(new EdgeRow(1, 2, 1, 101), new EdgeRow(2, 3, 1, 102));
         List<EdgeRow> versionTwo = List.of(new EdgeRow(1, 3, 2, 201), new EdgeRow(3, 2, 2, 202));

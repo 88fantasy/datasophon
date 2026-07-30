@@ -25,6 +25,8 @@ package com.datasophon.api.configuration;
 import com.datasophon.api.lineage.CanonicalNameResolver;
 import com.datasophon.api.lineage.IngestMetrics;
 import com.datasophon.api.lineage.LineageEventDecoder;
+import com.datasophon.api.lineage.LineageGenerationReader;
+import com.datasophon.api.lineage.LineageGraphQuery;
 import com.datasophon.api.lineage.LineageGraphSnapshotHolder;
 import com.datasophon.api.lineage.LineageIngestService;
 import com.datasophon.api.lineage.LineageLeaseGuard;
@@ -55,6 +57,16 @@ public class LineageConfiguration {
     @Bean
     public LineageGraphSnapshotHolder lineageGraphSnapshotHolder() {
         return new LineageGraphSnapshotHolder();
+    }
+
+    @Bean
+    public LineageGraphQuery lineageGraphQuery() {
+        return new LineageGraphQuery();
+    }
+
+    @Bean
+    public LineageGenerationReader lineageGenerationReader(JdbcTemplate jdbcTemplate) {
+        return new LineageGenerationReader(jdbcTemplate);
     }
 
     @Bean

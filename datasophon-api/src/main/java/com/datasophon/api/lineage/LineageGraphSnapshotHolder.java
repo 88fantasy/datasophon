@@ -41,6 +41,11 @@ public final class LineageGraphSnapshotHolder {
         return Optional.ofNullable(snapshot);
     }
 
+    long currentGeneration() {
+        LineageGraphSnapshot snapshot = published;
+        return snapshot == null ? -1 : snapshot.generation();
+    }
+
     synchronized PublishResult publishIfNotOlder(LineageGraphSnapshot next) {
         Objects.requireNonNull(next, "next");
         LineageGraphSnapshot current = published;

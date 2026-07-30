@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.google.common.graph.MutableValueGraph;
@@ -41,6 +43,8 @@ import com.google.common.graph.ValueGraphBuilder;
  * contains no transaction annotation and never obtains a connection directly.</p>
  */
 public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.SnapshotLoader {
+
+    private static final Logger logger = LoggerFactory.getLogger(MysqlSnapshotLoader.class);
 
     static final int DEFAULT_PAGE_SIZE = 10_000;
 
@@ -79,8 +83,14 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
                 .build();
         nodes.keySet().forEach(graph::addNode);
         edges.forEach((key, jobRefs) -> graph.putEdgeValue(key.sourceNodeId(), key.targetNodeId(), new EdgeValue(jobRefs)));
-        return LineageGraphSnapshot.copyOf(graph, nodes, Objects.requireNonNull(generation, "generation"),
-                clock.instant());
+        LineageGraphSnapshot snapshot = LineageGraphSnapshot.copyOf(
+                graph, nodes, Objects.requireNonNull(generation, "generation"), clock.instant());
+        if (snapshot.meta().hasNonTrivialCycle()) {
+            logger.warn(
+                    "Lineage snapshot generation {} contains a non-trivial cycle; impact traversal results may be cyclic",
+                    snapshot.generation());
+        }
+        return snapshot;
     }
 
     private Map<Long, NodeMeta> loadNodes() {
