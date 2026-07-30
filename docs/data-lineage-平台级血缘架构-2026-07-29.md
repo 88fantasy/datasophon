@@ -92,10 +92,16 @@ OTel 社区正在孵化 `pipeline.*` 语义约定（[semantic-conventions#3762](
 
 ### 2.1 总览
 
+> ⚠️ **2026-07-30 L0 核查纠正**：下图原标注 Gravitino 做「identifier 规范化」，**这是错的**。
+> Gravitino 的 lineage 模块只有 `NoopProcessor`，**逐字透传不改写任何字段**；
+> `GravitinoSparkPlugin` 是 catalog 插件，与 OpenLineage 事件生成无关。
+> dataset 命名完全由 `openlineage-spark` 决定。证据见
+> [`docs/monitoring/data-lineage-verification.md`](./monitoring/data-lineage-verification.md) §3。
+
 ```text
 Spark 作业 ──OpenLineage listener──┐
                                    ├→ Gravitino :8090 /api/lineage
-                                   │    （identifier 规范化 → metalake.catalog.schema.table）
+                                   │    （只接收 + 转发，NoopProcessor 不改写字段）
                                    │         └─ 内置 http sink ─→ ┐
 Flink SQL  ──静态解析（L6）────────┤                              │
 DS SQL 任务 ──拉 DS API 取 SQL 文本─┘（复用同一解析器）           │
@@ -126,7 +132,22 @@ Gravitino 内置 HTTP sink 本就是为转发给 OpenLineage 兼容服务设计�
 
 理由：一旦 fork，每次 Gravitino 升版本都要 rebase 自研 sink，而这个 sink 干的活（写库）datasophon-api 本来就在干；同时血缘功能会硬依赖 GRAVITINO 已安装且 RUNNING。
 
-保留 Gravitino 在链路里的唯一理由是 **identifier 规范化**（§3.3），不是转发本身。
+~~保留 Gravitino 在链路里的唯一理由是 **identifier 规范化**（§3.3），不是转发本身。~~
+
+> ⚠️ **2026-07-30 L0 核查推翻了这条理由**：Gravitino **不做 identifier 规范化**（§3.3 已纠正）。
+> 「零 fork、零源码改动」的结论仍然成立，但**留它在链路里的理由需要重述**：
+>
+> |  它实际提供的   |                                     说明                                     |
+> |-----------|----------------------------------------------------------------------------|
+> | HTTP 收集端点 | 现成的 OpenLineage 兼容 `POST /api/lineage`，返回 201                              |
+> | 异步队列      | `gravitino.lineage.sinkQueueCapacity`，削峰                                   |
+> | 转发与认证     | http sink 支持 `authType` ∈ {`apiKey`, `none`}，走 OpenLineage `TokenProvider` |
+>
+> 这些价值不为零，但**远小于原判断**，而代价是血缘链路硬依赖 GRAVITINO RUNNING。
+> **L2 开工前应重新评估**：让 Spark 的 OpenLineage transport 直连 datasophon-api
+> `/v2/lineage`（跳过 Gravitino）是否更简单 —— 我方端点本就兼容 OpenLineage，
+> 队列与认证也都在我方可控范围内。证据见
+> [`docs/monitoring/data-lineage-verification.md`](./monitoring/data-lineage-verification.md) §3.3。
 
 #### D2 — 血缘结构存 **MySQL**，不存 Doris
 
@@ -300,9 +321,21 @@ mysql-cdc://10.0.0.5:3306/app_db/orders
 
 不做规范化，ods→dwd 的边就跨不了作业（A 写的 `dwd_order` 与 B 读的 `catalog.dwd.dwd_order` 会成为两个节点）。
 
-**关键约束**：Spark 经 `GravitinoSparkPlugin` 上报的 dataset identifier 已被转换成 Gravitino 的 `metalake.catalog.schema.table` 格式。Flink/DS 走自研解析器时**必须主动对齐同一格式**，否则两个 provider 产出的节点对不上，图会断成两半。
+**关键约束**：三个 provider 产出的节点必须落在同一命名空间，否则图会断成两半。
 
-> **L0 待核实**：Gravitino 转换后 OpenLineage dataset 的 `namespace` / `name` 确切拼写。这决定 canonical_name 的转换函数怎么写，**必须实机采样确认，不能推断**。
+> ⚠️ **2026-07-30 L0 核查纠正**：原文写「Spark 经 `GravitinoSparkPlugin` 上报的 dataset identifier
+> **已被转换成** Gravitino 的 `metalake.catalog.schema.table` 格式」—— **不成立**。
+> `gravitino-spark-connector-runtime` 整个 jar 零个 openlineage 条目，它是 catalog 插件，
+> 不参与血缘事件生成；Gravitino 服务端也只有 `NoopProcessor`。
+> **dataset 命名 100% 由 `openlineage-spark` 按其自身 naming 规范生成**（基于底层存储：
+> Hive metastore URI / Paimon warehouse path / JDBC URL）。
+> 因此规范化责任本就在我方 `CanonicalNameResolver`，好处是不必逆向 Gravitino 的拼写。
+> 证据见 [`docs/monitoring/data-lineage-verification.md`](./monitoring/data-lineage-verification.md) §3。
+>
+> **L0 仍待核实（#2 剩余部分，整个 epic 的生死点）**：`openlineage-spark` 对实际使用的
+> catalog 类型（Hive / Paimon / Iceberg / JDBC）产出的 `namespace` / `name` 确切拼写。
+> **必须实机采样确认，不能推断** —— 各 catalog 的解析存在版本差异与回退分支。
+> 前置条件：沙箱当前**没有 Spark**（L0 #3 已确认）。
 
 `dw_layer` 由**可配置正则规则**推导（默认按 database 名 `ods`/`dwd`/`dws`/`ads`，其次按表名前缀），支持人工覆盖存 MySQL——**不要把 `ods_` 前缀硬编码进 Java**。
 
