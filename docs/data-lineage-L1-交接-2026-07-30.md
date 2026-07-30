@@ -173,6 +173,45 @@ JAVA_HOME=$JH21 ./mvnw spotless:apply -s ~/.m2/setting.xml
 | **`V2ApiExceptionHandler` 的兜底 handler 吞掉 `ResponseStatusException` 状态码** | 没有 `@ResponseStatus` 的 `@ExceptionHandler(Exception.class)` 会先于 Spring 默认的 `ResponseStatusExceptionResolver` 捕获异常，503/404/409 全部退化成 200。`ResponseStatusException` 与 Spring 内建绑定异常（如缺 `@RequestParam`）分别继承不同基类但都实现 `ErrorResponse` 接口——按 `instanceof` 判断，不枚举具体类型。**`@WebMvcTest` 测试若没 `@Import` 生产会真实加载的 exception handler，测试保护的是假想实现**，这是第五次踩到同一模式（F5 同类） |
 | **架构文档里同一个字段名指了两个不同的东西**                                                 | §3.4.5 的 JSON 示例 `targetGeneration` 是"实时查到的 DB 代际"，但 T2 交付的 `LineageSnapshotMeta.targetGeneration()` 语义是"重建成功时读到的代际"，因构造时机恒等于 `generation`，永远不可能不同。T4 响应体的 `targetGeneration` 字段必须绑定前者（新增的 `LineageGenerationReader`），不是后者                                                                                                                                |
 
+## 8b. L2（Spark provider）已开工，配置与鉴权部分已交付（2026-07-30 同日追加）
+
+**决策**：D1 重新评估后**维持经 Gravitino 转发**（用户明确决策），未采用直连
+`/v2/lineage` 方案。详见架构文档 D1 小节 2026-07-30 追加段落。
+
+**已交付**：
+- `GRAVITINO/service_ddl.json` 新增 8 个 `gravitino.lineage.*` 参数（`source`/
+`processorClass`/`sinks`/`sinkQueueCapacity`/`http.sinkClass`/`http.url`/
+`http.authType`/`http.apiKey`），全部从 Gravitino 1.3.0 源码
+（`/Users/pro/IdeaProjects/gravitino` 本机源码checkout）逐层核对得出真实 key 名，
+不是猜的
+- `SPARK3/service_ddl.json` 的 `custom.spark.defaults.conf` 追加
+`spark.extraListeners`/`spark.openlineage.transport.type`/`.url`（指向
+`${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}/api/lineage`，
+沿用 `${ROOT.Rustfs.__hostIp__}` 同款跨服务占位符约定，非新发明语法）
+- `LineageV2Controller` 回填了第 1 批就留的 `TODO L2: 接 Gravitino 时补共享 token 校验`：
+新增 `datasophon.lineage.ingest-token`（环境变量 `DDH_LINEAGE_INGEST_TOKEN`），
+校验 `Authorization: Bearer <token>`（常数时间比较），token 未配置时 fail closed，
+必须与 Gravitino 侧 `gravitino.lineage.http.apiKey` 配成同一个值
+- 新增 `GravitinoDdlLoadTest`/`Spark3DdlLoadTest`（照抄 `OtelCollectorDdlLoadTest`
+的静态 JSON 结构核对模式）+ `LineageV2ControllerTest` 新增鉴权失败测试 +
+修复两处因新鉴权检查产生的既有测试回归（`ingestRequiresClusterIdAndReturnsAdviceWrappedPojo`
+等需要补 `Authorization` 头）。默认组 **54 个单测全绿**
+
+**明确未交付、需要真实环境才能验证的部分**（不要误认为已完成）：
+- `gravitino.conf` 里 `sinks=http` + `authType=apiKey` 这组配置**从未在真实
+Gravitino 部署里跑通过**——L0 #4（HTTP sink 重试/超时行为）当时就没执行，之前
+沙箱只测过 `sinks` 默认值 `log`。源码读对不代表配置组合已验证
+- `spark.sql.gravitino.uri`/`.metalake`（架构文档原 L2 描述里提到的 catalog
+联邦配置）**本次特意跳过未加**：SPARK3 现有 `custom.spark.defaults.conf` 已经
+直接接了 Hive/Iceberg/Paimon/Doris 四种 catalog，完全不经过 Gravitino；这次
+只做血缘转发这一件事，不引入新的 catalog 联邦机制，避免和已跑通的现状冲突
+- 四种 catalog（Hive/Iceberg/Paimon、以及 Doris 专用连接器 `DorisTableCatalog`）
+的 `canonical_name` **全部未采样**，此前只验证过标准 JDBC 一种格式，Doris 这里
+用的专用连接器与标准 JDBC 是不同代码路径，也不能外推。L2 的验收标准"提交真实
+Spark 作业 → 边正确入库"需要真实 SPARK3 + Hive metastore + Paimon warehouse
+部署才能跑，本次会话没有这个环境
+- L2 验收原文"`gravitino_lineage.log` 与 MySQL 内容一致"完全未验证
+
 ## 9. 审查历史
 
 |     轮次      |                       来源                        |                                                               结果                                                               |

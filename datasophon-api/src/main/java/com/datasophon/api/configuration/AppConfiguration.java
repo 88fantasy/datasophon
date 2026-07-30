@@ -128,7 +128,8 @@ public class AppConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
                         "/v2/login/account",
-                        // OpenLineage ingest is a machine-to-machine endpoint; TODO L2: add shared-token auth
+                        // OpenLineage ingest is a machine-to-machine endpoint; shared-token auth is
+                        // enforced by LineageV2Controller#requireValidIngestToken, not by this filter.
                         "/v2/lineage",
                         "/v2/lineage/readiness",
                         "/cluster/alert/history/save",

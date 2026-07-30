@@ -148,6 +148,27 @@ Gravitino 内置 HTTP sink 本就是为转发给 OpenLineage 兼容服务设计�
 > `/v2/lineage`（跳过 Gravitino）是否更简单 —— 我方端点本就兼容 OpenLineage，
 > 队列与认证也都在我方可控范围内。证据见
 > [`docs/monitoring/data-lineage-verification.md`](./monitoring/data-lineage-verification.md) §3.3。
+>
+> **2026-07-30 L2 开工时最终决定：维持经 Gravitino 转发**（用户明确决策，原意就是
+> 让 Gravitino 承担统一元数据 + 血缘存储的入口角色，不是把它当成可有可无的一跳）。
+> 直连方案没有被采纳。据此在 `LineageV2Controller` 补上的共享 token 校验
+> （`datasophon.lineage.ingest-token`，校验 `Authorization: Bearer`）保留不变——
+> 不管数据从 Gravitino 转发还是将来改直连，`/v2/lineage` 是机器对机器端点这件事不变，
+> 鉴权都是必需的。
+>
+> **`gravitino.conf` 的真实配置 key 已从 Gravitino 1.3.0 源码
+> （`org.apache.gravitino.lineage.LineageConfig`/`LineageHttpSink`/`GravitinoServer`）
+> 逐层核对，不是推测**：`gravitino.server.getConfigsWithPrefix("gravitino.lineage.")`
+> 会剥离前缀再传给 `LineageConfig`，所以文件里必须写**带完整前缀**的 key。
+> 已验证的顶层 key：`source`/`processorClass`/`sinks`/`sinkQueueCapacity`；
+> 具名 sink（本方案取名 `http`）另需 `http.sinkClass`/`http.url`/`http.authType`/
+> `http.apiKey` 四个子 key。**`authType=apiKey` 时实际发送的是标准
+> `Authorization: Bearer <apiKey>` 头**（`ApiKeyAuthStrategy` 走 OpenLineage 官方
+> `TokenProvider`），不是自定义 header——`/v2/lineage` 的校验逻辑要认这个格式。
+> ⚠️ **这组 key 组合（`sinks=http` + `authType=apiKey`）本身仍未在真实 Gravitino
+> 部署里跑通过**——L0 #4（HTTP sink 的重试/超时行为）当时就没有执行，之前的沙箱
+> 测试只验证过 `sinks` 默认值 `log`。源码读对不等于配置组合已被验证，下次有真实
+> Gravitino 环境时应作为一项新的现场核查补上，不要凭这段文档就假定它必然工作。
 
 #### D2 — 血缘结构存 **MySQL**，不存 Doris
 

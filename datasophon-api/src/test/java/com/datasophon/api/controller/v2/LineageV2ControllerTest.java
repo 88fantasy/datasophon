@@ -86,6 +86,8 @@ import com.google.common.graph.ValueGraphBuilder;
 }, mergeMode = TestExecutionListeners.MergeMode.REPLACE_DEFAULTS)
 class LineageV2ControllerTest {
 
+    private static final String INGEST_TOKEN = "test-lineage-token";
+
     private static final AtomicReference<BiFunction<Long, JsonNode, IngestResult>> INGEST_HANDLER =
             new AtomicReference<>();
     private static final AtomicBoolean LEASE_OWNER = new AtomicBoolean();
@@ -128,6 +130,7 @@ class LineageV2ControllerTest {
     @Test
     void ingestRequiresClusterIdAndReturnsAdviceWrappedPojo() throws Exception {
         mockMvc.perform(post("/v2/lineage")
+                .header("Authorization", "Bearer " + INGEST_TOKEN)
                 .queryParam("clusterId", "7")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
@@ -138,6 +141,7 @@ class LineageV2ControllerTest {
                 .andExpect(jsonPath("$.data.definitionVersion").value(3));
 
         mockMvc.perform(post("/v2/lineage")
+                .header("Authorization", "Bearer " + INGEST_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
                 .andExpect(status().isBadRequest());
@@ -150,10 +154,35 @@ class LineageV2ControllerTest {
         });
 
         mockMvc.perform(post("/v2/lineage")
+                .header("Authorization", "Bearer " + INGEST_TOKEN)
                 .queryParam("clusterId", "7")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void ingestRejectsMissingOrWrongBearerTokenBeforeTouchingIngestService() throws Exception {
+        AtomicBoolean ingestInvoked = new AtomicBoolean(false);
+        INGEST_HANDLER.set((clusterId, payload) -> {
+            ingestInvoked.set(true);
+            return new IngestResult(Status.CHANGED, 11L, 3, 2, 3);
+        });
+
+        mockMvc.perform(post("/v2/lineage")
+                .queryParam("clusterId", "7")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/v2/lineage")
+                .header("Authorization", "Bearer wrong-token")
+                .queryParam("clusterId", "7")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isUnauthorized());
+
+        assertThat(ingestInvoked).isFalse();
     }
 
     @Test
@@ -312,6 +341,7 @@ class LineageV2ControllerTest {
         LEASE_OWNER.set(false);
 
         mockMvc.perform(post("/v2/lineage")
+                .header("Authorization", "Bearer " + INGEST_TOKEN)
                 .queryParam("clusterId", "7")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
@@ -374,7 +404,8 @@ class LineageV2ControllerTest {
                     coordinator,
                     generationReader,
                     graphQuery,
-                    600);
+                    600,
+                    INGEST_TOKEN);
         }
 
         @Bean

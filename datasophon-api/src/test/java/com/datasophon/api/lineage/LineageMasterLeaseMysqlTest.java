@@ -64,6 +64,7 @@ class LineageMasterLeaseMysqlTest extends LineageMysqlTestSupport {
             assertThat(first.isOwner()).isTrue();
             assertThat(second.isOwner()).isFalse();
 
+            String ingestToken = "test-lineage-token";
             LineageV2Controller controller = new LineageV2Controller(
                     (clusterId, payload) -> {
                         ingestCalled.set(true);
@@ -74,9 +75,10 @@ class LineageMasterLeaseMysqlTest extends LineageMysqlTestSupport {
                     coordinator,
                     new LineageGenerationReader(jdbcTemplate),
                     new LineageGraphQuery(),
-                    600);
+                    600,
+                    ingestToken);
 
-            assertThatThrownBy(() -> controller.ingest(CLUSTER_ID, event(
+            assertThatThrownBy(() -> controller.ingest("Bearer " + ingestToken, CLUSTER_ID, event(
                     "blocked-second-master", "COMPLETE", BASE_TIME, "orders")))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
                         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);

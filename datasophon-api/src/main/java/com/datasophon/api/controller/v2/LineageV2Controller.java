@@ -38,6 +38,10 @@ import com.datasophon.api.lineage.LineageLeaseGuard;
 import com.datasophon.api.lineage.LineageRebuildCoordinator;
 import com.datasophon.api.lineage.NodeMeta;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -52,6 +56,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -73,6 +78,7 @@ public class LineageV2Controller extends ApiController {
     private final LineageGenerationReader generationReader;
     private final LineageGraphQuery graphQuery;
     private final long staleThresholdSeconds;
+    private final String ingestToken;
 
     public LineageV2Controller(
                                LineageIngestOperations ingestService,
@@ -81,7 +87,8 @@ public class LineageV2Controller extends ApiController {
                                LineageRebuildCoordinator coordinator,
                                LineageGenerationReader generationReader,
                                LineageGraphQuery graphQuery,
-                               @Value("${datasophon.lineage.stale-threshold-seconds:600}") long staleThresholdSeconds) {
+                               @Value("${datasophon.lineage.stale-threshold-seconds:600}") long staleThresholdSeconds,
+                               @Value("${datasophon.lineage.ingest-token:}") String ingestToken) {
         this.ingestService = ingestService;
         this.leaseGuard = leaseGuard;
         this.snapshotHolder = snapshotHolder;
@@ -92,16 +99,45 @@ public class LineageV2Controller extends ApiController {
             throw new IllegalArgumentException("staleThresholdSeconds must be positive");
         }
         this.staleThresholdSeconds = staleThresholdSeconds;
+        this.ingestToken = ingestToken;
     }
 
-    // TODO L2: 接 Gravitino 时补共享 token 校验。
+    /**
+     * L2: OpenLineage ingest 是机器对机器端点，走独立的共享 Bearer token 校验，不接普通用户会话
+     * （{@code /v2/lineage} 已在 {@code AppConfiguration} 中排除了登录/CSRF 拦截器）。
+     * Token 未配置时默认拒绝所有请求（fail closed），与 {@code InternalMetaController} 的
+     * {@code X-Internal-Token} 校验同一套姿势，只是凭证来自标准 {@code Authorization: Bearer}
+     * 头 —— 这是 Gravitino {@code LineageHttpSink} 的 {@code authType=apiKey} 实际发送的格式。
+     */
     @PostMapping("/lineage")
-    public IngestResult ingest(@RequestParam long clusterId, @RequestBody JsonNode payload) {
+    public IngestResult ingest(
+                               @RequestHeader(name = "Authorization", required = false) String authorization,
+                               @RequestParam long clusterId,
+                               @RequestBody JsonNode payload) {
+        requireValidIngestToken(authorization);
         leaseGuard.requireOwner();
         try {
             return ingestService.ingest(clusterId, payload);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    private void requireValidIngestToken(String authorization) {
+        if (StringUtils.isBlank(ingestToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "datasophon.lineage.ingest-token is not configured");
+        }
+        String bearerPrefix = "Bearer ";
+        if (authorization == null || !authorization.startsWith(bearerPrefix)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "missing bearer token");
+        }
+        String presented = authorization.substring(bearerPrefix.length());
+        boolean matches = MessageDigest.isEqual(
+                ingestToken.getBytes(StandardCharsets.UTF_8),
+                presented.getBytes(StandardCharsets.UTF_8));
+        if (!matches) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "invalid bearer token");
         }
     }
 

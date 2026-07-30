@@ -192,6 +192,15 @@
         },
         {
           "spark.sql.catalog.doris_catalog.doris.password": "${DORIS.root_password}"
+        },
+        {
+          "spark.extraListeners": "io.openlineage.spark.agent.OpenLineageSparkListener"
+        },
+        {
+          "spark.openlineage.transport.type": "http"
+        },
+        {
+          "spark.openlineage.transport.url": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}/api/lineage"
         }
       ]
     }

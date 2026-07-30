@@ -105,7 +105,15 @@
           "gravitino.entity.store.relational.jdbcDriver",
           "gravitino.entity.store.relational.jdbcUser",
           "gravitino.entity.store.relational.jdbcPassword",
-          "gravitino.audit.enabled"
+          "gravitino.audit.enabled",
+          "gravitino.lineage.source",
+          "gravitino.lineage.processorClass",
+          "gravitino.lineage.sinks",
+          "gravitino.lineage.sinkQueueCapacity",
+          "gravitino.lineage.http.sinkClass",
+          "gravitino.lineage.http.url",
+          "gravitino.lineage.http.authType",
+          "gravitino.lineage.http.apiKey"
         ]
       },
       {
@@ -221,6 +229,94 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": false
+    },
+    {
+      "name": "gravitino.lineage.source",
+      "label": "血缘事件接收方式",
+      "description": "血缘事件来源，固定走内置 HTTP 接收端点（POST /api/lineage）",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "http"
+    },
+    {
+      "name": "gravitino.lineage.processorClass",
+      "label": "血缘事件处理器",
+      "description": "固定为 NoopProcessor：Gravitino 1.3.0 不做 identifier 规范化（2026-07-30 L0 现场核查已确认），本平台只把它当转发通道使用",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "org.apache.gravitino.lineage.processor.NoopProcessor"
+    },
+    {
+      "name": "gravitino.lineage.sinks",
+      "label": "血缘事件转发目的地",
+      "description": "固定只转发到 datasophon-api，不额外落 Gravitino 本地日志文件",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "http"
+    },
+    {
+      "name": "gravitino.lineage.sinkQueueCapacity",
+      "label": "血缘事件转发队列容量",
+      "description": "转发队列达到该容量后新事件会被丢弃（Gravitino 侧背压，非本平台实现）",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "10000"
+    },
+    {
+      "name": "gravitino.lineage.http.sinkClass",
+      "label": "HTTP 转发 Sink 实现类",
+      "description": "固定为 Gravitino 内置 LineageHttpSink",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "org.apache.gravitino.lineage.sink.LineageHttpSink"
+    },
+    {
+      "name": "gravitino.lineage.http.url",
+      "label": "datasophon-api 血缘接收地址",
+      "description": "指向 datasophon-api 的 /v2/lineage（含 context-path），填 Master 节点实际可达地址，例如 http://192.168.x.x:8080/ddh/v2/lineage",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://<datasophon-api-host>:8080/ddh/v2/lineage"
+    },
+    {
+      "name": "gravitino.lineage.http.authType",
+      "label": "HTTP 转发鉴权方式",
+      "description": "固定使用 apiKey（OpenLineage 标准 TokenProvider，实际发送 Authorization: Bearer 头）",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "apiKey"
+    },
+    {
+      "name": "gravitino.lineage.http.apiKey",
+      "label": "血缘接收共享密钥",
+      "description": "必须与 datasophon-api 的 datasophon.lineage.ingest-token（环境变量 DDH_LINEAGE_INGEST_TOKEN）配成同一个值，否则转发请求会被 401 拒绝",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
     },
     {
       "name": "javaHome",
