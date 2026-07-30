@@ -68,7 +68,7 @@ class LineageIngestComponentsTest {
     }
 
     @Test
-    void defaultCanonicalResolverUsesOnlyTheDocumentedStraightSplit() {
+    void defaultCanonicalResolverHandlesCatalogStyleNamespace() {
         CanonicalNameResolver resolver = new CanonicalNameResolver.Default();
 
         assertThat(resolver.resolve(new DatasetIdentity("paimon://prod/dwd", "orders")))
@@ -76,6 +76,50 @@ class LineageIngestComponentsTest {
                 .extracting(ResolvedDataset::canonicalName)
                 .isEqualTo("paimon://prod/dwd/orders");
         assertThat(resolver.resolve(new DatasetIdentity("prod.dwd", "orders"))).isEmpty();
+    }
+
+    /**
+     * 2026-07-30 用 deploy/deployment-standalone-doris.md 沙箱对真实
+     * openlineage-spark 1.29.0 实机采样确认的格式（见 docs/monitoring/data-lineage-verification.md
+     * §3.5）：namespace 只到 scheme://host:port，name 是 database.table。
+     */
+    @Test
+    void defaultCanonicalResolverHandlesJdbcStyleNamespaceSampledFromRealSpark() {
+        CanonicalNameResolver resolver = new CanonicalNameResolver.Default();
+
+        ResolvedDataset resolved = resolver
+                .resolve(new DatasetIdentity("mysql://192.168.10.131:3306", "datasophon.t_ddh_frame_service"))
+                .orElseThrow();
+
+        assertThat(resolved.connector()).isEqualTo("mysql");
+        assertThat(resolved.catalogName()).isEqualTo("192.168.10.131:3306");
+        assertThat(resolved.databaseName()).isEqualTo("datasophon");
+        assertThat(resolved.tableName()).isEqualTo("t_ddh_frame_service");
+        assertThat(resolved.canonicalName()).isEqualTo("mysql://192.168.10.131:3306/datasophon/t_ddh_frame_service");
+    }
+
+    /**
+     * Doris 经标准 JDBC（9030）访问时，openlineage-spark 产出的 scheme 是 {@code mysql} 而不是
+     * {@code doris}——JDBC facet 由驱动类/连接串决定，不识别后端产品身份。已实机采样确认，见同上。
+     */
+    @Test
+    void defaultCanonicalResolverResolvesDorisOverJdbcUnderMysqlConnector() {
+        CanonicalNameResolver resolver = new CanonicalNameResolver.Default();
+
+        ResolvedDataset resolved = resolver
+                .resolve(new DatasetIdentity("mysql://192.168.10.131:9030", "l0_probe.doris_output"))
+                .orElseThrow();
+
+        assertThat(resolved.connector()).isEqualTo("mysql");
+        assertThat(resolved.canonicalName()).isEqualTo("mysql://192.168.10.131:9030/l0_probe/doris_output");
+    }
+
+    @Test
+    void defaultCanonicalResolverRejectsAmbiguousJdbcStyleNames() {
+        CanonicalNameResolver resolver = new CanonicalNameResolver.Default();
+
+        assertThat(resolver.resolve(new DatasetIdentity("mysql://host:3306", "orders"))).isEmpty();
+        assertThat(resolver.resolve(new DatasetIdentity("mysql://host:3306", "catalog.schema.table"))).isEmpty();
     }
 
     @Test

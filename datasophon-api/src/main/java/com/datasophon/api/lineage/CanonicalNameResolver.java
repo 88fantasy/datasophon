@@ -31,27 +31,64 @@ public interface CanonicalNameResolver {
     Optional<ResolvedDataset> resolve(DatasetIdentity dataset);
 
     /**
-     * The deliberately narrow default assumes namespace is {@code connector://catalog/database}
-     * and name is the table segment.
+     * Handles two namespace shapes:
+     *
+     * <ul>
+     *   <li><b>Catalog-style</b> — {@code connector://catalog/database} with a bare table name.
+     *       Unconfirmed against any real provider (TODO L0-#2, Hive/Paimon/Iceberg pending).</li>
+     *   <li><b>JDBC-style</b> — {@code connector://host:port} with a {@code database.table} name.
+     *       Confirmed 2026-07-30 against real {@code openlineage-spark} 1.29.0 output (MySQL and
+     *       Doris-over-JDBC both produce this shape); see
+     *       {@code docs/monitoring/data-lineage-verification.md} §3.5. Doris resolves under the
+     *       {@code mysql} connector here because the generic JDBC facet cannot see past the wire
+     *       protocol — rewriting it to a {@code doris} connector needs a host:port allowlist that
+     *       depends on production topology, not something this resolver can infer.</li>
+     * </ul>
      */
     final class Default implements CanonicalNameResolver {
 
         @Override
         public Optional<ResolvedDataset> resolve(DatasetIdentity dataset) {
-            // TODO L0-#2: Gravitino 转换后的 namespace/name 拼写尚未实机确认。
             String namespace = dataset.namespace().trim();
-            String table = dataset.name().trim();
+            String name = dataset.name().trim();
             int schemeSeparator = namespace.indexOf("://");
-            if (schemeSeparator <= 0 || table.isEmpty() || table.contains("/")) {
+            if (schemeSeparator <= 0 || name.isEmpty()) {
                 return Optional.empty();
             }
             String connector = namespace.substring(0, schemeSeparator);
-            String[] path = namespace.substring(schemeSeparator + 3).split("/", -1);
-            if (path.length != 2 || path[0].isBlank() || path[1].isBlank()) {
+            String path = namespace.substring(schemeSeparator + 3);
+            if (path.isBlank()) {
                 return Optional.empty();
             }
-            String canonicalName = connector + "://" + path[0] + "/" + path[1] + "/" + table;
-            return Optional.of(new ResolvedDataset(connector, path[0], path[1], table, canonicalName, null));
+            return path.contains("/") ? resolveCatalogStyle(connector, path, name)
+                    : resolveJdbcStyle(connector, path, name);
+        }
+
+        private Optional<ResolvedDataset> resolveCatalogStyle(String connector, String path, String table) {
+            if (table.isEmpty() || table.contains("/")) {
+                return Optional.empty();
+            }
+            String[] segments = path.split("/", -1);
+            if (segments.length != 2 || segments[0].isBlank() || segments[1].isBlank()) {
+                return Optional.empty();
+            }
+            String canonicalName = connector + "://" + segments[0] + "/" + segments[1] + "/" + table;
+            return Optional.of(new ResolvedDataset(connector, segments[0], segments[1], table, canonicalName, null));
+        }
+
+        private Optional<ResolvedDataset> resolveJdbcStyle(String connector, String hostPort, String name) {
+            int firstDot = name.indexOf('.');
+            if (firstDot <= 0 || firstDot == name.length() - 1 || name.contains("/")
+                    || name.indexOf('.', firstDot + 1) >= 0) {
+                return Optional.empty();
+            }
+            String database = name.substring(0, firstDot);
+            String table = name.substring(firstDot + 1);
+            if (database.isBlank() || table.isBlank()) {
+                return Optional.empty();
+            }
+            String canonicalName = connector + "://" + hostPort + "/" + database + "/" + table;
+            return Optional.of(new ResolvedDataset(connector, hostPort, database, table, canonicalName, null));
         }
     }
 }
