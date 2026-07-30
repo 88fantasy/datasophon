@@ -38,6 +38,12 @@
 8. **NTP 先于所有 K8s 组件部署**
    sealos 安装 etcd 时校验节点时间差 < 2s，若 NTP 未同步会导致 etcd 集群建立失败。
 
+9. **datasophon-api 升级必须先交接血缘 Master 租约**
+   血缘写入口默认通过 `datasophon.lineage.lease.enabled=true` 启用 MySQL 会话锁。
+   升级时先停止旧 API（连接关闭后锁立即释放），再启动新 API，并等待
+   `/ddh/v2/lineage/readiness` 返回 `data.status=UP` 后切流。新实例未持锁时该端点和血缘写入口返回
+   HTTP 503，并每 30 秒重试；该会话锁没有固定过期时长，旧进程不断开就不会自动超时交接。
+
 ---
 
 ## 一、节点角色与组件清单
@@ -358,7 +364,7 @@ spec:
 | 5 | w1 端口 | `ss -lntup \| grep -E '10250\|80\|443'` | 全部 LISTEN |
 | 6 | containerd mirror | 在 m1/w1：`cat /etc/containerd/certs.d/docker.io/hosts.toml` | 含 `http://<mw1>:8083` |
 | 7 | 镜像拉取链路 | 在 w1：`crictl pull docker.io/library/busybox:latest` | 从 mw1:8083 拉取，不走公网 |
-| 8 | datasophon-api 健康 | `curl http://mw1:8080/ddh/actuator/health` | `{"status":"UP"}` |
+| 8 | 血缘 Master 就绪 | `curl -fs http://mw1:8080/ddh/v2/lineage/readiness \| jq -e '.data.owner == true and .data.status == "UP"'` | HTTP 200，租约状态为 `UP` |
 | 9 | MySQL 联通 | `mysql -h mw1 -P 3306 -u datasophon -p` | 登录成功，列出 `datasophon` 库 |
 | 10 | Kuboard 访问 | 浏览器打开 `http://m1:30080` | 出现登录页 |
 | 11 | 离线 yum 源 | 在 m1/w1：`yum repolist` | 仅列出指向 `mw1:8081` 的仓库 |

@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `t_ddh_lineage_parse_log` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `job_id` BIGINT DEFAULT NULL,
     `definition_version` INT DEFAULT NULL,
-    `status` VARCHAR(16) NOT NULL,
+    `status` VARCHAR(32) NOT NULL,
     `message` TEXT DEFAULT NULL,
     `parsed_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     PRIMARY KEY (`id`),

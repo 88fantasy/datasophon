@@ -53,25 +53,25 @@ import org.springframework.web.servlet.i18n.CookieLocaleResolver;
  */
 @Configuration
 public class AppConfiguration implements WebMvcConfigurer {
-    
+
     public static final String LOCALE_LANGUAGE_COOKIE = "language";
-    
+
     @Value("${datasophon.server.path-prefix}")
     private String pathPrefix;
-    
+
     @Value("${springdoc.api-docs.enabled:false}")
     private boolean enableOpenApi;
-    
+
     private final LoginHandlerInterceptor loginHandlerInterceptor;
-    
+
     private final UserPermissionHandler userPermissionHandler;
-    
+
     private final LocaleChangeInterceptor localeChangeInterceptor;
-    
+
     private final BasicValidRequestInterceptor basicValidRequestInterceptor;
-    
+
     private final CsrfTokenInterceptor csrfTokenInterceptor;
-    
+
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
@@ -82,7 +82,7 @@ public class AppConfiguration implements WebMvcConfigurer {
         configSource.registerCorsConfiguration(getPathPrefix() + "/**", config);
         return new CorsFilter(configSource);
     }
-    
+
     public AppConfiguration(LoginHandlerInterceptor loginHandlerInterceptor,
                             UserPermissionHandler userPermissionHandler,
                             LocaleChangeInterceptor localeChangeInterceptor,
@@ -94,7 +94,7 @@ public class AppConfiguration implements WebMvcConfigurer {
         this.basicValidRequestInterceptor = basicValidRequestInterceptor;
         this.csrfTokenInterceptor = csrfTokenInterceptor;
     }
-    
+
     /**
      * Cookie
      *
@@ -110,7 +110,7 @@ public class AppConfiguration implements WebMvcConfigurer {
         localeResolver.setLanguageTagCompliant(false);
         return localeResolver;
     }
-    
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // i18n
@@ -128,6 +128,9 @@ public class AppConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
                         "/v2/login/account",
+                        // OpenLineage ingest is a machine-to-machine endpoint; TODO L2: add shared-token auth
+                        "/v2/lineage",
+                        "/v2/lineage/readiness",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
                         "/service/install/download*"));
@@ -136,7 +139,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                     "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
                     "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
         }
-        
+
         // CSRF token verification — placed after login interceptor
         InterceptorRegistration csrfRegistration = registry
                 .addInterceptor(csrfTokenInterceptor)
@@ -150,6 +153,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
                         "/v2/login/account",
+                        "/v2/lineage",
                         // Logout does not need CSRF protection: the login interceptor already
                         // validates the session, and a forced logout causes no data loss.
                         "/v2/logout",
@@ -161,7 +165,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                     "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
                     "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
         }
-        
+
         InterceptorRegistration basicValidRegistration = registry
                 .addInterceptor(basicValidRequestInterceptor)
                 .addPathPatterns("/**")
@@ -174,7 +178,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                     "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
         }
     }
-    
+
     private String[] getRealExcludeUrl(String... urls) {
         List<String> result = new ArrayList<>(urls.length);
         for (String url : urls) {
@@ -185,15 +189,15 @@ public class AppConfiguration implements WebMvcConfigurer {
         }
         return result.toArray(new String[0]);
     }
-    
+
     // Add request url prefix
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
         configurer.addPathPrefix(getPathPrefix(), aClass -> aClass.getSuperclass().equals(ApiController.class));
     }
-    
+
     private String getPathPrefix() {
         return StringUtils.removeEnd(pathPrefix, "/");
     }
-    
+
 }

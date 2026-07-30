@@ -39,6 +39,12 @@
 8. **Docker daemon 仅安装在需要容器化业务服务的节点**
    纯大数据节点（HDFS/YARN）通常不需要 Docker；需要时在对应 app 节点的 `k8sTools.docker: true` 下配置。
 
+9. **datasophon-api 升级必须先交接血缘 Master 租约**
+   血缘写入口默认通过 `datasophon.lineage.lease.enabled=true` 启用 MySQL 会话锁。
+   升级时先停止旧 API（连接关闭后锁立即释放），再启动新 API，并等待
+   `/ddh/v2/lineage/readiness` 返回 `data.status=UP` 后切流。新实例未持锁时该端点和血缘写入口返回
+   HTTP 503，并每 30 秒重试；该会话锁没有固定过期时长，旧进程不断开就不会自动超时交接。
+
 ---
 
 ## 一、节点角色与组件清单
@@ -345,7 +351,7 @@ systemctl status datasophon-worker
 | 5 | Nexus 健康 | `curl -fs http://mw1:8081/service/rest/v1/status` | HTTP 200 |
 | 6 | Nexus 仓库 | `curl -u admin:xxx http://mw1:8081/service/rest/v1/repositories \| jq '.[].name'` | 含 yum / raw / docker / helm |
 | 7 | yum 离线源（app 节点） | 在 app1：`yum repolist` | 仅列出指向 `mw1:8081` 的仓库 |
-| 8 | datasophon-api 健康 | `curl http://mw1:8080/ddh/actuator/health` | `{"status":"UP"}` |
+| 8 | 血缘 Master 就绪 | `curl -fs http://mw1:8080/ddh/v2/lineage/readiness \| jq -e '.data.owner == true and .data.status == "UP"'` | HTTP 200，租约状态为 `UP` |
 | 9 | MySQL 联通 | `mysql -h mw1 -P 3306 -u datasophon -p` | 登录成功，列出 `datasophon` 库 |
 | 10 | Rustfs S3 | `curl http://mw1:9040/` | 返回 S3 XML 错误页（API 已起） |
 | 11 | mw1 worker 注册 | `grep "WorkerRegistry" <api-log>` | 出现 hostname=mw1 注册成功 |

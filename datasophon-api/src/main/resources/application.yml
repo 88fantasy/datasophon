@@ -75,6 +75,9 @@ logging:
 
 
 datasophon:
+  lineage:
+    lease:
+      enabled: true
   migration:
     enable: true
   observability:

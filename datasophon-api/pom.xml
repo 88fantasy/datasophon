@@ -30,6 +30,10 @@
 
     <artifactId>datasophon-api</artifactId>
 
+    <properties>
+        <excludedGroups>mysql</excludedGroups>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -216,6 +220,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>${skipTests}</skipTests>
+                    <excludedGroups>${excludedGroups}</excludedGroups>
                     <excludes>
                         <exclude>**/MetaUtilsTaskTest.java</exclude>
                         <exclude>**/NexusUtilsTaskTest.java</exclude>
