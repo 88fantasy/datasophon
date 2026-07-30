@@ -7,16 +7,16 @@
 
 ## 1. 一句话现状
 
-L1 **第 1/2/3 批均已实现、验证、提交**（T0-T6 全部完成，只剩 T7 测试补齐 + T8 埋点）：
-默认组 47 个单测 + 真实 MySQL 组 11 个单测全绿，四条纪律机械验证通过，验收 8b 做过证伪实验。
-**第 4 批开工决策已定**（2026-07-30，任务清单 §7.0/§8.0）：T7 逐条审计后确认验收 1-21、23
-**在第 1-3 批已全部覆盖**（每批测试都随功能一起交付，不是遗留缺口），T7 不需要新写测试；
-唯一真实缺口是 **22 号（分段计时 + 锁指标）**，也就是整个 T8。T8 的六个规格沉默处
-（指标库选型 / `lock_wait` 定义域 / `history_list_length` 权限降级 / 六段计时的代码级边界
-/ 接口扩展兼容性 / 验收 22 的测试形态）已逐条钉死在 §8.0 F1-F6，**尚未实现**，是下一步
-唯一要做的代码工作。L0 现场核查**部分完成**（`canonical_name` 的 JDBC 子项已实机采样并
-修复，见 §6）；Hive/Paimon/Iceberg 三类仍是骨架 + `TODO L0-#N`（阻塞于沙箱无
-Spark/Hive metastore/Paimon warehouse）。
+**L1 全部四批（T0-T8）均已实现、验证、提交**。第 1-3 批（T0-T6）默认组 47 个单测 +
+真实 MySQL 组 11 个单测全绿，四条纪律机械验证通过，验收 8b 做过证伪实验。第 4 批
+（T7 审计 + T8 埋点，§7.0/§8.0 F1-F6）已于 2026-07-30 交付：T7 审计确认验收 1-21、23
+在前 3 批已全部覆盖；T8 把 `IngestMetrics`/`RebuildMetrics` 从 `NOOP` 接上真实
+Micrometer（`/actuator/prometheus` 拉模式），补了重建六段计时、`lock_wait`、
+`history_list_length` 权限降级路径，默认组测试从 47 涨到 **50 个全绿**（详见 §5.3，
+含 Codex 两轮交付中 Claude 复跑时发现并修复的 3 处编译期缺陷）。L0 现场核查**部分完成**
+（`canonical_name` 的 JDBC 子项已实机采样并修复，见 §6）；Hive/Paimon/Iceberg 三类仍是
+骨架 + `TODO L0-#N`（阻塞于沙箱无 Spark/Hive metastore/Paimon warehouse），**这是 L1
+之外唯一还悬着的事**，L1 本身范围内的工作已经做完。
 
 ## 2. 分支与提交
 
@@ -49,12 +49,12 @@ Spark/Hive metastore/Paimon warehouse）。
 
 ## 4. 进度
 
-|  批次   |               任务               |            状态             |
-|-------|--------------------------------|---------------------------|
-| 第 1 批 | T0 基准脚手架 · T1 DDL · T2 内存图+协调器 | ✅ 已提交并验证                  |
-| 第 2 批 | R1-R5 返工 · T3 写路径 · T6 单实例租约   | ✅ 已提交并验证                  |
-| 第 3 批 | T4 查询 API · T5 分层 BFS          | ✅ 已提交并验证                  |
-| 第 4 批 | T7 测试 · T8 埋点                  | 🔄 开工决策已定（§7.0/§8.0），未写代码 |
+|  批次   |               任务               |          状态          |
+|-------|--------------------------------|----------------------|
+| 第 1 批 | T0 基准脚手架 · T1 DDL · T2 内存图+协调器 | ✅ 已提交并验证             |
+| 第 2 批 | R1-R5 返工 · T3 写路径 · T6 单实例租约   | ✅ 已提交并验证             |
+| 第 3 批 | T4 查询 API · T5 分层 BFS          | ✅ 已提交并验证             |
+| 第 4 批 | T7 测试 · T8 埋点                  | ✅ 已提交并验证（默认组，见 §5.3） |
 
 ## 5. 第 2 批的验证结论（已完成，勿重做）
 
@@ -101,6 +101,33 @@ Spark/Hive metastore/Paimon warehouse）。
 `@ResponseStatus`，会把 `ResponseStatusException`（503/404/409）吞成 200——
 T4 的整个 fail-closed 设计建立在状态码能正确透传之上，已在开工 T4 前用真实 Spring
 上下文实测坐实并修复（commit `86856178`），详见下方坑表。
+
+## 5.3 第 4 批（T8）的交付与验证（2026-07-30）
+
+Codex 两轮（第一轮网络断连 failed，`codex resume` 续接后 completed）落地了 §8.0 F1-F6：
+新增 `MicrometerIngestMetrics`/`MicrometerRebuildMetrics`/`LineageHistoryListLengthGauge`
+三个类 + `LineageObservabilityTest`，改动 `pom.xml`/`application.yml`/
+`LineageConfiguration`/`IngestMetrics`/`LineageGraphSnapshot`/`LineageIngestService`/
+`LineageRebuildCoordinator`/`MysqlSnapshotLoader`/`LineageDeadlockRetryMysqlTest`。
+
+**Codex 两轮都未能真正编译通过**（沙箱里 `-am` 会拉 `datasophon-ui-v2` 一起构建，第一轮
+卡在前端构建无输出触发网络断连；第二轮前端构建本身过了，但从没跑到 Java 测试编译）——
+按老规矩，Codex 沙箱跑不出来的验证由 Claude 侧复跑，这次多复现了两处编译期缺陷：
+
+1. `LineageObservabilityTest` 误 `import org.springframework.transaction.TransactionCallback`/
+   `TransactionOperations`（实际在 `org.springframework.transaction.support` 包下）
+2. `SimpleMeterRegistry` 在当前 Micrometer 版本下不是 `AutoCloseable`，`try (SimpleMeterRegistry
+   registry = ...)` 编译不过，改成普通声明 + 裸块
+3. 手写的 `IngestJdbcTemplate extends JdbcTemplate` 测试桩只覆盖了 `update(String, Object...)`，
+   漏了 `persist()` 里那条无参 `update(String sql)`（`generation = generation + 1`），
+   补上这个重载后才真正跑通
+
+修完后默认组 **50 个单测全绿**（含新增 `LineageObservabilityTest` 3 个），spotless 无残留改动。
+
+**一个未验证的遗留点**：`LineageDeadlockRetryMysqlTest` 的断言从 `retries >= 1` 改成了
+`registry.get("lineage.ingest.deadlock").counter().count() == 1`——该文件 `@Tag("mysql")`，
+本次默认组验证覆盖不到它，真实死锁场景下是否总是精确重试 1 次，需要下次有真实 MySQL 沙箱时
+复核，若偶发 >1 次会导致该用例变 flaky。
 
 ## 6. 阻塞项：L0 现场核查（9 项，`canonical_name` 的 JDBC 子项已完成，其余未执行）
 

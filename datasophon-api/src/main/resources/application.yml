@@ -73,6 +73,11 @@ mybatis-plus:
 logging:
   config: classpath:logback-api.xml
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
 
 datasophon:
   lineage:

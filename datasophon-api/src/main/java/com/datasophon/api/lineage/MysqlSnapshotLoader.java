@@ -32,6 +32,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
@@ -52,16 +53,27 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
     private final int pageSize;
     private final Clock clock;
     private final PageObserver pageObserver;
+    private final LineageRebuildCoordinator.RebuildMetrics metrics;
 
     public MysqlSnapshotLoader(JdbcTemplate jdbcTemplate) {
-        this(jdbcTemplate, DEFAULT_PAGE_SIZE);
+        this(jdbcTemplate, LineageRebuildCoordinator.RebuildMetrics.NOOP);
+    }
+
+    public MysqlSnapshotLoader(JdbcTemplate jdbcTemplate, LineageRebuildCoordinator.RebuildMetrics metrics) {
+        this(jdbcTemplate, DEFAULT_PAGE_SIZE, Clock.systemUTC(), PageObserver.NOOP, metrics);
     }
 
     MysqlSnapshotLoader(JdbcTemplate jdbcTemplate, int pageSize) {
-        this(jdbcTemplate, pageSize, Clock.systemUTC(), PageObserver.NOOP);
+        this(jdbcTemplate, pageSize, Clock.systemUTC(), PageObserver.NOOP,
+                LineageRebuildCoordinator.RebuildMetrics.NOOP);
     }
 
     MysqlSnapshotLoader(JdbcTemplate jdbcTemplate, int pageSize, Clock clock, PageObserver pageObserver) {
+        this(jdbcTemplate, pageSize, clock, pageObserver, LineageRebuildCoordinator.RebuildMetrics.NOOP);
+    }
+
+    MysqlSnapshotLoader(JdbcTemplate jdbcTemplate, int pageSize, Clock clock, PageObserver pageObserver,
+                        LineageRebuildCoordinator.RebuildMetrics metrics) {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
         if (pageSize <= 0) {
             throw new IllegalArgumentException("pageSize must be positive");
@@ -69,22 +81,40 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
         this.pageSize = pageSize;
         this.clock = Objects.requireNonNull(clock, "clock");
         this.pageObserver = Objects.requireNonNull(pageObserver, "pageObserver");
+        this.metrics = Objects.requireNonNull(metrics, "metrics");
     }
 
     @Override
     public LineageGraphSnapshot load() {
-        Long generation = jdbcTemplate.queryForObject(
-                "SELECT generation FROM t_ddh_lineage_generation WHERE id = 1", Long.class);
-        Map<Long, NodeMeta> nodes = loadNodes();
-        Map<EdgeKey, List<JobRef>> edges = loadCurrentEdges();
+        MappingTimer mappingTimer = new MappingTimer();
+        long readStartedAt = System.nanoTime();
+        Long generation;
+        Map<Long, NodeMeta> nodes;
+        Map<EdgeKey, List<JobRef>> edges;
+        try {
+            generation = jdbcTemplate.queryForObject(
+                    "SELECT generation FROM t_ddh_lineage_generation WHERE id = 1", Long.class);
+            nodes = loadNodes(mappingTimer);
+            edges = loadCurrentEdges(mappingTimer);
+        } finally {
+            long totalReadNanos = System.nanoTime() - readStartedAt;
+            metrics.mapping(mappingTimer.elapsedNanos());
+            metrics.dbRead(Math.max(0, totalReadNanos - mappingTimer.elapsedNanos()));
+        }
 
-        MutableValueGraph<Long, EdgeValue> graph = ValueGraphBuilder.<Long, EdgeValue>directed()
-                .allowsSelfLoops(true)
-                .build();
-        nodes.keySet().forEach(graph::addNode);
-        edges.forEach((key, jobRefs) -> graph.putEdgeValue(key.sourceNodeId(), key.targetNodeId(), new EdgeValue(jobRefs)));
+        MutableValueGraph<Long, EdgeValue> graph;
+        long graphStartedAt = System.nanoTime();
+        try {
+            graph = ValueGraphBuilder.<Long, EdgeValue>directed()
+                    .allowsSelfLoops(true)
+                    .build();
+            nodes.keySet().forEach(graph::addNode);
+            edges.forEach((key, jobRefs) -> graph.putEdgeValue(key.sourceNodeId(), key.targetNodeId(), new EdgeValue(jobRefs)));
+        } finally {
+            metrics.graphBuild(System.nanoTime() - graphStartedAt);
+        }
         LineageGraphSnapshot snapshot = LineageGraphSnapshot.copyOf(
-                graph, nodes, Objects.requireNonNull(generation, "generation"), clock.instant());
+                graph, nodes, Objects.requireNonNull(generation, "generation"), clock.instant(), metrics);
         if (snapshot.meta().hasNonTrivialCycle()) {
             logger.warn(
                     "Lineage snapshot generation {} contains a non-trivial cycle; impact traversal results may be cyclic",
@@ -93,7 +123,7 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
         return snapshot;
     }
 
-    private Map<Long, NodeMeta> loadNodes() {
+    private Map<Long, NodeMeta> loadNodes(MappingTimer mappingTimer) {
         Map<Long, NodeMeta> nodes = new LinkedHashMap<>();
         long lastId = 0;
         while (true) {
@@ -105,14 +135,14 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
                             ORDER BY id
                             LIMIT ?
                             """,
-                    (resultSet, rowNumber) -> new NodeMeta(
+                    mappingTimer.measure((resultSet, rowNumber) -> new NodeMeta(
                             resultSet.getLong("id"),
                             resultSet.getString("connector"),
                             resultSet.getString("catalog_name"),
                             resultSet.getString("database_name"),
                             resultSet.getString("table_name"),
                             resultSet.getString("canonical_name"),
-                            resultSet.getString("dw_layer")),
+                            resultSet.getString("dw_layer"))),
                     lastId, pageSize);
             if (page.isEmpty()) {
                 return nodes;
@@ -127,7 +157,7 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
         }
     }
 
-    private Map<EdgeKey, List<JobRef>> loadCurrentEdges() {
+    private Map<EdgeKey, List<JobRef>> loadCurrentEdges(MappingTimer mappingTimer) {
         Map<EdgeKey, List<JobRef>> edges = new LinkedHashMap<>();
         long lastId = 0;
         while (true) {
@@ -139,13 +169,13 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
                             ORDER BY id
                             LIMIT ?
                             """,
-                    (resultSet, rowNumber) -> new EdgeRow(
+                    mappingTimer.measure((resultSet, rowNumber) -> new EdgeRow(
                             resultSet.getLong("id"),
                             resultSet.getLong("job_id"),
                             resultSet.getInt("definition_version"),
                             resultSet.getLong("src_node_id"),
                             resultSet.getLong("dst_node_id"),
-                            resultSet.getString("flow_type")),
+                            resultSet.getString("flow_type"))),
                     lastId, pageSize);
             if (page.isEmpty()) {
                 return edges;
@@ -167,6 +197,26 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
     }
 
     record EdgeRow(long id, long jobId, int definitionVersion, long sourceNodeId, long targetNodeId, String flowType) {
+    }
+
+    private static final class MappingTimer {
+
+        private long elapsedNanos;
+
+        private <T> RowMapper<T> measure(RowMapper<T> delegate) {
+            return (resultSet, rowNumber) -> {
+                long startedAt = System.nanoTime();
+                try {
+                    return delegate.mapRow(resultSet, rowNumber);
+                } finally {
+                    elapsedNanos += System.nanoTime() - startedAt;
+                }
+            };
+        }
+
+        private long elapsedNanos() {
+            return elapsedNanos;
+        }
     }
 
     @FunctionalInterface

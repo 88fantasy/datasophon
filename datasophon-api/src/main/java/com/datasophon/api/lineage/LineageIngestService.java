@@ -230,7 +230,8 @@ public final class LineageIngestService implements LineageIngestOperations {
     }
 
     private JobState lockJob(long jobId) {
-        return Objects.requireNonNull(jdbcTemplate.queryForObject(
+        long startedAt = System.nanoTime();
+        JobState job = Objects.requireNonNull(jdbcTemplate.queryForObject(
                 """
                         SELECT current_structural_hash, current_watermark
                         FROM t_ddh_data_job
@@ -244,6 +245,8 @@ public final class LineageIngestService implements LineageIngestOperations {
                             resultSet.wasNull() ? null : watermark);
                 },
                 jobId));
+        metrics.lockWait(System.nanoTime() - startedAt);
+        return job;
     }
 
     private Map<String, Long> upsertNodes(Collection<ResolvedDataset> datasets, Instant seenAt) {

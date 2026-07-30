@@ -42,4 +42,7 @@ public interface IngestMetrics {
 
     default void deadlockRetry(int attempt, long backoffMillis) {
     }
+
+    default void lockWait(long waitNanos) {
+    }
 }

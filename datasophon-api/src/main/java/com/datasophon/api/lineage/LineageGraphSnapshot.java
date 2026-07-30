@@ -63,23 +63,49 @@ public final class LineageGraphSnapshot {
 
     public static LineageGraphSnapshot copyOf(ValueGraph<Long, EdgeValue> graph, Map<Long, NodeMeta> nodeMeta,
                                               long generation, Instant builtAt) {
+        return copyOf(graph, nodeMeta, generation, builtAt, LineageRebuildCoordinator.RebuildMetrics.NOOP);
+    }
+
+    public static LineageGraphSnapshot copyOf(ValueGraph<Long, EdgeValue> graph, Map<Long, NodeMeta> nodeMeta,
+                                              long generation, Instant builtAt,
+                                              LineageRebuildCoordinator.RebuildMetrics metrics) {
         Objects.requireNonNull(graph, "graph");
         Objects.requireNonNull(nodeMeta, "nodeMeta");
-        ImmutableValueGraph<Long, EdgeValue> immutableGraph = ImmutableValueGraph.copyOf(graph);
-        ImmutableMap<Long, NodeMeta> immutableNodeMeta = ImmutableMap.copyOf(nodeMeta);
-        long selfLoopCount = immutableGraph.edges().stream()
-                .filter(edge -> edge.nodeU().equals(edge.nodeV()))
-                .count();
-        MutableGraph<Long> stripped = GraphBuilder.directed().allowsSelfLoops(false).build();
-        immutableGraph.nodes().forEach(stripped::addNode);
-        immutableGraph.edges().stream()
-                .filter(edge -> !edge.nodeU().equals(edge.nodeV()))
-                .forEach(edge -> stripped.putEdge(edge.nodeU(), edge.nodeV()));
-        boolean hasNonTrivialCycle = Graphs.hasCycle(stripped);
-        long physicalEdgeCount = countPhysicalEdges(immutableGraph);
-        LineageSnapshotMeta snapshotMeta = LineageSnapshotMeta.fresh(generation, builtAt, selfLoopCount,
-                hasNonTrivialCycle, immutableGraph.nodes().size(), immutableGraph.edges().size(), physicalEdgeCount);
-        return new LineageGraphSnapshot(immutableGraph, immutableNodeMeta, snapshotMeta, physicalEdgeCount);
+        Objects.requireNonNull(metrics, "metrics");
+        long copyStartedAt = System.nanoTime();
+        long cycleNanos = 0;
+        boolean cycleMeasured = false;
+        try {
+            ImmutableValueGraph<Long, EdgeValue> immutableGraph = ImmutableValueGraph.copyOf(graph);
+            ImmutableMap<Long, NodeMeta> immutableNodeMeta = ImmutableMap.copyOf(nodeMeta);
+            long selfLoopCount = immutableGraph.edges().stream()
+                    .filter(edge -> edge.nodeU().equals(edge.nodeV()))
+                    .count();
+            MutableGraph<Long> stripped = GraphBuilder.directed().allowsSelfLoops(false).build();
+            immutableGraph.nodes().forEach(stripped::addNode);
+            immutableGraph.edges().stream()
+                    .filter(edge -> !edge.nodeU().equals(edge.nodeV()))
+                    .forEach(edge -> stripped.putEdge(edge.nodeU(), edge.nodeV()));
+            long cycleStartedAt = System.nanoTime();
+            boolean hasNonTrivialCycle;
+            try {
+                hasNonTrivialCycle = Graphs.hasCycle(stripped);
+            } finally {
+                cycleNanos = System.nanoTime() - cycleStartedAt;
+                cycleMeasured = true;
+            }
+            long physicalEdgeCount = countPhysicalEdges(immutableGraph);
+            LineageSnapshotMeta snapshotMeta = LineageSnapshotMeta.fresh(generation, builtAt, selfLoopCount,
+                    hasNonTrivialCycle, immutableGraph.nodes().size(), immutableGraph.edges().size(),
+                    physicalEdgeCount);
+            return new LineageGraphSnapshot(immutableGraph, immutableNodeMeta, snapshotMeta, physicalEdgeCount);
+        } finally {
+            long totalNanos = System.nanoTime() - copyStartedAt;
+            if (cycleMeasured) {
+                metrics.cycleCheck(cycleNanos);
+            }
+            metrics.snapshotCopy(Math.max(0, totalNanos - cycleNanos));
+        }
     }
 
     public ImmutableValueGraph<Long, EdgeValue> graph() {

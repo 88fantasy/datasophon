@@ -34,20 +34,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 class LineageDeadlockRetryMysqlTest extends LineageMysqlTestSupport {
 
     @Test
     void inverseNodeUpdatesDeadlockAndWholeTransactionRetryRecovers() throws Exception {
         long firstNodeId = insertNode("shared-a");
         long secondNodeId = insertNode("shared-b");
-        AtomicInteger retries = new AtomicInteger();
-        IngestMetrics metrics = new IngestMetrics() {
-            @Override
-            public void deadlockRetry(int attempt, long backoffMillis) {
-                retries.incrementAndGet();
-            }
-        };
-        LineageIngestService service = ingestService(metrics);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        LineageIngestService service = ingestService(new MicrometerIngestMetrics(registry));
         CountDownLatch firstLocksAcquired = new CountDownLatch(2);
         AtomicInteger leftAttempts = new AtomicInteger();
         AtomicInteger rightAttempts = new AtomicInteger();
@@ -63,8 +59,9 @@ class LineageDeadlockRetryMysqlTest extends LineageMysqlTestSupport {
             executor.shutdownNow();
         }
 
-        assertThat(retries.get()).isGreaterThanOrEqualTo(1);
+        assertThat(registry.get("lineage.ingest.deadlock").counter().count()).isEqualTo(1);
         assertThat(leftAttempts.get() + rightAttempts.get()).isGreaterThanOrEqualTo(3);
+        registry.close();
     }
 
     private static boolean updateInOppositeOrder(

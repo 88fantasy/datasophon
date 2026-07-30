@@ -28,15 +28,20 @@ import com.datasophon.api.lineage.LineageEventDecoder;
 import com.datasophon.api.lineage.LineageGenerationReader;
 import com.datasophon.api.lineage.LineageGraphQuery;
 import com.datasophon.api.lineage.LineageGraphSnapshotHolder;
+import com.datasophon.api.lineage.LineageHistoryListLengthGauge;
 import com.datasophon.api.lineage.LineageIngestService;
 import com.datasophon.api.lineage.LineageLeaseGuard;
 import com.datasophon.api.lineage.LineageMasterLease;
 import com.datasophon.api.lineage.LineageRebuildCoordinator;
 import com.datasophon.api.lineage.LineageStructureChangedListener;
+import com.datasophon.api.lineage.MicrometerIngestMetrics;
+import com.datasophon.api.lineage.MicrometerRebuildMetrics;
 import com.datasophon.api.lineage.MysqlSnapshotLoader;
 import com.datasophon.api.lineage.StructuralHashCalculator;
 import com.datasophon.api.lineage.WatermarkExtractor;
 import com.datasophon.api.lineage.event.OpenLineageEventDecoder;
+
+import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +54,8 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.core.instrument.MeterRegistry;
 
 /** Spring assembly for the DB-authoritative lineage write and projection paths. */
 @Configuration
@@ -70,8 +77,10 @@ public class LineageConfiguration {
     }
 
     @Bean
-    public MysqlSnapshotLoader mysqlSnapshotLoader(JdbcTemplate jdbcTemplate) {
-        return new MysqlSnapshotLoader(jdbcTemplate);
+    public MysqlSnapshotLoader mysqlSnapshotLoader(
+                                                   JdbcTemplate jdbcTemplate,
+                                                   LineageRebuildCoordinator.RebuildMetrics rebuildMetrics) {
+        return new MysqlSnapshotLoader(jdbcTemplate, rebuildMetrics);
     }
 
     @Bean("lineageReadTransaction")
@@ -91,8 +100,9 @@ public class LineageConfiguration {
     public LineageRebuildCoordinator lineageRebuildCoordinator(
                                                                LineageGraphSnapshotHolder snapshotHolder,
                                                                MysqlSnapshotLoader snapshotLoader,
-                                                               @Qualifier("lineageReadTransaction") TransactionTemplate readTransaction) {
-        return new LineageRebuildCoordinator(snapshotHolder, snapshotLoader, readTransaction);
+                                                               @Qualifier("lineageReadTransaction") TransactionTemplate readTransaction,
+                                                               LineageRebuildCoordinator.RebuildMetrics rebuildMetrics) {
+        return new LineageRebuildCoordinator(snapshotHolder, snapshotLoader, readTransaction, rebuildMetrics);
     }
 
     @Bean
@@ -116,8 +126,20 @@ public class LineageConfiguration {
     }
 
     @Bean
-    public IngestMetrics lineageIngestMetrics() {
-        return IngestMetrics.NOOP;
+    public IngestMetrics lineageIngestMetrics(MeterRegistry meterRegistry) {
+        return new MicrometerIngestMetrics(meterRegistry);
+    }
+
+    @Bean
+    public LineageRebuildCoordinator.RebuildMetrics lineageRebuildMetrics(MeterRegistry meterRegistry) {
+        return new MicrometerRebuildMetrics(meterRegistry);
+    }
+
+    @Bean
+    public LineageHistoryListLengthGauge lineageHistoryListLengthGauge(
+                                                                       DataSource dataSource,
+                                                                       MeterRegistry meterRegistry) {
+        return new LineageHistoryListLengthGauge(dataSource, meterRegistry);
     }
 
     @Bean(initMethod = "start", destroyMethod = "close")

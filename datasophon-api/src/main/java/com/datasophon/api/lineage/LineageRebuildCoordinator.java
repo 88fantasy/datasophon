@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.Ordered;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -47,10 +48,11 @@ import jakarta.annotation.PreDestroy;
  * <p>禁止使用 {@code Graphs.transitiveClosure()}：其 O(V·E) 复杂度和超级节点结果集会导致
  * 不可控的 CPU 与堆占用；查询侧必须使用有界分层 BFS。</p>
  */
-public final class LineageRebuildCoordinator implements ApplicationRunner, AutoCloseable {
+public final class LineageRebuildCoordinator implements ApplicationRunner, Ordered, AutoCloseable {
 
     static final int DEFAULT_MAX_DRAIN_ROUNDS = 8;
     static final Duration DEFAULT_MAX_DRAIN_DURATION = Duration.ofSeconds(2);
+    static final int STARTUP_ORDER = Ordered.LOWEST_PRECEDENCE - 1;
 
     private final LineageGraphSnapshotHolder snapshotHolder;
     private final SnapshotLoader snapshotLoader;
@@ -101,6 +103,11 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
         requestRebuild(Trigger.STARTUP);
     }
 
+    @Override
+    public int getOrder() {
+        return STARTUP_ORDER;
+    }
+
     @Scheduled(fixedDelay = 3 * 60 * 1000)
     public void requestScheduledRebuild() {
         requestRebuild(Trigger.SCHEDULED);
@@ -128,7 +135,13 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
     }
 
     boolean publishIfNotOlder(LineageGraphSnapshot next) {
-        LineageGraphSnapshotHolder.PublishResult result = snapshotHolder.publishIfNotOlder(next);
+        long startedAt = System.nanoTime();
+        LineageGraphSnapshotHolder.PublishResult result;
+        try {
+            result = snapshotHolder.publishIfNotOlder(next);
+        } finally {
+            metrics.publish(System.nanoTime() - startedAt);
+        }
         if (!result.published()) {
             metrics.staleRebuildDiscarded(next.generation(), result.currentGeneration());
             return false;
@@ -163,6 +176,7 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
                     break;
                 }
                 lastRebuildError = null;
+                metrics.rebuildSucceeded();
                 rounds++;
                 if (rounds >= maxDrainRounds || clock.millis() > deadline) {
                     pending.set(true);
@@ -243,6 +257,27 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
         }
 
         default void drainYielded(int completedRounds, long elapsedMillis) {
+        }
+
+        default void dbRead(long elapsedNanos) {
+        }
+
+        default void mapping(long elapsedNanos) {
+        }
+
+        default void graphBuild(long elapsedNanos) {
+        }
+
+        default void snapshotCopy(long elapsedNanos) {
+        }
+
+        default void cycleCheck(long elapsedNanos) {
+        }
+
+        default void publish(long elapsedNanos) {
+        }
+
+        default void rebuildSucceeded() {
         }
     }
 
