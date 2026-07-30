@@ -212,6 +212,129 @@ Spark 作业 → 边正确入库"需要真实 SPARK3 + Hive metastore + Paimon w
 部署才能跑，本次会话没有这个环境
 - L2 验收原文"`gravitino_lineage.log` 与 MySQL 内容一致"完全未验证
 
+## 8c. Gravitino 三个 catalog 已建好，为 canonical_name 采样清障（2026-07-30 同日追加）
+
+在五节点沙箱（`deploy/deployment-standalone-doris.md`）已装好的 Gravitino（ddh-02）
+上，经 REST API 在既有 metalake `datasophon_verify` 下创建了 `paimon_fs`
+（filesystem backend，本地磁盘）、`paimon_s3`（filesystem backend，warehouse 指向
+RustFS S3，bucket `lineage-paimon-warehouse`）、`doris_catalog`（`jdbc-doris`
+provider，指向 ddh-01 的 Doris FE）三个 catalog，全部建 schema + 建表验证到底
+（非仅创建成功）。**不涉及部署 SPARK3/HDFS/Hive metastore（仍属阶段 B，未启动）**，
+纯粹是 Gravitino 侧准备。详细操作记录、踩坑（两个内置 catalog provider 缺运行时
+jar；Paimon S3 catalog 的 `s3.*` 标准 key 建 schema 时才报"缺失"，须同时用
+`gravitino.bypass.*` 透传重复一遍）见 `deploy/deployment-standalone-doris.md` §7.14。
+
+**这不等于 L0/L2 采样已完成**：上面三个 catalog 目前只验证了"能通过 Gravitino
+Java API 建表"，还没有一条真实 Spark 作业经过 `openlineage-spark` 监听器写入这三个
+catalog——真正要采样的 `namespace`/`name` 格式，只有让 Spark 对着这三个 catalog 跑
+一次真实读写才能拿到。Hive catalog 仍然完全没有环境（阶段 B 依赖的 Hive metastore
+未搭）。下一步是本机下载 Spark scp 到 ddh-02，配上 openlineage-spark console
+transport，对 `paimon_fs`/`paimon_s3`/`doris_catalog` 各跑一次真实读写。
+
+## 8d. Spark 真实读写采样结果：Paimon/Doris 在 openlineage-spark 里根本采不到（2026-07-30 同日追加，重大负面结论）
+
+**结论先行**：用 Nexus 上现成的 `spark-3.5.8-bin-hadoop3.tgz`（`package/manifest.json`
+声明的官方版本，与生产 SPARK3 DDL 一致）在 ddh-02 跑了三组真实读写（`CREATE TABLE`
++ `INSERT` + `SELECT`），配置**完全照抄生产 `SPARK3/service_ddl.json` 的
+`custom.spark.defaults.conf`**（`org.apache.paimon.spark.SparkCatalog`、
+`org.apache.doris.spark.catalog.DorisTableCatalog`，不经过 Gravitino Spark
+connector——见下方"弯路"一节说明为什么绕过它），`openlineage-spark` 全部三个
+catalog 都打印了 START/COMPLETE 事件，但 **`inputs`/`outputs` 字段永远是空数组
+`[]`，日志里明确报 `WARN PlanUtils3: Catalog <类名> is unsupported: Cannot
+extract dataset for catalog=<类名>`**（Paimon 是 `org.apache.paimon.spark.
+SparkCatalog`，Doris 是 `org.apache.doris.spark.catalog.DorisTableCatalog`）。
+这不是配置错、不是版本没对上、也不是 Gravitino 引入的问题——**`openlineage-spark`
+从 1.29.0（本次生产用的版本）到 Maven Central 当前最新 1.52.0，反编译两个版本的
+jar 确认都不存在任何 `Paimon`/`Doris` 相关的 class 或 handler**：对比之下
+`Iceberg`/`Delta`（`IcebergHandler`/`DeltaHandler`/`DatabricksDeltaHandler`
+等一整套 handler 类）是有官方支持的，Paimon 和 Doris 的 DSv2 catalog 连一个字符
+串"paimon"/"doris"都搜不到。之前 L0 能采到 JDBC 格式（`aea2948f` 那次），是因为
+那次走的是 `spark.read.jdbc()` 标准 JDBC 数据源代码路径，跟这次的 DSv2
+TableCatalog（`org.apache.paimon.spark.SparkCatalog`/`DorisTableCatalog`）是
+openlineage-spark 内部完全不同的两套抽取逻辑——JDBC 那条路径有支持，DSv2
+catalog 这条路径对 Paimon/Doris 没有支持。
+
+**对 CanonicalNameResolver 的影响：不需要改代码**——`CanonicalNameResolver` 只在
+`namespace`/`name` 真的出现在事件里时才会被调用；Paimon/Doris 这两类事件的
+`inputs`/`outputs` 从源头就是空的，没有字符串可解析，属于"上游根本不产出数据"，
+不是"产出了但解析错了"，两者是完全不同性质的问题，本次不涉及 T3/CanonicalNameResolver
+代码改动。
+
+**走过的弯路，供下次直接跳过**：
+1. 一开始按之前的既定思路让 Spark 经 **Gravitino Spark connector**
+（`org.apache.gravitino.spark.connector.plugin.GravitinoSparkPlugin`）接
+`paimon_fs`/`paimon_s3`/`doris_catalog` 三个 Gravitino catalog——`CREATE
+TABLE`/`INSERT`/`SELECT` 全部真实成功（Gravitino 把 Paimon 包了一层
+`GravitinoPaimonCatalogSpark35`），但 `openlineage-spark` 同样报
+`PlanUtils3: Catalog org.apache.gravitino.spark.connector.paimon.
+GravitinoPaimonCatalogSpark35 is unsupported`——Gravitino 包了一层之后
+**类名变了**，openlineage-spark 更加不可能认得。这提示：**Gravitino Spark
+connector 这条路径天生就比生产现用的"Spark 直连各 catalog"更不利于血缘采集**，
+与架构文档 D1 小节"生产 `custom.spark.defaults.conf` 不经过 Gravitino 做 catalog
+联邦"这个决策方向一致，不需要再重新评估走 Gravitino 这条路。
+2. `spark-sql` CLI 默认把日志压到 `WARN`（`conf/log4j2.properties.template`
+里 `logger.thriftserver.level = warn` 会在运行时覆盖 `rootLogger.level=info`），
+`openlineage-spark` 的 `ConsoleTransport` 是按 `INFO` 打的，不改这一行看起来会
+是"完全没有任何事件"的假象，容易误判为监听器没生效。
+3. JDK17 下 `openlineage-spark` 的反射式 provider 加载（`SparkOpenLineage
+ExtensionVisitorWrapper`）会因为 `--add-opens` 缺失和 `--jars` 参数传入的 jar
+和通过 `spark.extraListeners` 反射实例化的 jar **classloader 不一致**而报
+`InaccessibleObjectException`——把所有相关 jar（`openlineage-spark`/
+`paimon-spark`/`paimon-s3`/`spark-doris-connector`/`mysql-connector-j`）直接
+放进 `$SPARK_HOME/jars/`（而不是 `--jars` 参数）+ 加
+`--add-opens=java.base/java.security=ALL-UNNAMED` 等三个 flag 解决了这个警告，
+但**不影响本节的核心负面结论**（解决这个警告之后 `PlanUtils3 unsupported` 依然
+存在，两者是独立问题）。
+
+**对 L2 验收原文"提交真实 Spark 作业 → 边正确入库"的影响**：Hive 尚未验证（无
+metastore 环境，但 Hive 是 Spark 自带的 v1 catalog，openlineage-spark 历史最早
+支持的类型之一，架构上大概率没问题，只是没有实机验证过）；**Paimon 和 Doris 两类
+作业，只要还在用 `openlineage-spark` 做血缘采集，无论用不用 Gravitino，都拿不到
+`namespace`/`name`——这是 L2 架构层面需要用户决策的新问题**，不是能靠继续调环境
+解决的。可能的方向（未与用户讨论，仅供参考）：a) 接受 Paimon/Doris 暂时没有
+列级/表级血缘，只覆盖 Hive/Iceberg/JDBC；b) 自己写一个实现
+`OpenLineageExtensionProvider` SPI 的小扩展类随 SPARK3 包分发（`openlineage-spark`
+有这个 SPI 但没人为 Paimon/Doris 实现，`paimon-spark`/`spark-doris-connector`
+两个 jar 都没有 `META-INF/services/io.openlineage.spark.api.
+OpenLineageExtensionProvider` 条目，反编译确认过）；c) 给 openlineage 上游提
+issue/PR。
+
+## 8e. Iceberg catalog 验证：openlineage-spark 真的能采到，正面结论（2026-07-30 同日追加）
+
+按用户要求专门验证 Iceberg（`docs` §8d 提到官方有 `IcebergHandler`，值得优先确认）。
+用官方 `org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2`（生产 DDL 里锁的是
+`iceberg-spark-runtime-3.4_2.12-1.3.1.jar`，本次为规避跨小版本兼容风险改用与
+Spark 3.5.8 精确匹配的 3.5 线最新版，不影响"是否支持"这个结论本身——支持与否由
+`openlineage-spark` 的 `IcebergHandler` 按类名 `org.apache.iceberg.spark.
+SparkCatalog` 匹配决定，跟 Iceberg 具体小版本无关），建一个 Hadoop 类型的独立
+catalog（`type=hadoop`，`warehouse=file:///data/iceberg-warehouse-fs`，不依赖
+Hive metastore，隔离测试）。
+
+**结果**：`CREATE TABLE ... USING iceberg` 的 `COMPLETE` 事件、`INSERT`（`append_data`
+job）的 `START`/`RUNNING`/`COMPLETE`、`SELECT`（`columnar_to_row` job）的输入端，
+**全部正确带上了 `outputs`/`inputs`**，零 `PlanUtils3 unsupported` 警告：
+
+```
+namespace = "file"
+name      = "/data/iceberg-warehouse-fs/lineage_probe/ol_native"
+```
+
+即 Iceberg 走的是"表物理存储位置"命名法：`namespace` 是文件系统 scheme（本例是
+本地磁盘的 `file`，生产上 S3/HDFS 场景预期会是 `s3a`/`hdfs` 等），`name` 是表在
+该文件系统下的绝对路径——**跟 JDBC 那次"`namespace=scheme://host:port`、
+`name=database.table`"是完全不同的命名法**，`CanonicalNameResolver` 现有的两个
+分支（catalog-style 两段 namespace / JDBC-style 一段 namespace）都不认识这种
+"路径当 name"的格式，**如果 Iceberg 血缘要接入生产，`CanonicalNameResolver`
+需要新增第三个分支**，具体规则和是否需要下次找到真实 S3/HDFS 环境验证前缀之后
+再定，本次只确认了"能采到"这个前提。
+
+**未验证**：本次只测了 `type=hadoop` 独立 catalog；生产 DDL 实际配置是 Iceberg
+表建在默认 `spark_catalog`（Hive metastore 支撑）下，`namespace`/`name` 的具体值
+在 Hive metastore 场景可能不同（`IcebergHandler` 内部按 catalog 类型分支，
+`HiveCatalog` 场景大概率仍是路径命名法，但没有 Hive metastore 环境实测过，不能
+断言完全一致）；S3/HDFS 后端的 `namespace` scheme 具体值（`s3a` 还是别的）也没
+实测，本地磁盘测试无法覆盖。
+
 ## 9. 审查历史
 
 |     轮次      |                       来源                        |                                                               结果                                                               |
