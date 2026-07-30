@@ -44,10 +44,12 @@ class LineageDdlContractTest {
         TreeSet<Migration> migrations =
                 ReflectionTestUtils.invokeMethod(new DatabaseMigration(null), "getAllMigrations");
 
-        Migration latest = migrations.last();
-        assertThat(latest.getVersion()).isEqualTo("2.2.5");
-        assertThat(latest.getUpgradeDDLFile().getFilename()).isEqualTo("V2.2.5__DDL.sql");
-        assertThat(latest.getUpgradeDMLFile().getFilename()).isEqualTo("V2.2.5__DML.sql");
+        Migration target = migrations.stream()
+                .filter(migration -> "2.2.5".equals(migration.getVersion()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("migration 2.2.5 not discovered"));
+        assertThat(target.getUpgradeDDLFile().getFilename()).isEqualTo("V2.2.5__DDL.sql");
+        assertThat(target.getUpgradeDMLFile().getFilename()).isEqualTo("V2.2.5__DML.sql");
     }
 
     @Test
@@ -67,6 +69,7 @@ class LineageDdlContractTest {
                     .contains("UNIQUE KEY `uk_job_version` (`job_id`, `version`)")
                     .doesNotContain("UNIQUE KEY `uk_job_version` (`job_id`, `content_hash`)")
                     .contains("UNIQUE KEY `uk_event` (`producer`, `run_id`, `event_type`)")
+                    .contains("`status` VARCHAR(32) NOT NULL")
                     // 作业身份必须 UNIQUE：普通 KEY 会让写路径的 FOR UPDATE 锁不住不存在的行，
                     // 并发首次事件产生两个 job_id（三轮自审 F1）
                     .contains("UNIQUE KEY `uk_data_job_identity` (`cluster_id`, `engine`, `job_name`)")

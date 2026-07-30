@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.annotation.PreDestroy;
 
@@ -53,6 +54,7 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
 
     private final LineageGraphSnapshotHolder snapshotHolder;
     private final SnapshotLoader snapshotLoader;
+    private final TransactionTemplate readTransaction;
     private final RebuildMetrics metrics;
     private final Clock clock;
     private final ExecutorService rebuildExecutor;
@@ -63,21 +65,23 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
     private final AtomicBoolean closed = new AtomicBoolean();
     private volatile Throwable lastRebuildError;
 
-    public LineageRebuildCoordinator(LineageGraphSnapshotHolder snapshotHolder, SnapshotLoader snapshotLoader) {
-        this(snapshotHolder, snapshotLoader, RebuildMetrics.NOOP);
+    public LineageRebuildCoordinator(LineageGraphSnapshotHolder snapshotHolder, SnapshotLoader snapshotLoader,
+                                     TransactionTemplate readTransaction) {
+        this(snapshotHolder, snapshotLoader, readTransaction, RebuildMetrics.NOOP);
     }
 
     public LineageRebuildCoordinator(LineageGraphSnapshotHolder snapshotHolder, SnapshotLoader snapshotLoader,
-                                     RebuildMetrics metrics) {
-        this(snapshotHolder, snapshotLoader, metrics, Clock.systemUTC(), newRebuildExecutor(),
+                                     TransactionTemplate readTransaction, RebuildMetrics metrics) {
+        this(snapshotHolder, snapshotLoader, readTransaction, metrics, Clock.systemUTC(), newRebuildExecutor(),
                 DEFAULT_MAX_DRAIN_ROUNDS, DEFAULT_MAX_DRAIN_DURATION);
     }
 
     LineageRebuildCoordinator(LineageGraphSnapshotHolder snapshotHolder, SnapshotLoader snapshotLoader,
-                              RebuildMetrics metrics, Clock clock, ExecutorService rebuildExecutor, int maxDrainRounds,
-                              Duration maxDrainDuration) {
+                              TransactionTemplate readTransaction, RebuildMetrics metrics, Clock clock,
+                              ExecutorService rebuildExecutor, int maxDrainRounds, Duration maxDrainDuration) {
         this.snapshotHolder = Objects.requireNonNull(snapshotHolder, "snapshotHolder");
         this.snapshotLoader = Objects.requireNonNull(snapshotLoader, "snapshotLoader");
+        this.readTransaction = Objects.requireNonNull(readTransaction, "readTransaction");
         this.metrics = Objects.requireNonNull(metrics, "metrics");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.rebuildExecutor = Objects.requireNonNull(rebuildExecutor, "rebuildExecutor");
@@ -118,8 +122,8 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
         return Optional.ofNullable(lastRebuildError);
     }
 
-    boolean publishIfNewer(LineageGraphSnapshot next) {
-        LineageGraphSnapshotHolder.PublishResult result = snapshotHolder.publishIfNewer(next);
+    boolean publishIfNotOlder(LineageGraphSnapshot next) {
+        LineageGraphSnapshotHolder.PublishResult result = snapshotHolder.publishIfNotOlder(next);
         if (!result.published()) {
             metrics.staleRebuildDiscarded(next.generation(), result.currentGeneration());
             return false;
@@ -170,8 +174,21 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
     }
 
     private void doRebuild() throws Exception {
-        LineageGraphSnapshot next = Objects.requireNonNull(snapshotLoader.load(), "snapshotLoader returned null");
-        publishIfNewer(next);
+        LineageGraphSnapshot next;
+        try {
+            next = Objects.requireNonNull(
+                    readTransaction.execute(status -> {
+                        try {
+                            return snapshotLoader.load();
+                        } catch (Exception e) {
+                            throw new SnapshotLoadException(e);
+                        }
+                    }),
+                    "snapshotLoader returned null");
+        } catch (SnapshotLoadException e) {
+            throw (Exception) e.getCause();
+        }
+        publishIfNotOlder(next);
     }
 
     @Override
@@ -221,6 +238,13 @@ public final class LineageRebuildCoordinator implements ApplicationRunner, AutoC
         }
 
         default void drainYielded(int completedRounds, long elapsedMillis) {
+        }
+    }
+
+    private static final class SnapshotLoadException extends RuntimeException {
+
+        private SnapshotLoadException(Exception cause) {
+            super(cause);
         }
     }
 }

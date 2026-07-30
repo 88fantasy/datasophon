@@ -26,23 +26,22 @@ import java.time.Instant;
 import java.util.Objects;
 
 /** 快照构建时的不可变元数据。 */
-public record LineageSnapshotMeta(long generation, long targetGeneration, Instant builtAt, boolean stale,
-        boolean degraded, boolean hasCycle, int nodeCount, long logicalEdgeCount, long physicalEdgeCount,
-        String lastRebuildError) {
+public record LineageSnapshotMeta(long generation, long targetGeneration, Instant builtAt, long selfLoopCount,
+        boolean hasNonTrivialCycle, int nodeCount, long logicalEdgeCount, long physicalEdgeCount) {
 
     public LineageSnapshotMeta {
         if (generation < 0 || targetGeneration < generation) {
             throw new IllegalArgumentException("generation must be non-negative and not exceed targetGeneration");
         }
         Objects.requireNonNull(builtAt, "builtAt");
-        if (nodeCount < 0 || logicalEdgeCount < 0 || physicalEdgeCount < logicalEdgeCount) {
+        if (selfLoopCount < 0 || nodeCount < 0 || logicalEdgeCount < 0 || physicalEdgeCount < logicalEdgeCount) {
             throw new IllegalArgumentException("invalid graph counts");
         }
     }
 
-    public static LineageSnapshotMeta fresh(long generation, Instant builtAt, boolean hasCycle, int nodeCount,
-            long logicalEdgeCount, long physicalEdgeCount) {
-        return new LineageSnapshotMeta(generation, generation, builtAt, false, false, hasCycle, nodeCount,
-                logicalEdgeCount, physicalEdgeCount, null);
+    public static LineageSnapshotMeta fresh(long generation, Instant builtAt, long selfLoopCount,
+            boolean hasNonTrivialCycle, int nodeCount, long logicalEdgeCount, long physicalEdgeCount) {
+        return new LineageSnapshotMeta(generation, generation, builtAt, selfLoopCount, hasNonTrivialCycle, nodeCount,
+                logicalEdgeCount, physicalEdgeCount);
     }
 }

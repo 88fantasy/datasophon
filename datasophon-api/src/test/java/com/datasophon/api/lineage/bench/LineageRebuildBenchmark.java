@@ -48,8 +48,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToLongFunction;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.Graphs;
 import com.google.common.graph.ImmutableValueGraph;
+import com.google.common.graph.MutableGraph;
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
 
@@ -116,12 +118,20 @@ public final class LineageRebuildBenchmark {
         long copyOfNanos = System.nanoTime() - phaseStart;
 
         phaseStart = System.nanoTime();
-        boolean hasCycle = Graphs.hasCycle(immutableGraph.asGraph());
+        long selfLoopCount = immutableGraph.edges().stream()
+                .filter(edge -> edge.nodeU().equals(edge.nodeV()))
+                .count();
+        MutableGraph<Long> stripped = GraphBuilder.directed().allowsSelfLoops(false).build();
+        immutableGraph.nodes().forEach(stripped::addNode);
+        immutableGraph.edges().stream()
+                .filter(edge -> !edge.nodeU().equals(edge.nodeV()))
+                .forEach(edge -> stripped.putEdge(edge.nodeU(), edge.nodeV()));
+        boolean hasNonTrivialCycle = Graphs.hasCycle(stripped);
         long hasCycleNanos = System.nanoTime() - phaseStart;
 
         long physicalEdges = LineageGraphSnapshot.countPhysicalEdges(immutableGraph);
-        LineageSnapshotMeta meta = LineageSnapshotMeta.fresh(raw.generation(), Instant.now(), hasCycle,
-                immutableGraph.nodes().size(), immutableGraph.edges().size(), physicalEdges);
+        LineageSnapshotMeta meta = LineageSnapshotMeta.fresh(raw.generation(), Instant.now(), selfLoopCount,
+                hasNonTrivialCycle, immutableGraph.nodes().size(), immutableGraph.edges().size(), physicalEdges);
         LineageGraphSnapshot snapshot = new LineageGraphSnapshot(immutableGraph, immutableNodeMeta, meta);
 
         phaseStart = System.nanoTime();

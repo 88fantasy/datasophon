@@ -55,9 +55,27 @@ class LineageGraphSnapshotTest {
 
         assertThat(snapshot.graph().hasEdgeConnecting(1L, 1L)).isTrue();
         assertThat(snapshot.graph().edgeValueOrDefault(1L, 1L, null).jobRefs()).hasSize(2);
-        assertThat(snapshot.meta().hasCycle()).isTrue();
+        assertThat(snapshot.meta().selfLoopCount()).isEqualTo(1);
+        assertThat(snapshot.meta().hasNonTrivialCycle()).isFalse();
         assertThat(snapshot.meta().logicalEdgeCount()).isEqualTo(1);
         assertThat(snapshot.meta().physicalEdgeCount()).isEqualTo(2);
+    }
+
+    @Test
+    void reportsNonTrivialCyclesSeparatelyFromSelfLoops() {
+        MutableValueGraph<Long, EdgeValue> graph = ValueGraphBuilder.<Long, EdgeValue>directed()
+                .allowsSelfLoops(true)
+                .build();
+        graph.putEdgeValue(1L, 2L, new EdgeValue(List.of(new JobRef(1, 101, 1, "BATCH"))));
+        graph.putEdgeValue(2L, 1L, new EdgeValue(List.of(new JobRef(2, 102, 1, "BATCH"))));
+        NodeMeta customers =
+                new NodeMeta(2, "paimon", "prod", "dwd", "customers", "paimon://prod/dwd/customers", "DWD");
+
+        LineageGraphSnapshot snapshot = LineageGraphSnapshot.copyOf(graph, Map.of(1L, ORDERS, 2L, customers), 8,
+                Instant.parse("2026-07-29T00:00:00Z"));
+
+        assertThat(snapshot.meta().selfLoopCount()).isZero();
+        assertThat(snapshot.meta().hasNonTrivialCycle()).isTrue();
     }
 
     @Test

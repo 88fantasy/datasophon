@@ -45,6 +45,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
@@ -73,7 +78,7 @@ class LineageRebuildCoordinatorTest {
             }
             active.decrementAndGet();
             return snapshot(generation);
-        })) {
+        }, readTransaction())) {
             coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.MANUAL);
             assertThat(firstLoadStarted.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
 
@@ -90,7 +95,7 @@ class LineageRebuildCoordinatorTest {
     }
 
     @Test
-    void publishIfNewerDiscardsOlderGenerationAndIncrementsMetric() {
+    void publishIfNotOlderDiscardsOlderGenerationAndIncrementsMetric() {
         AtomicInteger discarded = new AtomicInteger();
         AtomicReference<Long> discardedGeneration = new AtomicReference<>();
         LineageRebuildCoordinator.RebuildMetrics metrics = new LineageRebuildCoordinator.RebuildMetrics() {
@@ -104,9 +109,9 @@ class LineageRebuildCoordinatorTest {
 
         try (
                 LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, () -> snapshot(0),
-                        metrics)) {
-            assertThat(coordinator.publishIfNewer(snapshot(11))).isTrue();
-            assertThat(coordinator.publishIfNewer(snapshot(10))).isFalse();
+                        readTransaction(), metrics)) {
+            assertThat(coordinator.publishIfNotOlder(snapshot(11))).isTrue();
+            assertThat(coordinator.publishIfNotOlder(snapshot(10))).isFalse();
 
             assertThat(discarded).hasValue(1);
             assertThat(discardedGeneration).hasValue(10L);
@@ -134,7 +139,7 @@ class LineageRebuildCoordinatorTest {
                 coordinatorRef.get().requestRebuild(LineageRebuildCoordinator.Trigger.EVENT);
             }
             return snapshot(generation);
-        }, metrics, FIXED_CLOCK, executor, 2, Duration.ofSeconds(1))) {
+        }, readTransaction(), metrics, FIXED_CLOCK, executor, 2, Duration.ofSeconds(1))) {
             coordinatorRef.set(coordinator);
             coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.STARTUP);
 
@@ -187,7 +192,8 @@ class LineageRebuildCoordinatorTest {
                             }
                             currentMillis.addAndGet(101);
                             return snapshot(generation);
-                        }, metrics, advancingClock, Executors.newSingleThreadExecutor(), 100, Duration.ofMillis(100))) {
+                        }, readTransaction(), metrics, advancingClock, Executors.newSingleThreadExecutor(), 100,
+                        Duration.ofMillis(100))) {
             coordinatorRef.set(coordinator);
             coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.STARTUP);
 
@@ -221,7 +227,7 @@ class LineageRebuildCoordinatorTest {
             retryStarted.countDown();
             assertThat(releaseRetry.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
             return snapshot(2);
-        }, metrics)) {
+        }, readTransaction(), metrics)) {
             coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.EVENT);
             assertThat(firstLoadStarted.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
             coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.SCHEDULED);
@@ -258,7 +264,9 @@ class LineageRebuildCoordinatorTest {
             return snapshotFromRows(1, rows);
         };
 
-        try (LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, repeatableReadLoader)) {
+        try (
+                LineageRebuildCoordinator coordinator =
+                        new LineageRebuildCoordinator(holder, repeatableReadLoader, readTransaction())) {
             coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.MANUAL);
             assertThat(firstPageRead.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
             currentRows.set(versionTwo);
@@ -294,7 +302,7 @@ class LineageRebuildCoordinatorTest {
         reader.start();
 
         for (int generation = 0; generation < 1000; generation++) {
-            holder.publishIfNewer(snapshot(generation));
+            holder.publishIfNotOlder(snapshot(generation));
         }
         running.set(false);
         reader.join(TEST_TIMEOUT.toMillis());
@@ -338,6 +346,26 @@ class LineageRebuildCoordinatorTest {
             Thread.sleep(10);
         }
         assertThat(condition.getAsBoolean()).isTrue();
+    }
+
+    private static TransactionTemplate readTransaction() {
+        TransactionTemplate transaction = new TransactionTemplate(new PlatformTransactionManager() {
+            @Override
+            public TransactionStatus getTransaction(TransactionDefinition definition) {
+                return new SimpleTransactionStatus();
+            }
+
+            @Override
+            public void commit(TransactionStatus status) {
+            }
+
+            @Override
+            public void rollback(TransactionStatus status) {
+            }
+        });
+        transaction.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+        transaction.setReadOnly(true);
+        return transaction;
     }
 
     private record EdgeRow(long src, long dst, int definitionVersion, long edgeId) {
