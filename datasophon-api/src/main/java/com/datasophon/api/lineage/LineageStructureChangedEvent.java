@@ -23,5 +23,5 @@
 package com.datasophon.api.lineage;
 
 /** Transaction-bound signal that authoritative lineage structure changed. */
-public record LineageStructureChangedEvent(long jobId, int definitionVersion) {
+public record LineageStructureChangedEvent(long clusterId, long jobId, int definitionVersion) {
 }

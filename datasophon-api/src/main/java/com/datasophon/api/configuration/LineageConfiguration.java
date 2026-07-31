@@ -30,6 +30,7 @@ import com.datasophon.api.lineage.LineageGraphQuery;
 import com.datasophon.api.lineage.LineageGraphSnapshotHolder;
 import com.datasophon.api.lineage.LineageHistoryListLengthGauge;
 import com.datasophon.api.lineage.LineageIngestService;
+import com.datasophon.api.lineage.LineageJobDetailReader;
 import com.datasophon.api.lineage.LineageLeaseGuard;
 import com.datasophon.api.lineage.LineageMasterLease;
 import com.datasophon.api.lineage.LineageRebuildCoordinator;
@@ -74,6 +75,11 @@ public class LineageConfiguration {
     @Bean
     public LineageGenerationReader lineageGenerationReader(JdbcTemplate jdbcTemplate) {
         return new LineageGenerationReader(jdbcTemplate);
+    }
+
+    @Bean
+    public LineageJobDetailReader lineageJobDetailReader(JdbcTemplate jdbcTemplate) {
+        return new LineageJobDetailReader(jdbcTemplate);
     }
 
     @Bean

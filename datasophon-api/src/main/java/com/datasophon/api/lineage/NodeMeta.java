@@ -25,12 +25,15 @@ package com.datasophon.api.lineage;
 import java.util.Objects;
 
 /** 血缘节点侧表元数据；图内仅保存数据库节点 ID。 */
-public record NodeMeta(long id, String connector, String catalogName, String databaseName, String tableName,
-        String canonicalName, String dwLayer) {
+public record NodeMeta(long id, long clusterId, String connector, String catalogName, String databaseName,
+        String tableName, String canonicalName, String dwLayer) {
 
     public NodeMeta {
         if (id <= 0) {
             throw new IllegalArgumentException("id must be positive");
+        }
+        if (clusterId <= 0) {
+            throw new IllegalArgumentException("clusterId must be positive");
         }
         connector = Objects.requireNonNull(connector, "connector");
         catalogName = Objects.requireNonNull(catalogName, "catalogName");

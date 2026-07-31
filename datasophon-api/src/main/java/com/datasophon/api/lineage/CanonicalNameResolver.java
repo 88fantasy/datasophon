@@ -47,6 +47,16 @@ public interface CanonicalNameResolver {
      */
     final class Default implements CanonicalNameResolver {
 
+        private final DwLayerInferrer dwLayerInferrer;
+
+        public Default() {
+            this(new DwLayerInferrer());
+        }
+
+        public Default(DwLayerInferrer dwLayerInferrer) {
+            this.dwLayerInferrer = java.util.Objects.requireNonNull(dwLayerInferrer, "dwLayerInferrer");
+        }
+
         @Override
         public Optional<ResolvedDataset> resolve(DatasetIdentity dataset) {
             String namespace = dataset.namespace().trim();
@@ -73,7 +83,8 @@ public interface CanonicalNameResolver {
                 return Optional.empty();
             }
             String canonicalName = connector + "://" + segments[0] + "/" + segments[1] + "/" + table;
-            return Optional.of(new ResolvedDataset(connector, segments[0], segments[1], table, canonicalName, null));
+            return Optional.of(new ResolvedDataset(connector, segments[0], segments[1], table, canonicalName,
+                    dwLayerInferrer.infer(segments[1], table)));
         }
 
         private Optional<ResolvedDataset> resolveJdbcStyle(String connector, String hostPort, String name) {
@@ -88,7 +99,8 @@ public interface CanonicalNameResolver {
                 return Optional.empty();
             }
             String canonicalName = connector + "://" + hostPort + "/" + database + "/" + table;
-            return Optional.of(new ResolvedDataset(connector, hostPort, database, table, canonicalName, null));
+            return Optional.of(new ResolvedDataset(connector, hostPort, database, table, canonicalName,
+                    dwLayerInferrer.infer(database, table)));
         }
     }
 }

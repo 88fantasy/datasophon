@@ -22,6 +22,7 @@
 
 package com.datasophon.api.lineage;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,7 +35,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public final class LineageGenerationReader {
 
     static final String GENERATION_SQL =
-            "SELECT generation FROM t_ddh_lineage_generation WHERE id = 1";
+            "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -42,9 +43,14 @@ public final class LineageGenerationReader {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
     }
 
-    public long readCurrentGeneration() {
-        return Objects.requireNonNull(
-                jdbcTemplate.queryForObject(GENERATION_SQL, Long.class),
-                "lineage generation row is missing");
+    /**
+     * 读取指定集群的当前代际。
+     *
+     * <p>代际行按集群惰性创建（L3/D5 取消了单行种子），因此「行不存在」是尚未收到任何
+     * 结构性事件的正常状态，返回 {@code 0} 而非报错。</p>
+     */
+    public long readCurrentGeneration(long clusterId) {
+        List<Long> generations = jdbcTemplate.queryForList(GENERATION_SQL, Long.class, clusterId);
+        return generations.isEmpty() ? 0L : generations.get(0);
     }
 }

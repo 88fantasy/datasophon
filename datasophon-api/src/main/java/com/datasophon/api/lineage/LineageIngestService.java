@@ -173,7 +173,7 @@ public final class LineageIngestService implements LineageIngestOperations {
 
         String structuralHash = hashCalculator.structuralHash(prepared.inputs(), prepared.outputs());
         Map<String, ResolvedDataset> datasets = sortedDistinct(prepared.inputs(), prepared.outputs());
-        Map<String, Long> nodeIds = upsertNodes(datasets.values(), prepared.receivedAt());
+        Map<String, Long> nodeIds = upsertNodes(clusterId, datasets.values(), prepared.receivedAt());
         long touchedNodes = nodeIds.size();
 
         if (structuralHash.equals(job.currentStructuralHash())) {
@@ -209,10 +209,15 @@ public final class LineageIngestService implements LineageIngestOperations {
                         WHERE id = ?
                         """,
                 structuralHash, prepared.watermark().epochMillis(), jobId);
+        // 代际计数器每集群一行，且不再有种子行（L3/D5），因此必须能自建行。
         jdbcTemplate.update(
-                "UPDATE t_ddh_lineage_generation SET generation = generation + 1 WHERE id = 1");
+                """
+                        INSERT INTO t_ddh_lineage_generation (cluster_id, generation) VALUES (?, 1)
+                        ON DUPLICATE KEY UPDATE generation = generation + 1
+                        """,
+                clusterId);
         updateEventStatus(event, "CHANGED");
-        eventPublisher.publishEvent(new LineageStructureChangedEvent(jobId, nextVersion));
+        eventPublisher.publishEvent(new LineageStructureChangedEvent(clusterId, jobId, nextVersion));
         return new IngestResult(Status.CHANGED, jobId, nextVersion, edgeRows, touchedNodes);
     }
 
@@ -249,24 +254,27 @@ public final class LineageIngestService implements LineageIngestOperations {
         return job;
     }
 
-    private Map<String, Long> upsertNodes(Collection<ResolvedDataset> datasets, Instant seenAt) {
+    private Map<String, Long> upsertNodes(long clusterId, Collection<ResolvedDataset> datasets, Instant seenAt) {
         Map<String, Long> nodeIds = new LinkedHashMap<>();
         for (ResolvedDataset dataset : datasets) {
             jdbcTemplate.update(
                     """
                             INSERT INTO t_ddh_lineage_node
-                                (connector, catalog_name, database_name, table_name, canonical_name,
+                                (cluster_id, connector, catalog_name, database_name, table_name, canonical_name,
                                  dw_layer, first_seen, last_seen)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?) AS new
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) AS new
                             ON DUPLICATE KEY UPDATE
                                 last_seen = GREATEST(t_ddh_lineage_node.last_seen, new.last_seen),
                                 id = LAST_INSERT_ID(id)
                             """,
-                    dataset.connector(), dataset.catalogName(), dataset.databaseName(), dataset.tableName(),
-                    dataset.canonicalName(), dataset.dwLayer(), timestamp(seenAt), timestamp(seenAt));
+                    clusterId, dataset.connector(), dataset.catalogName(), dataset.databaseName(),
+                    dataset.tableName(), dataset.canonicalName(), dataset.dwLayer(), timestamp(seenAt),
+                    timestamp(seenAt));
+            // 回查必须带 cluster_id：唯一键是 (cluster_id, canonical_name)，只按 canonical_name
+            // 查会在跨集群同名表时静默拿到别的集群的 node id（L3 踩坑点 P1）。
             long nodeId = Objects.requireNonNull(jdbcTemplate.queryForObject(
-                    "SELECT id FROM t_ddh_lineage_node WHERE canonical_name = ?",
-                    Long.class, dataset.canonicalName()));
+                    "SELECT id FROM t_ddh_lineage_node WHERE cluster_id = ? AND canonical_name = ?",
+                    Long.class, clusterId, dataset.canonicalName()));
             nodeIds.put(dataset.canonicalName(), nodeId);
         }
         return nodeIds;

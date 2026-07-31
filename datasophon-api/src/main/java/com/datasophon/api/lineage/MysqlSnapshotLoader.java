@@ -24,6 +24,7 @@ package com.datasophon.api.lineage;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,17 +86,26 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
     }
 
     @Override
-    public LineageGraphSnapshot load() {
+    public Collection<Long> knownClusterIds() {
+        // 只枚举有血缘作业的集群：血缘不关心尚未产生任何作业的集群，
+        // 也刻意不耦合 t_ddh_cluster_info。
+        return jdbcTemplate.queryForList("SELECT DISTINCT cluster_id FROM t_ddh_data_job", Long.class);
+    }
+
+    @Override
+    public LineageGraphSnapshot load(long clusterId) {
         MappingTimer mappingTimer = new MappingTimer();
         long readStartedAt = System.nanoTime();
-        Long generation;
+        long generation;
         Map<Long, NodeMeta> nodes;
         Map<EdgeKey, List<JobRef>> edges;
         try {
-            generation = jdbcTemplate.queryForObject(
-                    "SELECT generation FROM t_ddh_lineage_generation WHERE id = 1", Long.class);
-            nodes = loadNodes(mappingTimer);
-            edges = loadCurrentEdges(mappingTimer);
+            // 代际行按集群惰性创建，缺失即该集群尚无结构性事件，代际为 0。
+            List<Long> generations = jdbcTemplate.queryForList(
+                    "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?", Long.class, clusterId);
+            generation = generations.isEmpty() ? 0L : generations.get(0);
+            nodes = loadNodes(clusterId, mappingTimer);
+            edges = loadCurrentEdges(clusterId, mappingTimer);
         } finally {
             long totalReadNanos = System.nanoTime() - readStartedAt;
             metrics.mapping(mappingTimer.elapsedNanos());
@@ -114,7 +124,7 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
             metrics.graphBuild(System.nanoTime() - graphStartedAt);
         }
         LineageGraphSnapshot snapshot = LineageGraphSnapshot.copyOf(
-                graph, nodes, Objects.requireNonNull(generation, "generation"), clock.instant(), metrics);
+                graph, nodes, generation, clock.instant(), metrics);
         if (snapshot.meta().hasNonTrivialCycle()) {
             logger.warn(
                     "Lineage snapshot generation {} contains a non-trivial cycle; impact traversal results may be cyclic",
@@ -123,27 +133,29 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
         return snapshot;
     }
 
-    private Map<Long, NodeMeta> loadNodes(MappingTimer mappingTimer) {
+    private Map<Long, NodeMeta> loadNodes(long clusterId, MappingTimer mappingTimer) {
         Map<Long, NodeMeta> nodes = new LinkedHashMap<>();
         long lastId = 0;
         while (true) {
             List<NodeMeta> page = jdbcTemplate.query(
                     """
-                            SELECT id, connector, catalog_name, database_name, table_name, canonical_name, dw_layer
+                            SELECT id, cluster_id, connector, catalog_name, database_name, table_name,
+                                   canonical_name, dw_layer
                             FROM t_ddh_lineage_node
-                            WHERE id > ?
+                            WHERE cluster_id = ? AND id > ?
                             ORDER BY id
                             LIMIT ?
                             """,
                     mappingTimer.measure((resultSet, rowNumber) -> new NodeMeta(
                             resultSet.getLong("id"),
+                            resultSet.getLong("cluster_id"),
                             resultSet.getString("connector"),
                             resultSet.getString("catalog_name"),
                             resultSet.getString("database_name"),
                             resultSet.getString("table_name"),
                             resultSet.getString("canonical_name"),
                             resultSet.getString("dw_layer"))),
-                    lastId, pageSize);
+                    clusterId, lastId, pageSize);
             if (page.isEmpty()) {
                 return nodes;
             }
@@ -157,16 +169,19 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
         }
     }
 
-    private Map<EdgeKey, List<JobRef>> loadCurrentEdges(MappingTimer mappingTimer) {
+    private Map<EdgeKey, List<JobRef>> loadCurrentEdges(long clusterId, MappingTimer mappingTimer) {
         Map<EdgeKey, List<JobRef>> edges = new LinkedHashMap<>();
         long lastId = 0;
         while (true) {
+            // t_ddh_lineage_edge 刻意不加 cluster_id（L3 §1.3）：边的归属由作业决定，
+            // 经 job_id 关联 t_ddh_data_job.cluster_id 过滤即可，避免同一事实存两处。
             List<EdgeRow> page = jdbcTemplate.query(
                     """
-                            SELECT id, job_id, definition_version, src_node_id, dst_node_id, flow_type
-                            FROM t_ddh_lineage_edge
-                            WHERE is_current = 1 AND id > ?
-                            ORDER BY id
+                            SELECT e.id, e.job_id, e.definition_version, e.src_node_id, e.dst_node_id, e.flow_type
+                            FROM t_ddh_lineage_edge e
+                            JOIN t_ddh_data_job j ON e.job_id = j.id
+                            WHERE j.cluster_id = ? AND e.is_current = 1 AND e.id > ?
+                            ORDER BY e.id
                             LIMIT ?
                             """,
                     mappingTimer.measure((resultSet, rowNumber) -> new EdgeRow(
@@ -176,7 +191,7 @@ public final class MysqlSnapshotLoader implements LineageRebuildCoordinator.Snap
                             resultSet.getLong("src_node_id"),
                             resultSet.getLong("dst_node_id"),
                             resultSet.getString("flow_type"))),
-                    lastId, pageSize);
+                    clusterId, lastId, pageSize);
             if (page.isEmpty()) {
                 return edges;
             }

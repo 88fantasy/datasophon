@@ -49,11 +49,19 @@ import com.google.common.graph.ValueGraph;
 public final class LineageGraphQuery {
 
     public static final int MAX_NODES = 300;
+    public static final int MAX_PAGE_SIZE = 200;
 
     private static final String UNKNOWN_LAYER = "UNKNOWN";
-    private static final List<String> STANDARD_LAYERS = List.of("CDC", "ODS", "DWD", "DWS", "ADS");
+    private static final List<String> STANDARD_LAYERS = List.of("CDC", "ODS", "DWD", "DIM", "DWS", "ADS");
+    /**
+     * 层级排名，决定分层 BFS 的扩展优先级。
+     *
+     * <p>必须覆盖 {@link DwLayerInferrer} 能产出的每一个层级，否则 {@code layerDistance()}
+     * 对它返回 {@code Integer.MAX_VALUE}，分层优先级形同虚设。DIM 与 DWD 同级（都是明细层的
+     * 组成部分）；TMP 刻意不入排名 —— 临时表不属于主链路，让它保持最低优先级是正确的。</p>
+     */
     private static final Map<String, Integer> LAYER_RANK =
-            Map.of("CDC", 0, "ODS", 1, "DWD", 2, "DWS", 3, "ADS", 4);
+            Map.of("CDC", 0, "ODS", 1, "DWD", 2, "DIM", 2, "DWS", 3, "ADS", 4);
     private static final Pattern EXPANSION_TOKEN = Pattern.compile("^n:([1-9][0-9]*):(up|down|both):g([0-9]+)$");
 
     public GraphData query(LineageGraphSnapshot snapshot, long rootNodeId, int depth, Direction direction) {
@@ -84,6 +92,44 @@ public final class LineageGraphQuery {
     public Optional<NodeMeta> table(LineageGraphSnapshot snapshot, long nodeId) {
         Objects.requireNonNull(snapshot, "snapshot");
         return Optional.ofNullable(snapshot.nodeMeta().get(nodeId));
+    }
+
+    /**
+     * 表清单分页查询：直接遍历内存快照，不回查数据库。
+     *
+     * <p>清单与图共享同一个快照（同一 generation），因此列表里点得进去的表在图里必然存在，
+     * 不会出现「列表有、图 404」（L3/D2）。</p>
+     *
+     * <p>排序固定按 {@code canonicalName} 升序：{@code ImmutableMap} 的迭代顺序不是稳定契约，
+     * 不能让分页结果依赖它。</p>
+     */
+    public TablePage list(LineageGraphSnapshot snapshot, String keyword, String layer, String connector,
+                          String database, int page, int size) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        if (page < 1) {
+            throw new IllegalArgumentException("page must be positive");
+        }
+        if (size < 1) {
+            throw new IllegalArgumentException("size must be positive");
+        }
+        int boundedSize = Math.min(size, MAX_PAGE_SIZE);
+        String normalizedKeyword = keyword == null || keyword.isBlank()
+                ? null
+                : keyword.trim().toLowerCase(Locale.ROOT);
+        String normalizedLayer = layer == null || layer.isBlank() ? null : layer.trim().toUpperCase(Locale.ROOT);
+
+        List<NodeMeta> matched = snapshot.nodeMeta().values().stream()
+                .filter(node -> normalizedKeyword == null
+                        || node.canonicalName().toLowerCase(Locale.ROOT).contains(normalizedKeyword))
+                .filter(node -> normalizedLayer == null || normalizedLayer.equals(layerOf(node)))
+                .filter(node -> connector == null || connector.isBlank() || connector.equals(node.connector()))
+                .filter(node -> database == null || database.isBlank() || database.equals(node.databaseName()))
+                .sorted(Comparator.comparing(NodeMeta::canonicalName))
+                .toList();
+
+        int from = Math.min((page - 1) * boundedSize, matched.size());
+        int to = Math.min(from + boundedSize, matched.size());
+        return new TablePage(matched.subList(from, to), matched.size());
     }
 
     /** 按实际图数据聚合所有层及所有层间逻辑边组合。 */
@@ -335,6 +381,13 @@ public final class LineageGraphQuery {
                                 String token,
                                 int hiddenCount,
                                 String direction) {
+    }
+
+    public record TablePage(List<NodeMeta> list, long total) {
+
+        public TablePage {
+            list = List.copyOf(list);
+        }
     }
 
     public record OverviewData(List<LayerBlock> layers, List<LayerEdge> edges) {

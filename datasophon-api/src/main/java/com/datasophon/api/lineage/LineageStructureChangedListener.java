@@ -37,11 +37,12 @@ public final class LineageStructureChangedListener {
     }
 
     /**
-     * 结构变更落库后提前触发一次全量重建，仅用于降低延迟，不承担正确性。
+     * 结构变更落库后提前触发一次重建，仅用于降低延迟，不承担正确性。
+     * 快照按集群分片（L3/D5），因此只重建事件所属集群的分片，不波及其他集群。
      * 这里只触发重建，绝不修改或读取内存快照。
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onLineageChanged(LineageStructureChangedEvent event) {
-        coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.EVENT);
+        coordinator.requestRebuild(event.clusterId(), LineageRebuildCoordinator.Trigger.EVENT);
     }
 }

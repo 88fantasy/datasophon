@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS `t_ddh_data_job_definition` (
 
 CREATE TABLE IF NOT EXISTS `t_ddh_lineage_node` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `cluster_id` INT NOT NULL,
     `connector` VARCHAR(64) NOT NULL,
     `catalog_name` VARCHAR(255) NOT NULL,
     `database_name` VARCHAR(255) NOT NULL,
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `t_ddh_lineage_node` (
     `first_seen` DATETIME(3) NOT NULL,
     `last_seen` DATETIME(3) NOT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_lineage_node_canonical_name` (`canonical_name`)
+    UNIQUE KEY `uk_lineage_node_identity` (`cluster_id`, `canonical_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='血缘节点';
 
 CREATE TABLE IF NOT EXISTS `t_ddh_lineage_edge` (
@@ -83,11 +84,8 @@ CREATE TABLE IF NOT EXISTS `t_ddh_lineage_event` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='血缘事件投递幂等记录';
 
 CREATE TABLE IF NOT EXISTS `t_ddh_lineage_generation` (
-    `id` TINYINT NOT NULL,
+    `cluster_id` INT NOT NULL,
     `generation` BIGINT NOT NULL DEFAULT 0,
     `update_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    PRIMARY KEY (`id`),
-    CONSTRAINT `chk_lineage_generation_singleton` CHECK (`id` = 1)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='血缘结构单行代际计数器';
-
-INSERT IGNORE INTO `t_ddh_lineage_generation` (`id`, `generation`) VALUES (1, 0);
+    PRIMARY KEY (`cluster_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='血缘结构代际计数器（每集群一行）';

@@ -74,7 +74,15 @@ class LineageDdlContractTest {
                     // 并发首次事件产生两个 job_id（三轮自审 F1）
                     .contains("UNIQUE KEY `uk_data_job_identity` (`cluster_id`, `engine`, `job_name`)")
                     .contains("KEY `idx_edge_current` (`is_current`, `src_node_id`, `dst_node_id`)")
-                    .contains("INSERT IGNORE INTO `t_ddh_lineage_generation`");
+                    // L3/D4：节点按集群彻底隔离，同一 canonical_name 在两个集群是两个节点。
+                    // 旧的全局唯一键必须消失，否则跨集群同名表会互相覆盖。
+                    .contains("UNIQUE KEY `uk_lineage_node_identity` (`cluster_id`, `canonical_name`)")
+                    .doesNotContain("UNIQUE KEY `uk_lineage_node_canonical_name` (`canonical_name`)")
+                    // L3/D5：代际计数器每集群一行，单行 CHECK 约束与种子行都必须移除，
+                    // 改由写路径 ON DUPLICATE KEY UPDATE 按需自建行。
+                    .contains("PRIMARY KEY (`cluster_id`)")
+                    .doesNotContain("chk_lineage_generation_singleton")
+                    .doesNotContain("INSERT IGNORE INTO `t_ddh_lineage_generation`");
         }
     }
 }
