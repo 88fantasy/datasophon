@@ -65,5 +65,6 @@ export default {
   'menu.cluster-overview': 'Cluster Overview',
   'menu.host': 'Host Management',
   'menu.observability-collector': 'Distributed Tracing',
+  'menu.lineage': 'Data Lineage',
   'menu.user': 'User Management',
 };

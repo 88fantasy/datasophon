@@ -24,6 +24,7 @@ package com.datasophon.api.lineage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -34,11 +35,13 @@ class LineageGenerationReaderTest {
     @Test
     void readsGenerationWithItsOwnSingleRowJdbcQuery() {
         AtomicReference<String> observedSql = new AtomicReference<>();
+        AtomicReference<Object[]> observedArgs = new AtomicReference<>();
         JdbcTemplate jdbcTemplate = new JdbcTemplate() {
             @Override
-            public <T> T queryForObject(String sql, Class<T> requiredType) {
+            public <T> List<T> queryForList(String sql, Class<T> elementType, Object... args) {
                 observedSql.set(sql);
-                return requiredType.cast(42L);
+                observedArgs.set(args);
+                return List.of(elementType.cast(42L));
             }
         };
 
@@ -46,5 +49,20 @@ class LineageGenerationReaderTest {
 
         assertThat(generation).isEqualTo(42);
         assertThat(observedSql.get()).isEqualTo(LineageGenerationReader.GENERATION_SQL);
+        assertThat(observedArgs.get()).containsExactly(1L);
+    }
+
+    @Test
+    void returnsZeroWhenTheGenerationRowIsMissing() {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate() {
+            @Override
+            public <T> List<T> queryForList(String sql, Class<T> elementType, Object... args) {
+                return List.of();
+            }
+        };
+
+        long generation = new LineageGenerationReader(jdbcTemplate).readCurrentGeneration(1L);
+
+        assertThat(generation).isZero();
     }
 }

@@ -223,7 +223,10 @@ class LineageV2ControllerTest {
                 .andExpect(jsonPath("$.data.snapshot.generation").value(7))
                 .andExpect(jsonPath("$.data.snapshot.targetGeneration").value(8))
                 .andExpect(jsonPath("$.data.snapshot.stale").value(true))
-                .andExpect(jsonPath("$.data.sourceFreshness.status").value("UNKNOWN"));
+                // resetMockService() 把 LAST_EVENT_RECEIVED_AT 设成 30s 前，远低于默认 1800s
+                // 滞后阈值：sourceFreshness 与 snapshot 新鲜度是两件独立的事，快照 stale 不代表
+                // 采集侧也 stale。
+                .andExpect(jsonPath("$.data.sourceFreshness.status").value("OK"));
 
         mockMvc.perform(get("/v2/lineage/impact").queryParam("clusterId", "1")
                 .queryParam("rootNodeId", "1")
@@ -233,7 +236,7 @@ class LineageV2ControllerTest {
 
     @Test
     void coordinatorErrorParticipatesInFreshnessAndImpactFailsClosed() throws Exception {
-        ReflectionTestUtils.setField(coordinator, "lastRebuildError", new IllegalStateException("load failed"));
+        rebuildErrors().put(CLUSTER_ID, new IllegalStateException("load failed"));
 
         mockMvc.perform(get("/v2/lineage/graph").queryParam("clusterId", "1")
                 .queryParam("rootNodeId", "1"))
@@ -251,7 +254,7 @@ class LineageV2ControllerTest {
     @Test
     void snapshotAgeIsTheThirdIndependentStalenessBranch() throws Exception {
         SNAPSHOT.set(snapshot(7, Instant.now().minusSeconds(601)));
-        ReflectionTestUtils.setField(snapshotHolder, "published", SNAPSHOT.get());
+        publishedSnapshots().put(CLUSTER_ID, SNAPSHOT.get());
 
         mockMvc.perform(get("/v2/lineage/graph").queryParam("clusterId", "1")
                 .queryParam("rootNodeId", "1"))
@@ -339,7 +342,7 @@ class LineageV2ControllerTest {
 
     @Test
     void missingSnapshotReturnsServiceUnavailableInsteadOfEmptyGraph() throws Exception {
-        ReflectionTestUtils.setField(snapshotHolder, "published", null);
+        publishedSnapshots().remove(CLUSTER_ID);
 
         mockMvc.perform(get("/v2/lineage/graph").queryParam("clusterId", "1")
                 .queryParam("rootNodeId", "1"))

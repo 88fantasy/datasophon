@@ -1,0 +1,131 @@
+import { describe, expect, it } from 'vitest';
+import { mergeExpansion, toG6Data } from './lineageGraphData';
+import type { GraphData, NodeMeta } from './service';
+
+function node(id: number, canonicalName: string, dwLayer: string | null = null): NodeMeta {
+  return {
+    id,
+    clusterId: 7,
+    connector: 'hive',
+    catalogName: 'hive_catalog',
+    databaseName: 'ods',
+    tableName: canonicalName,
+    canonicalName,
+    dwLayer,
+  };
+}
+
+describe('toG6Data', () => {
+  it('marks the root node and maps logical edges to G6 edges', () => {
+    const graph: GraphData = {
+      nodes: [node(1, 'a'), node(2, 'b')],
+      edges: [{ src: 1, dst: 2, jobs: [{ jobId: 10, edgeId: 100, flowType: 'INPUT' }] }],
+      collapsed: [],
+      truncated: false,
+    };
+
+    const { nodes, edges } = toG6Data(graph, 1);
+
+    expect(nodes).toEqual([
+      expect.objectContaining({ id: '1', data: expect.objectContaining({ isRoot: true }) }),
+      expect.objectContaining({ id: '2', data: expect.objectContaining({ isRoot: false }) }),
+    ]);
+    expect(edges).toEqual([
+      expect.objectContaining({ id: '1->2', source: '1', target: '2' }),
+    ]);
+  });
+
+  it('adds a dashed placeholder node for each collapsed entry, oriented by direction', () => {
+    const graph: GraphData = {
+      nodes: [node(1, 'a')],
+      edges: [],
+      collapsed: [
+        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 5, direction: 'downstream' },
+        { type: 'collapsed', nodeId: 1, token: 'n:1:up:g3', hiddenCount: 2, direction: 'upstream' },
+      ],
+      truncated: true,
+    };
+
+    const { nodes, edges } = toG6Data(graph, 1);
+
+    const downstreamPlaceholder = nodes.find((n) => n.id === 'collapsed:n:1:down:g3');
+    const upstreamPlaceholder = nodes.find((n) => n.id === 'collapsed:n:1:up:g3');
+    expect(downstreamPlaceholder?.data).toMatchObject({ isCollapsedPlaceholder: true, hiddenCount: 5 });
+    expect(upstreamPlaceholder?.data).toMatchObject({ isCollapsedPlaceholder: true, hiddenCount: 2 });
+
+    const downstreamEdge = edges.find((e) => e.id === 'collapsed-edge:n:1:down:g3');
+    expect(downstreamEdge).toMatchObject({ source: '1', target: 'collapsed:n:1:down:g3' });
+    const upstreamEdge = edges.find((e) => e.id === 'collapsed-edge:n:1:up:g3');
+    expect(upstreamEdge).toMatchObject({ source: 'collapsed:n:1:up:g3', target: '1' });
+  });
+
+  it('highlights nodes present in the impact set', () => {
+    const graph: GraphData = {
+      nodes: [node(1, 'a'), node(2, 'b')],
+      edges: [],
+      collapsed: [],
+      truncated: false,
+    };
+
+    const { nodes } = toG6Data(graph, 1, new Set([2]));
+
+    expect(nodes.find((n) => n.id === '1')?.data.impactHighlighted).toBe(false);
+    expect(nodes.find((n) => n.id === '2')?.data.impactHighlighted).toBe(true);
+  });
+});
+
+describe('mergeExpansion', () => {
+  it('unions nodes/edges by id and drops the expanded token from collapsed', () => {
+    const current: GraphData = {
+      nodes: [node(1, 'a')],
+      edges: [],
+      collapsed: [
+        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 5, direction: 'downstream' },
+      ],
+      truncated: true,
+    };
+    const expansionResult: GraphData = {
+      nodes: [node(1, 'a'), node(2, 'b'), node(3, 'c')],
+      edges: [
+        { src: 1, dst: 2, jobs: [] },
+        { src: 1, dst: 3, jobs: [] },
+      ],
+      collapsed: [],
+      truncated: false,
+    };
+
+    const merged = mergeExpansion(current, expansionResult, 'n:1:down:g3');
+
+    expect(merged.nodes.map((n) => n.id).sort()).toEqual([1, 2, 3]);
+    expect(merged.edges).toHaveLength(2);
+    expect(merged.collapsed).toHaveLength(0);
+    expect(merged.truncated).toBe(false);
+  });
+
+  it('keeps other collapsed placeholders untouched and appends newly discovered ones', () => {
+    const current: GraphData = {
+      nodes: [node(1, 'a'), node(5, 'e')],
+      edges: [],
+      collapsed: [
+        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 5, direction: 'downstream' },
+        { type: 'collapsed', nodeId: 5, token: 'n:5:down:g3', hiddenCount: 9, direction: 'downstream' },
+      ],
+      truncated: true,
+    };
+    const expansionResult: GraphData = {
+      nodes: [node(1, 'a')],
+      edges: [],
+      collapsed: [
+        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g4', hiddenCount: 400, direction: 'downstream' },
+      ],
+      truncated: true,
+    };
+
+    const merged = mergeExpansion(current, expansionResult, 'n:1:down:g3');
+
+    expect(merged.collapsed.map((c) => c.token)).toEqual([
+      'n:5:down:g3',
+      'n:1:down:g4',
+    ]);
+  });
+});

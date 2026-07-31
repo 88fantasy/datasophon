@@ -179,15 +179,19 @@ class LineageObservabilityTest {
 
     private static void createSnapshotFixture(JdbcTemplate jdbcTemplate) {
         jdbcTemplate.execute("DROP ALL OBJECTS");
+        // 集群维度化后 t_ddh_lineage_generation 以 cluster_id 为主键（种子行已删，惰性创建）；
+        // t_ddh_lineage_node 加了 cluster_id；边表按 job_id 关联 t_ddh_data_job.cluster_id 过滤，
+        // 因此这里也要有一张最小的 t_ddh_data_job 供 MysqlSnapshotLoader 的边查询 JOIN。
         jdbcTemplate.execute("""
                 CREATE TABLE t_ddh_lineage_generation (
-                    id BIGINT PRIMARY KEY,
+                    cluster_id INT PRIMARY KEY,
                     generation BIGINT NOT NULL
                 )
                 """);
         jdbcTemplate.execute("""
                 CREATE TABLE t_ddh_lineage_node (
                     id BIGINT PRIMARY KEY,
+                    cluster_id INT NOT NULL,
                     connector VARCHAR(32),
                     catalog_name VARCHAR(255),
                     database_name VARCHAR(255),
@@ -207,14 +211,21 @@ class LineageObservabilityTest {
                     is_current TINYINT NOT NULL
                 )
                 """);
-        jdbcTemplate.update("INSERT INTO t_ddh_lineage_generation (id, generation) VALUES (1, 7)");
+        jdbcTemplate.execute("""
+                CREATE TABLE t_ddh_data_job (
+                    id BIGINT PRIMARY KEY,
+                    cluster_id INT NOT NULL
+                )
+                """);
+        jdbcTemplate.update("INSERT INTO t_ddh_lineage_generation (cluster_id, generation) VALUES (1, 7)");
         jdbcTemplate.update("""
                 INSERT INTO t_ddh_lineage_node
-                    (id, connector, catalog_name, database_name, table_name, canonical_name, dw_layer)
+                    (id, cluster_id, connector, catalog_name, database_name, table_name, canonical_name, dw_layer)
                 VALUES
-                    (1, 'paimon', 'prod', 'ods', 'orders', 'paimon://prod/ods/orders', 'ODS'),
-                    (2, 'paimon', 'prod', 'dwd', 'orders', 'paimon://prod/dwd/orders', 'DWD')
+                    (1, 1, 'paimon', 'prod', 'ods', 'orders', 'paimon://prod/ods/orders', 'ODS'),
+                    (2, 1, 'paimon', 'prod', 'dwd', 'orders', 'paimon://prod/dwd/orders', 'DWD')
                 """);
+        jdbcTemplate.update("INSERT INTO t_ddh_data_job (id, cluster_id) VALUES (10, 1)");
         jdbcTemplate.update("""
                 INSERT INTO t_ddh_lineage_edge
                     (id, job_id, definition_version, src_node_id, dst_node_id, flow_type, is_current)

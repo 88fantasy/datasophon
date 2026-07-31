@@ -66,22 +66,22 @@ L2（Spark/Gravitino 采集侧）与本轮并行，互不阻塞。
 | B7 | `LineageGenerationReader` 按集群 | 🔄 | 主代码完成：`readCurrentGeneration(clusterId)`，行缺失返回 0（种子行已删，缺失是正常状态）。**测试未更新** | 待提交 |
 | B8 | 查询端点集群化 + 2 个新端点 + SourceFreshness（修缺陷 2） | 🔄 | 主代码完成：6 个端点加 `clusterId`；新增 `/lineage/tables`、`/lineage/job/{id}`（集群作为查询条件，不泄露他集群作业存在性）；新增 `LineageJobDetailReader`；SourceFreshness 接真值（OK/LAGGING/NO_DATA/UNKNOWN）。**测试未更新** | 待提交 |
 | B9 | `LineageGraphQuery` 表清单查询 | 🔄 | 主代码完成：`list(...)` 遍历快照做过滤/排序/分页，固定按 `canonicalName` 升序（`ImmutableMap` 迭代序非契约），`MAX_PAGE_SIZE=200` 截断。**测试未更新** | 待提交 |
-| B10 | 批 1 测试更新 + 全量回归 + `spotless:apply` | 🔄 | **当前断点在此**。10 个测试文件已完成签名适配，`clean test-compile` 全绿、`spotless` 干净。**实跑结果：5 个测试类全绿**（含最高风险的 `LineageRebuildCoordinatorTest` 8/8），**3 个测试类有失败，根因已定位见 §7.3**；新增用例尚未编写 | 待提交 |
+| B10 | 批 1 测试更新 + 全量回归 + `spotless:apply` | ⚠️ | **2026-08-01 合并验证时补齐**：3 个曾失败的测试类全部修复，`Lineage*Test` 分组现 **52/52 全绿**（详见 §9）。**仍遗留**：跨集群同名表用例（B2）、`DwLayerInferrerTest`（B3）、Holder 分片用例（B5）、`/tables`+`/job/{id}` 端点契约用例（B8）、真实 MySQL 组数据准备 SQL 补 `cluster_id`——这些新增验收用例仍未编写，标 ⚠️ 而非 ✅ | 待提交 |
 
 ### 批 2 —— 前端
 
 | 任务 | 内容 | 状态 | 验证结论 | commit |
 |---|---|---|---|---|
-| F1 | `service.ts` + 类型定义 | ⬜ | | |
-| F2 | 表清单页（ProTable） | ⬜ | | |
-| F3 | 血缘图页骨架（G6 v5 + antv-dagre） | ⬜ | | |
-| F4 | 折叠节点展开 + 409 恢复 | ⬜ | | |
-| F5 | 边点击 → 作业详情 Drawer | ⬜ | | |
-| F6 | stale Alert 条 + 手动重建 | ⬜ | | |
-| F7 | impact 影响分析模式 | ⬜ | | |
-| F8 | overview 分层概览 | ⬜ | | |
-| F9 | 路由 + 菜单 + i18n 三语 | ⬜ | | |
-| F10 | 批 2 `npm run lint` + `npm run test` | ⬜ | | |
+| F1 | `service.ts` + 类型定义 | ✅ | `service.test.ts` 7/7 绿。8 端点（readiness/tables/graph/overview/table/job/impact/rebuild）；确认默认 `baseURL=/ddh/api/v2` 已覆盖 `LineageV2Controller`（`@RequestMapping("/v2")` + `datasophon.path-prefix=/api`），**不需要**像 ObservabilityCollector 那样覆盖 `legacyRequestOptions` | 待提交 |
+| F2 | 表清单页（ProTable） | ✅ | `index.test.tsx` 2/2 绿。`@ant-design/pro-components` 在 vitest 下有 ESM/CJS 互操作坏问题（`exports is not defined`），本仓库既有测试**一律 mock `ProTable` 本体**、拿 `request`/`columns` props 断言（照 `AlarmManage/History.test.tsx` 先例），不是我引入的新坑；新鲜度信息复用 `/lineage/tables` 响应自带的 `snapshot`/`sourceFreshness`，不发起独立请求 | 待提交 |
+| F3 | 血缘图页骨架（G6 v5 + antv-dagre） | ✅ | `LineageGraph.test.tsx` 7/7 绿（含 F4/F7 用例，三者同一文件一次交付）。抓到一个真实 bug：`fetchRoot`/`handleExpand` 的 `useCallback` deps 里带了 `t`（来自 `useIntl()`），`t` 每次渲染重新创建导致 `useEffect` 无限重新拉取；修法是把 `t` 从两处 deps 移除（只在函数体内闭包引用，不参与依赖判定），照抄 `TopologyTab.tsx` 数据拉取 `useEffect` 故意不依赖 `t` 的先例 | 待提交 |
+| F4 | 折叠节点展开 + 409 恢复 | ✅ | 同上。`lineageGraphData.test.ts` 5/5 覆盖 merge 去重/占位方向；`LineageGraph.test.tsx` 覆盖展开成功与 409 自动重拉根查询两条路径 | 待提交 |
+| F5 | 边点击 → 作业详情 Drawer | ✅ | `JobDetailDrawer.test.tsx` 4/4 绿。同边多 job 按 jobId 去重请求；单个 job 详情失败降级展示，不阻塞其余 job | 待提交 |
+| F6 | stale Alert 条 + 手动重建 | ✅ | `FreshnessAlert.test.tsx` 3/3 绿。修正了本文档原先写的 `dayjs.utc().local()` 假设（见 §5 F6 行纠偏说明），改用后端算好的 `ageSeconds` | 待提交 |
+| F7 | impact 影响分析模式 | ✅ | 同 F3。503 分支用例通过；展开折叠节点在 impact 模式下复用同一个 `/lineage/graph?expand=` 端点——确认了 token 里已编码原查询方向（impact 内部固定 downstream），所以展开不会把上游节点混进纯下游的影响分析结果 | 待提交 |
+| F8 | overview 分层概览 | ✅ | `LineageOverview.test.tsx` 2/2 绿。简单 flex 条形块（非 G6），0 节点层过滤不展示 | 待提交 |
+| F9 | 路由 + 菜单 + i18n | ✅ | 两条路由（清单页 + 图详情页）加进 `Cluster/Layout` 下；侧边栏菜单项插进 `bottomItems`（K8s/物理集群共用，跟随 observability-collector 之后），`Layout/index.test.tsx` 既有断言只查首/次项不受影响，8/8 相关测试文件 33/33 用例全绿；zh-CN/en-US 两语言 46 个 `pages.lineage.*` + 1 个 `menu.lineage` key 全部补齐（语言范围纠偏见 §6.1） | 待提交 |
+| F10 | 批 2 `npm run lint` + `npm run test` | ✅ | `npm run lint`（Biome+tsc）、`npx antd lint ./src`、`npm run test` 三项全绿：71 个测试文件 266 个用例（本轮新增 8 个文件 39 个用例）。过程中修了 3 类真实问题：① `lineageGraphData.ts` 两处 `forEach` 回调带返回值（Biome `useIterableCallbackReturn`）；② G6 `NodeData`/`EdgeData` 要求 `Record<string,unknown>` 索引签名，给 `G6Node`/`G6Edge`/`G6NodeData`/`G6EdgeData` 补 `[key:string]:unknown`；③ `lineDash` 回调返回 `null` 与类型期望的 `undefined` 不符。`npx antd lint` 另揪出 3 处 antd 6 废弃 API（`Alert.message`→`title`、`Drawer.width`→`size`），按 `TopologyTab.tsx` 既有先例改正 | 待提交 |
 
 ---
 
@@ -306,7 +306,7 @@ JAVA_HOME=$JH21 ./mvnw -pl datasophon-api test -s ~/.m2/setting.xml
 | F3 | `LineageGraph.tsx`：G6 v5 + `antv-dagre`（`rankdir: LR`）+ `cubic-horizontal`；depth 1–5 控件、方向切换（默认 depth=2 / both）；根节点视觉强调 | 渲染真实 `GraphData`；`truncated` 时给出提示 |
 | F4 | 折叠节点 `+N`（虚线样式）→ 点击调 `?expand=token` 增量 merge 并重跑布局；**409 → message 提示"血缘已更新"并自动重拉根查询** | 单测覆盖 merge 去重与 409 恢复路径 |
 | F5 | 边点击 → `JobDetailDrawer`：一条边多个 job 时列表展示，`externalUrl` 可跳转 | 空 job 列表时的降级展示 |
-| F6 | `stale` Alert 条：展示 `builtAt` 相对时间 + `ageSeconds`；`lastRebuildError` 非空升 error 色并展示原因；"立即重建"按钮调 `POST /rebuild` | 时间一律 `dayjs.utc().local()`（既有踩坑） |
+| F6 | `stale` Alert 条：展示 `builtAt` 相对时间 + `ageSeconds`；`lastRebuildError` 非空升 error 色并展示原因；"立即重建"按钮调 `POST /rebuild` | ~~时间一律 `dayjs.utc().local()`（既有踩坑）~~ **纠偏**：`builtAt`/`updateTime`/`lastEventReceivedAt` 都是后端 `java.time.Instant`，走 Spring Boot 默认 Jackson `InstantSerializer` 输出 UTC ISO（`Z` 后缀），**不受** `application.yml` 的 `spring.jackson.time-zone: GMT+8` 影响（该配置只作用于 `java.util.Date`）；dayjs 原生按 `Date` 解析 `Z` 后缀字符串已正确换算本地时区，`.utc().local()` 是多余动作。`ObservabilityCollector/TracesTab.tsx` 等既有页面对同类 Instant 字段也是直接 `dayjs(value)`，与此结论一致。`ageSeconds` 干脆用后端算好的值格式化，不用前端相对当前时刻二次计算 |
 | F7 | 影响分析模式开关：切换后调 `/impact`（仅下游）并高亮受影响节点；**503 时明确提示"快照陈旧，影响分析不可用"并引导重建** | 503 分支有单测 |
 | F8 | 清单页顶部 overview 分层概览小图（复用 G6 或简单 flex 块） | dw_layer 已由 B3 补齐，验收时应能看到多个层块而非单个 UNKNOWN |
 | F9 | `config/routes.ts` 加两条路由；侧边栏菜单项；i18n 三语文案 | 中/英/繁三份 locale 均无缺 key |
@@ -377,7 +377,126 @@ Holder 分片用例（B5 验收）、`/tables` 与 `/job/{id}` 端点契约用�
 
 ## 6. 交付纪律
 
-1. 批 1 全绿并经你验收后，才开批 2。
+1. ~~批 1 全绿并经你验收后，才开批 2。~~ **2026-08-01 用户显式改单**："继续开发批2,完成后再合并验证"——
+   批 1 遗留的 3 个失败测试类 + 待补验收用例**不阻塞批 2 开工**，批 2 完成后两批一起做最终合并验证。
+   原规则 1 作废，不再执行。
 2. 每个任务完成即更新 §2 进度表（状态 + 验证结论 + commit），**不攒批更新**。
 3. 无验证证据不得标 `✅`；跑不动的验证标 `⚠️` 并写明原因。
 4. commit 遵循 Conventional Commits，前缀 `feat(lineage)` / `fix(lineage)` / `docs(lineage)`。
+
+### 6.1 F9 语言数量纠偏
+
+原 §5 F9 写"中/英/繁三语"。实地核查 `datasophon-ui-v2/src/locales/` 只有 `zh-CN` / `en-US`
+两个目录（`zh-TW` 只是语言切换器里的可选项，没有对应的 locale 文件，属于框架模板残留选项，
+不是本仓库的实际维护范围——RustFS/ZooKeeper/Doris 等近期监控看板功能全部只交付这两语）。
+F9 按仓库实际约定只做 zh-CN + en-US，不新增 zh-TW 目录。
+
+---
+
+## 8. 批 2 实施记录
+
+### 8.1 交付文件清单
+
+`datasophon-ui-v2/src/pages/Cluster/Lineage/`：`service.ts`（+test）、`lineageGraphData.ts`（+test，
+纯函数：G6 数据映射 + 折叠展开合并）、`FreshnessAlert.tsx`（+test）、`LineageOverview.tsx`（+test）、
+`JobDetailDrawer.tsx`（+test）、`index.tsx`（+test，表清单页）、`LineageGraph.tsx`（+test，图详情页，
+F3/F4/F7 三个任务合一文件交付）。另改 `config/routes.ts`（2 条路由）、
+`Cluster/Layout/index.tsx`（1 个菜单项）、`locales/{zh-CN,en-US}/menu.ts`（各 1 key）、
+新增 `locales/{zh-CN,en-US}/lineage.ts`（各 39 key）并接入 `locales/{zh-CN,en-US}.ts`。
+
+### 8.2 开工前接口核对（与 §1 决策/§5 任务定义比对，均吻合，无需改计划）
+
+- **baseURL 确认**：`LineageV2Controller extends ApiController` 走 `AppConfiguration.configurePathMatch`
+  的 `/api` 前缀 + `@RequestMapping("/v2")`，服务端最终路径 `/ddh/api/v2/lineage/**`，与
+  `app.tsx` 里 `request` 的默认 `baseURL: '/ddh/api/v2'` 天然吻合 —— `service.ts` **不需要**像
+  `ObservabilityCollector/service.ts` 那样覆盖 `legacyRequestOptions`。
+- **错误信封确认**：`V2ApiExceptionHandler` 把非 2xx 统一转成 `ApiResponse{success:false,
+  errorCode, errorMessage, showType}`，但 axios 默认对非 2xx 直接 reject，不会走
+  `requestErrorConfig.ts` 里 `data.success===false` 那条 `errorThrower` 分支（那条分支只处理
+  "HTTP 200 但业务失败" 的旧接口）。因此本软所有需要**自定义**处理的错误（409 展开过期、
+  503 影响分析不可用）一律传 `skipErrorHandler:true` 自行 catch `error.response.status`；
+  其余错误（400/404/500）放行给默认 `errorHandler`，走通用 toast，不重复处理。
+
+### 8.3 过程中发现并修正的问题
+
+| # | 问题 | 修正 |
+|---|---|---|
+| Q1 | 我在 grilling 定稿的 F6 验收标准里写了"时间一律 `dayjs.utc().local()`"，实测该模式是为 Doris 原始 JDBC 时间戳踩过的坑，**不适用于本轮**：`builtAt`/`updateTime`/`lastEventReceivedAt` 都是后端 `java.time.Instant`，Spring Boot 默认 Jackson `InstantSerializer` 输出带 `Z` 的 UTC ISO 字符串，**不受** `application.yml` 的 `spring.jackson.time-zone: GMT+8` 影响（该配置只作用于 `java.util.Date`）。dayjs 原生解析 `Z` 后缀已经正确换算本地时区 | `FreshnessAlert.tsx` 改用后端算好的 `ageSeconds` 格式化，不引入 `.utc()` |
+| Q2 | **真实 bug**：`LineageGraph.tsx` 的 `fetchRoot`/`handleExpand` 两个 `useCallback` 最初把 `t`（源自 `useIntl()`）放进依赖数组；`useIntl()` 若不是每次渲染返回同一引用（本轮 mock 环境里就不是——测试用 factory 函数每次新建对象），`t` 就会每次渲染重新创建，进而让依赖它的 `useEffect` 无限重新拉取数据。写单测时被 `getGraph` 调用次数从预期 1 次暴露成 363 次直接抓到 | 把 `t` 从两处依赖数组移除（仅在函数体内闭包引用，不参与依赖判定），照抄 `TopologyTab.tsx` 数据拉取 `useEffect` 故意不依赖 `t` 的既有先例 |
+| Q3 | `@ant-design/pro-components` 在 vitest 下有 ESM/CJS 互操作坏问题（`ReferenceError: exports is not defined`），直接渲染真实 `ProTable` 会整个测试文件挂掉 | 不是我引入的新坑——本仓库所有触碰 `ProTable`/`PageContainer` 的既有测试（`AlarmManage/History.test.tsx` 等）**一律 mock `@ant-design/pro-components`**，拿 `request`/`columns` props 出来断言。`index.test.tsx` 照此先例 |
+| Q4 | `npx antd lint ./src` 揪出 3 处 antd 6 已废弃 API：`Alert.message`（应为 `title`）、`Drawer.width`（应为 `size`） | 全部改正；顺带发现 `TopologyTab.tsx` 早就在用新版 `title`，本该一开始就抄对 |
+| Q5 | G6 v5 的 `NodeData`/`EdgeData` 类型要求 `data` 字段满足 `Record<string, unknown>` 索引签名；`lineDash` 回调期望返回 `undefined` 而非 `null` | 给自定义的 `G6Node`/`G6Edge`/`G6NodeData`/`G6EdgeData` 补 `[key: string]: unknown`；`lineDash` 三元表达式把 `null` 分支改 `undefined` |
+
+### 8.4 折叠展开在 impact 模式下的正确性说明（F4×F7 交叉点）
+
+`/lineage/impact` 端点本身不支持 `expand` 参数；折叠节点展开统一走 `/lineage/graph?expand=token`。
+关键在于 `LineageGraphQuery.expand()` 解析 token 时用的是 token 里编码的 `Direction`（对应
+`n:<id>:<up|down|both>:g<generation>` 里的 `up`/`down`/`both` 段），而不是当前 UI 的 `direction`
+state。因为 `/lineage/impact` 内部固定用 `Direction.DOWNSTREAM` 发起遍历，它产生的所有
+`CollapsedNode.token` 天然编码着 `down`——所以即便在"影响分析"模式下点击展开，也不会意外拉入
+上游节点污染纯下游的影响分析结果。这条正确性依赖后端既有实现，前端不需要、也没有做任何额外的
+方向过滤。
+
+### 8.5 验证结论
+
+- `npm run lint`（Biome + tsc）：0 error（8 个与本轮无关的既有 info，见 F10 行）
+- `npx antd lint ./src`：0 issue
+- `npm run test`：71 files / 266 cases 全绿，含本轮新增 8 个文件 39 个用例
+- **未做**：浏览器实机联调（需要本地后端起一个已有真实血缘快照的集群；批 1 后端遗留的 3 个
+  失败测试类与待补验收用例仍未处理，"合并验证"见 §9）
+
+---
+
+## 9. 合并验证（2026-08-01）
+
+按用户指令"继续开发批2,完成后再合并验证"，批 2 完成后回头处理批 1 遗留的 3 个失败测试类，
+两批一起给出最终验证结论。
+
+### 9.1 前端
+
+- `npm run lint`（Biome + tsc）：0 error
+- `npx antd lint ./src`：0 issue
+- `npm run test`：**71 files / 266 cases 全绿**
+- `npm run build`：生产构建成功，`@antv/g6` 单独分包（`node_modules__antv_g6_esm_index_*.async.js`
+  222KB gzip），确认 `LineageGraph.tsx` 被正确按路由代码分割进产物，不是只在 dev 模式下能跑
+
+### 9.2 后端 —— §7.3 三个遗留失败类，根因与修复
+
+`LineageGenerationReaderTest` 和 `LineageObservabilityTest` 的根因和之前判断一致（stub 未跟着
+`queryForObject`→`queryForList` 的签名切换），修法也一样，唯一新增内容是 `LineageObservabilityTest`
+的 H2 fixture DDL 需要同步 B1 的三个 schema 变化（`t_ddh_lineage_generation` 改按 `cluster_id`
+建主键、`t_ddh_lineage_node` 加 `cluster_id`、新增最小 `t_ddh_data_job` 供边查询 JOIN）。
+
+`LineageV2ControllerTest` 的根因**在批 1 结束时没有确认**，本轮定位清楚——**不是** Application
+Context 加载失败，是 3 处 `ReflectionTestUtils.setField` 遗留自 L1 时代的写法，字段类型/名称都
+已被批 1 的分片改造淘汰：
+
+| 位置 | 旧写法 | 问题 |
+|---|---|---|
+| `coordinatorErrorParticipatesInFreshnessAndImpactFailsClosed` | `setField(coordinator, "lastRebuildError", ex)` | `LineageRebuildCoordinator` 早已把单值 `lastRebuildError` 换成 `Map<Long, Throwable> lastRebuildErrors`（B6），字段名对不上 |
+| `snapshotAgeIsTheThirdIndependentStalenessBranch` | `setField(snapshotHolder, "published", SNAPSHOT.get())` | `published` 已从单值 `LineageGraphSnapshot` 换成 `ConcurrentMap<Long, LineageGraphSnapshot>`（B5），类型不匹配 |
+| `missingSnapshotReturnsServiceUnavailableInsteadOfEmptyGraph` | `setField(snapshotHolder, "published", null)` | 把整个分片 Map **永久置空**，而 `@WebMvcTest` 的 Spring 上下文在同一测试类内跨方法缓存（无 `@DirtiesContext`），这个 null 会残留到后面每一个测试的 `@BeforeEach`，导致 `resetMockService()` 里 `publishedSnapshots().clear()` 空指针——**这就是"13/15 失败、耗时均 0.001s"的真正原因**：不是 context 起不来，是某个测试把共享单例 bean 的内部状态永久破坏了，后续测试的 `@BeforeEach` 提前炸掉 |
+
+修法统一为通过既有的 `publishedSnapshots()` / `rebuildErrors()` 辅助方法按 `CLUSTER_ID`
+操作分片容器本身（`.put()` / `.remove()`），不再触达容器的物理字段。副作用之一：定位过程中
+还额外揪出一个真实断言错误——`graphReturnsBoundedDataAndGenerationBasedStaleness` 断言
+`sourceFreshness.status` 应为 `UNKNOWN`，但 stub 按 `resetMockService()` 设定的
+"30 秒前收到事件"实际应判定为 `OK`（30s 远小于默认 1800s 滞后阈值），这是断言文本本身写错，
+不是产线代码缺陷，已改成 `OK` 并加注释说明"快照 stale 与采集侧新鲜度是两件独立的事"。
+
+### 9.3 最终结果
+
+```
+Lineage*Test 分组：Tests run: 52, Failures: 0, Errors: 0, Skipped: 0
+```
+
+`LineageDdlContractTest` 2、`LineageIngestComponentsTest` 8、`LineageBenchmarkDataGeneratorTest` 1、
+`LineageGenerationReaderTest` 2、`LineageGraphSnapshotTest` 3、`LineageMasterLeaseTest` 1、
+`LineageRebuildCoordinatorTest` 8、`LineageGraphQueryTest` 9、`LineageObservabilityTest` 3、
+`LineageV2ControllerTest` 15 —— 全部通过。`spotless:apply` 干净。
+
+**仍未做**（不在本轮合并验证范围内，留给下一轮）：B2/B3/B5/B8/B9 各自定义的新增验收用例
+（跨集群同名表、`DwLayerInferrerTest`、Holder 分片、`/tables`+`/job/{id}` 契约、`list()`
+过滤分页）；真实 MySQL 测试组（`LineageQueryMysqlTest` 等）的数据准备 SQL 补 `cluster_id`；
+浏览器实机联调；与本轮无关模块的全量回归（只跑了 `-Dtest=Lineage*Test`，未跑整个
+`datasophon-api` 默认分组）。
