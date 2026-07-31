@@ -62,14 +62,14 @@ class LineageObservabilityTest {
             createSnapshotFixture(jdbcTemplate);
 
             MysqlSnapshotLoader loader = new MysqlSnapshotLoader(jdbcTemplate, rebuildMetrics);
-            LineageGraphSnapshot snapshot = loader.load();
+            LineageGraphSnapshot snapshot = loader.load(1L);
             TransactionTemplate transaction =
                     new TransactionTemplate(new DataSourceTransactionManager(dataSource));
             try (
                     LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(
                             new LineageGraphSnapshotHolder(), loader, transaction, rebuildMetrics)) {
-                assertThat(coordinator.publishIfNotOlder(snapshot)).isTrue();
-                assertThat(coordinator.publishIfNotOlder(LineageGraphSnapshot.copyOf(
+                assertThat(coordinator.publishIfNotOlder(1L, snapshot)).isTrue();
+                assertThat(coordinator.publishIfNotOlder(1L, LineageGraphSnapshot.copyOf(
                         snapshot.graph(), snapshot.nodeMeta(), snapshot.generation() - 1, Instant.now()))).isFalse();
             }
 

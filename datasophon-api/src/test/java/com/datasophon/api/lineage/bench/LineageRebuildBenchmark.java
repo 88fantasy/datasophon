@@ -176,7 +176,7 @@ public final class LineageRebuildBenchmark {
 
     private static List<NodeMeta> readNodes(Connection connection) throws SQLException {
         String sql = """
-                SELECT id, connector, catalog_name, database_name, table_name, canonical_name, dw_layer
+                SELECT id, cluster_id, connector, catalog_name, database_name, table_name, canonical_name, dw_layer
                 FROM t_ddh_lineage_node
                 WHERE catalog_name = ? AND id > ?
                 ORDER BY id
@@ -193,9 +193,9 @@ public final class LineageRebuildBenchmark {
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
                         lastId = resultSet.getLong(1);
-                        rows.add(new NodeMeta(lastId, resultSet.getString(2), resultSet.getString(3),
+                        rows.add(new NodeMeta(lastId, resultSet.getLong(2), resultSet.getString(3),
                                 resultSet.getString(4), resultSet.getString(5), resultSet.getString(6),
-                                resultSet.getString(7)));
+                                resultSet.getString(7), resultSet.getString(8)));
                         pageRows++;
                     }
                 }

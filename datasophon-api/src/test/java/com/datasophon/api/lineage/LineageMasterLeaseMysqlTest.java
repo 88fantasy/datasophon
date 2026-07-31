@@ -29,6 +29,8 @@ import com.datasophon.api.controller.v2.LineageV2Controller;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
@@ -54,8 +56,17 @@ class LineageMasterLeaseMysqlTest extends LineageMysqlTestSupport {
                         new LineageMasterLease(MYSQL_URL, MYSQL_USERNAME, MYSQL_PASSWORD, true, manualHeartbeat);
                 LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(
                         holder,
-                        () -> {
-                            throw new UnsupportedOperationException("not used by this lease test");
+                        new LineageRebuildCoordinator.SnapshotLoader() {
+
+                            @Override
+                            public LineageGraphSnapshot load(long clusterId) {
+                                throw new UnsupportedOperationException("not used by this lease test");
+                            }
+
+                            @Override
+                            public Collection<Long> knownClusterIds() {
+                                return List.of();
+                            }
                         },
                         new TransactionTemplate(transactionManager))) {
             first.start();
@@ -75,7 +86,9 @@ class LineageMasterLeaseMysqlTest extends LineageMysqlTestSupport {
                     coordinator,
                     new LineageGenerationReader(jdbcTemplate),
                     new LineageGraphQuery(),
+                    new LineageJobDetailReader(jdbcTemplate),
                     600,
+                    1800,
                     ingestToken);
 
             assertThatThrownBy(() -> controller.ingest("Bearer " + ingestToken, CLUSTER_ID, event(

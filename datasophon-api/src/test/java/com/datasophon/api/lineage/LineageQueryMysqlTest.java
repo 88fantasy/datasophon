@@ -59,7 +59,7 @@ class LineageQueryMysqlTest extends LineageMysqlTestSupport {
         readTransaction.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
         readTransaction.setReadOnly(true);
         LineageGraphSnapshot snapshot =
-                readTransaction.execute(status -> new MysqlSnapshotLoader(jdbcTemplate).load());
+                readTransaction.execute(status -> new MysqlSnapshotLoader(jdbcTemplate).load(1L));
         long currentRows = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM t_ddh_lineage_edge WHERE is_current = 1", Long.class);
         long currentLogicalEdges = jdbcTemplate.queryForObject(

@@ -42,7 +42,7 @@ class LineageGenerationReaderTest {
             }
         };
 
-        long generation = new LineageGenerationReader(jdbcTemplate).readCurrentGeneration();
+        long generation = new LineageGenerationReader(jdbcTemplate).readCurrentGeneration(1L);
 
         assertThat(generation).isEqualTo(42);
         assertThat(observedSql.get()).isEqualTo(LineageGenerationReader.GENERATION_SQL);

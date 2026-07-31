@@ -37,7 +37,7 @@ import com.google.common.graph.ValueGraphBuilder;
 class LineageGraphSnapshotTest {
 
     private static final NodeMeta ORDERS =
-            new NodeMeta(1, "paimon", "prod", "dwd", "orders", "paimon://prod/dwd/orders", "DWD");
+            new NodeMeta(1, 1L, "paimon", "prod", "dwd", "orders", "paimon://prod/dwd/orders", "DWD");
 
     @Test
     void supportsSelfLoopsAndAggregatedParallelJobsWithoutExposingMutation() {
@@ -69,7 +69,7 @@ class LineageGraphSnapshotTest {
         graph.putEdgeValue(1L, 2L, new EdgeValue(List.of(new JobRef(1, 101, 1, "BATCH"))));
         graph.putEdgeValue(2L, 1L, new EdgeValue(List.of(new JobRef(2, 102, 1, "BATCH"))));
         NodeMeta customers =
-                new NodeMeta(2, "paimon", "prod", "dwd", "customers", "paimon://prod/dwd/customers", "DWD");
+                new NodeMeta(2, 1L, "paimon", "prod", "dwd", "customers", "paimon://prod/dwd/customers", "DWD");
 
         LineageGraphSnapshot snapshot = LineageGraphSnapshot.copyOf(graph, Map.of(1L, ORDERS, 2L, customers), 8,
                 Instant.parse("2026-07-29T00:00:00Z"));

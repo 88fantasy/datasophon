@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +69,7 @@ class LineageRebuildCoordinatorTest {
         CountDownLatch releaseFirstLoad = new CountDownLatch(1);
         LineageGraphSnapshotHolder holder = new LineageGraphSnapshotHolder();
 
-        try (LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, () -> {
+        try (LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, loader(() -> {
             int currentActive = active.incrementAndGet();
             maxActive.accumulateAndGet(currentActive, Math::max);
             int generation = loads.incrementAndGet();
@@ -78,19 +79,19 @@ class LineageRebuildCoordinatorTest {
             }
             active.decrementAndGet();
             return snapshot(generation);
-        }, readTransaction())) {
-            coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.MANUAL);
+        }), readTransaction())) {
+            coordinator.requestRebuild(CLUSTER, LineageRebuildCoordinator.Trigger.MANUAL);
             assertThat(firstLoadStarted.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
 
             for (int i = 0; i < 100; i++) {
-                coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.EVENT);
+                coordinator.requestRebuild(CLUSTER, LineageRebuildCoordinator.Trigger.EVENT);
             }
             releaseFirstLoad.countDown();
 
             await(() -> loads.get() >= 2 && active.get() == 0);
             assertThat(maxActive).hasValue(1);
             assertThat(loads.get()).isLessThan(100);
-            assertThat(holder.getForQuery()).get().extracting(LineageGraphSnapshot::generation).isEqualTo(2L);
+            assertThat(holder.getForQuery(CLUSTER)).get().extracting(LineageGraphSnapshot::generation).isEqualTo(2L);
         }
     }
 
@@ -108,14 +109,14 @@ class LineageRebuildCoordinatorTest {
         LineageGraphSnapshotHolder holder = new LineageGraphSnapshotHolder();
 
         try (
-                LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, () -> snapshot(0),
+                LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, loader(() -> snapshot(0)),
                         readTransaction(), metrics)) {
-            assertThat(coordinator.publishIfNotOlder(snapshot(11))).isTrue();
-            assertThat(coordinator.publishIfNotOlder(snapshot(10))).isFalse();
+            assertThat(coordinator.publishIfNotOlder(CLUSTER, snapshot(11))).isTrue();
+            assertThat(coordinator.publishIfNotOlder(CLUSTER, snapshot(10))).isFalse();
 
             assertThat(discarded).hasValue(1);
             assertThat(discardedGeneration).hasValue(10L);
-            assertThat(holder.getForQuery()).get().extracting(LineageGraphSnapshot::generation).isEqualTo(11L);
+            assertThat(holder.getForQuery(CLUSTER)).get().extracting(LineageGraphSnapshot::generation).isEqualTo(11L);
         }
     }
 
@@ -133,17 +134,17 @@ class LineageRebuildCoordinatorTest {
             }
         };
 
-        try (LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, () -> {
+        try (LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, loader(() -> {
             int generation = loads.incrementAndGet();
             if (generation < 6) {
-                coordinatorRef.get().requestRebuild(LineageRebuildCoordinator.Trigger.EVENT);
+                coordinatorRef.get().requestRebuild(CLUSTER, LineageRebuildCoordinator.Trigger.EVENT);
             }
             return snapshot(generation);
-        }, readTransaction(), metrics, FIXED_CLOCK, executor, 2, Duration.ofSeconds(1))) {
+        }), readTransaction(), metrics, FIXED_CLOCK, executor, 2, Duration.ofSeconds(1))) {
             coordinatorRef.set(coordinator);
-            coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.STARTUP);
+            coordinator.requestRebuildForAllClusters(LineageRebuildCoordinator.Trigger.STARTUP);
 
-            await(() -> holder.getForQuery().map(LineageGraphSnapshot::generation).orElse(-1L) >= 6);
+            await(() -> holder.getForQuery(CLUSTER).map(LineageGraphSnapshot::generation).orElse(-1L) >= 6);
             assertThat(yielded.get()).isGreaterThanOrEqualTo(2);
             assertThat(loads.get()).isGreaterThanOrEqualTo(6);
         }
@@ -185,17 +186,17 @@ class LineageRebuildCoordinatorTest {
 
         try (
                 LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(
-                        new LineageGraphSnapshotHolder(), () -> {
+                        new LineageGraphSnapshotHolder(), loader(() -> {
                             int generation = loads.incrementAndGet();
                             if (generation < 3) {
-                                coordinatorRef.get().requestRebuild(LineageRebuildCoordinator.Trigger.EVENT);
+                                coordinatorRef.get().requestRebuild(CLUSTER, LineageRebuildCoordinator.Trigger.EVENT);
                             }
                             currentMillis.addAndGet(101);
                             return snapshot(generation);
-                        }, readTransaction(), metrics, advancingClock, Executors.newSingleThreadExecutor(), 100,
+                        }), readTransaction(), metrics, advancingClock, Executors.newSingleThreadExecutor(), 100,
                         Duration.ofMillis(100))) {
             coordinatorRef.set(coordinator);
-            coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.STARTUP);
+            coordinator.requestRebuildForAllClusters(LineageRebuildCoordinator.Trigger.STARTUP);
 
             await(() -> loads.get() >= 3);
             assertThat(yielded.get()).isGreaterThanOrEqualTo(2);
@@ -218,7 +219,7 @@ class LineageRebuildCoordinatorTest {
             }
         };
 
-        try (LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, () -> {
+        try (LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(holder, loader(() -> {
             if (loads.incrementAndGet() == 1) {
                 firstLoadStarted.countDown();
                 assertThat(releaseFirstLoad.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
@@ -227,21 +228,21 @@ class LineageRebuildCoordinatorTest {
             retryStarted.countDown();
             assertThat(releaseRetry.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
             return snapshot(2);
-        }, readTransaction(), metrics)) {
-            coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.EVENT);
+        }), readTransaction(), metrics)) {
+            coordinator.requestRebuild(CLUSTER, LineageRebuildCoordinator.Trigger.EVENT);
             assertThat(firstLoadStarted.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
-            coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.SCHEDULED);
+            coordinator.requestRebuildForAllClusters(LineageRebuildCoordinator.Trigger.SCHEDULED);
             releaseFirstLoad.countDown();
             assertThat(retryStarted.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
-            assertThat(coordinator.lastRebuildError()).get()
+            assertThat(coordinator.lastRebuildError(CLUSTER)).get()
                     .extracting(Throwable::getMessage)
                     .isEqualTo("injected rebuild failure");
 
             releaseRetry.countDown();
-            await(() -> holder.getForQuery().isPresent());
+            await(() -> holder.getForQuery(CLUSTER).isPresent());
             assertThat(failures).hasValue(1);
-            assertThat(coordinator.lastRebuildError()).isEmpty();
-            assertThat(holder.getForQuery()).get().extracting(LineageGraphSnapshot::generation).isEqualTo(2L);
+            assertThat(coordinator.lastRebuildError(CLUSTER)).isEmpty();
+            assertThat(holder.getForQuery(CLUSTER)).get().extracting(LineageGraphSnapshot::generation).isEqualTo(2L);
         }
     }
 
@@ -250,15 +251,15 @@ class LineageRebuildCoordinatorTest {
         CountDownLatch loadAttempted = new CountDownLatch(1);
         try (
                 LineageRebuildCoordinator coordinator = new LineageRebuildCoordinator(
-                        new LineageGraphSnapshotHolder(), () -> {
+                        new LineageGraphSnapshotHolder(), loader(() -> {
                             loadAttempted.countDown();
                             throw new IllegalStateException("startup load failed");
-                        }, readTransaction())) {
+                        }), readTransaction())) {
             coordinator.run(null);
 
             assertThat(loadAttempted.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
-            await(() -> coordinator.lastRebuildError().isPresent());
-            assertThat(coordinator.lastRebuildError()).get()
+            await(() -> coordinator.lastRebuildError(CLUSTER).isPresent());
+            assertThat(coordinator.lastRebuildError(CLUSTER)).get()
                     .extracting(Throwable::getMessage)
                     .isEqualTo("startup load failed");
         }
@@ -273,7 +274,7 @@ class LineageRebuildCoordinatorTest {
         CountDownLatch allowSecondPage = new CountDownLatch(1);
         LineageGraphSnapshotHolder holder = new LineageGraphSnapshotHolder();
 
-        LineageRebuildCoordinator.SnapshotLoader repeatableReadLoader = () -> {
+        LineageRebuildCoordinator.SnapshotLoader repeatableReadLoader = loader(() -> {
             List<EdgeRow> readView = List.copyOf(currentRows.get());
             List<EdgeRow> rows = new ArrayList<>();
             rows.add(readView.get(0));
@@ -281,18 +282,18 @@ class LineageRebuildCoordinatorTest {
             assertThat(allowSecondPage.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
             rows.add(readView.get(1));
             return snapshotFromRows(1, rows);
-        };
+        });
 
         try (
                 LineageRebuildCoordinator coordinator =
                         new LineageRebuildCoordinator(holder, repeatableReadLoader, readTransaction())) {
-            coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.MANUAL);
+            coordinator.requestRebuild(CLUSTER, LineageRebuildCoordinator.Trigger.MANUAL);
             assertThat(firstPageRead.await(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
             currentRows.set(versionTwo);
             allowSecondPage.countDown();
 
-            await(() -> holder.getForQuery().isPresent());
-            LineageGraphSnapshot snapshot = holder.getForQuery().orElseThrow();
+            await(() -> holder.getForQuery(CLUSTER).isPresent());
+            LineageGraphSnapshot snapshot = holder.getForQuery(CLUSTER).orElseThrow();
             Set<Integer> versions = snapshot.graph().edges().stream()
                     .map(edge -> snapshot.graph().edgeValue(edge.nodeU(), edge.nodeV()).orElseThrow())
                     .flatMap(value -> value.jobRefs().stream())
@@ -310,7 +311,7 @@ class LineageRebuildCoordinatorTest {
         AtomicBoolean running = new AtomicBoolean(true);
         Thread reader = new Thread(() -> {
             while (running.get()) {
-                holder.getForQuery().ifPresent(snapshot -> {
+                holder.getForQuery(CLUSTER).ifPresent(snapshot -> {
                     long expectedNodeId = snapshot.generation() + 1;
                     if (!snapshot.graph().nodes().contains(expectedNodeId)) {
                         mismatches.add(snapshot.generation() + ":" + snapshot.graph().nodes());
@@ -321,13 +322,42 @@ class LineageRebuildCoordinatorTest {
         reader.start();
 
         for (int generation = 0; generation < 1000; generation++) {
-            holder.publishIfNotOlder(snapshot(generation));
+            holder.publishIfNotOlder(CLUSTER, snapshot(generation));
         }
         running.set(false);
         reader.join(TEST_TIMEOUT.toMillis());
 
         assertThat(reader.isAlive()).isFalse();
         assertThat(mismatches).isEmpty();
+    }
+
+    /** 测试集群 ID：绝大多数用例只关心单集群下的并发语义，多集群语义由专门用例覆盖。 */
+    private static final long CLUSTER = 1L;
+
+    /**
+     * 把「产生一个快照」的 lambda 适配成分片后的 {@link LineageRebuildCoordinator.SnapshotLoader}。
+     *
+     * <p>接口因为要承担集群枚举而不再是函数式接口（L3/C3），这里用一个 helper 保住测试的可读性，
+     * 避免每个用例都展开成匿名类。</p>
+     */
+    private static LineageRebuildCoordinator.SnapshotLoader loader(SnapshotSupplier supplier) {
+        return new LineageRebuildCoordinator.SnapshotLoader() {
+
+            @Override
+            public LineageGraphSnapshot load(long clusterId) throws Exception {
+                return supplier.get();
+            }
+
+            @Override
+            public Collection<Long> knownClusterIds() {
+                return List.of(CLUSTER);
+            }
+        };
+    }
+
+    @FunctionalInterface
+    private interface SnapshotSupplier {
+        LineageGraphSnapshot get() throws Exception;
     }
 
     private static LineageGraphSnapshot snapshot(long generation) {
@@ -356,7 +386,7 @@ class LineageRebuildCoordinatorTest {
     }
 
     private static NodeMeta node(long id) {
-        return new NodeMeta(id, "paimon", "prod", "dwd", "table_" + id, "paimon://prod/dwd/table_" + id, "DWD");
+        return new NodeMeta(id, 1L, "paimon", "prod", "dwd", "table_" + id, "paimon://prod/dwd/table_" + id, "DWD");
     }
 
     private static void await(BooleanSupplier condition) throws InterruptedException {

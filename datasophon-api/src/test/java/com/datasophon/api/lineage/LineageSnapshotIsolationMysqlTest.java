@@ -72,13 +72,13 @@ class LineageSnapshotIsolationMysqlTest extends LineageMysqlTestSupport {
         try (
                 LineageRebuildCoordinator coordinator =
                         new LineageRebuildCoordinator(holder, loader, readTransaction)) {
-            coordinator.requestRebuild(LineageRebuildCoordinator.Trigger.MANUAL);
+            coordinator.requestRebuild(1L, LineageRebuildCoordinator.Trigger.MANUAL);
             assertThat(firstPageRead.await(5, TimeUnit.SECONDS)).isTrue();
             flipToVersionTwo(fixture);
             continuePaging.countDown();
 
-            await(() -> holder.getForQuery().isPresent());
-            LineageGraphSnapshot snapshot = holder.getForQuery().orElseThrow();
+            await(() -> holder.getForQuery(1L).isPresent());
+            LineageGraphSnapshot snapshot = holder.getForQuery(1L).orElseThrow();
             Set<Integer> versions = snapshot.graph().edges().stream()
                     .map(edge -> snapshot.graph().edgeValue(edge.nodeU(), edge.nodeV()).orElseThrow())
                     .flatMap(value -> value.jobRefs().stream())

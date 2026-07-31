@@ -289,6 +289,7 @@ class LineageGraphQueryTest {
         private static NodeMeta meta(long id, String layer) {
             return new NodeMeta(
                     id,
+                    1L,
                     "paimon",
                     "prod",
                     "db",

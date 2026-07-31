@@ -66,7 +66,7 @@ L2（Spark/Gravitino 采集侧）与本轮并行，互不阻塞。
 | B7 | `LineageGenerationReader` 按集群 | 🔄 | 主代码完成：`readCurrentGeneration(clusterId)`，行缺失返回 0（种子行已删，缺失是正常状态）。**测试未更新** | 待提交 |
 | B8 | 查询端点集群化 + 2 个新端点 + SourceFreshness（修缺陷 2） | 🔄 | 主代码完成：6 个端点加 `clusterId`；新增 `/lineage/tables`、`/lineage/job/{id}`（集群作为查询条件，不泄露他集群作业存在性）；新增 `LineageJobDetailReader`；SourceFreshness 接真值（OK/LAGGING/NO_DATA/UNKNOWN）。**测试未更新** | 待提交 |
 | B9 | `LineageGraphQuery` 表清单查询 | 🔄 | 主代码完成：`list(...)` 遍历快照做过滤/排序/分页，固定按 `canonicalName` 升序（`ImmutableMap` 迭代序非契约），`MAX_PAGE_SIZE=200` 截断。**测试未更新** | 待提交 |
-| B10 | 批 1 测试更新 + 全量回归 + `spotless:apply` | 🔄 | **当前断点在此**。主代码 `clean compile` 全绿、`spotless` 干净；`clean test-compile` 暴露 10 个测试文件待更新，清单见 §7.2 | — |
+| B10 | 批 1 测试更新 + 全量回归 + `spotless:apply` | 🔄 | **当前断点在此**。10 个测试文件已完成签名适配，`clean test-compile` 全绿、`spotless` 干净。**实跑结果：5 个测试类全绿**（含最高风险的 `LineageRebuildCoordinatorTest` 8/8），**3 个测试类有失败，根因已定位见 §7.3**；新增用例尚未编写 | 待提交 |
 
 ### 批 2 —— 前端
 
@@ -346,6 +346,32 @@ JAVA_HOME=$JH21 ./mvnw -pl datasophon-api test -s ~/.m2/setting.xml
 | `LineageIngestMysqlTest` | **新增跨集群同名表用例**（B2 验收项，验证 P1 串号缺陷） |
 
 还需新增：`DwLayerInferrerTest`（B3 验收）、`LineageGraphSnapshotHolderTest` 分片用例（B5 验收）。
+
+### 7.3 实跑结果与剩余缺口（下一轮从这里接手）
+
+命令见 §3.1，加 `-Dtest='Lineage*Test'`。
+
+**已全绿（5 个类，31 个用例）**
+
+| 测试类 | 结果 |
+|---|---|
+| `LineageRebuildCoordinatorTest` | **8/8** —— 本轮最大风险项（分片后的 single-flight、drain 收敛、yield 重投递、失败恢复）全部通过 |
+| `LineageGraphQueryTest` | 9/9 |
+| `LineageIngestComponentsTest` | 8/8 |
+| `LineageGraphSnapshotTest` | 3/3 |
+| `LineageDdlContractTest` | 2/2 |
+
+**仍失败（3 个类）**
+
+| 测试类 | 现象 | 根因 |
+|---|---|---|
+| `LineageGenerationReaderTest` | 1 error：`IllegalStateException: No DataSource set` | **已确认**：测试的 stub `JdbcTemplate` 只覆盖了 `queryForObject(String, Class)`，而 `readCurrentGeneration` 改用 `queryForList(String, Class, Object...)`，于是打到真实实现。改 stub 覆盖新签名即可 |
+| `LineageObservabilityTest` | 1 error | 同类问题，stub 未适配新签名 |
+| `LineageV2ControllerTest` | 13/15 失败（12 error + 1 failure），耗时均 0.001s ⇒ ApplicationContext 加载失败 | **未最终确认**。已适配构造器、stub JdbcTemplate、`ReflectionTestUtils` 字段名与 21 处 `clusterId` 查询参数；需单独抓 context 启动栈定位。**不要假设已修好** |
+
+**尚未开始**：跨集群同名表用例（B2 验收）、`DwLayerInferrerTest`（B3 验收）、
+Holder 分片用例（B5 验收）、`/tables` 与 `/job/{id}` 端点契约用例（B8 验收）、
+真实 MySQL 组（数据准备 SQL 需补 `cluster_id`，否则 NOT NULL 插入失败）、全量回归。
 
 ---
 
