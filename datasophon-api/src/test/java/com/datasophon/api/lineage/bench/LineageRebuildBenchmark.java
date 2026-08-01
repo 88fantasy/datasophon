@@ -150,7 +150,7 @@ public final class LineageRebuildBenchmark {
             connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
             connection.setAutoCommit(false);
             try {
-                long generation = readGeneration(connection);
+                long generation = readGeneration(connection, config.clusterId());
                 List<NodeMeta> nodes = readNodes(connection);
                 List<RawEdge> edges = readEdges(connection);
                 connection.commit();
@@ -162,15 +162,15 @@ public final class LineageRebuildBenchmark {
         }
     }
 
-    private static long readGeneration(Connection connection) throws SQLException {
+    private static long readGeneration(Connection connection, int clusterId) throws SQLException {
         try (
-                Statement statement = connection.createStatement();
-                ResultSet resultSet = statement
-                        .executeQuery("SELECT generation FROM t_ddh_lineage_generation WHERE id = 1")) {
-            if (!resultSet.next()) {
-                throw new SQLException("t_ddh_lineage_generation row id=1 is missing");
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?")) {
+            statement.setInt(1, clusterId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                // 行缺失即该集群尚无结构性事件，代际为 0（种子行已删，这是正常状态而非错误）。
+                return resultSet.next() ? resultSet.getLong(1) : 0L;
             }
-            return resultSet.getLong(1);
         }
     }
 

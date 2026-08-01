@@ -110,6 +110,22 @@ interface RequestOptions {
   skipErrorHandler?: boolean;
 }
 
+/**
+ * `V2ResponseBodyAdvice` 把 `com.datasophon.api.controller.v2` 包下所有控制器方法的成功返回值
+ * 统一包一层 `ApiResponse{success,data,errorCode,errorMessage,showType}`——包括控制器本身已经
+ * 返回 `LineageQueryResponse{data,snapshot,sourceFreshness}` 的端点，因此响应体是 `data.data`
+ * 双层嵌套。这里统一在 service 层解包一次，调用方拿到的仍是 `LineageQueryResponse<T>` 本身，
+ * 不需要感知这层信封。
+ */
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+}
+
+function unwrap<T>(promise: Promise<ApiEnvelope<T>>): Promise<T> {
+  return promise.then((envelope) => envelope.data);
+}
+
 function cleanParams<T extends object>(params: T) {
   return Object.fromEntries(
     Object.entries(params).filter(
@@ -119,7 +135,11 @@ function cleanParams<T extends object>(params: T) {
 }
 
 export function getReadiness() {
-  return request<LeaseReadiness>('/lineage/readiness', { method: 'GET' });
+  return unwrap(
+    request<ApiEnvelope<LeaseReadiness>>('/lineage/readiness', {
+      method: 'GET',
+    }),
+  );
 }
 
 export interface ListTablesParams {
@@ -133,10 +153,12 @@ export interface ListTablesParams {
 }
 
 export function listTables(params: ListTablesParams) {
-  return request<LineageQueryResponse<TablePage>>('/lineage/tables', {
-    method: 'GET',
-    params: cleanParams(params),
-  });
+  return unwrap(
+    request<ApiEnvelope<LineageQueryResponse<TablePage>>>('/lineage/tables', {
+      method: 'GET',
+      params: cleanParams(params),
+    }),
+  );
 }
 
 export interface GetGraphParams {
@@ -148,25 +170,31 @@ export interface GetGraphParams {
 }
 
 export function getGraph(params: GetGraphParams, options?: RequestOptions) {
-  return request<LineageQueryResponse<GraphData>>('/lineage/graph', {
-    method: 'GET',
-    params: cleanParams(params),
-    ...options,
-  });
+  return unwrap(
+    request<ApiEnvelope<LineageQueryResponse<GraphData>>>('/lineage/graph', {
+      method: 'GET',
+      params: cleanParams(params),
+      ...options,
+    }),
+  );
 }
 
 export function getOverview(clusterId: number) {
-  return request<LineageQueryResponse<OverviewData>>('/lineage/overview', {
-    method: 'GET',
-    params: { clusterId },
-  });
+  return unwrap(
+    request<ApiEnvelope<LineageQueryResponse<OverviewData>>>(
+      '/lineage/overview',
+      { method: 'GET', params: { clusterId } },
+    ),
+  );
 }
 
 export function getTable(clusterId: number, id: number) {
-  return request<LineageQueryResponse<NodeMeta>>(`/lineage/table/${id}`, {
-    method: 'GET',
-    params: { clusterId },
-  });
+  return unwrap(
+    request<ApiEnvelope<LineageQueryResponse<NodeMeta>>>(
+      `/lineage/table/${id}`,
+      { method: 'GET', params: { clusterId } },
+    ),
+  );
 }
 
 export function getJob(
@@ -174,11 +202,13 @@ export function getJob(
   id: number,
   options?: RequestOptions,
 ) {
-  return request<JobDetail>(`/lineage/job/${id}`, {
-    method: 'GET',
-    params: { clusterId },
-    ...options,
-  });
+  return unwrap(
+    request<ApiEnvelope<JobDetail>>(`/lineage/job/${id}`, {
+      method: 'GET',
+      params: { clusterId },
+      ...options,
+    }),
+  );
 }
 
 export interface GetImpactParams {
@@ -188,16 +218,20 @@ export interface GetImpactParams {
 }
 
 export function getImpact(params: GetImpactParams, options?: RequestOptions) {
-  return request<LineageQueryResponse<GraphData>>('/lineage/impact', {
-    method: 'GET',
-    params: cleanParams(params),
-    ...options,
-  });
+  return unwrap(
+    request<ApiEnvelope<LineageQueryResponse<GraphData>>>('/lineage/impact', {
+      method: 'GET',
+      params: cleanParams(params),
+      ...options,
+    }),
+  );
 }
 
 export function rebuild(clusterId: number) {
-  return request<RebuildAccepted>('/lineage/rebuild', {
-    method: 'POST',
-    params: { clusterId },
-  });
+  return unwrap(
+    request<ApiEnvelope<RebuildAccepted>>('/lineage/rebuild', {
+      method: 'POST',
+      params: { clusterId },
+    }),
+  );
 }

@@ -132,22 +132,57 @@ class LineageIngestMysqlTest extends LineageMysqlTestSupport {
                 .containsExactly("SKIPPED_EMPTY", "UNRESOLVED_DATASET", "IGNORED_EVENT");
     }
 
+    /**
+     * L3/B2 验收：同一 {@code canonical_name} 在不同集群下必须各自建行、互不串号（P1 踩坑点——
+     * 回查 node id 若不带 cluster_id 条件，会在跨集群同名表时静默拿到别的集群的 node id）。
+     */
+    @Test
+    void sameCanonicalNameAcrossTwoClustersProducesTwoIndependentNodesAndGenerations() {
+        long otherClusterId = CLUSTER_ID + 1;
+        LineageIngestService service = ingestService();
+
+        service.ingest(CLUSTER_ID, event("cluster-a-run", "COMPLETE", BASE_TIME, "orders"));
+        service.ingest(otherClusterId, event("cluster-b-run", "COMPLETE", BASE_TIME, "orders"));
+
+        List<Long> nodeIds = jdbcTemplate.queryForList(
+                "SELECT id FROM t_ddh_lineage_node WHERE canonical_name = ? ORDER BY cluster_id",
+                Long.class, "paimon://prod/dwd/orders");
+        assertThat(nodeIds).hasSize(2);
+        assertThat(nodeIds.get(0)).isNotEqualTo(nodeIds.get(1));
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?", Long.class, CLUSTER_ID))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?", Long.class, otherClusterId))
+                .isEqualTo(1);
+
+        // 各自再摄入一次结构不变的事件：generation 只应在自己集群内自增，不能互相影响。
+        service.ingest(CLUSTER_ID, event("cluster-a-run-2", "COMPLETE", BASE_TIME.plusSeconds(10), "orders"));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?", Long.class, CLUSTER_ID))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?", Long.class, otherClusterId))
+                .isEqualTo(1);
+    }
+
     @Test
     void twentyConcurrentFirstEventsCreateOneJobAndOneCurrentVersion() throws Exception {
         Instant earlierSeenAt = Instant.EPOCH;
         jdbcTemplate.update(
                 """
                         INSERT INTO t_ddh_lineage_node
-                            (connector, catalog_name, database_name, table_name, canonical_name,
+                            (cluster_id, connector, catalog_name, database_name, table_name, canonical_name,
                              dw_layer, first_seen, last_seen)
                         VALUES
-                            ('paimon', 'prod', 'ods', 'orders_raw', 'paimon://prod/ods/orders_raw',
+                            (?, 'paimon', 'prod', 'ods', 'orders_raw', 'paimon://prod/ods/orders_raw',
                              'ODS', ?, ?),
-                            ('paimon', 'prod', 'dwd', 'orders', 'paimon://prod/dwd/orders',
+                            (?, 'paimon', 'prod', 'dwd', 'orders', 'paimon://prod/dwd/orders',
                              'DWD', ?, ?)
                         """,
-                Timestamp.from(earlierSeenAt), Timestamp.from(earlierSeenAt),
-                Timestamp.from(earlierSeenAt), Timestamp.from(earlierSeenAt));
+                CLUSTER_ID, Timestamp.from(earlierSeenAt), Timestamp.from(earlierSeenAt),
+                CLUSTER_ID, Timestamp.from(earlierSeenAt), Timestamp.from(earlierSeenAt));
 
         LineageIngestService service = ingestService();
         CountDownLatch start = new CountDownLatch(1);
@@ -198,7 +233,7 @@ class LineageIngestMysqlTest extends LineageMysqlTestSupport {
 
     private static long generation() {
         return jdbcTemplate.queryForObject(
-                "SELECT generation FROM t_ddh_lineage_generation WHERE id = 1", Long.class);
+                "SELECT generation FROM t_ddh_lineage_generation WHERE cluster_id = ?", Long.class, CLUSTER_ID);
     }
 
     private static String currentOutput() {

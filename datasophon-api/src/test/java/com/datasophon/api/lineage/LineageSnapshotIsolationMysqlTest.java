@@ -41,6 +41,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 class LineageSnapshotIsolationMysqlTest extends LineageMysqlTestSupport {
 
+    private static final long CLUSTER_ID = 7;
     private static final Clock FIXED_CLOCK =
             Clock.fixed(Instant.parse("2026-07-30T00:00:00Z"), ZoneOffset.UTC);
 
@@ -72,13 +73,13 @@ class LineageSnapshotIsolationMysqlTest extends LineageMysqlTestSupport {
         try (
                 LineageRebuildCoordinator coordinator =
                         new LineageRebuildCoordinator(holder, loader, readTransaction)) {
-            coordinator.requestRebuild(1L, LineageRebuildCoordinator.Trigger.MANUAL);
+            coordinator.requestRebuild(CLUSTER_ID, LineageRebuildCoordinator.Trigger.MANUAL);
             assertThat(firstPageRead.await(5, TimeUnit.SECONDS)).isTrue();
             flipToVersionTwo(fixture);
             continuePaging.countDown();
 
-            await(() -> holder.getForQuery(1L).isPresent());
-            LineageGraphSnapshot snapshot = holder.getForQuery(1L).orElseThrow();
+            await(() -> holder.getForQuery(CLUSTER_ID).isPresent());
+            LineageGraphSnapshot snapshot = holder.getForQuery(CLUSTER_ID).orElseThrow();
             Set<Integer> versions = snapshot.graph().edges().stream()
                     .map(edge -> snapshot.graph().edgeValue(edge.nodeU(), edge.nodeV()).orElseThrow())
                     .flatMap(value -> value.jobRefs().stream())
@@ -116,7 +117,8 @@ class LineageSnapshotIsolationMysqlTest extends LineageMysqlTestSupport {
                         VALUES (?, 1, ?, ?, 'BATCH', 1), (?, 1, ?, ?, 'BATCH', 1)
                         """,
                 jobId, first, second, jobId, second, third);
-        jdbcTemplate.update("UPDATE t_ddh_lineage_generation SET generation = 1 WHERE id = 1");
+        jdbcTemplate.update(
+                "INSERT INTO t_ddh_lineage_generation (cluster_id, generation) VALUES (?, 1)", CLUSTER_ID);
         return new Fixture(jobId, first, second, third);
     }
 
@@ -124,13 +126,14 @@ class LineageSnapshotIsolationMysqlTest extends LineageMysqlTestSupport {
         jdbcTemplate.update(
                 """
                         INSERT INTO t_ddh_lineage_node
-                            (connector, catalog_name, database_name, table_name, canonical_name, first_seen, last_seen)
-                        VALUES ('paimon', 'prod', 'dwd', ?, ?, NOW(3), NOW(3))
+                            (cluster_id, connector, catalog_name, database_name, table_name, canonical_name,
+                             first_seen, last_seen)
+                        VALUES (?, 'paimon', 'prod', 'dwd', ?, ?, NOW(3), NOW(3))
                         """,
-                table, "paimon://prod/dwd/" + table);
+                CLUSTER_ID, table, "paimon://prod/dwd/" + table);
         return jdbcTemplate.queryForObject(
-                "SELECT id FROM t_ddh_lineage_node WHERE canonical_name = ?",
-                Long.class, "paimon://prod/dwd/" + table);
+                "SELECT id FROM t_ddh_lineage_node WHERE cluster_id = ? AND canonical_name = ?",
+                Long.class, CLUSTER_ID, "paimon://prod/dwd/" + table);
     }
 
     private static void flipToVersionTwo(Fixture fixture) {
@@ -145,7 +148,8 @@ class LineageSnapshotIsolationMysqlTest extends LineageMysqlTestSupport {
                         """,
                 fixture.jobId(), fixture.firstNodeId(), fixture.thirdNodeId(),
                 fixture.jobId(), fixture.thirdNodeId(), fixture.secondNodeId());
-        jdbcTemplate.update("UPDATE t_ddh_lineage_generation SET generation = 2 WHERE id = 1");
+        jdbcTemplate.update(
+                "UPDATE t_ddh_lineage_generation SET generation = 2 WHERE cluster_id = ?", CLUSTER_ID);
     }
 
     private static void await(BooleanSupplier condition) throws InterruptedException {

@@ -341,6 +341,68 @@ class LineageV2ControllerTest {
     }
 
     @Test
+    void tablesPaginatesSortedByCanonicalNameAndFiltersByLayerAndKeyword() throws Exception {
+        // snapshot(...) 固定 3 个节点：source(1,ODS,.../ods/orders)、middle(2,DWD,.../dwd/orders)、
+        // target(3,null,.../misc/orders)；canonicalName 升序为 dwd < misc < ods。
+        mockMvc.perform(get("/v2/lineage/tables").queryParam("clusterId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.data.total").value(3))
+                .andExpect(jsonPath("$.data.data.list.length()").value(3))
+                .andExpect(jsonPath("$.data.data.list[0].id").value(2))
+                .andExpect(jsonPath("$.data.data.list[1].id").value(3))
+                .andExpect(jsonPath("$.data.data.list[2].id").value(1));
+
+        mockMvc.perform(get("/v2/lineage/tables").queryParam("clusterId", "1")
+                .queryParam("layer", "DWD"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.data.total").value(1))
+                .andExpect(jsonPath("$.data.data.list[0].id").value(2));
+
+        mockMvc.perform(get("/v2/lineage/tables").queryParam("clusterId", "1")
+                .queryParam("keyword", "misc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.data.total").value(1))
+                .andExpect(jsonPath("$.data.data.list[0].id").value(3));
+
+        mockMvc.perform(get("/v2/lineage/tables").queryParam("clusterId", "1")
+                .queryParam("page", "1")
+                .queryParam("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.data.total").value(3))
+                .andExpect(jsonPath("$.data.data.list.length()").value(2));
+    }
+
+    @Test
+    void tablesRejectsNonPositivePageOrSize() throws Exception {
+        mockMvc.perform(get("/v2/lineage/tables").queryParam("clusterId", "1")
+                .queryParam("page", "0"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/v2/lineage/tables").queryParam("clusterId", "1")
+                .queryParam("size", "0"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void jobReturnsKnownJobAndRejectsUnknownOrCrossClusterAccessWithNotFound() throws Exception {
+        // WebConfiguration 里的 stub JdbcTemplate 只认 CLUSTER_ID(=1) + KNOWN_JOB_IDS(={1,2})。
+        mockMvc.perform(get("/v2/lineage/job/1").queryParam("clusterId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.jobName").value("job_1"))
+                .andExpect(jsonPath("$.data.engine").value("SPARK"));
+
+        // jobId 未知：即便集群号对，也要 404，不能把"表不存在"和"表存在但字段为空"混为一谈。
+        mockMvc.perform(get("/v2/lineage/job/999").queryParam("clusterId", "1"))
+                .andExpect(status().isNotFound());
+
+        // 跨集群越权：jobId=1 在集群 1 下存在，但用集群 2 去读必须挡成 404，
+        // 不能让调用方靠猜 jobId 探测出别的集群有没有这个作业。
+        mockMvc.perform(get("/v2/lineage/job/1").queryParam("clusterId", "2"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void missingSnapshotReturnsServiceUnavailableInsteadOfEmptyGraph() throws Exception {
         publishedSnapshots().remove(CLUSTER_ID);
 

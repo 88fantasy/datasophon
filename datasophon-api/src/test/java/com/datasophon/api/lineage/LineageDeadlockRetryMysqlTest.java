@@ -38,6 +38,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 class LineageDeadlockRetryMysqlTest extends LineageMysqlTestSupport {
 
+    private static final long CLUSTER_ID = 1;
+
     @Test
     void inverseNodeUpdatesDeadlockAndWholeTransactionRetryRecovers() throws Exception {
         long firstNodeId = insertNode("shared-a");
@@ -100,12 +102,13 @@ class LineageDeadlockRetryMysqlTest extends LineageMysqlTestSupport {
         jdbcTemplate.update(
                 """
                         INSERT INTO t_ddh_lineage_node
-                            (connector, catalog_name, database_name, table_name, canonical_name, first_seen, last_seen)
-                        VALUES ('paimon', 'prod', 'dwd', ?, ?, NOW(3), NOW(3))
+                            (cluster_id, connector, catalog_name, database_name, table_name, canonical_name,
+                             first_seen, last_seen)
+                        VALUES (?, 'paimon', 'prod', 'dwd', ?, ?, NOW(3), NOW(3))
                         """,
-                table, "paimon://prod/dwd/" + table);
+                CLUSTER_ID, table, "paimon://prod/dwd/" + table);
         return jdbcTemplate.queryForObject(
-                "SELECT id FROM t_ddh_lineage_node WHERE canonical_name = ?",
-                Long.class, "paimon://prod/dwd/" + table);
+                "SELECT id FROM t_ddh_lineage_node WHERE cluster_id = ? AND canonical_name = ?",
+                Long.class, CLUSTER_ID, "paimon://prod/dwd/" + table);
     }
 }

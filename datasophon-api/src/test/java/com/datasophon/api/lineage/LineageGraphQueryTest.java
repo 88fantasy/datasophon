@@ -27,12 +27,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.datasophon.api.lineage.LineageGraphQuery.Direction;
 import com.datasophon.api.lineage.LineageGraphQuery.GraphData;
+import com.datasophon.api.lineage.LineageGraphQuery.TablePage;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.junit.jupiter.api.Test;
@@ -146,6 +149,39 @@ class LineageGraphQueryTest {
                 });
     }
 
+    /**
+     * L3/B3 回归验收：修复缺陷 1（{@code CanonicalNameResolver} 曾恒传 {@code null} dwLayer）
+     * 之前，每个节点的 {@code layerDistance()} 都是 {@code Integer.MAX_VALUE}，分层优先级形同
+     * 虚设，frontier 顺序纯粹退化成度数/id 排序。这里刻意让两个候选节点的度数（149）与竞争关系
+     * 完全相同，唯一差异是层级——DWD 离根 ODS 距离 1，ADS 离根 ODS 距离 3——用来证明
+     * {@code layerDistance()} 真的在起作用：如果它退化回 {@code MAX_VALUE}，两个节点会因为度数
+     * 相同而打平，谁被折叠将纯粹取决于 id 排序（更小 id 的节点 2 会赢），结果会和这里断言的
+     * 相反。
+     */
+    @Test
+    void layerDistancePrioritizesFrontierNodeCloserToRootLayerWhenDegreesAreTied() {
+        SnapshotBuilder builder = new SnapshotBuilder()
+                .node(1, "ODS")
+                .node(2, "DWD")
+                .node(3, "ADS");
+        builder.edge(1, 2).edge(1, 3);
+        LongStream.rangeClosed(10, 158).forEach(node -> builder.node(node, "TMP").edge(2, node));
+        LongStream.rangeClosed(200, 348).forEach(node -> builder.node(node, "TMP").edge(3, node));
+
+        GraphData result = query.query(builder.build(11), 1, 2, Direction.DOWNSTREAM);
+
+        // node 2（DWD，与根 ODS 距离 1）优先分到预算，149 个子节点全部展开。
+        assertThat(result.nodes()).extracting(NodeMeta::id).contains(10L, 158L);
+        // node 3（ADS，与根 ODS 距离 3）度数与 node 2 完全相同，但距离更远，budget 不够被整体折叠。
+        assertThat(result.nodes()).extracting(NodeMeta::id).doesNotContain(200L, 348L);
+        assertThat(result.collapsed())
+                .singleElement()
+                .satisfies(collapsed -> {
+                    assertThat(collapsed.nodeId()).isEqualTo(3);
+                    assertThat(collapsed.hiddenCount()).isEqualTo(149);
+                });
+    }
+
     @Test
     void expansionUsesTokenNodeOnlyAndRejectsMixedGenerations() {
         SnapshotBuilder builder = new SnapshotBuilder().node(1, "ODS").node(2, "DWD").node(3, "DWD");
@@ -178,6 +214,99 @@ class LineageGraphQueryTest {
         assertThat(result.collapsed())
                 .singleElement()
                 .satisfies(collapsed -> assertThat(collapsed.hiddenCount()).isEqualTo(300));
+    }
+
+    @Test
+    void listFiltersByKeywordLayerConnectorAndDatabaseCombination() {
+        LineageGraphSnapshot snapshot = listFixture();
+
+        assertThat(names(query.list(snapshot, "orders", null, null, null, 1, 20)))
+                .containsExactly("hive://prod/dwd/orders", "hive://prod/ods/orders");
+        assertThat(names(query.list(snapshot, null, "ODS", null, null, 1, 20)))
+                .containsExactly("hive://prod/ods/orders", "paimon://prod/ods/users");
+        assertThat(names(query.list(snapshot, null, null, "paimon", null, 1, 20)))
+                .containsExactly("paimon://prod/dwd/users", "paimon://prod/ods/users");
+        assertThat(names(query.list(snapshot, null, null, null, "dwd", 1, 20)))
+                .containsExactly("hive://prod/dwd/orders", "paimon://prod/dwd/users");
+        // 组合过滤：connector + layer 同时生效，取交集而不是并集。
+        assertThat(names(query.list(snapshot, null, "ODS", "hive", null, 1, 20)))
+                .containsExactly("hive://prod/ods/orders");
+    }
+
+    @Test
+    void listReturnsEmptyPageWhenNoNodeMatchesTheFilter() {
+        TablePage page = query.list(listFixture(), "no-such-keyword", null, null, null, 1, 20);
+
+        assertThat(page.list()).isEmpty();
+        assertThat(page.total()).isZero();
+    }
+
+    @Test
+    void listSortsByCanonicalNameAscendingAndPaginatesAcrossPageBoundaries() {
+        LineageGraphSnapshot snapshot = listFixture();
+
+        assertThat(names(query.list(snapshot, null, null, null, null, 1, 2)))
+                .containsExactly("hive://prod/dwd/orders", "hive://prod/ods/orders");
+        assertThat(names(query.list(snapshot, null, null, null, null, 2, 2)))
+                .containsExactly("hive://prod/ods/products", "paimon://prod/dwd/users");
+        assertThat(names(query.list(snapshot, null, null, null, null, 3, 2)))
+                .containsExactly("paimon://prod/ods/users");
+
+        TablePage beyondLastPage = query.list(snapshot, null, null, null, null, 4, 2);
+        assertThat(beyondLastPage.list()).isEmpty();
+        // total 仍然反映过滤后的真实总数，不因为翻过头就变。
+        assertThat(beyondLastPage.total()).isEqualTo(5);
+    }
+
+    @Test
+    void listCapsSizeAtTheConfiguredMaximumEvenWhenMoreRowsExist() {
+        Map<Long, NodeMeta> nodes = IntStream.rangeClosed(1, 250).boxed()
+                .collect(Collectors.toMap(
+                        id -> (long) id,
+                        id -> new NodeMeta(id, 1L, "hive", "prod", "db", "t" + id,
+                                String.format("hive://prod/db/t%03d", id), null)));
+        MutableValueGraph<Long, EdgeValue> graph = ValueGraphBuilder.<Long, EdgeValue>directed()
+                .allowsSelfLoops(true)
+                .build();
+        nodes.keySet().forEach(graph::addNode);
+        LineageGraphSnapshot snapshot = LineageGraphSnapshot.copyOf(graph, nodes, 1, Instant.parse("2026-08-01T00:00:00Z"));
+
+        TablePage page = query.list(snapshot, null, null, null, null, 1, 1000);
+
+        assertThat(page.list()).hasSize(LineageGraphQuery.MAX_PAGE_SIZE);
+        assertThat(page.total()).isEqualTo(250);
+    }
+
+    @Test
+    void listRejectsNonPositivePageOrSize() {
+        LineageGraphSnapshot snapshot = listFixture();
+
+        assertThatThrownBy(() -> query.list(snapshot, null, null, null, null, 0, 20))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> query.list(snapshot, null, null, null, null, 1, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static List<String> names(TablePage page) {
+        return page.list().stream().map(NodeMeta::canonicalName).toList();
+    }
+
+    /**
+     * 5 个节点跨 2 个 connector / 2 个 database / 2 个已知层 + 1 个 UNKNOWN，
+     * 足够覆盖过滤组合与排序边界，不需要任何边。
+     */
+    private static LineageGraphSnapshot listFixture() {
+        MutableValueGraph<Long, EdgeValue> graph = ValueGraphBuilder.<Long, EdgeValue>directed()
+                .allowsSelfLoops(true)
+                .build();
+        Map<Long, NodeMeta> nodes = new LinkedHashMap<>();
+        nodes.put(1L, new NodeMeta(1, 1L, "hive", "prod", "ods", "orders", "hive://prod/ods/orders", "ODS"));
+        nodes.put(2L, new NodeMeta(2, 1L, "hive", "prod", "dwd", "orders", "hive://prod/dwd/orders", "DWD"));
+        nodes.put(3L, new NodeMeta(3, 1L, "paimon", "prod", "ods", "users", "paimon://prod/ods/users", "ODS"));
+        nodes.put(4L, new NodeMeta(4, 1L, "paimon", "prod", "dwd", "users", "paimon://prod/dwd/users", "DWD"));
+        nodes.put(5L, new NodeMeta(5, 1L, "hive", "prod", "ods", "products", "hive://prod/ods/products", null));
+        nodes.keySet().forEach(graph::addNode);
+        return LineageGraphSnapshot.copyOf(graph, nodes, 1, Instant.parse("2026-08-01T00:00:00Z"));
     }
 
     @Test

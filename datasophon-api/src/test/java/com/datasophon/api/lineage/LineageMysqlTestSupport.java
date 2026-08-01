@@ -93,7 +93,9 @@ abstract class LineageMysqlTestSupport {
         jdbcTemplate.update("DELETE FROM t_ddh_lineage_event");
         jdbcTemplate.update("DELETE FROM t_ddh_lineage_node");
         jdbcTemplate.update("DELETE FROM t_ddh_data_job");
-        jdbcTemplate.update("UPDATE t_ddh_lineage_generation SET generation = 0 WHERE id = 1");
+        // L3/B1：generation 表已从「单例 id=1 行」改为按 cluster_id 惰性建行（种子行已删）；
+        // 缺行即代际为 0 是产线的正常状态，测试间清理直接删表即可，不需要「重置回 0」这个概念。
+        jdbcTemplate.update("DELETE FROM t_ddh_lineage_generation");
     }
 
     @AfterAll

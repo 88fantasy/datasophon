@@ -18,14 +18,21 @@ describe('Lineage service', () => {
     vi.mocked(request).mockReset();
   });
 
-  it('lists tables and drops blank filter params', async () => {
+  it('lists tables, drops blank filter params, and unwraps the V2ResponseBodyAdvice envelope', async () => {
+    // com.datasophon.api.controller.v2.V2ResponseBodyAdvice 把控制器返回值统一包一层
+    // ApiResponse{success,data}，控制器本身返回的 LineageQueryResponse{data,snapshot,
+    // sourceFreshness} 因此是 data.data 双层嵌套——mock 必须还原真实响应体的形状，
+    // 否则测不出 service.ts 有没有正确解包。
     vi.mocked(request).mockResolvedValue({
-      data: { list: [], total: 0 },
-      snapshot: {},
-      sourceFreshness: {},
+      success: true,
+      data: {
+        data: { list: [], total: 0 },
+        snapshot: { generation: 1 },
+        sourceFreshness: { status: 'OK' },
+      },
     });
 
-    await listTables({
+    const result = await listTables({
       clusterId: 7,
       page: 2,
       size: 20,
@@ -39,16 +46,25 @@ describe('Lineage service', () => {
       method: 'GET',
       params: { clusterId: 7, page: 2, size: 20, layer: 'DWD' },
     });
+    // 返回值必须是解包后的 LineageQueryResponse，不能是外层信封本身。
+    expect(result).toEqual({
+      data: { list: [], total: 0 },
+      snapshot: { generation: 1 },
+      sourceFreshness: { status: 'OK' },
+    });
   });
 
   it('queries the graph with depth/direction and forwards skipErrorHandler', async () => {
     vi.mocked(request).mockResolvedValue({
-      data: { nodes: [], edges: [], collapsed: [], truncated: false },
-      snapshot: {},
-      sourceFreshness: {},
+      success: true,
+      data: {
+        data: { nodes: [], edges: [], collapsed: [], truncated: false },
+        snapshot: {},
+        sourceFreshness: {},
+      },
     });
 
-    await getGraph(
+    const result = await getGraph(
       { clusterId: 7, rootNodeId: 42, depth: 3, direction: 'both' },
       { skipErrorHandler: true },
     );
@@ -58,13 +74,22 @@ describe('Lineage service', () => {
       params: { clusterId: 7, rootNodeId: 42, depth: 3, direction: 'both' },
       skipErrorHandler: true,
     });
+    expect(result.data).toEqual({
+      nodes: [],
+      edges: [],
+      collapsed: [],
+      truncated: false,
+    });
   });
 
   it('sends the expand token as a query param when expanding a collapsed node', async () => {
     vi.mocked(request).mockResolvedValue({
-      data: { nodes: [], edges: [], collapsed: [], truncated: false },
-      snapshot: {},
-      sourceFreshness: {},
+      success: true,
+      data: {
+        data: { nodes: [], edges: [], collapsed: [], truncated: false },
+        snapshot: {},
+        sourceFreshness: {},
+      },
     });
 
     await getGraph({
@@ -80,7 +105,10 @@ describe('Lineage service', () => {
   });
 
   it('queries overview and single-table detail by clusterId', async () => {
-    vi.mocked(request).mockResolvedValue({});
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: { data: {}, snapshot: {}, sourceFreshness: {} },
+    });
 
     await getOverview(7);
     expect(request).toHaveBeenCalledWith('/lineage/overview', {
@@ -95,20 +123,27 @@ describe('Lineage service', () => {
     });
   });
 
-  it('fetches job detail with skipErrorHandler forwarded', async () => {
-    vi.mocked(request).mockResolvedValue({});
+  it('fetches job detail, forwards skipErrorHandler, and unwraps the envelope (job endpoint is not a LineageQueryResponse)', async () => {
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: { id: 100, clusterId: 7, jobName: 'sync_orders' },
+    });
 
-    await getJob(7, 100, { skipErrorHandler: true });
+    const result = await getJob(7, 100, { skipErrorHandler: true });
 
     expect(request).toHaveBeenCalledWith('/lineage/job/100', {
       method: 'GET',
       params: { clusterId: 7 },
       skipErrorHandler: true,
     });
+    expect(result).toEqual({ id: 100, clusterId: 7, jobName: 'sync_orders' });
   });
 
   it('queries impact analysis (downstream-only) with skipErrorHandler forwarded', async () => {
-    vi.mocked(request).mockResolvedValue({});
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: { data: {}, snapshot: {}, sourceFreshness: {} },
+    });
 
     await getImpact(
       { clusterId: 7, rootNodeId: 42, depth: 2 },
@@ -122,14 +157,18 @@ describe('Lineage service', () => {
     });
   });
 
-  it('posts a manual rebuild for the given cluster', async () => {
-    vi.mocked(request).mockResolvedValue({ generation: 5 });
+  it('posts a manual rebuild for the given cluster and unwraps the envelope', async () => {
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: { generation: 5 },
+    });
 
-    await rebuild(7);
+    const result = await rebuild(7);
 
     expect(request).toHaveBeenCalledWith('/lineage/rebuild', {
       method: 'POST',
       params: { clusterId: 7 },
     });
+    expect(result).toEqual({ generation: 5 });
   });
 });

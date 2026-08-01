@@ -75,7 +75,7 @@ public final class LineageBenchmarkDataGenerator {
             throw new IllegalStateException("expected " + JOB_COUNT + " benchmark jobs but found " + jobIds.size());
         }
         insertDefinitions(connection, jobIds);
-        insertNodes(connection);
+        insertNodes(connection, clusterId);
         List<Long> nodeIds = readNodeIds(connection);
         if (nodeIds.size() != NODE_COUNT) {
             throw new IllegalStateException(
@@ -134,11 +134,12 @@ public final class LineageBenchmarkDataGenerator {
         }
     }
 
-    private static void insertNodes(Connection connection) throws SQLException {
+    private static void insertNodes(Connection connection, int clusterId) throws SQLException {
         String sql = """
                 INSERT IGNORE INTO t_ddh_lineage_node
-                    (connector, catalog_name, database_name, table_name, canonical_name, dw_layer, first_seen, last_seen)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (cluster_id, connector, catalog_name, database_name, table_name, canonical_name,
+                     dw_layer, first_seen, last_seen)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (int i = 0; i < NODE_COUNT; i++) {
@@ -147,14 +148,15 @@ public final class LineageBenchmarkDataGenerator {
                 String table = database + "_benchmark_orders_enriched_" + String.format(Locale.ROOT, "%05d", i);
                 String connector = i % 7 == 0 ? "doris" : "paimon";
                 String canonicalName = connector + "://" + BENCHMARK_CATALOG + "/" + database + "/" + table;
-                statement.setString(1, connector);
-                statement.setString(2, BENCHMARK_CATALOG);
-                statement.setString(3, database);
-                statement.setString(4, table);
-                statement.setString(5, canonicalName);
-                statement.setString(6, layer);
-                statement.setObject(7, Instant.parse("2026-07-29T00:00:00Z"));
+                statement.setInt(1, clusterId);
+                statement.setString(2, connector);
+                statement.setString(3, BENCHMARK_CATALOG);
+                statement.setString(4, database);
+                statement.setString(5, table);
+                statement.setString(6, canonicalName);
+                statement.setString(7, layer);
                 statement.setObject(8, Instant.parse("2026-07-29T00:00:00Z"));
+                statement.setObject(9, Instant.parse("2026-07-29T00:00:00Z"));
                 addBatch(statement, i);
             }
             statement.executeBatch();

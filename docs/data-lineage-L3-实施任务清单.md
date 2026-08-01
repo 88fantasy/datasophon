@@ -58,15 +58,15 @@ L2（Spark/Gravitino 采集侧）与本轮并行，互不阻塞。
 | 任务 | 内容 | 状态 | 验证结论 | commit |
 |---|---|---|---|---|
 | B1 | DDL 集群维度改造（原地改 2.2.5） | ✅ | `LineageDdlContractTest` 2/2 绿。node 唯一键 → `uk_lineage_node_identity(cluster_id, canonical_name)`；generation 主键 → `cluster_id`，CHECK 与种子行已删。**顺带定位并解决了 L1 遗留的「测试跑不起来」问题，见 §3.1** | 待提交 |
-| B2 | 写路径加集群维度（`LineageIngestService`） | 🔄 | 主代码完成：upsert 带 cluster_id、回查加集群条件（P1）、generation 改按集群 upsert、`LineageStructureChangedEvent` 加 clusterId。**测试未更新，无验证证据** | 待提交 |
-| B3 | 分层推断 `DwLayerInferrer`（修缺陷 1） | 🔄 | 主代码完成：新增 `DwLayerInferrer`（6 条前缀规则，表名优先、库名兜底），接入 `CanonicalNameResolver.Default` 两个分支；顺带给 `LAYER_RANK` 补 `DIM`（否则推断出的 DIM 仍是 `MAX_VALUE`，等于白推）。**测试未更新** | 待提交 |
-| B4 | `NodeMeta` 加 clusterId + Loader 按集群加载 | 🔄 | 主代码完成：`NodeMeta` 加 `clusterId`（校验 > 0）；`load(clusterId)`；节点 SQL 加集群条件；**边 SQL 改为 JOIN `t_ddh_data_job` 按 `j.cluster_id` 过滤**；generation 行缺失视为 0。**测试未更新** | 待提交 |
-| B5 | `LineageGraphSnapshotHolder` 分片 | 🔄 | 主代码完成：`ConcurrentHashMap<Long, Snapshot>` + `compute` 单键原子发布（去掉了原先的全局 `synchronized`，避免跨集群串行）。**测试未更新** | 待提交 |
-| B6 | `LineageRebuildCoordinator` 分片 | 🔄 | 主代码完成：`pending` → `dirtyClusters` 集合，`inFlight` 保持全局单个，drain 收敛/yield 逻辑保留；`lastRebuildErrors` 按集群；`SnapshotLoader` 增 `knownClusterIds()`（不再是函数式接口，故构造器与 Bean 装配零改动）。**行为变更见 §7.1**。**测试未更新** | 待提交 |
-| B7 | `LineageGenerationReader` 按集群 | 🔄 | 主代码完成：`readCurrentGeneration(clusterId)`，行缺失返回 0（种子行已删，缺失是正常状态）。**测试未更新** | 待提交 |
-| B8 | 查询端点集群化 + 2 个新端点 + SourceFreshness（修缺陷 2） | 🔄 | 主代码完成：6 个端点加 `clusterId`；新增 `/lineage/tables`、`/lineage/job/{id}`（集群作为查询条件，不泄露他集群作业存在性）；新增 `LineageJobDetailReader`；SourceFreshness 接真值（OK/LAGGING/NO_DATA/UNKNOWN）。**测试未更新** | 待提交 |
-| B9 | `LineageGraphQuery` 表清单查询 | 🔄 | 主代码完成：`list(...)` 遍历快照做过滤/排序/分页，固定按 `canonicalName` 升序（`ImmutableMap` 迭代序非契约），`MAX_PAGE_SIZE=200` 截断。**测试未更新** | 待提交 |
-| B10 | 批 1 测试更新 + 全量回归 + `spotless:apply` | ⚠️ | **2026-08-01 合并验证时补齐**：3 个曾失败的测试类全部修复，`Lineage*Test` 分组现 **52/52 全绿**（详见 §9）。**仍遗留**：跨集群同名表用例（B2）、`DwLayerInferrerTest`（B3）、Holder 分片用例（B5）、`/tables`+`/job/{id}` 端点契约用例（B8）、真实 MySQL 组数据准备 SQL 补 `cluster_id`——这些新增验收用例仍未编写，标 ⚠️ 而非 ✅ | 待提交 |
+| B2 | 写路径加集群维度（`LineageIngestService`） | ✅ | 主代码 + `LineageIngestMysqlTest` 新增 `sameCanonicalNameAcrossTwoClustersProducesTwoIndependentNodesAndGenerations`（真实 MySQL，验证 P1 串号缺陷已修复：跨集群同名表产生两个独立 node id + 独立 generation）。真实 MySQL 组 7/7 绿（详见 §9.1） | 待提交 |
+| B3 | 分层推断 `DwLayerInferrer`（修缺陷 1） | ✅ | 主代码 + `DwLayerInferrerTest` 6/6（默认规则/大小写不敏感/表名优先库名兜底/自定义规则覆盖顺序/空规则过滤）+ `LineageGraphQueryTest` 新增 `layerDistancePrioritizesFrontierNodeCloserToRootLayerWhenDegreesAreTied` 回归用例，用度数相同、层级不同的两个分支证明 `layerDistance()` 真的在起作用（不再退化成度数排序） | 待提交 |
+| B4 | `NodeMeta` 加 clusterId + Loader 按集群加载 | ✅ | 主代码 + `LineageQueryMysqlTest`/`LineageSnapshotIsolationMysqlTest`（真实 MySQL）验证过，批 1 已交付 | 待提交 |
+| B5 | `LineageGraphSnapshotHolder` 分片 | ✅ | 主代码 + 新增 `LineageGraphSnapshotHolderTest` 4/4：集群 A 发布不影响集群 B 可见性、同集群旧 generation 被拒绝且不覆盖已发布快照 | 待提交 |
+| B6 | `LineageRebuildCoordinator` 分片 | ✅ | 主代码 + `LineageRebuildCoordinatorTest` 8/8，批 1 已交付 | 待提交 |
+| B7 | `LineageGenerationReader` 按集群 | ✅ | 主代码 + `LineageGenerationReaderTest` 2/2（行存在/行缺失两条路径） | 待提交 |
+| B8 | 查询端点集群化 + 2 个新端点 + SourceFreshness（修缺陷 2） | ✅ | 主代码 + `LineageV2ControllerTest` 新增 `tablesPaginatesSortedByCanonicalNameAndFiltersByLayerAndKeyword`、`tablesRejectsNonPositivePageOrSize`、`jobReturnsKnownJobAndRejectsUnknownOrCrossClusterAccessWithNotFound`（含跨集群越权读 job 返回 404） | 待提交 |
+| B9 | `LineageGraphQuery` 表清单查询 | ✅ | 主代码 + `LineageGraphQueryTest` 新增 5 个 `list()` 用例：过滤组合（keyword/layer/connector/database 交集）、空结果、排序分页边界、size 超上限截断（250 节点验证真实截到 200）、page/size 非法值拒绝 | 待提交 |
+| B10 | 批 1 测试更新 + 全量回归 + `spotless:apply` | ✅ | **2026-08-01 两轮合并验证完成**：`Lineage*Test` 分组从 clean 重跑 **77/77 全绿**（含全部真实 MySQL 测试，本机用 Docker 起了一个 `mysql:8.0` 容器验证，见 §9.4）。批 1 遗留 3 个失败类 + B2/B3/B5/B8/B9 全部新增验收用例，本轮已悉数补齐 | 待提交 |
 
 ### 批 2 —— 前端
 
@@ -452,6 +452,37 @@ state。因为 `/lineage/impact` 内部固定用 `Direction.DOWNSTREAM` 发起�
 按用户指令"继续开发批2,完成后再合并验证"，批 2 完成后回头处理批 1 遗留的 3 个失败测试类，
 两批一起给出最终验证结论。
 
+### 9.0 下一轮补验收用例时顺带抓到的严重 bug：`service.ts` 没解包 `V2ResponseBodyAdvice` 信封
+
+写 B8 的 `/tables`/`/job/{id}` 契约用例前重新核对响应体形状，发现 `V2ResponseBodyAdvice`
+（`@RestControllerAdvice(basePackages = "com.datasophon.api.controller.v2")`）会把
+**这个包下所有控制器的成功返回值**统一包一层 `ApiResponse{success,data,errorCode,
+errorMessage,showType}`——包括控制器自己已经返回 `LineageQueryResponse{data,snapshot,
+sourceFreshness}` 的端点，因此真实响应体是 `data.data` 双层嵌套。`LineageV2ControllerTest`
+的既有断言（`jsonPath("$.data.data.nodes...")`、`jsonPath("$.data.snapshot...")`）其实早就
+在验证这层嵌套，只是批 2 写前端时没有回头核对，凭 `LineageQueryResponse<T>` 的字面定义直接
+当成了 `request()` 的返回值类型。
+
+**实际影响**：`service.ts` 8 个函数全部只解包了一层，真实联调时每个字段都会读到
+`undefined`——`TablePage.list` 是 `undefined`，`.map()` 直接崩；`snapshot`/`sourceFreshness`
+全部拿不到，`FreshnessAlert` 无法渲染。这个 bug 在纯 mock 单测下**完全测不出来**：
+`service.test.ts` 原来的 7 个用例只断言"调用 `request` 时传的 URL/参数对不对"，
+从未断言过"函数返回值对不对"——mock 的 `request` 解析值本身就是按错误假设手写的，
+错误假设和错误实现自洽，全绿但没有验证到关键契约。
+
+**修复**：`service.ts` 新增 `ApiEnvelope<T>{success,data}` 类型 + `unwrap()` helper，
+8 个函数统一 `request<ApiEnvelope<X>>(...).then(res => res.data)`，调用方（`index.tsx`/
+`LineageGraph.tsx`/`FreshnessAlert.tsx`/`JobDetailDrawer.tsx`/`LineageOverview.tsx`）
+**零改动**——它们本来就是按 `LineageQueryResponse<T>`/`JobDetail`/`RebuildAccepted` 在用，
+现在这层解包挪到 service.ts 内部后这些类型才是真实的。`service.test.ts` 同步改成还原真实
+双层信封的 mock 数据，并新增对函数**返回值**的断言（不再只测调用参数），避免同类 bug
+下次又在"mock 和实现互相自洽但都错"的状态下全绿溜走。
+
+**教训**：手写 `service.ts` 直连后端时，`ResponseBodyAdvice`/`ControllerAdvice` 这类
+"运行期动态改写响应体"的机制，光看被调控制器方法的返回类型签名是看不出来的，必须去确认
+有没有生效中的 advice；`LineageV2ControllerTest` 里现成的 `jsonPath` 断言其实已经把真实
+形状写明白了，本该在写 `service.ts` 前先读一遍这个测试文件的断言，而不是只读控制器方法签名。
+
 ### 9.1 前端
 
 - `npm run lint`（Biome + tsc）：0 error
@@ -484,19 +515,55 @@ Context 加载失败，是 3 处 `ReflectionTestUtils.setField` 遗留自 L1 时
 "30 秒前收到事件"实际应判定为 `OK`（30s 远小于默认 1800s 滞后阈值），这是断言文本本身写错，
 不是产线代码缺陷，已改成 `OK` 并加注释说明"快照 stale 与采集侧新鲜度是两件独立的事"。
 
-### 9.3 最终结果
+### 9.3 第一轮合并验证结果（历史记录，已被 §9.4 取代为最终数字）
 
 ```
 Lineage*Test 分组：Tests run: 52, Failures: 0, Errors: 0, Skipped: 0
 ```
 
-`LineageDdlContractTest` 2、`LineageIngestComponentsTest` 8、`LineageBenchmarkDataGeneratorTest` 1、
-`LineageGenerationReaderTest` 2、`LineageGraphSnapshotTest` 3、`LineageMasterLeaseTest` 1、
-`LineageRebuildCoordinatorTest` 8、`LineageGraphQueryTest` 9、`LineageObservabilityTest` 3、
-`LineageV2ControllerTest` 15 —— 全部通过。`spotless:apply` 干净。
+批 1 遗留的 3 个失败测试类修复后的首次绿灯，当时 B2/B3/B5/B8/B9 的新增验收用例、
+真实 MySQL 组的 `cluster_id` 迁移、浏览器联调都还没做，见 §9.4 的下一轮延续。
 
-**仍未做**（不在本轮合并验证范围内，留给下一轮）：B2/B3/B5/B8/B9 各自定义的新增验收用例
-（跨集群同名表、`DwLayerInferrerTest`、Holder 分片、`/tables`+`/job/{id}` 契约、`list()`
-过滤分页）；真实 MySQL 测试组（`LineageQueryMysqlTest` 等）的数据准备 SQL 补 `cluster_id`；
-浏览器实机联调；与本轮无关模块的全量回归（只跑了 `-Dtest=Lineage*Test`，未跑整个
-`datasophon-api` 默认分组）。
+### 9.4 下一轮：补齐 B2/B3/B5/B8/B9 验收用例 + 真实 MySQL 组迁移（2026-08-01 同日下一轮）
+
+用户说"继续下一轮"后，按 §9.3 末尾列的缺口逐条补齐。写 B8 用例时先发现了 §9.0 的
+`service.ts` 信封 bug 并修复；随后依次补齐：
+
+- **B3**：新增 `DwLayerInferrerTest`（6 用例）+ `LineageGraphQueryTest` 新增 1 个回归用例
+  （层级相同度数打平会验证不出问题，特意构造"度数相同、层级不同"的两个分支，证明
+  `layerDistance()` 真的在起作用而不是退化成度数排序）
+- **B5**：新增 `LineageGraphSnapshotHolderTest`（4 用例，纯内存单测不需要 MySQL）
+- **B9**：`LineageGraphQueryTest` 新增 5 个 `list()` 用例（过滤组合/空结果/排序分页边界/
+  size 截断用 250 节点真实验证截到 200/非法参数拒绝）
+- **B8**：`LineageV2ControllerTest` 新增 3 个用例覆盖 `/tables`（分页排序过滤 + 400）与
+  `/job/{id}`（200/404/跨集群越权 404）
+- **B2 + 真实 MySQL 组迁移**：这一项范围比原计划大得多。检查 `LineageMysqlTestSupport`
+  （所有 5 个 `@Tag("mysql")` 测试类的共享基类）时发现 `clearLineageTables()` 的
+  `@BeforeEach` 还在对 `t_ddh_lineage_generation` 执行 `UPDATE ... WHERE id = 1`——B1 已经
+  把这张表的主键从 `id` 改成 `cluster_id` 并删掉了种子行，这条 SQL 对新 schema 会直接报错
+  "Unknown column 'id'"。**这意味着批 1 的所有真实 MySQL 测试自 B1 合并后就没有真正跑通过**
+  ——之前的验证记录全部止步于默认分组，从未跑过 `-DexcludedGroups=` 解锁 `mysql` 分组。
+  逐个排查后，5 个测试类 + 1 个手工基准工具（`LineageRebuildBenchmark`/
+  `LineageBenchmarkDataGenerator`，非自动化 `@Test`，顺手一并修了但未跑）全部有同类漂移：
+  `t_ddh_lineage_node` 的 `INSERT` 缺 `cluster_id`（该列 `NOT NULL`，直接插入失败）、
+  按 `canonical_name` 回查 node id 没带 `cluster_id`（P1 同款隐患）、`t_ddh_lineage_generation`
+  的读写全部还在用已不存在的 `id=1`。本机用 Docker 起了一个 `mysql:8.0`（root/localmysql，
+  端口 3306，容器名 `lineage-test-mysql`）把这些改动跑通验证，不是纸面审查。
+
+**最终结果**（`clean test` 全量重跑，含真实 MySQL）：
+
+```
+Lineage*Test 分组：Tests run: 77, Failures: 0, Errors: 0, Skipped: 0
+```
+
+新增：`DwLayerInferrerTest` 6、`LineageGraphSnapshotHolderTest` 4、`LineageGraphQueryTest`
+从 9→15（`list()` 5 个 + layerDistance 回归 1 个）、`LineageV2ControllerTest` 从 15→18、
+`LineageIngestMysqlTest` 从 6→7（跨集群同名表用例）。5 个真实 MySQL 测试类全部跑通：
+`LineageMasterLeaseMysqlTest` 1、`LineageDeadlockRetryMysqlTest` 1、`LineageQueryMysqlTest` 1、
+`LineageIngestMysqlTest` 7、`LineageSnapshotIsolationMysqlTest` 2（参数化两个隔离级别）。
+`spotless:apply` 干净。
+
+**仍未做**：浏览器实机联调（需要真正跑起来 datasophon-api + datasophon-ui-v2 两个进程，
+本轮验证到"后端对着真实 MySQL 全绿"为止，没有再往上搭前端联调）；与本轮无关模块的全量回归
+（只跑了 `-Dtest=Lineage*Test`，未跑整个 `datasophon-api` 默认分组）；本机起的 MySQL 容器是
+临时验证用途，未做持久化配置，重启会丢数据（这是预期行为，不是遗留问题）。

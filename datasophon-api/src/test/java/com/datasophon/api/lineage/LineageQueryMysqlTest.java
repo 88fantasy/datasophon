@@ -34,6 +34,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 class LineageQueryMysqlTest extends LineageMysqlTestSupport {
 
+    private static final long CLUSTER_ID = 7;
+
     @Test
     void logicalAndPhysicalEdgeCountsMatchCurrentMysqlRows() {
         List<Long> nodeIds = List.of(
@@ -53,13 +55,14 @@ class LineageQueryMysqlTest extends LineageMysqlTestSupport {
                 firstJob, nodeIds.get(0), nodeIds.get(1),
                 secondJob, nodeIds.get(0), nodeIds.get(1),
                 firstJob, nodeIds.get(1), nodeIds.get(2));
-        jdbcTemplate.update("UPDATE t_ddh_lineage_generation SET generation = 4 WHERE id = 1");
+        jdbcTemplate.update(
+                "INSERT INTO t_ddh_lineage_generation (cluster_id, generation) VALUES (?, 4)", CLUSTER_ID);
 
         TransactionTemplate readTransaction = new TransactionTemplate(transactionManager);
         readTransaction.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
         readTransaction.setReadOnly(true);
         LineageGraphSnapshot snapshot =
-                readTransaction.execute(status -> new MysqlSnapshotLoader(jdbcTemplate).load(1L));
+                readTransaction.execute(status -> new MysqlSnapshotLoader(jdbcTemplate).load(CLUSTER_ID));
         long currentRows = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM t_ddh_lineage_edge WHERE is_current = 1", Long.class);
         long currentLogicalEdges = jdbcTemplate.queryForObject(
@@ -86,15 +89,16 @@ class LineageQueryMysqlTest extends LineageMysqlTestSupport {
         jdbcTemplate.update(
                 """
                         INSERT INTO t_ddh_lineage_node
-                            (connector, catalog_name, database_name, table_name, canonical_name,
+                            (cluster_id, connector, catalog_name, database_name, table_name, canonical_name,
                              dw_layer, first_seen, last_seen)
-                        VALUES ('paimon', 'prod', ?, ?, ?, ?, NOW(3), NOW(3))
+                        VALUES (?, 'paimon', 'prod', ?, ?, ?, ?, NOW(3), NOW(3))
                         """,
-                database, table, canonicalName, layer);
+                CLUSTER_ID, database, table, canonicalName, layer);
+        // P1：回查必须带 cluster_id，否则跨集群同名表会静默拿到别的集群的 node id。
         return jdbcTemplate.queryForObject(
-                "SELECT id FROM t_ddh_lineage_node WHERE canonical_name = ?",
+                "SELECT id FROM t_ddh_lineage_node WHERE cluster_id = ? AND canonical_name = ?",
                 Long.class,
-                canonicalName);
+                CLUSTER_ID, canonicalName);
     }
 
     private static long insertJob(String jobName) {
@@ -102,12 +106,12 @@ class LineageQueryMysqlTest extends LineageMysqlTestSupport {
                 """
                         INSERT INTO t_ddh_data_job
                             (cluster_id, engine, job_name, job_type, state)
-                        VALUES (7, 'spark', ?, 'BATCH', 'RUNNING')
+                        VALUES (?, 'spark', ?, 'BATCH', 'RUNNING')
                         """,
-                jobName);
+                CLUSTER_ID, jobName);
         return jdbcTemplate.queryForObject(
-                "SELECT id FROM t_ddh_data_job WHERE job_name = ?",
+                "SELECT id FROM t_ddh_data_job WHERE cluster_id = ? AND job_name = ?",
                 Long.class,
-                jobName);
+                CLUSTER_ID, jobName);
     }
 }
