@@ -128,10 +128,6 @@ public class AppConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
                         "/v2/login/account",
-                        // OpenLineage ingest is a machine-to-machine endpoint; shared-token auth is
-                        // enforced by LineageV2Controller#requireValidIngestToken, not by this filter.
-                        "/v2/lineage",
-                        "/v2/lineage/readiness",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
                         "/service/install/download*"));
@@ -154,7 +150,6 @@ public class AppConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
                         "/v2/login/account",
-                        "/v2/lineage",
                         // Logout does not need CSRF protection: the login interceptor already
                         // validates the session, and a forced logout causes no data loss.
                         "/v2/logout",

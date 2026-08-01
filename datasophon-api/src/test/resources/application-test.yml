@@ -22,9 +22,6 @@ spring:
     password: ''
 
 datasophon:
-  lineage:
-    lease:
-      enabled: false
   migration:
     enable: false
 

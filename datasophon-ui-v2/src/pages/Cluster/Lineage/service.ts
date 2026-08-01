@@ -134,10 +134,11 @@ function cleanParams<T extends object>(params: T) {
   );
 }
 
-export function getReadiness() {
+export function getReadiness(clusterId: number) {
   return unwrap(
     request<ApiEnvelope<LeaseReadiness>>('/lineage/readiness', {
       method: 'GET',
+      params: { clusterId },
     }),
   );
 }

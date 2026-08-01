@@ -38,11 +38,11 @@
 8. **NTP 先于所有 K8s 组件部署**
    sealos 安装 etcd 时校验节点时间差 < 2s，若 NTP 未同步会导致 etcd 集群建立失败。
 
-9. **datasophon-api 升级必须先交接血缘 Master 租约**
-   血缘写入口默认通过 `datasophon.lineage.lease.enabled=true` 启用 MySQL 会话锁。
-   升级时先停止旧 API（连接关闭后锁立即释放），再启动新 API，并等待
-   `/ddh/v2/lineage/readiness` 返回 `data.status=UP` 后切流。新实例未持锁时该端点和血缘写入口返回
-   HTTP 503，并每 30 秒重试；该会话锁没有固定过期时长，旧进程不断开就不会自动超时交接。
+9. **血缘写入口由 Gravitino 独立承载**
+   `datasophon-api` 不再持有血缘 Master 租约，也不接收 OpenLineage 事件；浏览器查询接口仅按
+   `clusterId` 代理到唯一运行的 `GravitinoServer`。升级 Datasophon 前先确认 Gravitino
+   `/api/lineage/readiness` 可用；升级后验证 `/ddh/api/v2/lineage/readiness?clusterId=<id>`。
+   未安装、无运行实例、多个运行实例或 Gravitino 不可达时，代理按约定返回 HTTP 503。
 
 ---
 

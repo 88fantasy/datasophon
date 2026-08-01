@@ -76,6 +76,7 @@
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
 | 13 | GRAVITINO 元数据服务接入（独立于阶段 A/B，分支 `feat/gravitino-metadata-service`） | PASSED | 每个真实 bug 修复前均现场核对 | §7.13：2026-07-29 ddh-02 实机 11 步全部通过；过程中发现并修复 4 个真实 bug（Nexus md5 sidecar 缺失、`worker.properties` MySQL 连接信息渲染缺失的平台级缺陷、`gravitino-env.ftl` 巡检路径 javaagent 失效、沙箱 Master jar 版本滞后） |
 | 14 | Gravitino catalog 创建：Paimon fs / Paimon S3 / Doris（独立于阶段 A/B，为平台级数据血缘 epic `feat/data-lineage-l1` 的 L0/L2 采样做准备） | PASSED | — | §7.14：2026-07-30 三个 catalog 均建 schema+建表验证到底；补齐两个内置 provider 缺失的运行时 jar（mysql-connector-j、paimon-s3）；发现并绕过 Paimon S3 catalog 的 `s3.*` 标准 key 失效坑（需同时用 `gravitino.bypass.*` 透传）。**仅是基础设施准备，尚未提交真实 Spark 作业采样 canonical_name** |
+| 15 | Gravitino 血缘权威端替换与 Datasophon 查询代理 | PASSED | 备份、独立 schema、真实 Spark 事件、原生/兼容 API、L3 页面与回滚条件全部核对 | §7.15：2026-08-01 完成 ddh-01/ddh-02 现场升级、真实 Spark/OpenLineage、MySQL/HTTP/重启恢复及 ego-browser 页面验收；旧血缘表行数未增长 |
 
 状态只能取 `NOT STARTED`、`IN PROGRESS`、`BLOCKED`、`PASSED`、`FAILED`、`ROLLED BACK`。
 
@@ -797,6 +798,86 @@ No qualifying bean of type 'org.apache.dolphinscheduler.plugin.storage.api.Stora
 | `doris_catalog` | `jdbc-doris`，`jdbc-url=jdbc:mysql://192.168.10.131:9030/`，`jdbc-driver=com.mysql.cj.jdbc.Driver`（**不是** conf 示例里的老式 `com.mysql.jdbc.Driver`，MySQL Connector/J 8.x 已改包名） | 建 schema `lineage_probe` + 表 `probe_table`（Doris 要求 `distribution` 字段，随手给了 `hash(id)` 单分桶），直连 `mysql -h192.168.10.131 -P9030` 确认库表真实存在 | 通过 |
 
 **结论**：三个 catalog 全部端到端可用，为下一步"真实提交 Spark 作业，经 `openlineage-spark` 采样 Hive/Paimon/Doris 各 catalog 的 `namespace`/`name` 格式"扫清了 Gravitino 侧障碍。**仍未做的部分**：Hive catalog（阶段 B 依赖 Hive metastore，本次未搭）；实际提交 Spark 作业验证 canonical_name 格式本身（这三个 catalog 目前只验证了"能通过 Gravitino Java API 建表"，还没有一条真实 Spark 写路径经过 `openlineage-spark` 监听器）。详见 `docs/data-lineage-L1-交接-2026-07-30.md` §8b 与 memory `project_data_lineage_platform.md`。
+
+### 7.15 Gravitino 血缘权威端替换与 Datasophon 查询代理（2026-08-01）
+
+本批把权威链路切换为 `Spark/OpenLineage → Gravitino → 独立 MySQL schema → Gravitino Guava 快照 → Datasophon 查询代理 → L3 前端`。旧 `t_ddh_lineage_*` 表不迁移、不清理，升级后只读保留用于回滚。
+
+**升级前 Gate**：
+
+1. 记录 ddh-01 Datasophon 与 ddh-02 Gravitino 当前进程、版本、安装目录和配置文件 hash；分别完整备份运行制品与配置，备份目录不得覆盖原目录。
+2. 在 ddh-01 MySQL 新建本集群专用库 `gravitino_lineage_1`，只执行 Gravitino 源码随附的 `scripts/mysql/lineage-schema-1.0.0-mysql.sql`。禁止复用 Datasophon 库、Gravitino entity store 或其他集群血缘库。
+3. 记录旧 `t_ddh_lineage_*` 各表行数作为冻结基线；后续只允许查询对账，禁止 DDL、迁移或清理。
+4. 校验本地构建制品版本为 `1.3.1-SNAPSHOT`，并确认 MySQL JDBC driver、Paimon S3 与 Doris catalog 的现场补充依赖在新目录中保留。
+
+**Gravitino 配置基线**（凭据仅写入现场配置，不进入 Git）：
+
+```properties
+gravitino.lineage.source = http
+gravitino.lineage.sinks = log
+gravitino.lineage.storage.enabled = true
+gravitino.lineage.storage.jdbcUrl = jdbc:mysql://192.168.10.131:3306/gravitino_lineage_1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+gravitino.lineage.storage.jdbcDriver = com.mysql.cj.jdbc.Driver
+gravitino.lineage.storage.jdbcUser = <LINEAGE_DB_USER>
+gravitino.lineage.storage.jdbcPassword = <LINEAGE_DB_PASSWORD>
+gravitino.lineage.storage.poolMaxSize = 10
+gravitino.lineage.storage.connectionTimeoutMs = 30000
+gravitino.lineage.storage.cacheSyncIntervalSecs = 180
+gravitino.lineage.storage.staleThresholdSecs = 600
+gravitino.lineage.storage.sourceLaggingThresholdSecs = 1800
+```
+
+配置中不得再出现 Datasophon HTTP sink、`/ddh/api/v2/lineage/events` URL 或共享 ingest key。Datasophon 只配置连接和请求超时，通过 `clusterId + GravitinoServer` 运行实例实时解析目标地址。
+
+**升级步骤**：停止前再次确认备份可读；解压新 Gravitino 到独立目录，复制现场 catalog 依赖和非血缘配置，追加上述 lineage 配置，切换后启动并先验证 `/api/version`、`/api/lineage/readiness`。随后替换 Datasophon manager 制品，原样保留 `api.local.properties` 等现场凭据文件，启动并验证登录、HTTP `8080`、gRPC `18081` 和 Worker 注册。任一步失败立即停止继续变更，按下述回滚恢复。
+
+**真实事件与验收**：使用 ddh-02 现有 Spark 3.5.8 和 `openlineage-spark` jar 提交确定性输入→输出作业，transport URL 指向 `http://127.0.0.1:8090/api/lineage`。依次核对：
+
+- `lineage_event` 收到 START/COMPLETE，较新 COMPLETE 成为当前运行并使 `lineage_graph_generation` 递增；重复、失败、中止及晚到 COMPLETE 不递增。
+- `lineage_current_run`、`lineage_dataset`、`lineage_edge` 和物理事件引用一致；Gravitino 重启后 generation、当前边和查询结果恢复。
+- Gravitino 八个原生接口与 Datasophon 八个 `/ddh/api/v2/lineage/**` 兼容接口状态码和字段一致，后者补入请求的 `clusterId`。
+- L3 页面完成表清单、过滤分页、图、换根、折叠展开、作业 Drawer、overview、freshness、impact 和手工重建验证，并在 Git 外保存脱敏 HTTP、SQL 和浏览器截图证据。
+- 升级后再次统计旧 `t_ddh_lineage_*` 行数，必须与基线一致。
+
+**回滚**：停止新 Datasophon/Gravitino 进程，恢复两端备份制品和配置并启动；验证旧 Datasophon 登录、旧血缘接口和 Gravitino catalog。`gravitino_lineage_1` 保留用于故障分析，不删除；旧 `t_ddh_lineage_*` 数据不受任何回滚操作影响。现场最终状态和证据位置将在本节追加，不用本地单元测试代替真实 MySQL、HTTP 或浏览器验收。
+
+#### 7.15.1 现场执行结果（2026-08-01，PASSED）
+
+升级前已分别备份两端运行目录：ddh-02 为
+`/data/install_datasophon/gravitino-1.3.0-bin.bak-lineage-20260801101917`，ddh-01 为
+`/data/datasophon-api/datasophon-manager-3.0-SNAPSHOT.bak-lineage-20260801101917`。脱敏证据分别归档到
+`/data/install_datasophon/lineage-evidence-20260801101917` 和
+`/data/datasophon-api/lineage-evidence-20260801101917`。现场密码只存在运行配置和受控 shell 环境，未写入 Git 或证据文件。
+
+本次部署的 Gravitino lineage jar SHA-256 为
+`d50b09c403c776b041003f30bc609e19b7a4be7ce9dd7979fa090622697657e4`，Datasophon manager
+压缩包 SHA-256 为 `a72ee769178256b31fc105adf3e6e1aa0f7b38fc419e298896733da07a875200`。
+现场验收后按最终源码重新构建的 916MB Gravitino distribution SHA-256 为
+`2e61c458878a30e8bd59469dbeee9c52b5694b0519ddaf95bd0a881e2a64f233`。
+Gravitino `/api/version` 返回 `1.3.1-SNAPSHOT`；两端升级后进程、Datasophon HTTP `8080`、Gravitino
+HTTP `8090` 均正常。
+
+独立库 `gravitino_lineage_1` 按源码 schema 初始化，schema 证据 SHA-256 为
+`d4a7716e56fea72ccacc773bfd95ae7c4b7bc15e9f180bd6fb2fcc9bbd923a60`。真实事件和故障分支对账结果如下：
+
+- 重复 COMPLETE、FAIL、ABORT、晚到 COMPLETE 均未错误递增 generation；自环与两个并行当前作业均保留，多作业引用落在同一逻辑边。
+- 一条故意触发持久化异常的事件返回 HTTP `500`，事务回滚后对应 job 行数为 `0`，没有半写数据。
+- 两个 Spark 3.5.8 + `openlineage-spark` 真实 SQL 作业均产生 `file` connector 的 ODS→DWD 边；最终 generation 为 `16`，数据库统计为 datasets `13`、jobs `18`、runs `19`、events `48`、edges `15`。
+- 重启 Gravitino 后 generation `16`、真实 Spark 边及 job 引用均恢复；已发布快照的 target generation 同为 `16` 且 `stale=false`。
+- 将 stale 阈值临时降到 1 秒后，readiness 仍为 `200`，impact 按约定返回 `503`；恢复 600 秒配置后查询恢复正常。
+
+Gravitino 八个原生接口已逐项验证：readiness、tables、graph、overview、table、job、impact 返回
+`200`，rebuild 返回 `202`；非法 depth、未知表、过期 expand token 分别返回 `400`、`404`、`409`。
+Datasophon 登录会话下八个兼容接口得到相同语义，并确认 tables、graph、table、job 响应均补入请求的
+`clusterId=1`。
+
+L3 页面使用 ego-browser 实测通过表清单、overview、freshness/generation、真实 Spark 图、搜索换根、边点击作业
+Drawer、impact 固定 downstream 和手工 rebuild 成功提示。当前现场图少于 300 节点，无法自然触发折叠；300
+配额、整节点折叠及过期展开改由自动化测试和 `409` 接口实测覆盖。浏览器截图已保存在 Git 外证据目录，并同步到本地
+Codex 可视化目录。
+
+升级前后旧表计数始终为：edge `3`、event `3`、generation `1`、node `4`、parse_log `0`，证明新链路未再写
+`t_ddh_lineage_*`。全部 Gate 通过，未触发回滚；上述备份继续保留，回滚步骤已用精确目录固化。
 
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 

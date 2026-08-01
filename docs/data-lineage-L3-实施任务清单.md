@@ -68,6 +68,22 @@ L2（Spark/Gravitino 采集侧）与本轮并行，互不阻塞。
 | B9  | `LineageGraphQuery` 表清单查询                 | ✅  | 主代码 + `LineageGraphQueryTest` 新增 5 个 `list()` 用例：过滤组合（keyword/layer/connector/database 交集）、空结果、排序分页边界、size 超上限截断（250 节点验证真实截到 200）、page/size 非法值拒绝                                                                                     | 待提交    |
 | B10 | 批 1 测试更新 + 全量回归 + `spotless:apply`        | ✅  | **2026-08-01 两轮合并验证完成**：`Lineage*Test` 分组从 clean 重跑 **77/77 全绿**（含全部真实 MySQL 测试，本机用 Docker 起了一个 `mysql:8.0` 容器验证，见 §9.4）。批 1 遗留 3 个失败类 + B2/B3/B5/B8/B9 全部新增验收用例，本轮已悉数补齐                                                               | 待提交    |
 
+> **历史实现标记（2026-08-01）**：B1～B10 的状态与验收证据保持原样，作为 Datasophon 本地
+> MySQL/Guava 链路的历史记录；该链路已被下方“批 3 —— Gravitino 后端替换”取代。旧
+> `t_ddh_lineage_*` 表及存量数据不迁移、不清理，仅用于回滚，正常链路不再写入。
+
+### 批 3 —— Gravitino 后端替换
+
+新权威链路：`Spark/OpenLineage → Gravitino /api/lineage → 独立 MySQL → Gravitino Guava 快照 → Datasophon 查询代理 → 现有 L3 前端`。
+
+| 任务 |                              内容                              | 状态 |                                         验证结论                                         | commit |
+|----|--------------------------------------------------------------|----|--------------------------------------------------------------------------------------|--------|
+| G1 | Gravitino generation + REPEATABLE READ 快照 + single-flight 刷新 | ✅  | Gravitino `:lineage:test` 非 Docker 测试 22/22 通过；generation 只随较新的成功拓扑递增，失败保留旧快照        | 待提交    |
+| G2 | Gravitino 8 个原生查询接口、300 节点折叠与 freshness                      | ✅  | 主代码与 REST 测试通过；接口保持 400/404/409/503，rebuild 返回 202，impact stale 时 fail closed        | 待提交    |
+| G3 | Datasophon 改为鉴权查询代理                                          | ✅  | 删除本地 ingest/lease/MySQL/Guava/rebuild/metrics；resolver/client/controller 聚焦测试 8/8 通过 | 待提交    |
+| G4 | GRAVITINO 元数据、OpenAPI 与文档                                    | ✅ | DDL 已切 `1.3.1-SNAPSHOT`、独立 `gravitino_lineage_1`、`sinks=log`；OpenAPI、英文文档和部署配置已同步并完成制品构建 | 待提交    |
+| G5 | standalone Doris 真实 Spark/OpenLineage 端到端                    | ✅  | ddh-01/ddh-02 备份、独立库、真实 Spark 事件、重启恢复、原生/代理接口及 ego-browser L3 页面均通过；旧表行数未增长，详见 standalone 文档 §7.15 | 待提交    |
+
 ### 批 2 —— 前端
 
 | 任务  |                 内容                  | 状态 |                                                                                                                                                                                                                                                  验证结论                                                                                                                                                                                                                                                  | commit |

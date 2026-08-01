@@ -73,20 +73,11 @@ mybatis-plus:
 logging:
   config: classpath:logback-api.xml
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,prometheus
-
 datasophon:
   lineage:
-    lease:
-      enabled: true
-    # L2: Gravitino LineageHttpSink 转发到 /v2/lineage 时携带的共享 Bearer token；
-    # 未配置时该端点默认拒绝所有请求（fail closed）。须与 GRAVITINO 的
-    # gravitino.lineage.http.apiKey 配成同一个值。
-    ingest-token: ${DDH_LINEAGE_INGEST_TOKEN:}
+    proxy:
+      connect-timeout-ms: 3000
+      request-timeout-ms: 10000
   migration:
     enable: true
   observability:

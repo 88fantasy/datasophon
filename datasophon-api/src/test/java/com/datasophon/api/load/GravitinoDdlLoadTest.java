@@ -34,12 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 
-/**
- * 验证 GRAVITINO service_ddl.json 的血缘转发配置（L1 第 4 批 §8.0 之后、L2 开工新增）。
- *
- * <p>只做静态结构核对：配置能否真的把血缘事件转发到真实运行的 datasophon-api，
- * 需要真实 Gravitino + Spark 部署才能验证，本测试不覆盖那部分。</p>
- */
+/** 验证 GRAVITINO service_ddl.json 的独立 MySQL 血缘存储配置。 */
 class GravitinoDdlLoadTest {
 
     private static final String DDL_RELATIVE = "package/raw/meta/datacluster-physical/GRAVITINO/service_ddl.json";
@@ -80,24 +75,31 @@ class GravitinoDdlLoadTest {
         assertTrue(includeParams.contains("gravitino.lineage.processorClass"));
         assertTrue(includeParams.contains("gravitino.lineage.sinks"));
         assertTrue(includeParams.contains("gravitino.lineage.sinkQueueCapacity"));
-        assertTrue(includeParams.contains("gravitino.lineage.http.sinkClass"));
-        assertTrue(includeParams.contains("gravitino.lineage.http.url"));
-        assertTrue(includeParams.contains("gravitino.lineage.http.authType"));
-        assertTrue(includeParams.contains("gravitino.lineage.http.apiKey"));
+        assertTrue(includeParams.contains("gravitino.lineage.storage.enabled"));
+        assertTrue(includeParams.contains("gravitino.lineage.storage.jdbcUrl"));
+        assertTrue(includeParams.contains("gravitino.lineage.storage.jdbcPassword"));
+        assertTrue(includeParams.contains("gravitino.lineage.storage.cacheSyncIntervalSecs"));
+        assertTrue(includeParams.contains("gravitino.lineage.storage.staleThresholdSecs"));
+        assertTrue(includeParams.contains("gravitino.lineage.storage.sourceLaggingThresholdSecs"));
     }
 
     @Test
-    void lineageParametersPinNoopProcessorAndApiKeyAuth() throws Exception {
+    void lineageParametersUseLocalSnapshotAndIndependentStorage() throws Exception {
         JSONObject json = loadDdl();
         JSONArray parameters = json.getJSONArray("parameters");
 
+        assertEquals("1.3.1-SNAPSHOT", json.getString("version"));
         assertEquals("org.apache.gravitino.lineage.processor.NoopProcessor",
                 findParameterDefaultValue(parameters, "gravitino.lineage.processorClass"),
-                "L0 现场核查已确认 Gravitino 不做 identifier 规范化，processorClass 必须显式钉死为 NoopProcessor");
-        assertEquals("org.apache.gravitino.lineage.sink.LineageHttpSink",
-                findParameterDefaultValue(parameters, "gravitino.lineage.http.sinkClass"));
-        assertEquals("apiKey", findParameterDefaultValue(parameters, "gravitino.lineage.http.authType"),
-                "血缘转发必须走鉴权，不能配成 authType=none");
+                "processorClass 继续显式钉死为 NoopProcessor");
+        assertEquals("log", findParameterDefaultValue(parameters, "gravitino.lineage.sinks"));
+        assertEquals("true", findParameterDefaultValue(parameters, "gravitino.lineage.storage.enabled"));
+        assertEquals("jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/gravitino_lineage_1"
+                + "?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true",
+                findParameterDefaultValue(parameters, "gravitino.lineage.storage.jdbcUrl"));
+        assertTrue(parameters.stream()
+                .map(JSONObject.class::cast)
+                .noneMatch(parameter -> parameter.getString("name").startsWith("gravitino.lineage.http.")));
     }
 
     private static String findParameterDefaultValue(JSONArray parameters, String name) {
