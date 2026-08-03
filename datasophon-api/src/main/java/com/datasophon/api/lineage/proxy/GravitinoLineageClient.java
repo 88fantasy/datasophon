@@ -66,12 +66,6 @@ public class GravitinoLineageClient {
         if (connectTimeoutMs <= 0 || requestTimeoutMs <= 0) {
             throw new IllegalArgumentException("lineage proxy timeouts must be positive");
         }
-        if (StringUtils.isBlank(authToken)) {
-            throw new IllegalArgumentException(
-                    "datasophon.lineage.proxy.auth-token must be set; it must be the same "
-                            + "static JWT configured on the GRAVITINO role as "
-                            + "gravitino.authenticator.oauth.defaultSignKey's issued token");
-        }
         this.endpointResolver = endpointResolver;
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
@@ -88,11 +82,7 @@ public class GravitinoLineageClient {
     }
 
     public JsonNode getJob(long clusterId, long jobId) {
-        JsonNode response = exchange(clusterId, "lineage/job/" + jobId, Map.of(), "GET");
-        if (response instanceof ObjectNode object) {
-            object.put("clusterId", clusterId);
-        }
-        return response;
+        return get(clusterId, "lineage/job/" + jobId, Map.of(), NodeInjection.ROOT);
     }
 
     public JsonNode post(long clusterId, String resource) {
@@ -100,6 +90,12 @@ public class GravitinoLineageClient {
     }
 
     private JsonNode exchange(long clusterId, String resource, Map<String, ?> query, String method) {
+        if (StringUtils.isBlank(authToken)) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "datasophon.lineage.proxy.auth-token is not configured; it must be the same "
+                            + "static JWT configured on the GRAVITINO role as "
+                            + "gravitino.authenticator.oauth.defaultSignKey's issued token");
+        }
         URI endpoint = endpointResolver.resolve(clusterId);
         URI uri = endpoint.resolve(resource + queryString(query));
         HttpRequest.Builder request = HttpRequest.newBuilder(uri)
@@ -213,6 +209,15 @@ public class GravitinoLineageClient {
             @Override
             void apply(JsonNode response, long clusterId) {
                 injectNode(response.at("/data"), clusterId);
+            }
+        },
+        /** A non-node payload (e.g. job detail) that itself is the response root. */
+        ROOT {
+            @Override
+            void apply(JsonNode response, long clusterId) {
+                if (response instanceof ObjectNode object) {
+                    object.put("clusterId", clusterId);
+                }
             }
         };
 

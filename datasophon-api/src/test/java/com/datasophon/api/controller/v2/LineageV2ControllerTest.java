@@ -24,7 +24,11 @@ package com.datasophon.api.controller.v2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,8 +49,7 @@ class LineageV2ControllerTest {
 
     @Test
     void forwardsAllSevenCompatibilityEndpoints() {
-        when(client.get(org.mockito.ArgumentMatchers.anyLong(),
-                org.mockito.ArgumentMatchers.anyString(), anyMap(),
+        when(client.get(anyLong(), anyString(), anyMap(),
                 any(NodeInjection.class))).thenReturn(response);
         when(client.getJob(7L, 9L)).thenReturn(response);
         when(client.post(7L, "lineage/rebuild")).thenReturn(response);
@@ -65,49 +68,36 @@ class LineageV2ControllerTest {
 
     @Test
     void injectsClusterIdAtTheExplicitPathForEachEndpointShape() {
-        when(client.get(org.mockito.ArgumentMatchers.anyLong(),
-                org.mockito.ArgumentMatchers.anyString(), anyMap(),
+        when(client.get(anyLong(), anyString(), anyMap(),
                 any(NodeInjection.class))).thenReturn(response);
 
         controller.tables(7L, 1, 20, null, null, null, null);
-        verify(client).get(org.mockito.ArgumentMatchers.eq(7L),
-                org.mockito.ArgumentMatchers.eq("lineage/tables"), anyMap(),
-                org.mockito.ArgumentMatchers.eq(NodeInjection.TABLE_LIST));
+        verify(client).get(eq(7L), eq("lineage/tables"), anyMap(), eq(NodeInjection.TABLE_LIST));
 
         controller.graph(7L, 2L, 3, "both", "n:2:both:g8");
-        verify(client).get(org.mockito.ArgumentMatchers.eq(7L),
-                org.mockito.ArgumentMatchers.eq("lineage/graph"), anyMap(),
-                org.mockito.ArgumentMatchers.eq(NodeInjection.GRAPH_NODES));
+        verify(client).get(eq(7L), eq("lineage/graph"), anyMap(), eq(NodeInjection.GRAPH_NODES));
 
         controller.overview(7L);
-        verify(client).get(org.mockito.ArgumentMatchers.eq(7L),
-                org.mockito.ArgumentMatchers.eq("lineage/overview"), anyMap(),
-                org.mockito.ArgumentMatchers.eq(NodeInjection.NONE));
+        verify(client).get(eq(7L), eq("lineage/overview"), anyMap(), eq(NodeInjection.NONE));
 
         controller.table(7L, 2L);
-        verify(client).get(org.mockito.ArgumentMatchers.eq(7L),
-                org.mockito.ArgumentMatchers.eq("lineage/table/2"), anyMap(),
-                org.mockito.ArgumentMatchers.eq(NodeInjection.SINGLE_TABLE));
+        verify(client).get(eq(7L), eq("lineage/table/2"), anyMap(), eq(NodeInjection.SINGLE_TABLE));
 
         controller.impact(7L, 2L, 3);
-        verify(client).get(org.mockito.ArgumentMatchers.eq(7L),
-                org.mockito.ArgumentMatchers.eq("lineage/impact"), anyMap(),
-                org.mockito.ArgumentMatchers.eq(NodeInjection.GRAPH_NODES));
+        verify(client).get(eq(7L), eq("lineage/impact"), anyMap(), eq(NodeInjection.GRAPH_NODES));
     }
 
     @Test
     void forwardsGraphParametersWithoutRenaming() {
-        when(client.get(org.mockito.ArgumentMatchers.eq(7L),
-                org.mockito.ArgumentMatchers.eq("lineage/graph"), anyMap(),
-                org.mockito.ArgumentMatchers.eq(NodeInjection.GRAPH_NODES))).thenReturn(response);
+        when(client.get(eq(7L), eq("lineage/graph"), anyMap(),
+                eq(NodeInjection.GRAPH_NODES))).thenReturn(response);
         controller.graph(7L, 2L, 3, "downstream", "n:2:down:g8");
-        verify(client).get(org.mockito.ArgumentMatchers.eq(7L),
-                org.mockito.ArgumentMatchers.eq("lineage/graph"),
-                org.mockito.ArgumentMatchers.argThat(query ->
+        verify(client).get(eq(7L), eq("lineage/graph"),
+                argThat(query ->
                         query.get("rootNodeId").equals(2L)
                                 && query.get("depth").equals(3)
                                 && query.get("direction").equals("downstream")
                                 && query.get("expand").equals("n:2:down:g8")),
-                org.mockito.ArgumentMatchers.eq(NodeInjection.GRAPH_NODES));
+                eq(NodeInjection.GRAPH_NODES));
     }
 }

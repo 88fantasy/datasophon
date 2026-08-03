@@ -94,9 +94,11 @@ class GravitinoLineageClientTest {
     }
 
     @Test
-    void rejectsBlankAuthToken() {
-        assertThatThrownBy(() -> new GravitinoLineageClient(resolver, new ObjectMapper(), 1000, 3000, " "))
-                .isInstanceOf(IllegalArgumentException.class);
+    void allowsConstructionWithBlankAuthTokenButFailsRequestsAsServiceUnavailable() {
+        GravitinoLineageClient blankTokenClient =
+                new GravitinoLineageClient(resolver, new ObjectMapper(), 1000, 3000, " ");
+        assertStatus(() -> blankTokenClient.get(7L, "lineage/graph", Map.of(),
+                GravitinoLineageClient.NodeInjection.NONE), 503);
     }
 
     @Test
