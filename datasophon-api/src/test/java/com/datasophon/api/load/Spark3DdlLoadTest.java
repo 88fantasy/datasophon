@@ -75,9 +75,15 @@ class Spark3DdlLoadTest {
 
         assertEquals("io.openlineage.spark.agent.OpenLineageSparkListener", entries.get("spark.extraListeners"));
         assertEquals("http", entries.get("spark.openlineage.transport.type"));
-        assertEquals("http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}/api/lineage",
+        assertEquals("http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}",
                 entries.get("spark.openlineage.transport.url"),
-                "血缘事件送 Gravitino 的 /api/lineage，不是直连 datasophon-api（2026-07-30 会话决策：先经 Gravitino 转发）");
+                "血缘事件送 Gravitino（2026-07-30 会话决策：先经 Gravitino 转发），"
+                        + "url 只能放 base origin：openlineage-java 的 HttpTransport.getUri() 只要"
+                        + "transport.endpoint 为空就会用 URIBuilder.setPath() 把路径整体替换成硬编码默认值"
+                        + " /api/v1/lineage，url 里带的路径段会被直接丢弃（2026-08-04 沙箱实测坐实，此前"
+                        + "误把整段 /api/lineage 塞进 url 导致真实请求 404）");
+        assertEquals("/api/lineage", entries.get("spark.openlineage.transport.endpoint"),
+                "真正的请求路径必须由 transport.endpoint 显式声明，不能指望 transport.url 里的路径生效");
     }
 
     private static JSONObject findParameter(JSONArray parameters, String name) {

@@ -22,10 +22,6 @@
 export JAVA_HOME=${javaHome}
 export GRAVITINO_MEM="${gravitinoMem}"
 
-# basic 认证器（IdpUserGroupManager.initializeConfiguredServiceAdmins）用它给
-# gravitino.authorization.serviceAdmins 列表里的账号设置首次启动的初始密码。
-export GRAVITINO_INITIAL_ADMIN_PASSWORD="${gravitinoIdpServiceAdminPassword}"
-
 # bin/common.sh 靠这个变量判断"当前是不是一个正确解压的发行包"，未设置直接 exit 1
 # （本地源码构建的 conf/gravitino-env.sh 版本由 Gradle 写入，
 # 整体覆盖模板时必须显式保留，否则 start/status/stop 全部启动失败）。

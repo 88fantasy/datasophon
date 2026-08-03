@@ -106,6 +106,17 @@
   },
   "parameters": [
     {
+      "name": "gravitinoLineageToken",
+      "label": "Gravitino 血缘/联邦静态 Token",
+      "description": "由 GRAVITINO 的 gravitino.authenticator.oauth.defaultSignKey 铸造的静态 JWT；同时用于 Spark 的 Gravitino catalog 联邦认证（spark.sql.gravitino.authType=token）与 OpenLineage 血缘事件上报，两处必须填同一个值。铸造步骤见部署手册。",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
       "name": "SPARK_DIST_CLASSPATH",
       "label": "spark加载Classpath路径",
       "description": "",
@@ -206,13 +217,10 @@
           "spark.sql.gravitino.enableOpenLineageDatasetProperties": "true"
         },
         {
-          "spark.sql.gravitino.authType": "basic"
+          "spark.sql.gravitino.authType": "token"
         },
         {
-          "spark.sql.gravitino.basic.username": "${ROOT.GRAVITINO.gravitino.authorization.serviceAdmins}"
-        },
-        {
-          "spark.sql.gravitino.basic.password": "${ROOT.GRAVITINO.gravitinoIdpServiceAdminPassword}"
+          "spark.sql.gravitino.token.value": "${SPARK3.gravitinoLineageToken}"
         },
         {
           "spark.sql.catalog.doris_catalog": "org.apache.doris.spark.catalog.DorisTableCatalog"
@@ -236,13 +244,16 @@
           "spark.openlineage.transport.type": "http"
         },
         {
-          "spark.openlineage.transport.url": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}/api/lineage"
+          "spark.openlineage.transport.url": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}"
+        },
+        {
+          "spark.openlineage.transport.endpoint": "/api/lineage"
         },
         {
           "spark.openlineage.transport.auth.type": "api_key"
         },
         {
-          "spark.openlineage.transport.auth.apiKey": ""
+          "spark.openlineage.transport.auth.apiKey": "${SPARK3.gravitinoLineageToken}"
         }
       ]
     }

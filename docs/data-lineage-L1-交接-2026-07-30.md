@@ -335,6 +335,91 @@ name      = "/data/iceberg-warehouse-fs/lineage_probe/ol_native"
 断言完全一致）；S3/HDFS 后端的 `namespace` scheme 具体值（`s3a` 还是别的）也没
 实测，本地磁盘测试无法覆盖。
 
+## 8f. Paimon table-properties 通道实机验证：假设成立，SELECT/INSERT/OVERWRITE/CTAS 全部覆盖（2026-07-31 追加，重大正面结论）
+
+§8d 记录的负面结论（社区版 `openlineage-spark` 对 Paimon 的 DSv2 catalog 完全不
+支持，`PlanUtils3` 报 `Catalog org.apache.paimon.spark.SparkCatalog is
+unsupported`）没有变。但反编译 `openlineage-spark_2.12-1.29.0.jar` 发现了一条
+未被 §8d 探索过的路径：`DataSourceV2RelationDatasetExtractor.
+getDatasetIdentifierExtended` 在走到 `PlanUtils3`/`CatalogUtils3` 之前，会先调
+`ExtensionDataSourceV2Utils.hasExtensionLineage(relation)`——只要
+`relation.table().properties()` 同时含有 `openlineage.dataset.namespace` 与
+`openlineage.dataset.name` 两个 key，就直接短路返回，**完全绕开 `PlanUtils3`
+对 catalog 类名的白名单匹配**。这条路径不需要实现 `OpenLineageExtensionProvider`
+SPI、不需要 fork jar、不需要给 Spark 引入任何新依赖——理论上只要让
+`Table.properties()` 多带两个字符串 key 即可。
+
+**本次在 ddh-02 用 TBLPROPERTIES 直接验证了这个假设**（复用 §8d 同一套环境：
+`spark-3.5.8-bin-hadoop3` + `openlineage-spark_2.12-1.29.0.jar` +
+`paimon-spark-3.5-1.2.0.jar`，均已在 `$SPARK_HOME/jars/`；`JAVA_HOME=
+/usr/local/jdk17`；`--conf spark.driver.extraJavaOptions="--add-opens=...`；
+`spark.openlineage.transport.type=console`）：
+
+```sql
+CREATE TABLE paimon_fs.lineage_probe.ol_ext (id int, name string) USING paimon
+TBLPROPERTIES (
+  'openlineage.dataset.namespace' = 'probe_ns',
+  'openlineage.dataset.name' = 'probe_cat.probe_db.ol_ext'
+);
+```
+
+`DESCRIBE TABLE EXTENDED` 证实 Paimon **原样回显**了这两个 key（不被过滤）：
+
+```
+Table Properties  [openlineage.dataset.name=probe_cat.probe_db.ol_ext,
+                    openlineage.dataset.namespace=probe_ns,
+                    path=file:/data/paimon-warehouse-fs/lineage_probe.db/ol_ext]
+```
+
+四类语句逐一实测（下表 namespace/name 均取自实测事件原文，未删减）：
+
+|                            语句                            |                                       结果                                       |                                                                             关键 facet                                                                              |
+|----------------------------------------------------------|--------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `SELECT`                                                 | `inputs=[{"namespace":"probe_ns","name":"probe_cat.probe_db.ol_ext",...}]` 非空  | `schema`                                                                                                                                                          |
+| `INSERT INTO`                                            | `outputs=[{"namespace":"probe_ns","name":"probe_cat.probe_db.ol_ext",...}]` 非空 | `schema`                                                                                                                                                          |
+| `INSERT OVERWRITE`                                       | `outputs` 非空                                                                   | `lifecycleStateChange=OVERWRITE`、`outputStatistics{rowCount:1,size:494,fileCount:1}`                                                                              |
+| `CTAS`（`CREATE TABLE ... TBLPROPERTIES (...) AS SELECT`） | `inputs`+`outputs` 均非空，**且带列级血缘**                                              | `columnLineage.fields.{id,name}.inputFields=[{namespace:probe_ns,name:probe_cat.probe_db.ol_ext,field:id/name,transformations:[{type:DIRECT,subtype:IDENTITY}]}]` |
+
+**CTAS 覆盖是意外的正面结果**：§8d 之后基于字节码曾推断 CTAS 大概率不覆盖（建表
+瞬间表还不存在、没有 `Table` 对象可读 properties，`CreateReplaceOutputDatasetBuilder`
+按理走不到 `relation.table().properties()` 这条路）。实测推翻了这个推断——完整
+写入的 `append_data_exec_v1` 事件（真正携带数据移动的那个事件，区别于外层
+`create_table_as_select` 包装事件）拿到了完整 `inputs`/`outputs`/`columnLineage`。
+外层 `create_table_as_select` 事件本身 `outputs` 恒空、仍报一次 `PlanUtils3
+unsupported`，但这是良性的父级/包装事件（与本节 `CREATE TABLE` DDL 事件、§8d 里
+"事件产生但 inputs/outputs 恒空"的情况同构），不影响结论。
+
+**结论**：Paimon 的血缘缺口**不需要**§8d 提出的三选一（接受缺失 / 写 SPI 扩展 /
+向上游提 issue）中的任何一个。只要 Spark 执行路径上使用的 Paimon `TableCatalog`
+实现（无论是原生 `org.apache.paimon.spark.SparkCatalog` 还是任何包装它的第三方
+catalog，例如 Gravitino 的 `GravitinoPaimonCatalogSpark35`）在其 `Table.
+properties()` 里补上 `openlineage.dataset.namespace`/`openlineage.dataset.name`
+两个 key，社区版 `openlineage-spark` 原封不动即可采集 SELECT/INSERT/OVERWRITE/
+CTAS 全部四类语句的血缘，含列级。
+
+**已排除的一个风险**：反编译确认 `CatalogUtils3` 的 handler 列表是硬编码
+`new IcebergHandler()`/`new JdbcHandler()`/... 直接 `anewarray` 拼出来的，非
+SPI、不可外部注册；`IcebergHandler.isClass` 是 `instanceof org.apache.iceberg.
+spark.SparkCatalog`。如果未来要把这条 table-properties 通道接到 Gravitino
+`spark-connector`（`GravitinoPaimonCatalog`/`GravitinoIcebergCatalog` 均
+`extends BaseCatalog`，不是任何 handler 认识的具体类），**不会覆盖掉 Hive/
+Iceberg 现有的正确血缘**——因为经 Gravitino 联邦访问的 Hive/Iceberg 今天本来就
+拿不到血缘（同样的 `instanceof` 匹配不上），统一注入是净改进不是回归。
+
+**未验证/不在本次范围**：
+1. Doris 的 DSv2 catalog（`DorisTableCatalog`）是否同样适用这条通道——本次
+用户已明确"只做 Paimon，Doris 另议"，未测试
+2. 若落地到 Gravitino `spark-connector`，生产 `SPARK3/service_ddl.json`
+目前用的是原生 `spark.sql.catalog.paimon_catalog=org.apache.paimon.spark.
+SparkCatalog`（不经过 `GravitinoSparkPlugin`），**必须同步切到 Gravitino
+catalog 联邦这条改动才会生效**；反之如果直接改 Paimon 上游
+`SparkTable.properties()`（在 `apache/paimon` 仓库），原生 catalog 直接
+生效，不需要动 datasophon 侧配置——这是下一步需要决策的架构分岔点，不是
+本节验证范围
+3. `namespace`/`name` 的具体取值本次是手工写死在 TBLPROPERTIES 里验证机制，
+生产场景下这两个值该如何自动生成（取 metalake 名还是别的）需要在正式实现
+时设计，本节只验证"机制通不通"
+
 ## 9. 审查历史
 
 |     轮次      |                       来源                        |                                                               结果                                                               |
