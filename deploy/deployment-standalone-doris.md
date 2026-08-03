@@ -879,6 +879,72 @@ Codex 可视化目录。
 升级前后旧表计数始终为：edge `3`、event `3`、generation `1`、node `4`、parse_log `0`，证明新链路未再写
 `t_ddh_lineage_*`。全部 Gate 通过，未触发回滚；上述备份继续保留，回滚步骤已用精确目录固化。
 
+### 7.16 血缘链路鉴权加固（代码审查 S2，尚未在现场执行）
+
+§7.15 上线时 Gravitino 的 `/api/lineage/**` 处于匿名开放状态（`gravitino.authenticators` 未配置，默认
+`simple`），代码审查发现这是相对旧链路（`apiKey` Bearer 共享密钥）的净退步：任何能连到 `:8090` 的人都可读取
+全量血缘、触发 `rebuild`、注入伪造事件。本节记录修复方案与落地步骤，**尚未在 ddh-01/ddh-02 执行**，执行前需
+要真实凭据（HMAC 密钥、IdP 服务账号密码），必须向操作者当面获取，不得脑补或复用历史密码。
+
+**方案**：`gravitino.authenticators = oauth,basic`，按 `Authorization` 头 scheme 分流：
+
+- `oauth`（`StaticSignKeyValidator`，静态 HMAC 签名 JWT）保护 `POST /api/lineage`（Spark OpenLineage 摄入）
+  与 Datasophon 代理的所有 GET/POST；
+- `basic`（内置 `idp-basic` 插件）保护 Spark `gravitino-spark-connector` 的 catalog 联邦请求
+  （`spark.sql.gravitino.uri`）——该客户端不支持免额外基础设施的静态 Bearer，但原生支持 `basic.username`/
+  `.password`，是唯一不新增常驻服务就能满足的路径。
+
+两者由 `AuthenticationFilter` 按请求头前缀（`Bearer`/`Basic`）分派，互不冲突，详见代码审查记录。
+
+**新增配置字段**（已落地到 `package/raw/meta/datacluster-physical/GRAVITINO/service_ddl.json` 与
+`SPARK3/service_ddl.json`，均遵循"敏感字段默认值留空，安装者填入"的既有约定）：
+
+| 角色 | 字段 | 说明 |
+| --- | --- | --- |
+| GRAVITINO | `gravitino.authenticator.oauth.defaultSignKey` | Base64 HMAC 签名密钥，安装者生成，**不进 Git** |
+| GRAVITINO | `gravitino.authorization.serviceAdmins` | basic 账号用户名，默认 `spark-lineage-service`，可不改 |
+| GRAVITINO | `gravitinoIdpServiceAdminPassword` | 上述账号的初始密码（写入 `GRAVITINO_INITIAL_ADMIN_PASSWORD`），安装者生成 |
+| Datasophon | `datasophon.lineage.proxy.auth-token`（环境变量 `DDH_LINEAGE_PROXY_AUTH_TOKEN`） | 铸造出的静态 JWT，必须与下面 Spark 的 `apiKey` 字段完全一致 |
+| SPARK3 | `spark.openlineage.transport.auth.apiKey` | 同一个静态 JWT |
+
+`spark.sql.gravitino.basic.username`/`.basic.password` 已在 SPARK3 DDL 里用
+`${ROOT.GRAVITINO.gravitino.authorization.serviceAdmins}`/`${ROOT.GRAVITINO.gravitinoIdpServiceAdminPassword}`
+跨服务引用（沿用本文件已有的 `${DORIS.root_password}` 跨引用先例），**不需要安装者手工同步**；
+但静态 JWT 无法跨引用（它是用 `defaultSignKey` 签名派生出的值，不是任何一侧的字面量配置），
+Datasophon 与 SPARK3 两处必须安装者手工填成同一个值。
+
+**JWT 铸造步骤**（拿到 `defaultSignKey` 之后执行一次；`aud` 必须等于 `gravitino.authenticator.oauth.serviceAudience`
+的值，即 DDL 默认的 `GravitinoServer`；`sub` 是随意的机读标识，配合默认 `principalFields=sub`）：
+
+```bash
+python3 -m pip install --user pyjwt  # 已装可跳过
+python3 - <<'PY'
+import jwt, base64
+sign_key = base64.b64decode("<粘贴 defaultSignKey 的 Base64 值>")
+token = jwt.encode(
+    {"sub": "datasophon-lineage-proxy", "aud": "GravitinoServer"},
+    sign_key,
+    algorithm="HS256",
+)
+print(token)
+PY
+```
+
+Datasophon 侧和 Spark 侧可以用同一个 token，也可以各铸造一个（`sub` 不同即可，`StaticSignKeyValidator`
+不区分调用方身份，只校验签名与 `aud`）；本环境为简化运维，两侧共用同一个 token。
+
+**升级执行顺序**（尚未执行，执行时按 §7.15 同样规则先备份再变更）：
+
+1. 在 ddh-02 生成 `defaultSignKey`（如 `openssl rand -base64 32`）与 `gravitinoIdpServiceAdminPassword`
+   （如 `openssl rand -base64 18`），写入 Gravitino 现场配置，**不进 Git**。
+2. 用上述铸造步骤产出静态 JWT。
+3. 分别写入 ddh-01 Datasophon 的 `DDH_LINEAGE_PROXY_AUTH_TOKEN` 环境变量与 ddh-02 SPARK3 的
+   `spark.openlineage.transport.auth.apiKey`。
+4. 重启 Gravitino、Datasophon、（如已运行）Spark 相关进程。
+5. 验证：从非 Datasophon 节点匿名 `curl http://192.168.10.132:8090/api/lineage/tables` 应被拒绝；
+   L3 页面通过 Datasophon 会话仍可正常查询；提交一次真实 Spark 作业确认 OpenLineage 摄入与 catalog
+   联邦（Paimon/Doris）均未因鉴权改动失败。
+
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
 基础环境验收：hostname 和 hosts、节点 SSH、NTP、Nexus、MySQL、RustFS S3、plan 状态、数据盘与 JDK17 可用。确认无 Kubernetes 业务组件及 Hadoop 业务进程。

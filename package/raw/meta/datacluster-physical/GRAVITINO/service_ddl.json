@@ -106,6 +106,14 @@
           "gravitino.entity.store.relational.jdbcUser",
           "gravitino.entity.store.relational.jdbcPassword",
           "gravitino.audit.enabled",
+          "gravitino.authenticators",
+          "gravitino.authenticator.oauth.serviceAudience",
+          "gravitino.authenticator.oauth.defaultSignKey",
+          "gravitino.authenticator.oauth.signAlgorithmType",
+          "gravitino.authenticator.oauth.serverUri",
+          "gravitino.authenticator.oauth.tokenPath",
+          "gravitino.authorization.serviceAdmins",
+          "gravitino.server.rest.extensionPackages",
           "gravitino.lineage.source",
           "gravitino.lineage.processorClass",
           "gravitino.lineage.sinks",
@@ -129,7 +137,8 @@
         "templateName": "gravitino-env.ftl",
         "includeParams": [
           "javaHome",
-          "gravitinoMem"
+          "gravitinoMem",
+          "gravitinoIdpServiceAdminPassword"
         ]
       }
     ]
@@ -237,6 +246,94 @@
       "defaultValue": false
     },
     {
+      "name": "gravitino.authenticators",
+      "label": "认证器列表",
+      "description": "固定为 oauth,basic：oauth 用静态签名 JWT 校验 Bearer 请求（血缘摄入与查询代理），basic 用内置 IdP 校验 Spark catalog 联邦客户端；按 Authorization 头的 scheme 自动分流，互不干扰",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "oauth,basic"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.serviceAudience",
+      "label": "OAuth 服务受众",
+      "description": "静态 JWT 的 aud 声明必须等于此值，铸造 token 时需一并写入",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "GravitinoServer"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.defaultSignKey",
+      "label": "OAuth 静态签名密钥",
+      "description": "HMAC 签名密钥（Base64），用于校验 Datasophon 代理与 Spark OpenLineage 上报携带的静态 JWT；三方必须共享同一把密钥，由安装者生成后填入，不得留空或使用示例值",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "gravitino.authenticator.oauth.signAlgorithmType",
+      "label": "OAuth 签名算法",
+      "description": "固定为 HS256，与上面的对称密钥配套",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "HS256"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.serverUri",
+      "label": "OAuth 服务器地址（占位）",
+      "description": "StaticSignKeyValidator 只做本地签名校验，不会真的请求该地址，但要求非空，固定填占位符",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "http://unused.invalid"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.tokenPath",
+      "label": "OAuth token 路径（占位）",
+      "description": "StaticSignKeyValidator 不使用该路径，但要求非空，固定填占位符",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "/unused"
+    },
+    {
+      "name": "gravitino.authorization.serviceAdmins",
+      "label": "内置 IdP 服务账号",
+      "description": "basic 认证器校验的用户名，Gravitino 启动时按此列表自动建号（密码见下方独立字段）；Spark 的 spark.sql.gravitino.basic.username 须填相同值",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "spark-lineage-service"
+    },
+    {
+      "name": "gravitino.server.rest.extensionPackages",
+      "label": "REST 扩展包",
+      "description": "固定包含内置 IdP 的 REST 扩展包名，basic 认证器依赖它启动时校验通过，否则直接拒绝启动",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "org.apache.gravitino.idp.web.rest.feature"
+    },
+    {
       "name": "gravitino.lineage.source",
       "label": "血缘事件接收方式",
       "description": "血缘事件来源，固定走内置 HTTP 接收端点（POST /api/lineage）",
@@ -333,7 +430,7 @@
       "type": "input",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "fI5sQ4yQ4fP5"
+      "defaultValue": ""
     },
     {
       "name": "gravitino.lineage.storage.poolMaxSize",
@@ -411,6 +508,17 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "-Xms1024m -Xmx2048m -XX:MaxMetaspaceSize=512m"
+    },
+    {
+      "name": "gravitinoIdpServiceAdminPassword",
+      "label": "内置 IdP 服务账号密码",
+      "description": "GRAVITINO_INITIAL_ADMIN_PASSWORD 环境变量：gravitino.authorization.serviceAdmins 列表中账号首次启动时的初始密码；Spark 的 spark.sql.gravitino.basic.password 须填相同值，由安装者生成后填入",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
     }
   ],
   "arch": {

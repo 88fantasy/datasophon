@@ -19,6 +19,10 @@ spring:
     password: localmysql
 
 datasophon:
+  lineage:
+    proxy:
+      # GravitinoLineageClient 要求非空（fail closed），集成测试不实际发请求，占位值即可
+      auth-token: test-token
   migration:
     enable: true
 

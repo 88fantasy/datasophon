@@ -96,12 +96,6 @@ export interface LineageQueryResponse<T> {
   sourceFreshness: SourceFreshness;
 }
 
-export interface LeaseReadiness {
-  owner: boolean;
-  status: string;
-  message: string;
-}
-
 export interface RebuildAccepted {
   generation: number;
 }
@@ -131,15 +125,6 @@ function cleanParams<T extends object>(params: T) {
     Object.entries(params).filter(
       ([, value]) => value !== undefined && value !== null && value !== '',
     ),
-  );
-}
-
-export function getReadiness(clusterId: number) {
-  return unwrap(
-    request<ApiEnvelope<LeaseReadiness>>('/lineage/readiness', {
-      method: 'GET',
-      params: { clusterId },
-    }),
   );
 }
 

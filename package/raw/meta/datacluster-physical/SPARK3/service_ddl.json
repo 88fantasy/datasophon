@@ -206,6 +206,15 @@
           "spark.sql.gravitino.enableOpenLineageDatasetProperties": "true"
         },
         {
+          "spark.sql.gravitino.authType": "basic"
+        },
+        {
+          "spark.sql.gravitino.basic.username": "${ROOT.GRAVITINO.gravitino.authorization.serviceAdmins}"
+        },
+        {
+          "spark.sql.gravitino.basic.password": "${ROOT.GRAVITINO.gravitinoIdpServiceAdminPassword}"
+        },
+        {
           "spark.sql.catalog.doris_catalog": "org.apache.doris.spark.catalog.DorisTableCatalog"
         },
         {
@@ -228,6 +237,12 @@
         },
         {
           "spark.openlineage.transport.url": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}/api/lineage"
+        },
+        {
+          "spark.openlineage.transport.auth.type": "api_key"
+        },
+        {
+          "spark.openlineage.transport.auth.apiKey": ""
         }
       ]
     }

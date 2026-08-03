@@ -35,6 +35,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -48,17 +50,27 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @Component
 public class GravitinoLineageClient {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GravitinoLineageClient.class);
+
     private final GravitinoLineageEndpointResolver endpointResolver;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final Duration requestTimeout;
+    private final String authToken;
 
     public GravitinoLineageClient(GravitinoLineageEndpointResolver endpointResolver,
                                   ObjectMapper objectMapper,
                                   @Value("${datasophon.lineage.proxy.connect-timeout-ms:3000}") long connectTimeoutMs,
-                                  @Value("${datasophon.lineage.proxy.request-timeout-ms:10000}") long requestTimeoutMs) {
+                                  @Value("${datasophon.lineage.proxy.request-timeout-ms:10000}") long requestTimeoutMs,
+                                  @Value("${datasophon.lineage.proxy.auth-token:}") String authToken) {
         if (connectTimeoutMs <= 0 || requestTimeoutMs <= 0) {
             throw new IllegalArgumentException("lineage proxy timeouts must be positive");
+        }
+        if (StringUtils.isBlank(authToken)) {
+            throw new IllegalArgumentException(
+                    "datasophon.lineage.proxy.auth-token must be set; it must be the same "
+                            + "static JWT configured on the GRAVITINO role as "
+                            + "gravitino.authenticator.oauth.defaultSignKey's issued token");
         }
         this.endpointResolver = endpointResolver;
         this.objectMapper = objectMapper;
@@ -66,13 +78,12 @@ public class GravitinoLineageClient {
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .build();
         this.requestTimeout = Duration.ofMillis(requestTimeoutMs);
+        this.authToken = authToken;
     }
 
-    public JsonNode get(long clusterId, String resource, Map<String, ?> query, boolean injectNodes) {
+    public JsonNode get(long clusterId, String resource, Map<String, ?> query, NodeInjection injection) {
         JsonNode response = exchange(clusterId, resource, query, "GET");
-        if (injectNodes) {
-            injectClusterIdIntoNodes(response, clusterId);
-        }
+        injection.apply(response, clusterId);
         return response;
     }
 
@@ -93,7 +104,8 @@ public class GravitinoLineageClient {
         URI uri = endpoint.resolve(resource + queryString(query));
         HttpRequest.Builder request = HttpRequest.newBuilder(uri)
                 .timeout(requestTimeout)
-                .header("Accept", "application/json");
+                .header("Accept", "application/json")
+                .header("Authorization", "Bearer " + authToken);
         if ("POST".equals(method)) {
             request.header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.noBody());
@@ -110,12 +122,17 @@ public class GravitinoLineageClient {
                         ? objectMapper.createObjectNode()
                         : objectMapper.readTree(response.body());
             }
-            String message = downstreamMessage(response.body(), status);
             if (status == 400 || status == 404 || status == 409 || status == 503) {
-                throw new ResponseStatusException(HttpStatus.valueOf(status), message);
+                throw new ResponseStatusException(
+                        HttpStatus.valueOf(status), downstreamMessage(response.body(), status));
             }
             if (status >= 500) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, message);
+                // Gravitino's message at this point is an unstructured internal error (SQL
+                // exception text, JDBC URL fragments, ...). Log it for operators but never hand
+                // it to the caller.
+                LOG.warn("Unexpected Gravitino lineage failure, status={}, body={}", status, response.body());
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY, "Gravitino lineage endpoint returned an unexpected error");
             }
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "unexpected Gravitino lineage status " + status);
@@ -162,17 +179,61 @@ public class GravitinoLineageClient {
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
-    private static void injectClusterIdIntoNodes(JsonNode node, long clusterId) {
-        if (node == null) {
-            return;
-        }
-        if (node instanceof ObjectNode object) {
-            if (object.has("canonicalName") && object.has("id")) {
-                object.put("clusterId", clusterId);
+    /**
+     * Where in a response body {@code clusterId} must be injected into lineage node objects.
+     * Each endpoint's response shape is fixed by {@code LineageQuery}, so the path is explicit
+     * per endpoint rather than inferred by walking the whole tree and guessing which objects
+     * "look like" a node (that heuristic both over-matches any future field named {@code id} +
+     * {@code canonicalName}, and silently no-ops if a real node is missing either field).
+     */
+    public enum NodeInjection {
+        /** No node objects in this response need a clusterId (e.g. overview, rebuild). */
+        NONE {
+            @Override
+            void apply(JsonNode response, long clusterId) {
+                // nothing to inject
             }
-            object.elements().forEachRemaining(child -> injectClusterIdIntoNodes(child, clusterId));
-        } else if (node.isArray()) {
-            node.elements().forEachRemaining(child -> injectClusterIdIntoNodes(child, clusterId));
+        },
+        /** {@code TablePage}: an array of nodes at {@code /data/list}. */
+        TABLE_LIST {
+            @Override
+            void apply(JsonNode response, long clusterId) {
+                injectArray(response.at("/data/list"), clusterId);
+            }
+        },
+        /** {@code GraphData}: an array of nodes at {@code /data/nodes}. */
+        GRAPH_NODES {
+            @Override
+            void apply(JsonNode response, long clusterId) {
+                injectArray(response.at("/data/nodes"), clusterId);
+            }
+        },
+        /** {@code NodeMeta}: the single node object at {@code /data}. */
+        SINGLE_TABLE {
+            @Override
+            void apply(JsonNode response, long clusterId) {
+                injectNode(response.at("/data"), clusterId);
+            }
+        };
+
+        abstract void apply(JsonNode response, long clusterId);
+    }
+
+    private static void injectArray(JsonNode array, long clusterId) {
+        if (!array.isArray()) {
+            LOG.warn("Expected an array of Gravitino lineage nodes, got: {}", array.getNodeType());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Gravitino lineage response is missing expected node fields");
         }
+        array.elements().forEachRemaining(node -> injectNode(node, clusterId));
+    }
+
+    private static void injectNode(JsonNode node, long clusterId) {
+        if (!(node instanceof ObjectNode object) || !object.has("id") || !object.has("canonicalName")) {
+            LOG.warn("Expected a Gravitino lineage node with id/canonicalName, got: {}", node);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Gravitino lineage response is missing expected node fields");
+        }
+        object.put("clusterId", clusterId);
     }
 }

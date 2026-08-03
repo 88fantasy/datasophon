@@ -24,6 +24,7 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient;
+import com.datasophon.api.lineage.proxy.GravitinoLineageClient.NodeInjection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -49,11 +50,6 @@ public class LineageV2Controller extends ApiController {
         this.client = client;
     }
 
-    @GetMapping("/readiness")
-    public JsonNode readiness(@RequestParam long clusterId) {
-        return client.get(clusterId, "lineage/readiness", Map.of(), false);
-    }
-
     @GetMapping("/tables")
     public JsonNode tables(@RequestParam long clusterId,
                            @RequestParam(defaultValue = "1") int page,
@@ -69,7 +65,7 @@ public class LineageV2Controller extends ApiController {
         query.put("layer", layer);
         query.put("connector", connector);
         query.put("database", database);
-        return client.get(clusterId, "lineage/tables", query, true);
+        return client.get(clusterId, "lineage/tables", query, NodeInjection.TABLE_LIST);
     }
 
     @GetMapping("/graph")
@@ -83,17 +79,17 @@ public class LineageV2Controller extends ApiController {
         query.put("depth", depth);
         query.put("direction", direction);
         query.put("expand", expand);
-        return client.get(clusterId, "lineage/graph", query, true);
+        return client.get(clusterId, "lineage/graph", query, NodeInjection.GRAPH_NODES);
     }
 
     @GetMapping("/overview")
     public JsonNode overview(@RequestParam long clusterId) {
-        return client.get(clusterId, "lineage/overview", Map.of(), false);
+        return client.get(clusterId, "lineage/overview", Map.of(), NodeInjection.NONE);
     }
 
     @GetMapping("/table/{id}")
     public JsonNode table(@RequestParam long clusterId, @PathVariable long id) {
-        return client.get(clusterId, "lineage/table/" + id, Map.of(), true);
+        return client.get(clusterId, "lineage/table/" + id, Map.of(), NodeInjection.SINGLE_TABLE);
     }
 
     @GetMapping("/job/{id}")
@@ -106,7 +102,7 @@ public class LineageV2Controller extends ApiController {
                            @RequestParam long rootNodeId,
                            @RequestParam(defaultValue = "2") int depth) {
         return client.get(clusterId, "lineage/impact",
-                Map.of("rootNodeId", rootNodeId, "depth", depth), true);
+                Map.of("rootNodeId", rootNodeId, "depth", depth), NodeInjection.GRAPH_NODES);
     }
 
     @PostMapping("/rebuild")
