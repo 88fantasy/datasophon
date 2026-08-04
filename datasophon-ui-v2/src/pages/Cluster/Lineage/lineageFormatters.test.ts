@@ -62,4 +62,8 @@ describe('lineage formatters', () => {
     expect(formatRunningJobLabel(METRICS)).toBe('✓12 task · 6000万行');
     expect(formatRecordsRate(METRICS.recordsWrittenRate)).toBe('5.1万行/秒');
   });
+
+  it('renders missing row counts as unavailable instead of NaN', () => {
+    expect(formatRowCount(undefined as unknown as number)).toBe('-');
+  });
 });

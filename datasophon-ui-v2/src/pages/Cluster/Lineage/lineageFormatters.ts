@@ -6,6 +6,7 @@ function formatUnit(value: number): string {
 }
 
 export function formatRowCount(value: number): string {
+  if (!Number.isFinite(value)) return '-';
   const absolute = Math.abs(value);
   if (absolute >= 100_000_000) {
     return `${formatUnit(value / 100_000_000)}亿行`;
