@@ -23,6 +23,7 @@
 package com.datasophon.api.controller.v2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -33,8 +34,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.datasophon.api.lineage.metrics.LineageJobMetricsService;
+import com.datasophon.api.lineage.metrics.LineageJobMetricsService.JobMetrics;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient.NodeInjection;
+
+import java.time.Instant;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +50,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 class LineageV2ControllerTest {
 
     private final GravitinoLineageClient client = mock(GravitinoLineageClient.class);
-    private final LineageV2Controller controller = new LineageV2Controller(client);
+    private final LineageJobMetricsService jobMetricsService = mock(LineageJobMetricsService.class);
+    private final LineageV2Controller controller = new LineageV2Controller(client, jobMetricsService);
     private final ObjectNode response = new ObjectMapper().createObjectNode();
 
     @Test
@@ -99,5 +106,36 @@ class LineageV2ControllerTest {
                                 && query.get("direction").equals("downstream")
                                 && query.get("expand").equals("n:2:down:g8")),
                 eq(NodeInjection.GRAPH_NODES));
+    }
+
+    @Test
+    void jobMetricsParsesAppIdsAndDoesNotCallGravitino() {
+        JobMetrics metrics = new JobMetrics(12, 2, 60_000_000, 2_204_955_464L,
+                51_234.5, 1, Instant.parse("2026-08-04T03:01:44Z"));
+        when(jobMetricsService.getJobMetrics(7, java.util.List.of("app-1", "app-2")))
+                .thenReturn(Map.of("app-1", metrics));
+
+        assertThat(controller.jobMetrics(7, "app-1,app-2")).containsEntry("app-1", metrics);
+
+        verify(jobMetricsService).getJobMetrics(7, java.util.List.of("app-1", "app-2"));
+        verify(client, org.mockito.Mockito.never()).get(anyLong(), anyString(), anyMap(), any());
+    }
+
+    @Test
+    void jobMetricsReturnsEmptyMapForEmptyAppIds() {
+        when(jobMetricsService.getJobMetrics(7, java.util.List.of())).thenReturn(Map.of());
+
+        assertThat(controller.jobMetrics(7, "")).isEmpty();
+    }
+
+    @Test
+    void jobMetricsHidesDorisFailureDetails() {
+        when(jobMetricsService.getJobMetrics(7, java.util.List.of("app-1")))
+                .thenThrow(new IllegalStateException("SELECT secret FROM otel_metrics_sum"));
+
+        assertThatThrownBy(() -> controller.jobMetrics(7, "app-1"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("任务指标查询失败")
+                .hasMessageNotContaining("SELECT secret");
     }
 }

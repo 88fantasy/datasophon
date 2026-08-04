@@ -81,7 +81,7 @@ public class OtelMetricsQueryService {
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause", "cmd", "db", "direction");
+                    "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
@@ -148,12 +148,27 @@ public class OtelMetricsQueryService {
                                                Map<String, String> filtersRegex,
                                                Map<String, String> filtersNotRegex,
                                                long evalTime, String table) {
+        return queryInstant(clusterId, metric, agg, scale, instance, job, filters, filtersNe,
+                filtersRegex, filtersNotRegex, evalTime, table, List.of());
+    }
+
+    /** Instant aggregate query grouped by selected attributes (for example {@code app_id}). */
+    public PrometheusVectorResult queryInstant(Integer clusterId, String metric,
+                                               String agg, double scale,
+                                               String instance, String job,
+                                               Map<String, String> filters,
+                                               Map<String, String> filtersNe,
+                                               Map<String, String> filtersRegex,
+                                               Map<String, String> filtersNotRegex,
+                                               long evalTime, String table,
+                                               List<String> groupByKeys) {
         JdbcClient client = createReader(clusterId);
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
         boolean hasAgg = agg != null && !agg.isBlank();
+        List<String> validGroupBy = toValidGroupBy(groupByKeys);
         String sql = hasAgg
                 ? buildInstantAggSql(agg, needsFilter(instance), needsFilter(job),
-                        filters, filtersNe, filtersRegex, filtersNotRegex, otelTable)
+                        filters, filtersNe, filtersRegex, filtersNotRegex, validGroupBy, otelTable)
                 : buildInstantNoAggSql(needsFilter(instance), needsFilter(job),
                         filters, filtersNe, filtersRegex, filtersNotRegex, otelTable);
 
@@ -456,15 +471,27 @@ public class OtelMetricsQueryService {
                                      Map<String, String> filters, Map<String, String> filtersNe,
                                      Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
                                      String otelTable) {
+        return buildInstantAggSql(agg, filterInstance, filterJob, filters, filtersNe,
+                filtersRegex, filtersNotRegex, List.of(), otelTable);
+    }
+
+    static String buildInstantAggSql(String agg, boolean filterInstance, boolean filterJob,
+                                     Map<String, String> filters, Map<String, String> filtersNe,
+                                     Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                     List<String> groupByKeys, String otelTable) {
         String fn = "max".equalsIgnoreCase(agg) ? "MAX" : ("count".equalsIgnoreCase(agg) ? "COUNT" : "SUM");
+        String extraSelect = buildExtraSelect(groupByKeys);
+        String extraCols = buildExtraCols(groupByKeys);
         StringBuilder inner = new StringBuilder(
-                "SELECT value\n"
+                "SELECT value" + extraCols + "\n"
                         + "FROM (\n"
-                        + "  SELECT value,\n"
+                        + "  SELECT value"
+                        + extraSelect
+                        + ",\n"
                         + "         ROW_NUMBER() OVER(\n"
                         + "           PARTITION BY " + INST_EXPR + ",\n"
                         + "                        " + JOB_EXPR
-                        + buildExtraGroupBy(INSTANT_SERIES_ATTR_KEYS)
+                        + buildExtraGroupBy(instantSeriesAttrKeys(groupByKeys))
                         + "\n"
                         + "           ORDER BY timestamp DESC\n"
                         + "         ) AS rn\n"
@@ -475,7 +502,21 @@ public class OtelMetricsQueryService {
         appendAttrFilters(inner, filters, filtersNe, filtersRegex, filtersNotRegex);
         inner.append("\n) latest\n"
                 + "WHERE rn = 1");
-        return "SELECT " + fn + "(value) AS value, UNIX_TIMESTAMP(NOW()) AS ts FROM (" + inner + ") t";
+        return "SELECT " + (groupByKeys.isEmpty() ? "" : String.join(", ", groupByKeys) + ", ")
+                + fn + "(value) AS value, UNIX_TIMESTAMP(NOW()) AS ts FROM (" + inner + ") t"
+                + (groupByKeys.isEmpty() ? "" : " GROUP BY " + String.join(", ", groupByKeys));
+    }
+
+    private static List<String> instantSeriesAttrKeys(List<String> groupByKeys) {
+        if (groupByKeys.isEmpty()) {
+            return INSTANT_SERIES_ATTR_KEYS;
+        }
+        LinkedHashSet<String> keys = new LinkedHashSet<>(INSTANT_SERIES_ATTR_KEYS);
+        keys.addAll(groupByKeys);
+        if (groupByKeys.contains("app_id")) {
+            keys.add("instance");
+        }
+        return List.copyOf(keys);
     }
 
     static String buildRangeSummarySql() {

@@ -23,12 +23,19 @@
 package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.lineage.metrics.LineageJobMetricsService;
+import com.datasophon.api.lineage.metrics.LineageJobMetricsService.JobMetrics;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient.NodeInjection;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +43,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -44,10 +52,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 @RequestMapping("/v2/lineage")
 public class LineageV2Controller extends ApiController {
 
-    private final GravitinoLineageClient client;
+    private static final Logger log = LoggerFactory.getLogger(LineageV2Controller.class);
 
-    public LineageV2Controller(GravitinoLineageClient client) {
+    private final GravitinoLineageClient client;
+    private final LineageJobMetricsService jobMetricsService;
+
+    public LineageV2Controller(GravitinoLineageClient client,
+                               LineageJobMetricsService jobMetricsService) {
         this.client = client;
+        this.jobMetricsService = jobMetricsService;
     }
 
     @GetMapping("/tables")
@@ -95,6 +108,19 @@ public class LineageV2Controller extends ApiController {
     @GetMapping("/job/{id}")
     public JsonNode job(@RequestParam long clusterId, @PathVariable long id) {
         return client.getJob(clusterId, id);
+    }
+
+    @GetMapping("/job-metrics")
+    public Map<String, JobMetrics> jobMetrics(
+                                              @RequestParam Integer clusterId,
+                                              @RequestParam(required = false, defaultValue = "") String appIds) {
+        List<String> requestedAppIds = appIds.isBlank() ? List.of() : Arrays.asList(appIds.split(","));
+        try {
+            return jobMetricsService.getJobMetrics(clusterId, requestedAppIds);
+        } catch (Exception e) {
+            log.error("Lineage job metrics query failed: clusterId={} reason={}", clusterId, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "任务指标查询失败");
+        }
     }
 
     @GetMapping("/impact")
