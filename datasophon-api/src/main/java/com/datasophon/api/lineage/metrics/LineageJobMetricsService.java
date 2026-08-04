@@ -36,6 +36,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /** Reads live Spark job metrics from the cluster's Doris OTel store. */
@@ -57,6 +58,7 @@ public class LineageJobMetricsService {
     private final OtelMetricsQueryService queryService;
     private final Clock clock;
 
+    @Autowired
     public LineageJobMetricsService(OtelMetricsQueryService queryService) {
         this(queryService, Clock.systemUTC());
     }

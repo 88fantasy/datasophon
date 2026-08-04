@@ -52,6 +52,7 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 class LineageJobMetricsServiceTest {
 
@@ -133,6 +134,18 @@ class LineageJobMetricsServiceTest {
         verify(queryService).queryRange(eq(7), eq("spark_executor_recordsWritten"), eq("1m"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()), eq(List.of("app_id")),
                 eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(15L), eq("sum"), eq(0.5), isNull());
+    }
+
+    @Test
+    void springContextSelectsTheProductionConstructor() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(OtelMetricsQueryService.class, () -> queryService);
+            context.register(LineageJobMetricsService.class);
+
+            context.refresh();
+
+            assertThat(context.getBean(LineageJobMetricsService.class)).isNotNull();
+        }
     }
 
     private void stubInstant(String metric, String table, Number value) {
