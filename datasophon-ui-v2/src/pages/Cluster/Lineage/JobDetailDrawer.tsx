@@ -122,14 +122,12 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                   <Descriptions.Item
                     label={t('pages.lineage.jobDrawer.rowCount', '写入行数')}
                   >
-                    {job.lastRowCount === null
-                      ? '-'
-                      : formatRowCount(job.lastRowCount)}
+                    {formatRowCount(job.lastRowCount)}
                   </Descriptions.Item>
                   <Descriptions.Item
                     label={t('pages.lineage.jobDrawer.bytes', '写入字节')}
                   >
-                    {job.lastBytes === null ? '-' : formatBytes(job.lastBytes)}
+                    {formatBytes(job.lastBytes)}
                   </Descriptions.Item>
                   <Descriptions.Item
                     label={t('pages.lineage.jobDrawer.lastRunAt', '最近运行时间')}

@@ -17,15 +17,7 @@ export interface G6NodeData {
   [key: string]: unknown;
 }
 
-export interface G6JobNodeData {
-  jobId: number;
-  edgeId: number;
-  flowType: string;
-  jobName: string;
-  lastRowCount: number | null;
-  lastBytes: number | null;
-  lastRunAt: string | null;
-  runningAppId: string | null;
+export interface G6JobNodeData extends GraphJob {
   isJobNode: true;
   isRoot: false;
   isCollapsedPlaceholder: false;

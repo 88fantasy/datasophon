@@ -5,8 +5,8 @@ function formatUnit(value: number): string {
   return String(Number(value.toFixed(1)));
 }
 
-export function formatRowCount(value: number): string {
-  if (!Number.isFinite(value)) return '-';
+export function formatRowCount(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '-';
   const absolute = Math.abs(value);
   if (absolute >= 100_000_000) {
     return `${formatUnit(value / 100_000_000)}亿行`;
@@ -17,8 +17,8 @@ export function formatRowCount(value: number): string {
   return `${new Intl.NumberFormat('zh-CN').format(value)}行`;
 }
 
-export function formatBytes(value: number): string {
-  if (!Number.isFinite(value)) return '-';
+export function formatBytes(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '-';
   if (value === 0) return '0 B';
 
   const base = 1024;

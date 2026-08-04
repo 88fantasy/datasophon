@@ -64,6 +64,9 @@ describe('lineage formatters', () => {
   });
 
   it('renders missing row counts as unavailable instead of NaN', () => {
-    expect(formatRowCount(undefined as unknown as number)).toBe('-');
+    expect(formatRowCount(undefined)).toBe('-');
+    expect(formatRowCount(null)).toBe('-');
+    expect(formatBytes(undefined)).toBe('-');
+    expect(formatBytes(null)).toBe('-');
   });
 });
