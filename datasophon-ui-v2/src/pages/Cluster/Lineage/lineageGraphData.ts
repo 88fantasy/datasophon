@@ -78,6 +78,14 @@ export function toG6Data(
       impactHighlighted: impactHighlightIds?.has(node.id) ?? false,
     },
   }));
+  const jobDestinations = new Map<number, Set<number>>();
+  graph.edges.forEach((edge) => {
+    edge.jobs.forEach((job) => {
+      const destinations = jobDestinations.get(job.jobId) ?? new Set<number>();
+      destinations.add(edge.dst);
+      jobDestinations.set(job.jobId, destinations);
+    });
+  });
   const jobNodes = new Map<number, G6Node>();
   const edgeMap = new Map<string, G6Edge>();
 
@@ -96,10 +104,15 @@ export function toG6Data(
     edge.jobs.forEach((job) => {
       const jobNodeId = `job:${job.jobId}`;
       if (!jobNodes.has(job.jobId)) {
+        const hasMultipleDestinations =
+          (jobDestinations.get(job.jobId)?.size ?? 0) > 1;
         jobNodes.set(job.jobId, {
           id: jobNodeId,
           data: {
             ...job,
+            lastRowCount: hasMultipleDestinations ? null : job.lastRowCount,
+            lastBytes: hasMultipleDestinations ? null : job.lastBytes,
+            lastRunAt: hasMultipleDestinations ? null : job.lastRunAt,
             isJobNode: true,
             isRoot: false,
             isCollapsedPlaceholder: false,

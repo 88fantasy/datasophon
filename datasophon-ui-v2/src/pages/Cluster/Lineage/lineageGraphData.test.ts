@@ -15,7 +15,11 @@ function node(id: number, canonicalName: string, dwLayer: string | null = null):
   };
 }
 
-function job(jobId: number, edgeId: number): GraphJob {
+function job(
+  jobId: number,
+  edgeId: number,
+  overrides: Partial<GraphJob> = {},
+): GraphJob {
   return {
     jobId,
     edgeId,
@@ -25,6 +29,7 @@ function job(jobId: number, edgeId: number): GraphJob {
     lastBytes: 64_000_000,
     lastRunAt: '2026-08-04T03:01:44Z',
     runningAppId: null,
+    ...overrides,
   };
 }
 
@@ -77,9 +82,9 @@ describe('toG6Data', () => {
         node(4, 'output_c'),
       ],
       edges: [
-        { src: 1, dst: 2, jobs: [job(10, 100)] },
-        { src: 1, dst: 3, jobs: [job(10, 101)] },
-        { src: 1, dst: 4, jobs: [job(10, 102)] },
+        { src: 1, dst: 2, jobs: [job(10, 100, { lastRowCount: 10, lastBytes: 100, runningAppId: 'app-10' })] },
+        { src: 1, dst: 3, jobs: [job(10, 101, { lastRowCount: 20, lastBytes: 200, runningAppId: 'app-10' })] },
+        { src: 1, dst: 4, jobs: [job(10, 102, { lastRowCount: 30, lastBytes: 300, runningAppId: 'app-10' })] },
       ],
       collapsed: [],
       truncated: false,
@@ -97,6 +102,33 @@ describe('toG6Data', () => {
         .map((edge) => edge.target)
         .sort(),
     ).toEqual(['2', '3', '4']);
+    expect(nodes.find((node) => node.id === 'job:10')?.data).toMatchObject({
+      lastRowCount: null,
+      lastBytes: null,
+      lastRunAt: null,
+      jobName: 'daily_orders_etl',
+      runningAppId: 'app-10',
+    });
+  });
+
+  it('keeps job statistics when multiple sources point to the same destination', () => {
+    const graph: GraphData = {
+      nodes: [node(1, 'source_a'), node(2, 'output'), node(3, 'source_b')],
+      edges: [
+        { src: 1, dst: 2, jobs: [job(10, 100)] },
+        { src: 3, dst: 2, jobs: [job(10, 101)] },
+      ],
+      collapsed: [],
+      truncated: false,
+    };
+
+    const { nodes } = toG6Data(graph, 1);
+
+    expect(nodes.find((node) => node.id === 'job:10')?.data).toMatchObject({
+      lastRowCount: 1_200_000,
+      lastBytes: 64_000_000,
+      lastRunAt: '2026-08-04T03:01:44Z',
+    });
   });
 
   it('adds a dashed placeholder node for each collapsed entry, oriented by direction', () => {

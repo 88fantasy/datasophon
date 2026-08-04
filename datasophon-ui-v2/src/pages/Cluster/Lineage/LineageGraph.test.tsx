@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
 import LineageGraph from './LineageGraph';
@@ -308,8 +308,12 @@ describe('LineageGraph', () => {
   it('opens the job detail drawer when a job node is clicked', async () => {
     vi.mocked(getGraph).mockResolvedValue({
       data: {
-        nodes: [node(1, 'a'), node(2, 'b')],
-        edges: [{ src: 1, dst: 2, jobs: [job()] }],
+        nodes: [node(1, 'a'), node(2, 'b'), node(3, 'c'), node(4, 'd')],
+        edges: [
+          { src: 1, dst: 2, jobs: [job({ edgeId: 100, lastRowCount: 10, lastBytes: 10 })] },
+          { src: 1, dst: 3, jobs: [job({ edgeId: 101, lastRowCount: 20, lastBytes: 20 })] },
+          { src: 1, dst: 4, jobs: [job({ edgeId: 102, lastRowCount: 30, lastBytes: 30 })] },
+        ],
         collapsed: [],
         truncated: false,
       },
@@ -335,6 +339,13 @@ describe('LineageGraph', () => {
     graphInstances[0].handlers['node:click']({ target: { id: 'job:10' } });
 
     expect(await screen.findByText('关联作业')).toBeInTheDocument();
+    const statistics = screen.getByText('最近运行统计').closest('.ant-descriptions');
+    expect(statistics).not.toBeNull();
+    expect(within(statistics as HTMLElement).getAllByText('-')).toHaveLength(3);
+    [10, 20, 30].forEach((value) => {
+      expect(screen.queryByText(`${value}行`)).not.toBeInTheDocument();
+      expect(screen.queryByText(`${value} B`)).not.toBeInTheDocument();
+    });
     await waitFor(() =>
       expect(getJob).toHaveBeenCalledWith(7, 10, {
         skipErrorHandler: true,
