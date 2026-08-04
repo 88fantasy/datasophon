@@ -53,6 +53,7 @@ public class OtelcolTemplateTest {
         data.put("dorisDatabase", "otel");
         data.put("dorisUser", "otel_collector");
         data.put("otelSelfMetricsPort", "8888");
+        data.put("carbonReceiverPort", "2003");
         data.put("localScrapeJobsYaml", localScrapeJobsYaml);
         StringWriter out = new StringWriter();
         tpl.process(data, out);
@@ -126,7 +127,7 @@ public class OtelcolTemplateTest {
 
         assertTrue(yaml.contains("prometheus/local:"));
         assertTrue(yaml.contains("job_name: 'DataNode'"));
-        assertTrue(yaml.contains("receivers: [otlp, prometheus/self, prometheus/local]"));
+        assertTrue(yaml.contains("receivers: [otlp, carbon, prometheus/self, prometheus/local]"));
     }
 
     @Test
@@ -134,7 +135,7 @@ public class OtelcolTemplateTest {
         String yaml = render("doris", "");
 
         assertTrue(!yaml.contains("prometheus/local:"));
-        assertTrue(yaml.contains("receivers: [otlp, prometheus/self]"));
+        assertTrue(yaml.contains("receivers: [otlp, carbon, prometheus/self]"));
     }
 
     @Test
@@ -145,7 +146,30 @@ public class OtelcolTemplateTest {
 
         assertTrue(yaml.contains("prometheus/local:"));
         assertTrue(yaml.contains("exporters: [awss3]"));
-        assertTrue(yaml.contains("receivers: [otlp, prometheus/self, prometheus/local]"));
+        assertTrue(yaml.contains("receivers: [otlp, carbon, prometheus/self, prometheus/local]"));
+    }
+
+    @Test
+    public void renders_carbon_receiver_for_spark_metrics() throws Exception {
+        String yaml = render("doris");
+
+        assertTrue(yaml.contains("carbon:\n    endpoint: 127.0.0.1:2003\n    transport: tcp"));
+        assertTrue(yaml.contains("name_separator: \"_\""));
+
+        int threadpool = yaml.indexOf("name_prefix: \"spark_threadpool\"");
+        int filesystem = yaml.indexOf("name_prefix: \"spark_fs\"");
+        int executor = yaml.indexOf("name_prefix: \"spark_executor\"");
+        int dagscheduler = yaml.indexOf("name_prefix: \"spark_dagscheduler\"");
+        int fallback = yaml.indexOf("name_prefix: \"spark_unmatched\"");
+        assertTrue(threadpool >= 0 && threadpool < filesystem);
+        assertTrue(filesystem < executor);
+        assertTrue(executor < dagscheduler);
+        assertTrue(dagscheduler < fallback, "spark_unmatched fallback must be the last carbon regex rule");
+
+        assertTrue(yaml.contains("name_prefix: \"spark_executor\"\n            type: cumulative"));
+        assertTrue(yaml.contains("name_prefix: \"spark_dagscheduler\"\n            type: gauge"));
+        assertTrue(yaml.contains("name_prefix: \"spark_unmatched\"\n            type: gauge"));
+        assertTrue(yaml.contains("receivers: [otlp, carbon, prometheus/self]"));
     }
 
     @Test

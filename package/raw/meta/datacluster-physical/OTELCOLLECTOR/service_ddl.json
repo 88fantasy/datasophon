@@ -25,7 +25,7 @@
       "cardinality": "1+",
       "logFile": "logs/otelcol.out",
       "jmxPortParam": "otelSelfMetricsPort",
-      "portParams": ["otelSelfMetricsPort"],
+      "portParams": ["otelSelfMetricsPort", "carbonReceiverPort"],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
@@ -88,7 +88,8 @@
           "dorisUser",
           "nodeHostname",
           "rawYaml",
-          "otelSelfMetricsPort"
+          "otelSelfMetricsPort",
+          "carbonReceiverPort"
         ]
       },
       {
@@ -118,6 +119,19 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "8888"
+    },
+    {
+      "name": "carbonReceiverPort",
+      "port": true,
+      "label": "Carbon 接收端口",
+      "description": "接收 Spark GraphiteSink 推送的任务运行指标（仅绑定本机）",
+      "required": true,
+      "enabled": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "2003"
     },
     {
       "name": "rawYaml",

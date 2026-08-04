@@ -12,6 +12,29 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  carbon:
+    endpoint: 127.0.0.1:${carbonReceiverPort}
+    transport: tcp
+    parser:
+      type: regex
+      config:
+        name_separator: "_"
+        rules:
+          - regexp: '^(?P<key_app_id>[^.]+)\.(?P<key_instance>[^.]+)\.executor\.threadpool\.(?P<name_0>[a-zA-Z_]+)$'
+            name_prefix: "spark_threadpool"
+            type: gauge
+          - regexp: '^(?P<key_app_id>[^.]+)\.(?P<key_instance>[^.]+)\.executor\.filesystem\.(?P<key_scheme>[^.]+)\.(?P<name_0>[a-zA-Z_]+)$'
+            name_prefix: "spark_fs"
+            type: gauge
+          - regexp: '^(?P<key_app_id>[^.]+)\.(?P<key_instance>[^.]+)\.executor\.(?P<name_0>[a-zA-Z]+)\.count$'
+            name_prefix: "spark_executor"
+            type: cumulative
+          - regexp: '^(?P<key_app_id>[^.]+)\.(?P<key_instance>[^.]+)\.DAGScheduler\.(?P<name_0>[a-zA-Z]+)\.(?P<name_1>[a-zA-Z]+)$'
+            name_prefix: "spark_dagscheduler"
+            type: gauge
+          - regexp: '^(?P<key_app_id>[^.]+)\.(?P<key_instance>[^.]+)\.(?P<name_0>.+)$'
+            name_prefix: "spark_unmatched"
+            type: gauge
   prometheus/self:
     config:
       scrape_configs:
@@ -121,7 +144,7 @@ service:
                 port: ${otelSelfMetricsPort}
   pipelines:
     metrics:
-      receivers: [otlp, prometheus/self<#if (localScrapeJobsYaml!"")?has_content>, prometheus/local</#if>]
+      receivers: [otlp, carbon, prometheus/self<#if (localScrapeJobsYaml!"")?has_content>, prometheus/local</#if>]
       processors: [memory_limiter, filter/drop_empty_summary, filter/drop_zk_decaying_summary, batch]
       exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
     metrics/host:
