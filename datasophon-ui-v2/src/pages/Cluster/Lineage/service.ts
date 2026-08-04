@@ -15,6 +15,11 @@ export interface GraphJob {
   jobId: number;
   edgeId: number;
   flowType: string;
+  jobName: string;
+  lastRowCount: number | null;
+  lastBytes: number | null;
+  lastRunAt: string | null;
+  runningAppId: string | null;
 }
 
 export interface LogicalEdge {

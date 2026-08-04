@@ -1,4 +1,9 @@
-import type { CollapsedNode, GraphData, GraphJob, LogicalEdge } from './service';
+import type {
+  CollapsedNode,
+  GraphData,
+  GraphJob,
+  LogicalEdge,
+} from './service';
 
 export interface G6NodeData {
   canonicalName: string;
@@ -12,6 +17,22 @@ export interface G6NodeData {
   [key: string]: unknown;
 }
 
+export interface G6JobNodeData {
+  jobId: number;
+  edgeId: number;
+  flowType: string;
+  jobName: string;
+  lastRowCount: number | null;
+  lastBytes: number | null;
+  lastRunAt: string | null;
+  runningAppId: string | null;
+  isJobNode: true;
+  isRoot: false;
+  isCollapsedPlaceholder: false;
+  impactHighlighted: false;
+  [key: string]: unknown;
+}
+
 export interface G6EdgeData {
   jobs: GraphJob[];
   isCollapsedLink: boolean;
@@ -20,7 +41,7 @@ export interface G6EdgeData {
 
 export interface G6Node {
   id: string;
-  data: G6NodeData;
+  data: G6NodeData | G6JobNodeData;
   [key: string]: unknown;
 }
 
@@ -57,12 +78,60 @@ export function toG6Data(
       impactHighlighted: impactHighlightIds?.has(node.id) ?? false,
     },
   }));
-  const edges: G6Edge[] = graph.edges.map((edge) => ({
-    id: `${edge.src}->${edge.dst}`,
-    source: String(edge.src),
-    target: String(edge.dst),
-    data: { jobs: edge.jobs, isCollapsedLink: false },
-  }));
+  const jobNodes = new Map<number, G6Node>();
+  const edgeMap = new Map<string, G6Edge>();
+
+  graph.edges.forEach((edge) => {
+    if (edge.jobs.length === 0) {
+      const edgeId = `${edge.src}->${edge.dst}`;
+      edgeMap.set(edgeId, {
+        id: edgeId,
+        source: String(edge.src),
+        target: String(edge.dst),
+        data: { jobs: [], isCollapsedLink: false },
+      });
+      return;
+    }
+
+    edge.jobs.forEach((job) => {
+      const jobNodeId = `job:${job.jobId}`;
+      if (!jobNodes.has(job.jobId)) {
+        jobNodes.set(job.jobId, {
+          id: jobNodeId,
+          data: {
+            ...job,
+            isJobNode: true,
+            isRoot: false,
+            isCollapsedPlaceholder: false,
+            impactHighlighted: false,
+          },
+        });
+      }
+
+      const inputEdgeId = `${edge.src}->${jobNodeId}`;
+      if (!edgeMap.has(inputEdgeId)) {
+        edgeMap.set(inputEdgeId, {
+          id: inputEdgeId,
+          source: String(edge.src),
+          target: jobNodeId,
+          data: { jobs: [job], isCollapsedLink: false },
+        });
+      }
+
+      const outputEdgeId = `${jobNodeId}->${edge.dst}`;
+      if (!edgeMap.has(outputEdgeId)) {
+        edgeMap.set(outputEdgeId, {
+          id: outputEdgeId,
+          source: jobNodeId,
+          target: String(edge.dst),
+          data: { jobs: [job], isCollapsedLink: false },
+        });
+      }
+    });
+  });
+
+  nodes.push(...jobNodes.values());
+  const edges = Array.from(edgeMap.values());
 
   graph.collapsed.forEach((collapsed) => {
     const placeholderId = `collapsed:${collapsed.token}`;
