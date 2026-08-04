@@ -1,14 +1,19 @@
 package com.datasophon.worker.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import freemarker.cache.FileTemplateLoader;
 import freemarker.template.Configuration;
@@ -216,6 +221,57 @@ public class OtelcolTemplateTest {
         assertTrue(yaml.contains("filter/drop_zk_decaying_summary:"));
         assertTrue(yaml.contains(
                 "name == \"election_time\" or name == \"fsynctime\" or name == \"snapshottime\" or name == \"jvm_pause_time_ms\""));
+    }
+
+    /**
+     * P2：OTELCOLLECTOR 的 carbonReceiverPort 与 SPARK3 的 spark.metrics.conf.*.sink.graphite.port
+     * 分属两份独立渲染的 service_ddl.json，Datasophon 的 DDL 参数机制不支持跨服务引用同一个值。
+     * 运维只改前者、忘了同步改后者，会导致 Spark 推送的端口与 collector 监听的端口不一致——而且
+     * 因为 carbon receiver 的兜底规则也是在"端口对了"的前提下才生效，连 spark_unmatched_*
+     * 都不会出现，完全没有告警痕迹（E8/T8 的兜底只兜"报文匹配不上规则"，兜不了"报文根本没收到"）。
+     * 这条测试是这个约束下能给出的最强保障：默认值不一致时立刻测试报红。
+     */
+    @Test
+    public void carbonReceiverPortDefaultMatchesSparkGraphiteSinkPortDefault() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        File otelcolDdl = Path.of("..", "package", "raw", "meta", "datacluster-physical",
+                "OTELCOLLECTOR", "service_ddl.json").toFile();
+        File sparkDdl = Path.of("..", "package", "raw", "meta", "datacluster-physical",
+                "SPARK3", "service_ddl.json").toFile();
+
+        String carbonReceiverPort = findParameterDefault(mapper.readTree(otelcolDdl), "carbonReceiverPort");
+        String graphiteSinkPort = findSparkDefaultsConfValue(mapper.readTree(sparkDdl),
+                "spark.metrics.conf.*.sink.graphite.port");
+
+        assertNotNull(carbonReceiverPort, "OTELCOLLECTOR.carbonReceiverPort not found in service_ddl.json");
+        assertNotNull(graphiteSinkPort, "SPARK3 sink.graphite.port not found in custom.spark.defaults.conf");
+        assertEquals(carbonReceiverPort, graphiteSinkPort,
+                "carbonReceiverPort 与 spark.metrics.conf.*.sink.graphite.port 的默认值必须一致，"
+                        + "否则 Spark 推送指标会静默丢失（不产生任何错误或 spark_unmatched_* 兜底数据）");
+    }
+
+    private static String findParameterDefault(JsonNode ddl, String parameterName) {
+        for (JsonNode parameter : ddl.path("parameters")) {
+            if (parameterName.equals(parameter.path("name").asText())) {
+                return parameter.path("defaultValue").asText(null);
+            }
+        }
+        return null;
+    }
+
+    /** custom.spark.defaults.conf 的 defaultValue 是 [{key: value}, ...] 形式，按 key 找值。 */
+    private static String findSparkDefaultsConfValue(JsonNode ddl, String key) {
+        for (JsonNode parameter : ddl.path("parameters")) {
+            if (!"custom.spark.defaults.conf".equals(parameter.path("name").asText())) {
+                continue;
+            }
+            for (JsonNode entry : parameter.path("defaultValue")) {
+                if (entry.has(key)) {
+                    return entry.path(key).asText(null);
+                }
+            }
+        }
+        return null;
     }
 
     @Test

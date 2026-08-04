@@ -2,8 +2,10 @@ import type {
   CollapsedNode,
   GraphData,
   GraphJob,
+  JobMetricsByAppId,
   LogicalEdge,
 } from './service';
+import { formatRunningJobLabel } from './lineageFormatters';
 
 export interface G6NodeData {
   canonicalName: string;
@@ -17,11 +19,22 @@ export interface G6NodeData {
   [key: string]: unknown;
 }
 
+/** 作业写入某一张目标表的统计（一个多输出作业对应多条）。 */
+export interface JobOutputStat {
+  dstNodeId: number;
+  dstName: string;
+  lastRowCount: number | null;
+  lastBytes: number | null;
+  lastRunAt: string | null;
+}
+
 export interface G6JobNodeData extends GraphJob {
   isJobNode: true;
   isRoot: false;
   isCollapsedPlaceholder: false;
   impactHighlighted: false;
+  /** 按目标表拆分的统计；单输出作业下与节点本身的 lastRowCount 等字段一致，长度为 1。 */
+  outputs: JobOutputStat[];
   [key: string]: unknown;
 }
 
@@ -70,12 +83,23 @@ export function toG6Data(
       impactHighlighted: impactHighlightIds?.has(node.id) ?? false,
     },
   }));
-  const jobDestinations = new Map<number, Set<number>>();
+  const nodeNameById = new Map<number, string>(
+    graph.nodes.map((node) => [node.id, node.canonicalName]),
+  );
+  // 按 (jobId, dstNodeId) 去重：同一个 job 若因多个源表汇入同一目标表而出现在多条边上，
+  // 后端为该 dst 算出的统计是同一份，这里不能把它重复计入 outputs。
+  const jobOutputs = new Map<number, Map<number, JobOutputStat>>();
   graph.edges.forEach((edge) => {
     edge.jobs.forEach((job) => {
-      const destinations = jobDestinations.get(job.jobId) ?? new Set<number>();
-      destinations.add(edge.dst);
-      jobDestinations.set(job.jobId, destinations);
+      const outputsByDst = jobOutputs.get(job.jobId) ?? new Map<number, JobOutputStat>();
+      outputsByDst.set(edge.dst, {
+        dstNodeId: edge.dst,
+        dstName: nodeNameById.get(edge.dst) ?? String(edge.dst),
+        lastRowCount: job.lastRowCount,
+        lastBytes: job.lastBytes,
+        lastRunAt: job.lastRunAt,
+      });
+      jobOutputs.set(job.jobId, outputsByDst);
     });
   });
   const jobNodes = new Map<number, G6Node>();
@@ -96,8 +120,8 @@ export function toG6Data(
     edge.jobs.forEach((job) => {
       const jobNodeId = `job:${job.jobId}`;
       if (!jobNodes.has(job.jobId)) {
-        const hasMultipleDestinations =
-          (jobDestinations.get(job.jobId)?.size ?? 0) > 1;
+        const outputs = Array.from(jobOutputs.get(job.jobId)?.values() ?? []);
+        const hasMultipleDestinations = outputs.length > 1;
         jobNodes.set(job.jobId, {
           id: jobNodeId,
           data: {
@@ -105,6 +129,7 @@ export function toG6Data(
             lastRowCount: hasMultipleDestinations ? null : job.lastRowCount,
             lastBytes: hasMultipleDestinations ? null : job.lastBytes,
             lastRunAt: hasMultipleDestinations ? null : job.lastRunAt,
+            outputs,
             isJobNode: true,
             isRoot: false,
             isCollapsedPlaceholder: false,
@@ -166,6 +191,35 @@ export function toG6Data(
   });
 
   return { nodes, edges };
+}
+
+/**
+ * 把作业运行态指标注入 G6 数据（原地修改）：运行中任务节点补 `runtimeLabel`/`recordsWrittenRate`，
+ * 其进出边补 `isRunningLink`。是否处于运行中只看 `runningAppId`（来自图快照，与指标轮询是否已
+ * 返回无关）；`jobMetrics` 决定的只是标签上具体的进度数字。
+ *
+ * 抽成纯函数供 `LineageGraph.tsx` 的增量刷新 effect 复用，避免运行态注入逻辑散落在组件里
+ * 与建图逻辑重复一份、后续改一处忘改另一处。
+ */
+export function applyJobMetrics(
+  data: G6GraphData,
+  jobMetrics: JobMetricsByAppId,
+): void {
+  const runningJobNodeIds = new Set<string>();
+  data.nodes.forEach((node) => {
+    if (!node.data.isJobNode || !node.data.runningAppId) return;
+    runningJobNodeIds.add(node.id);
+    const metrics = jobMetrics[String(node.data.runningAppId)];
+    if (metrics) {
+      node.data.runtimeLabel = formatRunningJobLabel(metrics);
+      node.data.recordsWrittenRate = metrics.recordsWrittenRate;
+    }
+  });
+  data.edges.forEach((edge) => {
+    edge.data.isRunningLink =
+      !edge.data.isCollapsedLink &&
+      (runningJobNodeIds.has(edge.source) || runningJobNodeIds.has(edge.target));
+  });
 }
 
 /**

@@ -245,6 +245,16 @@ export function getJobRateHistory(clusterId: number, appId: string) {
   const end = Math.floor(Date.now() / 1000);
   const start = end - 3600;
 
+  // 这里没有直接复用 monitor/_shared/dorisService.ts 的 queryDorisRange：它返回未解包的
+  // ApiResponse 且不支持 skipErrorHandler，而这个查询失败时要静默显示"暂无速率数据"、
+  // 不弹全局错误提示——强行复用会引入 lineage→monitor 的跨页耦合，还得在外面把这个行为
+  // 重新包一层，不如就这样直接发请求。
+  //
+  // groupBy=app_id 与 T6 端点（LineageJobMetricsService）的口径保持一致：carbon receiver
+  // 目前不写 resource attributes，所有 Spark 指标的 (service_instance_id, service_name)
+  // 恰好同值，不传 groupBy 也能算对，但这依赖一个未来可能失效的偶然条件——一旦给 carbon
+  // 链路加 resource processor，同一 app 的多条 series 就会被 SQL 默认分组拆开。显式声明
+  // 分组维度，行为不再依赖这个偶然条件。
   return unwrap(
     request<ApiEnvelope<PrometheusMatrix>>(
       '/observability/otel/metrics/query_range',
@@ -256,6 +266,7 @@ export function getJobRateHistory(clusterId: number, appId: string) {
           rateWindow: '1m',
           table: 'sum',
           filters: `app_id:${appId}`,
+          groupBy: 'app_id',
           start,
           end,
           step: 60,

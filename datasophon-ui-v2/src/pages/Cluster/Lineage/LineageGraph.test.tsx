@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
 import LineageGraph from './LineageGraph';
@@ -34,6 +35,11 @@ const { graphInstances } = vi.hoisted(() => ({
       }>;
     };
     options: Record<string, unknown>;
+    render: Mock;
+    fitView: Mock;
+    updateNodeData: (updates: Array<{ id: string; data?: Record<string, unknown> }>) => void;
+    updateEdgeData: (updates: Array<{ id: string; data?: Record<string, unknown> }>) => void;
+    draw: () => Promise<void>;
   }>,
 }));
 
@@ -76,9 +82,9 @@ vi.mock('@antv/g6', () => ({
       this.handlers[name] = handler;
     }
 
-    render() {}
+    render = vi.fn();
 
-    fitView() {}
+    fitView = vi.fn();
 
     setData(data: {
       nodes?: Array<{ id: string; data?: Record<string, unknown> }>;
@@ -103,6 +109,26 @@ vi.mock('@antv/g6', () => ({
         }
       ).data.edges;
       return edges?.find((edge) => edge.id === id);
+    }
+
+    // P1 增量刷新路径用到的 G6 v5 API：按 id 把 data 浅合并进已有节点/边（与真实 G6 的
+    // mergeElementsData 语义一致），不整体替换、不触发 render/fitView。
+    updateNodeData(updates: Array<{ id: string; data?: Record<string, unknown> }>) {
+      updates.forEach((update) => {
+        const node = this.data.nodes?.find((item) => item.id === update.id);
+        if (node) node.data = { ...(node.data ?? {}), ...(update.data ?? {}) };
+      });
+    }
+
+    updateEdgeData(updates: Array<{ id: string; data?: Record<string, unknown> }>) {
+      updates.forEach((update) => {
+        const edge = this.data.edges?.find((item) => item.id === update.id);
+        if (edge) edge.data = { ...(edge.data ?? {}), ...(update.data ?? {}) };
+      });
+    }
+
+    draw() {
+      return Promise.resolve();
     }
 
     destroy() {}
@@ -347,7 +373,7 @@ describe('LineageGraph', () => {
     await waitFor(() => expect(getJob).toHaveBeenCalledWith(7, 10, { skipErrorHandler: true }));
   });
 
-  it('opens the job detail drawer when a job node is clicked', async () => {
+  it('opens the job detail drawer with a per-target-table breakdown for a multi-output job, matching the value shown via its own edge', async () => {
     vi.mocked(getGraph).mockResolvedValue({
       data: {
         nodes: [node(1, 'a'), node(2, 'b'), node(3, 'c'), node(4, 'd')],
@@ -378,21 +404,36 @@ describe('LineageGraph', () => {
     renderGraphPage();
     await waitFor(() => expect(graphInstances).toHaveLength(1));
 
+    // P6：点任务节点应按目标表分行显示各自的真实统计，而不是像修复前那样把节点自身的
+    // 统计置空、全部显示 "-"（那是因为一个节点只能持有一份统计，而后端算的是按 dst 的）。
     graphInstances[0].handlers['node:click']({ target: { id: 'job:10' } });
-
     expect(await screen.findByText('关联作业')).toBeInTheDocument();
-    const statistics = screen.getByText('最近运行统计').closest('.ant-descriptions');
-    expect(statistics).not.toBeNull();
-    expect(within(statistics as HTMLElement).getAllByText('-')).toHaveLength(3);
-    [10, 20, 30].forEach((value) => {
-      expect(screen.queryByText(`${value}行`)).not.toBeInTheDocument();
-      expect(screen.queryByText(`${value} B`)).not.toBeInTheDocument();
-    });
+    const table = screen.getByText('最近运行统计').closest('.ant-table');
+    expect(table).not.toBeNull();
+    const withinTable = within(table as HTMLElement);
+    expect(withinTable.getByText('b')).toBeInTheDocument();
+    expect(withinTable.getByText('c')).toBeInTheDocument();
+    expect(withinTable.getByText('d')).toBeInTheDocument();
+    expect(withinTable.getByText('10行')).toBeInTheDocument();
+    expect(withinTable.getByText('10 B')).toBeInTheDocument();
+    expect(withinTable.getByText('20行')).toBeInTheDocument();
+    expect(withinTable.getByText('20 B')).toBeInTheDocument();
+    expect(withinTable.getByText('30行')).toBeInTheDocument();
+    expect(withinTable.getByText('30 B')).toBeInTheDocument();
     await waitFor(() =>
-      expect(getJob).toHaveBeenCalledWith(7, 10, {
-        skipErrorHandler: true,
-      }),
+      expect(getJob).toHaveBeenCalledWith(7, 10, { skipErrorHandler: true }),
     );
+
+    // 同一个作业，改点它写往 "c" 表的那条出边：应看到与上面表格里 "c" 那一行完全一致的
+    // 20行/20 B，而不是修复前那种"节点显示 - 、边显示真值"的自相矛盾。
+    graphInstances[0].handlers['edge:click']({ target: { id: 'job:10->3' } });
+    // "20行"/"20 B" 在切换前就已经作为表格里 c 那一行的文本存在——不能用 findByText 简单查一次
+    // 就断言通过，那样会在 React 还没提交这次点击触发的重渲染前，误命中切换前遗留的旧节点。
+    // 用 waitFor 连着 closest 断言一起重试，直到真正落到新渲染出的 Descriptions 结构上。
+    await waitFor(() => {
+      expect(screen.getByText('20行').closest('.ant-descriptions')).not.toBeNull();
+      expect(screen.getByText('20 B').closest('.ant-descriptions')).not.toBeNull();
+    });
   });
 
   it('does not poll job metrics when the graph has no running jobs', async () => {
@@ -461,6 +502,12 @@ describe('LineageGraph', () => {
           ?.runtimeLabel,
       ).toBe('✓12 task · 6000万行'),
     );
+
+    // P1 回归：runtimeLabel 的这次变化来自指标轮询（初次 refresh()，与之后每 15 秒的
+    // 轮询走同一条增量更新 effect），不是走 setData/render 重新建图那条路径，
+    // 所以 fitView 不应该被再次调用——否则用户手动缩放/拖动过的视角会被拉回默认状态。
+    expect(graph.render).toHaveBeenCalledTimes(1);
+    expect(graph.fitView).toHaveBeenCalledTimes(1);
 
     const intervalIndex = setIntervalSpy.mock.calls.findIndex(
       ([, delay]) => delay === 15_000,

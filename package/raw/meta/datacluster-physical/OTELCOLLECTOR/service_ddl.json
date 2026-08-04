@@ -124,7 +124,7 @@
       "name": "carbonReceiverPort",
       "port": true,
       "label": "Carbon 接收端口",
-      "description": "接收 Spark GraphiteSink 推送的任务运行指标（仅绑定本机）",
+      "description": "接收 Spark GraphiteSink 推送的任务运行指标（仅绑定本机）。修改本端口后必须同步修改 SPARK3 服务的 spark.metrics.conf.*.sink.graphite.port 参数为同一个值，两者不一致会导致任务流速指标静默丢失（既不报错也不产生 spark_unmatched_* 兜底数据）。",
       "required": true,
       "enabled": true,
       "configType": "map",

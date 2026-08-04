@@ -121,7 +121,10 @@ class LineageJobMetricsServiceTest {
     }
 
     @Test
-    void queriesFiftyAppsInSixBatches() {
+    void queriesEachMetricOnceForCappedAppIds() {
+        // 名字曾叫 queriesFiftyAppsInSixBatches，但服务里没有任何分批逻辑——55 个 appId 会被
+        // normalizeAppIds 截断到 50 个后拼进同一个 regex，一次查完。这里验证的是「5 个 instant
+        // 指标各查一次 + 1 次 range」，times(5) 里的 5 = 指标个数，不是批次数。
         List<String> requested = IntStream.rangeClosed(1, 55)
                 .mapToObj(i -> "app-" + i)
                 .toList();

@@ -109,6 +109,30 @@ describe('toG6Data', () => {
       jobName: 'daily_orders_etl',
       runningAppId: 'app-10',
     });
+    // P6：节点本身的统计置空后，Drawer 靠这份按目标表拆分的 outputs 显示真实数字，
+    // 不能三个都是 null——否则点节点看到的和点某条出边看到的会互相矛盾。
+    const outputs = nodes.find((n) => n.id === 'job:10')?.data.outputs as Array<{
+      dstNodeId: number;
+      dstName: string;
+      lastRowCount: number | null;
+      lastBytes: number | null;
+    }>;
+    expect(outputs.map((o) => o.dstNodeId).sort()).toEqual([2, 3, 4]);
+    expect(outputs.find((o) => o.dstNodeId === 2)).toMatchObject({
+      dstName: 'output_a',
+      lastRowCount: 10,
+      lastBytes: 100,
+    });
+    expect(outputs.find((o) => o.dstNodeId === 3)).toMatchObject({
+      dstName: 'output_b',
+      lastRowCount: 20,
+      lastBytes: 200,
+    });
+    expect(outputs.find((o) => o.dstNodeId === 4)).toMatchObject({
+      dstName: 'output_c',
+      lastRowCount: 30,
+      lastBytes: 300,
+    });
   });
 
   it('keeps job statistics when multiple sources point to the same destination', () => {
@@ -124,11 +148,16 @@ describe('toG6Data', () => {
 
     const { nodes } = toG6Data(graph, 1);
 
-    expect(nodes.find((node) => node.id === 'job:10')?.data).toMatchObject({
+    const jobNodeData = nodes.find((node) => node.id === 'job:10')?.data;
+    expect(jobNodeData).toMatchObject({
       lastRowCount: 1_200_000,
       lastBytes: 64_000_000,
       lastRunAt: '2026-08-04T03:01:44Z',
     });
+    // 两条边指向同一张目标表，不应该在 outputs 里重复计一份——否则 hasMultipleDestinations
+    // 会被误判为 true，节点自身的统计也会被错误地置空。
+    expect(jobNodeData?.outputs).toHaveLength(1);
+    expect((jobNodeData?.outputs as Array<{ dstNodeId: number }>)[0].dstNodeId).toBe(2);
   });
 
   it('adds a dashed placeholder node for each collapsed entry, oriented by direction', () => {

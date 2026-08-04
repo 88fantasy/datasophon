@@ -277,6 +277,7 @@ describe('Lineage proxy response contract', () => {
         rateWindow: '1m',
         table: 'sum',
         filters: 'app_id:application_1',
+        groupBy: 'app_id',
         start: 1_799_996_400,
         end: 1_800_000_000,
         step: 60,

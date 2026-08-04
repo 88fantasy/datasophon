@@ -1,7 +1,8 @@
 import { Line } from '@ant-design/plots';
 import { useIntl } from '@umijs/max';
-import { Descriptions, Drawer, Empty, Spin, Tag, Typography } from 'antd';
+import { Descriptions, Drawer, Empty, Spin, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import type { JobOutputStat } from './lineageGraphData';
 import {
   formatBytes,
   formatRecordsRate,
@@ -13,7 +14,8 @@ import type { GraphJob, JobDetail, JobRatePoint } from './service';
 
 interface JobDetailDrawerProps {
   clusterId: number;
-  jobs: GraphJob[];
+  /** 单输出（或按边点开）的作业不带 outputs；多输出作业按节点点开时带按目标表拆分的统计。 */
+  jobs: Array<GraphJob & { outputs?: JobOutputStat[] }>;
   open: boolean;
   onClose: () => void;
 }
@@ -110,31 +112,67 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                   {detail?.jobName ?? job.jobName}
                 </Typography.Text>{' '}
                 <Tag>{job.flowType}</Tag>
-                <Descriptions
-                  column={1}
-                  size="small"
-                  style={{ marginTop: 8 }}
-                  title={t(
-                    'pages.lineage.jobDrawer.latestStatistics',
-                    '最近运行统计',
-                  )}
-                >
-                  <Descriptions.Item
-                    label={t('pages.lineage.jobDrawer.rowCount', '写入行数')}
+                {job.outputs && job.outputs.length > 1 ? (
+                  // 多输出作业：节点本身不持有单一统计（见 lineageGraphData.ts），
+                  // 按目标表分行显示，避免与点击某条出边时看到的单值互相矛盾。
+                  <Table<JobOutputStat>
+                    size="small"
+                    style={{ marginTop: 8 }}
+                    pagination={false}
+                    rowKey="dstNodeId"
+                    dataSource={job.outputs}
+                    title={() =>
+                      t('pages.lineage.jobDrawer.latestStatistics', '最近运行统计')
+                    }
+                    columns={[
+                      {
+                        title: t('pages.lineage.jobDrawer.targetTable', '目标表'),
+                        dataIndex: 'dstName',
+                      },
+                      {
+                        title: t('pages.lineage.jobDrawer.rowCount', '写入行数'),
+                        dataIndex: 'lastRowCount',
+                        render: (value: number | null) => formatRowCount(value),
+                      },
+                      {
+                        title: t('pages.lineage.jobDrawer.bytes', '写入字节'),
+                        dataIndex: 'lastBytes',
+                        render: (value: number | null) => formatBytes(value),
+                      },
+                      {
+                        title: t('pages.lineage.jobDrawer.lastRunAt', '最近运行时间'),
+                        dataIndex: 'lastRunAt',
+                        render: (value: string | null) => formatRunAt(value),
+                      },
+                    ]}
+                  />
+                ) : (
+                  <Descriptions
+                    column={1}
+                    size="small"
+                    style={{ marginTop: 8 }}
+                    title={t(
+                      'pages.lineage.jobDrawer.latestStatistics',
+                      '最近运行统计',
+                    )}
                   >
-                    {formatRowCount(job.lastRowCount)}
-                  </Descriptions.Item>
-                  <Descriptions.Item
-                    label={t('pages.lineage.jobDrawer.bytes', '写入字节')}
-                  >
-                    {formatBytes(job.lastBytes)}
-                  </Descriptions.Item>
-                  <Descriptions.Item
-                    label={t('pages.lineage.jobDrawer.lastRunAt', '最近运行时间')}
-                  >
-                    {formatRunAt(job.lastRunAt)}
-                  </Descriptions.Item>
-                </Descriptions>
+                    <Descriptions.Item
+                      label={t('pages.lineage.jobDrawer.rowCount', '写入行数')}
+                    >
+                      {formatRowCount(job.lastRowCount)}
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={t('pages.lineage.jobDrawer.bytes', '写入字节')}
+                    >
+                      {formatBytes(job.lastBytes)}
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={t('pages.lineage.jobDrawer.lastRunAt', '最近运行时间')}
+                    >
+                      {formatRunAt(job.lastRunAt)}
+                    </Descriptions.Item>
+                  </Descriptions>
+                )}
                 {job.runningAppId && (
                   <div style={{ marginTop: 12 }}>
                     <Typography.Title level={5}>

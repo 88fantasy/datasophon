@@ -17,12 +17,9 @@ import ClusterContext from '@/context/ClusterContext';
 import FreshnessAlert from './FreshnessAlert';
 import { FLOWING_LINEAGE_EDGE } from './flowingLineageEdge';
 import JobDetailDrawer from './JobDetailDrawer';
-import {
-  formatJobNodeLabel,
-  formatRecordsRate,
-  formatRunningJobLabel,
-} from './lineageFormatters';
-import { mergeExpansion, toG6Data } from './lineageGraphData';
+import { formatJobNodeLabel, formatRecordsRate } from './lineageFormatters';
+import { applyJobMetrics, mergeExpansion, toG6Data } from './lineageGraphData';
+import type { JobOutputStat } from './lineageGraphData';
 import { getGraph, getImpact, getJobMetrics, listTables } from './service';
 import type {
   GraphData,
@@ -32,6 +29,9 @@ import type {
   SnapshotFreshness,
   SourceFreshness,
 } from './service';
+
+/** Drawer 需要的作业信息：单输出走原有字段，多输出额外带 outputs 按目标表拆分统计。 */
+type SelectedJob = GraphJob & { outputs?: JobOutputStat[] };
 
 const LAYER_FILL: Record<string, string> = {
   CDC: '#fafafa',
@@ -81,7 +81,7 @@ const LineageGraph: React.FC = () => {
   }>();
   const [loading, setLoading] = useState(false);
   const [impactUnavailable, setImpactUnavailable] = useState(false);
-  const [selectedJobs, setSelectedJobs] = useState<GraphJob[]>();
+  const [selectedJobs, setSelectedJobs] = useState<SelectedJob[]>();
   const [jobMetrics, setJobMetrics] = useState<JobMetricsByAppId>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -216,23 +216,11 @@ const LineageGraph: React.FC = () => {
       graphRef.current = undefined;
       return;
     }
+    // 本 effect 只管图的"结构"（节点/边集合），故意不依赖 jobMetrics——运行态指标由下面
+    // 单独的 effect 增量刷新。两者若合成一个 effect，每 15 秒的指标轮询都会触发
+    // setData+render()+fitView()，把用户手动缩放/拖动过的视角强制拉回默认状态
+    // （P1：runningAppId 存在与否只看 graphData 本身，这里天然已经是最新值）。
     const data = toG6Data(graphData, rootNodeId, impactHighlightIds);
-    const runningJobNodeIds = new Set<string>();
-    data.nodes.forEach((node) => {
-      if (!node.data.isJobNode || !node.data.runningAppId) return;
-      runningJobNodeIds.add(node.id);
-      const metrics = jobMetrics[String(node.data.runningAppId)];
-      if (metrics) {
-        node.data.runtimeLabel = formatRunningJobLabel(metrics);
-        node.data.recordsWrittenRate = metrics.recordsWrittenRate;
-      }
-    });
-    data.edges.forEach((edge) => {
-      edge.data.isRunningLink =
-        !edge.data.isCollapsedLink &&
-        (runningJobNodeIds.has(edge.source) ||
-          runningJobNodeIds.has(edge.target));
-    });
     const renderGraph = (graph: Graph) => {
       void Promise.resolve(graph.render()).then(() => graph.fitView());
     };
@@ -353,7 +341,7 @@ const LineageGraph: React.FC = () => {
         return;
       }
       if (id.startsWith('job:') && nodeDatum?.data?.isJobNode) {
-        setSelectedJobs([nodeDatum.data as unknown as GraphJob]);
+        setSelectedJobs([nodeDatum.data as unknown as SelectedJob]);
       }
     });
     graph.on('edge:click', (event: IElementEvent) => {
@@ -365,13 +353,35 @@ const LineageGraph: React.FC = () => {
     });
     graphRef.current = graph;
     renderGraph(graph);
-  }, [
-    graphData,
-    rootNodeId,
-    impactHighlightIds,
-    handleExpand,
-    jobMetrics,
-  ]);
+  }, [graphData, rootNodeId, impactHighlightIds, handleExpand]);
+
+  // 运行态指标的增量刷新：只更新已存在节点/边的 data，不 setData/render/fitView，
+  // 保持用户当前的缩放与拖动位置（P1）。首次建图后紧跟着也会跑一次，把刚拉到的
+  // jobMetrics 补上去，不需要在上面的建图 effect 里重复注入一份。
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph || !graphData) return;
+    const data = toG6Data(graphData, rootNodeId, impactHighlightIds);
+    applyJobMetrics(data, jobMetrics);
+    const nodeUpdates = data.nodes
+      .filter((node) => node.data.isJobNode && node.data.runningAppId)
+      .map((node) => ({
+        id: node.id,
+        data: {
+          runtimeLabel: node.data.runtimeLabel,
+          recordsWrittenRate: node.data.recordsWrittenRate,
+        },
+      }));
+    const edgeUpdates = data.edges
+      .filter((edge) => !edge.data.isCollapsedLink)
+      .map((edge) => ({
+        id: edge.id,
+        data: { isRunningLink: edge.data.isRunningLink },
+      }));
+    if (nodeUpdates.length > 0) graph.updateNodeData(nodeUpdates);
+    if (edgeUpdates.length > 0) graph.updateEdgeData(edgeUpdates);
+    void graph.draw();
+  }, [jobMetrics, graphData, rootNodeId, impactHighlightIds]);
 
   useEffect(() => {
     return () => {
