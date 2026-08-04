@@ -60,10 +60,11 @@
   {
     "service": "GRAVITINO",
     "arch": "common",
-    "packageName": "gravitino-1.3.0-bin.tar.gz",
-    "decompressPackageName": "gravitino-1.3.0-bin",
-    "downloadUrl": "https://downloads.apache.org/gravitino/1.3.0/gravitino-1.3.0-bin.tar.gz",
-    "status": "public"
+    "packageName": "gravitino-1.3.1-SNAPSHOT-bin.tar.gz",
+    "decompressPackageName": "gravitino-1.3.1-SNAPSHOT-bin",
+    "downloadUrl": null,
+    "status": "private",
+    "note": "由 /Users/pro/IdeaProjects/gravitino 本地源码构建，包含 MySQL 血缘持久化与 Guava 查询"
   },
   {
     "service": "HDFS",

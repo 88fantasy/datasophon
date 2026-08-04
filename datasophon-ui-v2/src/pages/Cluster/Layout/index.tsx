@@ -5,6 +5,7 @@ import {
   DesktopOutlined,
   FundProjectionScreenOutlined,
   HistoryOutlined,
+  NodeIndexOutlined,
   PlusOutlined,
   ReloadOutlined,
   SettingOutlined,
@@ -301,6 +302,14 @@ const ClusterLayout: React.FC = () => {
         label: intl.formatMessage({
           id: 'menu.observability-collector',
           defaultMessage: '链路跟踪',
+        }),
+      },
+      {
+        key: `/cluster/${numericClusterId}/lineage`,
+        icon: <NodeIndexOutlined />,
+        label: intl.formatMessage({
+          id: 'menu.lineage',
+          defaultMessage: '数据血缘',
         }),
       },
       {

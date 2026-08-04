@@ -52,6 +52,30 @@
             "from": "spark-doris-connector-spark-3.4-25.2.0.jar",
             "to": "jars/spark-doris-connector-spark-3.4-25.2.0.jar"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/gravitino-spark-connector-runtime-3.5_2.12-1.3.1-SNAPSHOT.jar",
+            "to": "jars/gravitino-spark-connector-runtime-3.5_2.12-1.3.1-SNAPSHOT.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/openlineage-spark_2.12-1.29.0.jar",
+            "to": "jars/openlineage-spark_2.12-1.29.0.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/paimon-spark-3.5-1.2.0.jar",
+            "to": "jars/paimon-spark-3.5-1.2.0.jar"
+          }
         }
       ]
     }
@@ -81,6 +105,17 @@
     ]
   },
   "parameters": [
+    {
+      "name": "gravitinoLineageToken",
+      "label": "Gravitino 血缘/联邦静态 Token",
+      "description": "由 GRAVITINO 的 gravitino.authenticator.oauth.defaultSignKey 铸造的静态 JWT；同时用于 Spark 的 Gravitino catalog 联邦认证（spark.sql.gravitino.authType=token）与 OpenLineage 血缘事件上报，两处必须填同一个值。铸造步骤见部署手册。",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
     {
       "name": "SPARK_DIST_CLASSPATH",
       "label": "spark加载Classpath路径",
@@ -161,22 +196,31 @@
           "spark.sql.uri": "${HIVE.hive.metastore.uris}"
         },
         {
-          "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,org.apache.paimon.spark.extensions.PaimonSparkSessionExtensions"
+          "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
         },
         {
           "spark.sql.warehouse.dir": "/user/hive/warehouse"
         },
         {
-          "spark.sql.catalog.paimon_catalog": "org.apache.paimon.spark.SparkCatalog"
+          "spark.plugins": "org.apache.gravitino.spark.connector.plugin.GravitinoSparkPlugin"
         },
         {
-          "spark.sql.catalog.paimon_catalog.metastore": "hive"
+          "spark.sql.gravitino.uri": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}"
         },
         {
-          "spark.sql.catalog.paimon_catalog.uri": "${HIVE.hive.metastore.uris}"
+          "spark.sql.gravitino.metalake": "datasophon"
         },
         {
-          "spark.sql.catalog.paimon_catalog.warehouse": "hdfs:///user/hive/warehouse"
+          "spark.sql.gravitino.enablePaimonSupport": "true"
+        },
+        {
+          "spark.sql.gravitino.enableOpenLineageDatasetProperties": "true"
+        },
+        {
+          "spark.sql.gravitino.authType": "token"
+        },
+        {
+          "spark.sql.gravitino.token.value": "${SPARK3.gravitinoLineageToken}"
         },
         {
           "spark.sql.catalog.doris_catalog": "org.apache.doris.spark.catalog.DorisTableCatalog"
@@ -192,6 +236,45 @@
         },
         {
           "spark.sql.catalog.doris_catalog.doris.password": "${DORIS.root_password}"
+        },
+        {
+          "spark.extraListeners": "io.openlineage.spark.agent.OpenLineageSparkListener"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.class": "org.apache.spark.metrics.sink.GraphiteSink"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.host": "127.0.0.1"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.port": "2003"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.period": "10"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.unit": "seconds"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.regex": "\\.executor\\.(records|bytes|shuffle|threadpool|filesystem)|\\.DAGScheduler\\.(job|stage)\\."
+        },
+        {
+          "spark.openlineage.capturedProperties": "spark.master,spark.app.name,spark.app.id"
+        },
+        {
+          "spark.openlineage.transport.type": "http"
+        },
+        {
+          "spark.openlineage.transport.url": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}"
+        },
+        {
+          "spark.openlineage.transport.endpoint": "/api/lineage"
+        },
+        {
+          "spark.openlineage.transport.auth.type": "api_key"
+        },
+        {
+          "spark.openlineage.transport.auth.apiKey": "${SPARK3.gravitinoLineageToken}"
         }
       ]
     }

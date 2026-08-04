@@ -38,6 +38,12 @@
 8. **NTP 先于所有 K8s 组件部署**
    sealos 安装 etcd 时校验节点时间差 < 2s，若 NTP 未同步会导致 etcd 集群建立失败。
 
+9. **血缘写入口由 Gravitino 独立承载**
+   `datasophon-api` 不再持有血缘 Master 租约，也不接收 OpenLineage 事件；浏览器查询接口仅按
+   `clusterId` 代理到唯一运行的 `GravitinoServer`。升级 Datasophon 前先确认 Gravitino
+   `/api/lineage/readiness` 可用；升级后验证 `/ddh/api/v2/lineage/readiness?clusterId=<id>`。
+   未安装、无运行实例、多个运行实例或 Gravitino 不可达时，代理按约定返回 HTTP 503。
+
 ---
 
 ## 一、节点角色与组件清单
@@ -358,7 +364,7 @@ spec:
 | 5 | w1 端口 | `ss -lntup \| grep -E '10250\|80\|443'` | 全部 LISTEN |
 | 6 | containerd mirror | 在 m1/w1：`cat /etc/containerd/certs.d/docker.io/hosts.toml` | 含 `http://<mw1>:8083` |
 | 7 | 镜像拉取链路 | 在 w1：`crictl pull docker.io/library/busybox:latest` | 从 mw1:8083 拉取，不走公网 |
-| 8 | datasophon-api 健康 | `curl http://mw1:8080/ddh/actuator/health` | `{"status":"UP"}` |
+| 8 | 血缘 Master 就绪 | `curl -fs http://mw1:8080/ddh/v2/lineage/readiness \| jq -e '.data.owner == true and .data.status == "UP"'` | HTTP 200，租约状态为 `UP` |
 | 9 | MySQL 联通 | `mysql -h mw1 -P 3306 -u datasophon -p` | 登录成功，列出 `datasophon` 库 |
 | 10 | Kuboard 访问 | 浏览器打开 `http://m1:30080` | 出现登录页 |
 | 11 | 离线 yum 源 | 在 m1/w1：`yum repolist` | 仅列出指向 `mw1:8081` 的仓库 |

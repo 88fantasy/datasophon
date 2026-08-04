@@ -171,6 +171,33 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void sparkAppRate_filtersAppIdAndCalculatesPerSeriesBeforeSumming() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("app_id");
+        String sql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, Map.of("app_id", "app-1"), null, List.of(), "otel_metrics_sum");
+
+        assertThat(sql)
+                .contains("CAST(attributes['app_id'] AS STRING) = :af_app_id")
+                .contains("PARTITION BY instance, job, series_key")
+                .contains("GROUP BY instance, job, series_key, bucket")
+                .contains("SUM(rate) AS value");
+    }
+
+    @Test
+    void sparkAppInstant_groupsAppsButKeepsExecutorInstanceInSeriesIdentity() {
+        String sql = OtelMetricsQueryService.buildInstantAggSql(
+                "sum", false, false, null, null,
+                Map.of("app_id", "^(?:app-1|app-2)$"), null, List.of("app_id"), "otel_metrics_sum");
+
+        assertThat(sql)
+                .contains("CAST(attributes['app_id'] AS STRING) AS app_id")
+                .contains("CAST(attributes['instance'] AS STRING)")
+                .contains("CAST(attributes['app_id'] AS STRING)")
+                .contains("SELECT app_id, SUM(value) AS value")
+                .contains("GROUP BY app_id");
+    }
+
+    @Test
     void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
         String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("gc", "G1 Young Generation"), null,

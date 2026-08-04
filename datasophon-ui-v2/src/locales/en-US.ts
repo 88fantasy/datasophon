@@ -6,6 +6,7 @@ import dorisMonitor from './en-US/dorisMonitor';
 import globalHeader from './en-US/globalHeader';
 import juicefsMonitor from './en-US/juicefsMonitor';
 import additionalMonitor from './en-US/additionalMonitor';
+import lineage from './en-US/lineage';
 import menu from './en-US/menu';
 import nacosMonitor from './en-US/nacosMonitor';
 import network from './en-US/network';
@@ -43,4 +44,5 @@ export default {
   ...juicefsMonitor,
   ...additionalMonitor,
   ...clusterDashboard,
+  ...lineage,
 };

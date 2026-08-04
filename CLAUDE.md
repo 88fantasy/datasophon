@@ -70,6 +70,22 @@ Datasophon 是大数据 / 云原生平台自动化部署与运维管理系统,�
 ./mvnw -pl datasophon-grpc-api -am generate-sources -Pgenerate-proto
 ```
 
+**只跑单个测试类**(避免全量 `./mvnw test`):`datasophon-api` 把 `datasophon-ui-v2` 声明为
+jar 依赖,前端 npm install/build 绑在 `generate-resources` 阶段,直接 `-pl datasophon-api -am`
+跑测试会顺带触发一次前端构建;单独 `-pl datasophon-api`(不带完整模块链)又会报
+`Could not find artifact com.datasophon:datasophon:pom:${revision}`。已验证有效的写法是显式
+列出模块链 + 跳过前端:
+
+```bash
+./mvnw -pl datasophon-common,datasophon-grpc-api,datasophon-ui-v2,datasophon-api \
+  -Dskip.installnodenpm -Dskip.npm \
+  -Dtest=<TestClass> -DfailIfNoTests=false \
+  test
+```
+
+> 若改动后 `test-compile` 报 "Nothing to compile - all classes are up to date" 但预期应有编译
+> 错误,是增量编译误判,用 `clean test-compile` 强制重新检查。
+
 ### 3.3 前端(`datasophon-ui-v2`,当前默认)
 
 Node ≥ 22,包管理器固定 **npm**(`package-lock.json`),lint 用 **Biome**(无 ESLint / Prettier)。详细规则(禁改 `src/services/ant-design-pro/` 生成目录、`npx antd info` 先行等)见 [datasophon-ui-v2/CLAUDE.md](./datasophon-ui-v2/CLAUDE.md)。

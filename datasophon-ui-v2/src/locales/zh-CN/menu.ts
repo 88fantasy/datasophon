@@ -65,5 +65,6 @@ export default {
   'menu.cluster-overview': '集群看板',
   'menu.host': '主机管理',
   'menu.observability-collector': '链路跟踪',
+  'menu.lineage': '数据血缘',
   'menu.user': '用户管理',
 };

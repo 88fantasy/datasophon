@@ -73,8 +73,14 @@ mybatis-plus:
 logging:
   config: classpath:logback-api.xml
 
-
 datasophon:
+  lineage:
+    proxy:
+      connect-timeout-ms: 3000
+      request-timeout-ms: 10000
+      # Datasophon 与 GRAVITINO 的 gravitino.authenticator.oauth.defaultSignKey 铸造出的同一份
+      # 静态 JWT；未配置时 GravitinoLineageClient 启动即失败（fail closed），见 deployment-standalone-doris.md。
+      auth-token: ${DDH_LINEAGE_PROXY_AUTH_TOKEN:}
   migration:
     enable: true
   observability:

@@ -16,16 +16,16 @@
 # limitations under the License.
 #
 # datasophon 生成：整体覆盖官方 conf/gravitino-env.sh，取代其中被注释掉的 export 项。
-# Gravitino 1.3.0 强制要求 Java 17+（bin/common.sh 的 check_java_version 校验，
+# Gravitino 1.3.1-SNAPSHOT 强制要求 Java 17+（bin/common.sh 的 check_java_version 校验，
 # 低于 17 直接 exit 1），节点默认 JAVA_HOME 通常仍指向 JDK8，必须在此显式覆盖。
 
 export JAVA_HOME=${javaHome}
 export GRAVITINO_MEM="${gravitinoMem}"
 
 # bin/common.sh 靠这个变量判断"当前是不是一个正确解压的发行包"，未设置直接 exit 1
-# （官方 conf/gravitino-env.sh 原有 GRAVITINO_VERSION=1.3.0 由 Gradle 构建时写入，
+# （本地源码构建的 conf/gravitino-env.sh 版本由 Gradle 写入，
 # 整体覆盖模板时必须显式保留，否则 start/status/stop 全部启动失败）。
-export GRAVITINO_VERSION=1.3.0
+export GRAVITINO_VERSION=1.3.1-SNAPSHOT
 
 # OTel Java Agent：指标走 Prometheus scrape（见 OtelScrapeConfigBuilder.PATH_OVERRIDES
 # 里的 GravitinoServer -> /prometheus/metrics），此处只上报 trace，metrics/logs 关闭，

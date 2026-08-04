@@ -161,6 +161,15 @@ export default [
             name: 'observability-collector',
             component: './Cluster/ObservabilityCollector',
           },
+          {
+            path: '/cluster/:clusterId/lineage',
+            name: 'lineage',
+            component: './Cluster/Lineage',
+          },
+          {
+            path: '/cluster/:clusterId/lineage/:nodeId',
+            component: './Cluster/Lineage/LineageGraph',
+          },
         ],
       },
     ],

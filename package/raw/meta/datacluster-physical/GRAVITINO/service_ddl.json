@@ -3,7 +3,7 @@
   "type": "MIDDLEWARE",
   "label": "Gravitino",
   "description": "统一元数据管理与开放数据目录",
-  "version": "1.3.0",
+  "version": "1.3.1-SNAPSHOT",
   "sortNum": 82,
   "dependencies": [],
   "roles": [
@@ -105,7 +105,27 @@
           "gravitino.entity.store.relational.jdbcDriver",
           "gravitino.entity.store.relational.jdbcUser",
           "gravitino.entity.store.relational.jdbcPassword",
-          "gravitino.audit.enabled"
+          "gravitino.audit.enabled",
+          "gravitino.authenticators",
+          "gravitino.authenticator.oauth.serviceAudience",
+          "gravitino.authenticator.oauth.defaultSignKey",
+          "gravitino.authenticator.oauth.signAlgorithmType",
+          "gravitino.authenticator.oauth.serverUri",
+          "gravitino.authenticator.oauth.tokenPath",
+          "gravitino.lineage.source",
+          "gravitino.lineage.processorClass",
+          "gravitino.lineage.sinks",
+          "gravitino.lineage.sinkQueueCapacity",
+          "gravitino.lineage.storage.enabled",
+          "gravitino.lineage.storage.jdbcUrl",
+          "gravitino.lineage.storage.jdbcDriver",
+          "gravitino.lineage.storage.jdbcUser",
+          "gravitino.lineage.storage.jdbcPassword",
+          "gravitino.lineage.storage.poolMaxSize",
+          "gravitino.lineage.storage.connectionTimeoutMs",
+          "gravitino.lineage.storage.cacheSyncIntervalSecs",
+          "gravitino.lineage.storage.staleThresholdSecs",
+          "gravitino.lineage.storage.sourceLaggingThresholdSecs"
         ]
       },
       {
@@ -209,7 +229,7 @@
       "type": "input",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "fI5sQ4yQ4fP5"
+      "defaultValue": ""
     },
     {
       "name": "gravitino.audit.enabled",
@@ -223,9 +243,229 @@
       "defaultValue": false
     },
     {
+      "name": "gravitino.authenticators",
+      "label": "认证器列表",
+      "description": "固定为 oauth：静态签名 JWT 校验所有 Bearer 请求，覆盖血缘摄入/查询代理与 Spark catalog 联邦客户端（Spark 侧通过 spark.sql.gravitino.authType=token 携带同一枚 JWT）",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "oauth"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.serviceAudience",
+      "label": "OAuth 服务受众",
+      "description": "静态 JWT 的 aud 声明必须等于此值，铸造 token 时需一并写入",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "GravitinoServer"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.defaultSignKey",
+      "label": "OAuth 静态签名密钥",
+      "description": "HMAC 签名密钥（Base64），用于校验 Datasophon 代理、Spark catalog 联邦客户端与 Spark OpenLineage 上报携带的静态 JWT；各方必须共享同一把密钥，由安装者生成后填入，不得留空或使用示例值",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "gravitino.authenticator.oauth.signAlgorithmType",
+      "label": "OAuth 签名算法",
+      "description": "固定为 HS256，与上面的对称密钥配套",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "HS256"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.serverUri",
+      "label": "OAuth 服务器地址（占位）",
+      "description": "StaticSignKeyValidator 只做本地签名校验，不会真的请求该地址，但要求非空，固定填占位符",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "http://unused.invalid"
+    },
+    {
+      "name": "gravitino.authenticator.oauth.tokenPath",
+      "label": "OAuth token 路径（占位）",
+      "description": "StaticSignKeyValidator 不使用该路径，但要求非空，固定填占位符",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "/unused"
+    },
+    {
+      "name": "gravitino.lineage.source",
+      "label": "血缘事件接收方式",
+      "description": "血缘事件来源，固定走内置 HTTP 接收端点（POST /api/lineage）",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "http"
+    },
+    {
+      "name": "gravitino.lineage.processorClass",
+      "label": "血缘事件处理器",
+      "description": "固定使用 NoopProcessor；血缘持久化与规范化由 Gravitino 1.3.1-SNAPSHOT 的 lineage 模块完成",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "org.apache.gravitino.lineage.processor.NoopProcessor"
+    },
+    {
+      "name": "gravitino.lineage.sinks",
+      "label": "血缘事件 Sink",
+      "description": "保留本地日志 Sink 便于排障；权威持久化由独立 lineage MySQL 完成，不再转发 Datasophon",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "log"
+    },
+    {
+      "name": "gravitino.lineage.sinkQueueCapacity",
+      "label": "血缘事件 Sink 队列容量",
+      "description": "日志 Sink 的异步队列容量",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "10000"
+    },
+    {
+      "name": "gravitino.lineage.storage.enabled",
+      "label": "启用血缘 MySQL 持久化",
+      "description": "启用 Gravitino 权威血缘存储与 Guava 图快照",
+      "required": true,
+      "configType": "map",
+      "type": "switch",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": true
+    },
+    {
+      "name": "gravitino.lineage.storage.jdbcUrl",
+      "label": "血缘库 JDBC URL",
+      "description": "每个 Datasophon 集群必须使用独立 schema；standalone 集群 1 使用 gravitino_lineage_1，禁止复用 Gravitino 元数据库或 Datasophon 血缘表",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/gravitino_lineage_1?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true"
+    },
+    {
+      "name": "gravitino.lineage.storage.jdbcDriver",
+      "label": "血缘库 JDBC 驱动",
+      "description": "独立血缘库 JDBC 驱动类",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "com.mysql.cj.jdbc.Driver"
+    },
+    {
+      "name": "gravitino.lineage.storage.jdbcUser",
+      "label": "血缘库用户",
+      "description": "独立血缘库 JDBC 用户",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "gravitino"
+    },
+    {
+      "name": "gravitino.lineage.storage.jdbcPassword",
+      "label": "血缘库密码",
+      "description": "独立血缘库 JDBC 密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "gravitino.lineage.storage.poolMaxSize",
+      "label": "血缘库连接池上限",
+      "description": "血缘 JDBC 连接池最大连接数",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "10"
+    },
+    {
+      "name": "gravitino.lineage.storage.connectionTimeoutMs",
+      "label": "血缘库连接超时（毫秒）",
+      "description": "获取血缘 JDBC 连接的最大等待时间",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "30000"
+    },
+    {
+      "name": "gravitino.lineage.storage.cacheSyncIntervalSecs",
+      "label": "血缘快照刷新周期（秒）",
+      "description": "周期刷新、写后刷新和手工刷新共用单线程合并机制",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "180"
+    },
+    {
+      "name": "gravitino.lineage.storage.staleThresholdSecs",
+      "label": "血缘快照过期阈值（秒）",
+      "description": "超过该年龄或 generation 落后、刷新失败时将快照标记为 stale",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "600"
+    },
+    {
+      "name": "gravitino.lineage.storage.sourceLaggingThresholdSecs",
+      "label": "血缘事件断流阈值（秒）",
+      "description": "最后接收事件超过该时间后 sourceFreshness 标记为 LAGGING",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "1800"
+    },
+    {
       "name": "javaHome",
       "label": "java安装路径",
-      "description": "java安装路径，Gravitino 1.3.0 强制要求 Java 17+",
+      "description": "java安装路径，Gravitino 1.3.1-SNAPSHOT 强制要求 Java 17+",
       "required": true,
       "configType": "map",
       "type": "input",
@@ -247,8 +487,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "gravitino-1.3.0-bin.tar.gz",
-      "decompressPackageName": "gravitino-1.3.0-bin"
+      "packageName": "gravitino-1.3.1-SNAPSHOT-bin.tar.gz",
+      "decompressPackageName": "gravitino-1.3.1-SNAPSHOT-bin"
     }
   }
 }

@@ -75,6 +75,8 @@
 | 11 | 阶段 A 证据归档与结论 | PASSED WITH DEVIATIONS | PASS / 偏差 / FAIL 审核 | §11.1～§11.3：2026-07-19 归档包存于 `datasophon-deploy-evidence/`（Git 外）；归档前扫描发现并打码两处历史已泄露的真实密码（MySQL root、RustFS secret key，均已 push 未轮换）；最终结论 `PASS WITH DEVIATIONS` |
 | 12 | 阶段 B Hadoop 扩展 | BLOCKED | 单独立项 | 后续计划 |
 | 13 | GRAVITINO 元数据服务接入（独立于阶段 A/B，分支 `feat/gravitino-metadata-service`） | PASSED | 每个真实 bug 修复前均现场核对 | §7.13：2026-07-29 ddh-02 实机 11 步全部通过；过程中发现并修复 4 个真实 bug（Nexus md5 sidecar 缺失、`worker.properties` MySQL 连接信息渲染缺失的平台级缺陷、`gravitino-env.ftl` 巡检路径 javaagent 失效、沙箱 Master jar 版本滞后） |
+| 14 | Gravitino catalog 创建：Paimon fs / Paimon S3 / Doris（独立于阶段 A/B，为平台级数据血缘 epic `feat/data-lineage-l1` 的 L0/L2 采样做准备） | PASSED | — | §7.14：2026-07-30 三个 catalog 均建 schema+建表验证到底；补齐两个内置 provider 缺失的运行时 jar（mysql-connector-j、paimon-s3）；发现并绕过 Paimon S3 catalog 的 `s3.*` 标准 key 失效坑（需同时用 `gravitino.bypass.*` 透传）。**仅是基础设施准备，尚未提交真实 Spark 作业采样 canonical_name** |
+| 15 | Gravitino 血缘权威端替换与 Datasophon 查询代理 | PASSED | 备份、独立 schema、真实 Spark 事件、原生/兼容 API、L3 页面与回滚条件全部核对 | §7.15：2026-08-01 完成 ddh-01/ddh-02 现场升级、真实 Spark/OpenLineage、MySQL/HTTP/重启恢复及 ego-browser 页面验收；旧血缘表行数未增长 |
 
 状态只能取 `NOT STARTED`、`IN PROGRESS`、`BLOCKED`、`PASSED`、`FAILED`、`ROLLED BACK`。
 
@@ -773,6 +775,200 @@ No qualifying bean of type 'org.apache.dolphinscheduler.plugin.storage.api.Stora
 4. **沙箱 `ddh-01` 运行的 `datasophon-api` 是编译自本次 DDL 集成之前的旧 jar**：不含 `OtelScrapeConfigBuilder.java` 里 `GravitinoServer → /prometheus/metrics` 这行改动，`otelcol.yaml` 的 `metrics_path` 落到默认 `/metrics`（该路径返回纯 JSON，非 Prometheus 文本格式，采集会解析失败）。现场重新编译打包（`-Dspotless.check.skip=true` 绕开与本任务无关的历史文档格式违规）、替换 `ddh-01` 的 jar 并重启 Master，验证生效——**这是本次会话的现场热修复，非代码库常态问题**，后续任何人从当前分支重新打包部署即可复现同样效果。
 
 **结论**：Gravitino 1.3.0 单实例（`cardinality: "1"`，不做 HA）作为内置元数据服务纳管验证通过，全链路（安装 → 状态巡检 → MySQL entity store 读写 → Prometheus 指标 → OTel Trace）打通。已知限制：catalog 需在 Gravitino UI 手工创建（平台不自动注册已部署的 DORIS/KAFKA 为 catalog）；`jdbcPassword` 明文放在 DDL 默认值里，与 NACOS/DS 既有约定一致，同属 §11.2 #6 记录的待处理遗留问题；升级到 1.4/2.0 时须重新核对 `bin/gravitino.sh` 里 `append_line` 依赖的绝对行号。
+
+### 7.14 Gravitino 三个 catalog 创建：Paimon filesystem / Paimon S3(RustFS) / Doris（2026-07-30）
+
+与阶段 A/B 主线无关的独立追加——为平台级数据血缘 epic（分支 `feat/data-lineage-l1`）的 L0/L2 采样做基础设施准备：在 §7.13 已装好的 ddh-02 Gravitino 上，经 REST API（非 UI）在既有 metalake `datasophon_verify` 下创建三个真实可用的 catalog，全部走建 schema + 建表验证到底，不只是创建成功。**不涉及部署 SPARK3/HDFS/HIVE（仍属阶段 B，未启动）**，只是给后续接 Spark 跑真实作业提前把 Gravitino 侧的 catalog 准备好。
+
+**缺失运行时依赖，两个内置 catalog provider 目录都要补 jar**（`gravitino-1.3.0-bin/catalogs/<provider>/libs/` 默认只打包了 provider 自身代码，不含外部依赖，这是设计如此，不是打包遗漏）：
+
+1. `catalogs/jdbc-doris/libs/` 缺 MySQL JDBC 驱动——直接复用 `gravitino-1.3.0-bin/libs/mysql-connector-j-8.2.0.jar`（Gravitino 自己连元数据库用的那份，与 DS/NACOS 之前的解法一致）拷贝过去。**catalog provider 用隔离 classloader（`IsolatedClassLoader`），顶层 `libs/` 对 provider 不可见**，必须逐个 provider 目录都放一份。
+2. `catalogs/lakehouse-paimon/libs/` 缺 S3 文件系统实现——本机确认 bundle 的 Paimon 版本是 `1.2.0`（看 `paimon-core-1.2.0.jar`），从 Maven Central 下载对应版本 `org.apache.paimon:paimon-s3:1.2.0`（约 30MB，内含 shaded `hadoop-aws`/AWS SDK，`META-INF/services/org.apache.paimon.fs.FileIOLoader` 注册 `org.apache.paimon.s3.S3Loader`）scp 过去。改完 `./bin/gravitino.sh restart` 生效，未影响已有 `datasophon_verify` metalake。
+
+**Paimon S3 catalog 的一个真实坑**：Gravitino 1.3.0 部署版 `PaimonCatalogPropertiesMetadata` 里 `s3.endpoint`/`s3.access-key`/`s3.secret-key` 这三个"看起来是标准配置项"的 key，**建 catalog 不报错，但真正建 schema 时才炸**——`Missing required options are: s3.access-key, s3.secret-key`，即便建 catalog 时已经传了这两个 key。反复试出来的解法：**必须同时用 `gravitino.bypass.{paimon-inner-key}` 透传前缀重复写一遍**（conf 文件里早有注释说明这个透传机制，但没说标准 S3 key 会失效），保险起见连 Hadoop S3A 层的 key（`gravitino.bypass.fs.s3a.access.key`/`fs.s3a.secret.key`/`fs.s3a.endpoint`）也一起透传。`fs.s3a.path.style.access=true` 必须显式开（RustFS 不支持虚拟主机风格域名解析）；`fs.s3a.connection.ssl.enabled=false`（RustFS S3 端口是明文 HTTP，`192.168.10.131:9040`）。已创建的 bucket：`lineage-paimon-warehouse`（`aws --endpoint-url http://192.168.10.131:9040 s3 mb`，凭据见下方"环境事实"）。
+
+**Gravitino catalog 的 `in-use` 保护**：`DELETE .../catalogs/{name}` 默认拒绝已启用的 catalog（`CatalogInUseException`），需要 `?force=true` 才能删（本次调试 S3 catalog 配置时踩到，重建时用这个绕过，不是 bug）。
+
+**三个 catalog 最终状态**（均在 metalake `datasophon_verify` 下）：
+
+| catalog | provider | 验证方式 | 结果 |
+|---|---|---|---|
+| `paimon_fs` | `lakehouse-paimon`，`catalog-backend=filesystem`，`warehouse=file:///data/paimon-warehouse-fs` | 建 schema `lineage_probe` + 表 `probe_table`，SSH 确认 ddh-02 本地磁盘真实落盘 | 通过 |
+| `paimon_s3` | 同上，`warehouse=s3://lineage-paimon-warehouse/` + 上述 bypass 属性 | 建 schema `lineage_probe2` + 表 `probe_table`，`aws s3 ls --recursive` 确认 RustFS 上真实有 `schema-0` 文件 | 通过 |
+| `doris_catalog` | `jdbc-doris`，`jdbc-url=jdbc:mysql://192.168.10.131:9030/`，`jdbc-driver=com.mysql.cj.jdbc.Driver`（**不是** conf 示例里的老式 `com.mysql.jdbc.Driver`，MySQL Connector/J 8.x 已改包名） | 建 schema `lineage_probe` + 表 `probe_table`（Doris 要求 `distribution` 字段，随手给了 `hash(id)` 单分桶），直连 `mysql -h192.168.10.131 -P9030` 确认库表真实存在 | 通过 |
+
+**结论**：三个 catalog 全部端到端可用，为下一步"真实提交 Spark 作业，经 `openlineage-spark` 采样 Hive/Paimon/Doris 各 catalog 的 `namespace`/`name` 格式"扫清了 Gravitino 侧障碍。**仍未做的部分**：Hive catalog（阶段 B 依赖 Hive metastore，本次未搭）；实际提交 Spark 作业验证 canonical_name 格式本身（这三个 catalog 目前只验证了"能通过 Gravitino Java API 建表"，还没有一条真实 Spark 写路径经过 `openlineage-spark` 监听器）。详见 `docs/data-lineage-L1-交接-2026-07-30.md` §8b 与 memory `project_data_lineage_platform.md`。
+
+### 7.15 Gravitino 血缘权威端替换与 Datasophon 查询代理（2026-08-01）
+
+本批把权威链路切换为 `Spark/OpenLineage → Gravitino → 独立 MySQL schema → Gravitino Guava 快照 → Datasophon 查询代理 → L3 前端`。旧 `t_ddh_lineage_*` 表不迁移、不清理，升级后只读保留用于回滚。
+
+**升级前 Gate**：
+
+1. 记录 ddh-01 Datasophon 与 ddh-02 Gravitino 当前进程、版本、安装目录和配置文件 hash；分别完整备份运行制品与配置，备份目录不得覆盖原目录。
+2. 在 ddh-01 MySQL 新建本集群专用库 `gravitino_lineage_1`，只执行 Gravitino 源码随附的 `scripts/mysql/lineage-schema-1.0.0-mysql.sql`。禁止复用 Datasophon 库、Gravitino entity store 或其他集群血缘库。
+3. 记录旧 `t_ddh_lineage_*` 各表行数作为冻结基线；后续只允许查询对账，禁止 DDL、迁移或清理。
+4. 校验本地构建制品版本为 `1.3.1-SNAPSHOT`，并确认 MySQL JDBC driver、Paimon S3 与 Doris catalog 的现场补充依赖在新目录中保留。
+
+**Gravitino 配置基线**（凭据仅写入现场配置，不进入 Git）：
+
+```properties
+gravitino.lineage.source = http
+gravitino.lineage.sinks = log
+gravitino.lineage.storage.enabled = true
+gravitino.lineage.storage.jdbcUrl = jdbc:mysql://192.168.10.131:3306/gravitino_lineage_1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+gravitino.lineage.storage.jdbcDriver = com.mysql.cj.jdbc.Driver
+gravitino.lineage.storage.jdbcUser = <LINEAGE_DB_USER>
+gravitino.lineage.storage.jdbcPassword = <LINEAGE_DB_PASSWORD>
+gravitino.lineage.storage.poolMaxSize = 10
+gravitino.lineage.storage.connectionTimeoutMs = 30000
+gravitino.lineage.storage.cacheSyncIntervalSecs = 180
+gravitino.lineage.storage.staleThresholdSecs = 600
+gravitino.lineage.storage.sourceLaggingThresholdSecs = 1800
+```
+
+配置中不得再出现 Datasophon HTTP sink、`/ddh/api/v2/lineage/events` URL 或共享 ingest key。Datasophon 只配置连接和请求超时，通过 `clusterId + GravitinoServer` 运行实例实时解析目标地址。
+
+**升级步骤**：停止前再次确认备份可读；解压新 Gravitino 到独立目录，复制现场 catalog 依赖和非血缘配置，追加上述 lineage 配置，切换后启动并先验证 `/api/version`、`/api/lineage/readiness`。随后替换 Datasophon manager 制品，原样保留 `api.local.properties` 等现场凭据文件，启动并验证登录、HTTP `8080`、gRPC `18081` 和 Worker 注册。任一步失败立即停止继续变更，按下述回滚恢复。
+
+**真实事件与验收**：使用 ddh-02 现有 Spark 3.5.8 和 `openlineage-spark` jar 提交确定性输入→输出作业，transport URL 指向 `http://127.0.0.1:8090/api/lineage`。依次核对：
+
+- `lineage_event` 收到 START/COMPLETE，较新 COMPLETE 成为当前运行并使 `lineage_graph_generation` 递增；重复、失败、中止及晚到 COMPLETE 不递增。
+- `lineage_current_run`、`lineage_dataset`、`lineage_edge` 和物理事件引用一致；Gravitino 重启后 generation、当前边和查询结果恢复。
+- Gravitino 八个原生接口与 Datasophon 八个 `/ddh/api/v2/lineage/**` 兼容接口状态码和字段一致，后者补入请求的 `clusterId`。
+- L3 页面完成表清单、过滤分页、图、换根、折叠展开、作业 Drawer、overview、freshness、impact 和手工重建验证，并在 Git 外保存脱敏 HTTP、SQL 和浏览器截图证据。
+- 升级后再次统计旧 `t_ddh_lineage_*` 行数，必须与基线一致。
+
+**回滚**：停止新 Datasophon/Gravitino 进程，恢复两端备份制品和配置并启动；验证旧 Datasophon 登录、旧血缘接口和 Gravitino catalog。`gravitino_lineage_1` 保留用于故障分析，不删除；旧 `t_ddh_lineage_*` 数据不受任何回滚操作影响。现场最终状态和证据位置将在本节追加，不用本地单元测试代替真实 MySQL、HTTP 或浏览器验收。
+
+#### 7.15.1 现场执行结果（2026-08-01，PASSED）
+
+升级前已分别备份两端运行目录：ddh-02 为
+`/data/install_datasophon/gravitino-1.3.0-bin.bak-lineage-20260801101917`，ddh-01 为
+`/data/datasophon-api/datasophon-manager-3.0-SNAPSHOT.bak-lineage-20260801101917`。脱敏证据分别归档到
+`/data/install_datasophon/lineage-evidence-20260801101917` 和
+`/data/datasophon-api/lineage-evidence-20260801101917`。现场密码只存在运行配置和受控 shell 环境，未写入 Git 或证据文件。
+
+本次部署的 Gravitino lineage jar SHA-256 为
+`d50b09c403c776b041003f30bc609e19b7a4be7ce9dd7979fa090622697657e4`，Datasophon manager
+压缩包 SHA-256 为 `a72ee769178256b31fc105adf3e6e1aa0f7b38fc419e298896733da07a875200`。
+现场验收后按最终源码重新构建的 916MB Gravitino distribution SHA-256 为
+`2e61c458878a30e8bd59469dbeee9c52b5694b0519ddaf95bd0a881e2a64f233`。
+Gravitino `/api/version` 返回 `1.3.1-SNAPSHOT`；两端升级后进程、Datasophon HTTP `8080`、Gravitino
+HTTP `8090` 均正常。
+
+独立库 `gravitino_lineage_1` 按源码 schema 初始化，schema 证据 SHA-256 为
+`d4a7716e56fea72ccacc773bfd95ae7c4b7bc15e9f180bd6fb2fcc9bbd923a60`。真实事件和故障分支对账结果如下：
+
+- 重复 COMPLETE、FAIL、ABORT、晚到 COMPLETE 均未错误递增 generation；自环与两个并行当前作业均保留，多作业引用落在同一逻辑边。
+- 一条故意触发持久化异常的事件返回 HTTP `500`，事务回滚后对应 job 行数为 `0`，没有半写数据。
+- 两个 Spark 3.5.8 + `openlineage-spark` 真实 SQL 作业均产生 `file` connector 的 ODS→DWD 边；最终 generation 为 `16`，数据库统计为 datasets `13`、jobs `18`、runs `19`、events `48`、edges `15`。
+- 重启 Gravitino 后 generation `16`、真实 Spark 边及 job 引用均恢复；已发布快照的 target generation 同为 `16` 且 `stale=false`。
+- 将 stale 阈值临时降到 1 秒后，readiness 仍为 `200`，impact 按约定返回 `503`；恢复 600 秒配置后查询恢复正常。
+
+Gravitino 八个原生接口已逐项验证：readiness、tables、graph、overview、table、job、impact 返回
+`200`，rebuild 返回 `202`；非法 depth、未知表、过期 expand token 分别返回 `400`、`404`、`409`。
+Datasophon 登录会话下八个兼容接口得到相同语义，并确认 tables、graph、table、job 响应均补入请求的
+`clusterId=1`。
+
+L3 页面使用 ego-browser 实测通过表清单、overview、freshness/generation、真实 Spark 图、搜索换根、边点击作业
+Drawer、impact 固定 downstream 和手工 rebuild 成功提示。当前现场图少于 300 节点，无法自然触发折叠；300
+配额、整节点折叠及过期展开改由自动化测试和 `409` 接口实测覆盖。浏览器截图已保存在 Git 外证据目录，并同步到本地
+Codex 可视化目录。
+
+升级前后旧表计数始终为：edge `3`、event `3`、generation `1`、node `4`、parse_log `0`，证明新链路未再写
+`t_ddh_lineage_*`。全部 Gate 通过，未触发回滚；上述备份继续保留，回滚步骤已用精确目录固化。
+
+### 7.16 血缘链路鉴权加固（代码审查 S2 + S3，尚未在现场执行）
+
+§7.15 上线时 Gravitino 的 `/api/lineage/**` 处于匿名开放状态（`gravitino.authenticators` 未配置，默认
+`simple`），代码审查发现这是相对旧链路（`apiKey` Bearer 共享密钥）的净退步：任何能连到 `:8090` 的人都可读取
+全量血缘、触发 `rebuild`、注入伪造事件。本节记录修复方案与落地步骤，**尚未在 ddh-01/ddh-02 执行**，执行前需
+要真实凭据（HMAC 密钥），必须向操作者当面获取，不得脑补或复用历史密码。
+
+> **本节已改版（S3 复审）**：初版方案是 `oauth,basic` 双认证器——oauth 保护血缘链路，basic 保护 Spark
+> catalog 联邦（`gravitino-spark-connector` 当时被认为不支持免额外基础设施的静态 Bearer）。复审确认这个
+> 判断是错的：`spark.sql.gravitino.authType` 其实支持 `simple`/`basic`/`oauth2`/`kerberos` 四档，且
+> client-java 早就有 `CustomTokenProvider` + `GravitinoClientBase.Builder.withCustomTokenAuth(...)`
+> 这套静态 Bearer 支持，只是 spark-connector 没接上。已在本地 fork（`/Users/pro/IdeaProjects/gravitino`）
+> 补上第五个 `authType=token` 分支（`StaticTokenProvider extends CustomTokenProvider`，见
+> `spark-connector/spark-common/.../auth/StaticTokenProvider.java`），于是可以把 `basic` 认证器和它背后的
+> Gravitino "服务管理员账号"整个去掉——那个账号密码原本要明文下发到每个 Spark 节点的
+> `spark-defaults.conf`，泄露影响是整个元数据层（不是只影响一个只读服务账号）。
+
+**方案（改版后）**：`gravitino.authenticators = oauth`（单一认证器）。`oauth`（`StaticSignKeyValidator`，
+静态 HMAC 签名 JWT）统一保护两条独立的请求路径：
+
+- `POST /api/lineage`（Spark OpenLineage 摄入）与 Datasophon 代理的所有 GET/POST——走 OpenLineage 库自己
+  的 HTTP transport，`spark.openlineage.transport.auth.apiKey` 直接进 `Authorization` 头；
+- Spark `gravitino-spark-connector` 的 catalog 联邦请求（`spark.sql.gravitino.uri`）——走
+  `spark.sql.gravitino.authType=token` + `spark.sql.gravitino.token.value`，本地 fork 新增的
+  `StaticTokenProvider` 把它包成 `Authorization: Bearer <token>`。
+
+**这两条路径代码上完全独立**（一条是 OpenLineage 库的 transport，一条是 Gravitino client-java 的
+`GravitinoClient.Builder`），本方案让它们指向同一个 DDL 字段的值，但不是同一段代码在发请求——两条都要现场
+验证，不能只测一条就认为另一条也通。
+
+**新增配置字段**（已落地到 `package/raw/meta/datacluster-physical/GRAVITINO/service_ddl.json` 与
+`SPARK3/service_ddl.json`，均遵循"敏感字段默认值留空，安装者填入"的既有约定）：
+
+| 角色 | 字段 | 说明 |
+| --- | --- | --- |
+| GRAVITINO | `gravitino.authenticator.oauth.defaultSignKey` | Base64 HMAC 签名密钥，安装者生成，**不进 Git** |
+| SPARK3 | `gravitinoLineageToken` | 铸造出的静态 JWT；SPARK3 服务内自引用两次（`${SPARK3.gravitinoLineageToken}`），同时喂给 `spark.sql.gravitino.token.value` 与 `spark.openlineage.transport.auth.apiKey` |
+| Datasophon | `datasophon.lineage.proxy.auth-token`（环境变量 `DDH_LINEAGE_PROXY_AUTH_TOKEN`） | 铸造出的静态 JWT，必须与上面 Spark 的 `gravitinoLineageToken` 完全一致 |
+
+**已删除的字段**（basic IdP 专用，不再需要）：`gravitino.authorization.serviceAdmins`、
+`gravitino.server.rest.extensionPackages`、`gravitinoIdpServiceAdminPassword`（连同
+`gravitino-env.ftl` 里对应的 `GRAVITINO_INITIAL_ADMIN_PASSWORD` 导出行）、SPARK3 的
+`spark.sql.gravitino.basic.username`/`.basic.password`。
+
+Datasophon 与 SPARK3 两处的静态 JWT **仍然无法跨服务引用**（它是用 `defaultSignKey` 签名派生出的值，不是
+任何一侧的字面量配置），必须安装者手工填成同一个值——这一点改版前后没有变化。
+
+**JWT 铸造步骤**（拿到 `defaultSignKey` 之后执行一次；`aud` 必须等于 `gravitino.authenticator.oauth.serviceAudience`
+的值，即 DDL 默认的 `GravitinoServer`；`sub` 是随意的机读标识，配合默认 `principalFields=sub`）：
+
+```bash
+python3 -m pip install --user pyjwt  # 已装可跳过
+python3 - <<'PY'
+import jwt, base64
+sign_key = base64.b64decode("<粘贴 defaultSignKey 的 Base64 值>")
+token = jwt.encode(
+    {"sub": "datasophon-lineage-proxy", "aud": "GravitinoServer"},
+    sign_key,
+    algorithm="HS256",
+)
+print(token)
+PY
+```
+
+Datasophon 侧和 Spark 侧可以用同一个 token，也可以各铸造一个（`sub` 不同即可，`StaticSignKeyValidator`
+不区分调用方身份，只校验签名与 `aud`）；本环境为简化运维，两侧共用同一个 token。
+
+> **已知限制，未在本次修复范围内**：这枚 JWT 没有 `exp`，是永不过期的静态凭据；轮换只能靠改
+> `defaultSignKey` 并重启 Gravitino + Datasophon + 所有 Spark 节点，本节未提供轮换脚本。另外
+> `datasophon.lineage.proxy.auth-token` 是 Datasophon 侧全局单例，与 `defaultSignKey` 按集群各填一份的
+> 设计前提冲突——本环境只有一个集群，暴露不出来，多集群场景需要单独修（不在本次改动范围）。
+
+**升级执行顺序**（尚未执行，执行时按 §7.15 同样规则先备份再变更）：
+
+1. 用本地 fork 重新构建 `gravitino-spark-connector-runtime-3.5_2.12-1.3.1-SNAPSHOT.jar`
+   （`./gradlew :spark-connector:spark-common:build`），上传 Nexus 替换旧 jar。
+2. 在 ddh-02 生成 `defaultSignKey`（如 `openssl rand -base64 32`），写入 Gravitino 现场配置，**不进 Git**。
+   不再需要生成 `gravitinoIdpServiceAdminPassword`（该字段已删除）。
+3. 用上述铸造步骤产出静态 JWT，只填一处 `gravitinoLineageToken`（SPARK3）与一处
+   `DDH_LINEAGE_PROXY_AUTH_TOKEN`（Datasophon）。
+4. 重启 Gravitino（`authenticators=oauth`）、Datasophon、（如已运行）Spark 相关进程。
+5. 验证，两条独立路径都要测，不能只测一条：
+   - 从非 Datasophon 节点匿名 `curl http://192.168.10.132:8090/api/lineage/tables`（GET，读）应被拒绝；
+   - 从非 Datasophon 节点匿名 `curl -X POST http://192.168.10.132:8090/api/lineage`（POST，写）也应被拒绝
+     ——这是能被注入伪造血缘的端点，此前版本只验证了 GET；
+   - 匿名访问 catalog 联邦相关端点（如 `curl http://192.168.10.132:8090/api/metalakes/<name>/catalogs`）
+     应被拒绝；
+   - L3 页面通过 Datasophon 会话仍可正常查询；
+   - 提交一次真实 Spark 作业，确认 catalog 联邦（建表）成功 **且** `lineage_event` 表行数增长——两者分别
+     覆盖 catalog 联邦和 OpenLineage 摄入这两条独立路径，任一失败都说明只有一条路径鉴权配置对了。
 
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
