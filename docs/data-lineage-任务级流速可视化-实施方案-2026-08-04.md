@@ -314,7 +314,7 @@ carbonreceiver regex 规则产出的指标名与标签，**T6 查询侧与 T8 �
 | T7 SPARK3 DDL metrics 配置 | 二 | C | — | datasophon | DONE | 2026-08-04 12:01 | `c51fd5ea`; JSON parse + 7 项 property 契约通过；regex 正向/排除样本通过，确认不含裸 `.*executor.*`；`git diff --check` passed |
 | T8 OTELCOLLECTOR carbonreceiver | 二 | C | — | datasophon | DONE | 2026-08-04 12:03 | `d4ee6529`; `OtelcolTemplateTest`: 11 tests, 0 failures/errors/skipped, BUILD SUCCESS (8.000s)；FreeMarker 真渲染 + ddh-02 OTel Collector 0.156.0 `validate` exit 0；远端临时文件已清理 |
 | T6 `/lineage/job-metrics` 端点 | 二 | D | §3.2/§3.3 契约 | datasophon | DONE | 2026-08-04 12:40 | `99b7ea1b` + 启动修复 `87f8d002`；定向 11 tests, 0 failures/errors/skipped, BUILD SUCCESS；新增最小 Spring Context 回归，独立复审 no findings；完整 manager 打包 BUILD SUCCESS；ddh-01 替换启动成功，8080/18081 监听，现场配置 hash 保持 `f1c410c0` |
-| T9 前端运行态渲染 | 二 | D | §3.1/§3.2 契约 | ui-v2 | DONE | 2026-08-04 12:16 | `498c4d52`; lineage 定向 6 files/38 tests passed；`npm run lint` passed（Biome 8 existing info，tsc passed）；`npm run test`: 74 files, 288 tests passed；动画 destroy cancel 测试通过 |
+| T9 前端运行态渲染 | 二 | D | §3.1/§3.2 契约 | ui-v2 | DONE | 2026-08-04 13:05 | `498c4d52` + 空值修复 `1342d147`；lineage 定向 53 tests passed，`npm run lint` passed，独立复审 no findings；真实页面标签从“✓3 task · 0行”更新为“✓5 task · 1.2亿行”，流动虚线生效；Drawer 终态显示 `1.2亿行 / 4.3 GB`，不再出现 `NaN行` |
 | — **期二验收（Claude）** | 二 | — | T5-T9 | — | NOT STARTED | | |
 
 ---
