@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import JobDetailDrawer from './JobDetailDrawer';
 import { getJob } from './service';
+import type { GraphJob } from './service';
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({
@@ -16,6 +17,20 @@ vi.mock('@umijs/max', () => ({
 }));
 
 vi.mock('./service', () => ({ getJob: vi.fn() }));
+
+function job(overrides: Partial<GraphJob> = {}): GraphJob {
+  return {
+    jobId: 10,
+    edgeId: 100,
+    flowType: 'INPUT',
+    jobName: 'sync_orders',
+    lastRowCount: 1_200_000,
+    lastBytes: 64 * 1024 * 1024,
+    lastRunAt: '2026-08-04T03:00:00Z',
+    runningAppId: null,
+    ...overrides,
+  };
+}
 
 describe('JobDetailDrawer', () => {
   beforeEach(() => {
@@ -46,7 +61,7 @@ describe('JobDetailDrawer', () => {
     render(
       <JobDetailDrawer
         clusterId={7}
-        jobs={[{ jobId: 10, edgeId: 100, flowType: 'INPUT' }]}
+        jobs={[job()]}
         open
         onClose={() => {}}
       />,
@@ -59,6 +74,9 @@ describe('JobDetailDrawer', () => {
       'href',
       'https://example.com/job/10',
     );
+    expect(screen.getByText('120万行')).toBeInTheDocument();
+    expect(screen.getByText('64 MB')).toBeInTheDocument();
+    expect(screen.getByText(/2026-08-04/)).toBeInTheDocument();
   });
 
   it('deduplicates repeated jobIds across multiple job refs on the same edge', async () => {
@@ -79,8 +97,8 @@ describe('JobDetailDrawer', () => {
       <JobDetailDrawer
         clusterId={7}
         jobs={[
-          { jobId: 10, edgeId: 100, flowType: 'INPUT' },
-          { jobId: 10, edgeId: 101, flowType: 'OUTPUT' },
+          job(),
+          job({ edgeId: 101, flowType: 'OUTPUT' }),
         ]}
         open
         onClose={() => {}}
@@ -96,7 +114,7 @@ describe('JobDetailDrawer', () => {
     render(
       <JobDetailDrawer
         clusterId={7}
-        jobs={[{ jobId: 10, edgeId: 100, flowType: 'INPUT' }]}
+        jobs={[job()]}
         open
         onClose={() => {}}
       />,

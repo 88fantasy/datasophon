@@ -16,6 +16,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import ClusterContext from '@/context/ClusterContext';
 import FreshnessAlert from './FreshnessAlert';
 import JobDetailDrawer from './JobDetailDrawer';
+import { formatJobNodeLabel } from './lineageFormatters';
 import { mergeExpansion, toG6Data } from './lineageGraphData';
 import { getGraph, getImpact, listTables } from './service';
 import type {
@@ -185,19 +186,23 @@ const LineageGraph: React.FC = () => {
       padding: 24,
       data,
       node: {
-        type: 'rect',
+        type: (d) => (d.data?.isJobNode ? 'diamond' : 'rect'),
         style: {
-          size: [180, 52],
+          size: (d) => (d.data?.isJobNode ? [200, 84] : [180, 52]),
           radius: 8,
           fill: (d) =>
             d.data?.isCollapsedPlaceholder
               ? '#ffffff'
+              : d.data?.isJobNode
+                ? '#f9f0ff'
               : d.data?.impactHighlighted
                 ? '#fff1f0'
                 : (LAYER_FILL[String(d.data?.dwLayer ?? '')] ?? '#fafafa'),
           stroke: (d) =>
             d.data?.isRoot
               ? '#faad14'
+              : d.data?.isJobNode
+                ? '#722ed1'
               : d.data?.impactHighlighted
                 ? '#ff4d4f'
                 : d.data?.isCollapsedPlaceholder
@@ -206,12 +211,19 @@ const LineageGraph: React.FC = () => {
           lineDash: (d) =>
             d.data?.isCollapsedPlaceholder ? [4, 4] : undefined,
           lineWidth: (d) => (d.data?.isRoot ? 3 : 1.5),
-          cursor: (d) => (d.data?.isCollapsedPlaceholder ? 'pointer' : 'default'),
-          labelText: (d) => String(d.data?.canonicalName ?? d.id),
+          cursor: (d) =>
+            d.data?.isCollapsedPlaceholder || d.data?.isJobNode
+              ? 'pointer'
+              : 'default',
+          labelText: (d) =>
+            d.data?.isJobNode
+              ? formatJobNodeLabel(d.data as unknown as GraphJob)
+              : String(d.data?.canonicalName ?? d.id),
           labelPlacement: 'center',
           labelWordWrap: true,
-          labelMaxWidth: 160,
+          labelMaxWidth: (d) => (d.data?.isJobNode ? 150 : 160),
           labelFontSize: 12,
+          labelLineHeight: 18,
         },
       },
       edge: {
@@ -239,6 +251,10 @@ const LineageGraph: React.FC = () => {
       const expandToken = nodeDatum?.data?.expandToken;
       if (typeof expandToken === 'string') {
         handleExpand(expandToken);
+        return;
+      }
+      if (id.startsWith('job:') && nodeDatum?.data?.isJobNode) {
+        setSelectedJobs([nodeDatum.data as unknown as GraphJob]);
       }
     });
     graph.on('edge:click', (event: IElementEvent) => {

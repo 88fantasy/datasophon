@@ -1,6 +1,7 @@
 import { useIntl } from '@umijs/max';
 import { Descriptions, Drawer, Empty, Spin, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import { formatBytes, formatRowCount, formatRunAt } from './lineageFormatters';
 import { getJob } from './service';
 import type { GraphJob, JobDetail } from './service';
 
@@ -60,11 +61,43 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
             return (
               <div key={job.edgeId} style={{ marginBottom: 20 }}>
                 <Typography.Text strong>
-                  {detail?.jobName ?? `job#${job.jobId}`}
+                  {detail?.jobName ?? job.jobName}
                 </Typography.Text>{' '}
                 <Tag>{job.flowType}</Tag>
+                <Descriptions
+                  column={1}
+                  size="small"
+                  style={{ marginTop: 8 }}
+                  title={t(
+                    'pages.lineage.jobDrawer.latestStatistics',
+                    '最近运行统计',
+                  )}
+                >
+                  <Descriptions.Item
+                    label={t('pages.lineage.jobDrawer.rowCount', '写入行数')}
+                  >
+                    {job.lastRowCount === null
+                      ? '-'
+                      : formatRowCount(job.lastRowCount)}
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={t('pages.lineage.jobDrawer.bytes', '写入字节')}
+                  >
+                    {job.lastBytes === null ? '-' : formatBytes(job.lastBytes)}
+                  </Descriptions.Item>
+                  <Descriptions.Item
+                    label={t('pages.lineage.jobDrawer.lastRunAt', '最近运行时间')}
+                  >
+                    {formatRunAt(job.lastRunAt)}
+                  </Descriptions.Item>
+                </Descriptions>
                 {detail ? (
-                  <Descriptions column={1} size="small" style={{ marginTop: 8 }}>
+                  <Descriptions
+                    column={1}
+                    size="small"
+                    style={{ marginTop: 8 }}
+                    title={t('pages.lineage.jobDrawer.jobInfo', '作业信息')}
+                  >
                     <Descriptions.Item label={t('pages.lineage.jobDrawer.engine', '引擎')}>
                       {detail.engine}
                     </Descriptions.Item>

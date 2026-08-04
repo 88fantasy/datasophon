@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
 import LineageGraph from './LineageGraph';
 import { getGraph, getImpact, getJob, listTables } from './service';
+import type { GraphJob } from './service';
 
 const { historyPush } = vi.hoisted(() => ({ historyPush: vi.fn() }));
 
@@ -97,6 +98,20 @@ function node(id: number, canonicalName: string) {
     tableName: canonicalName,
     canonicalName,
     dwLayer: null,
+  };
+}
+
+function job(overrides: Partial<GraphJob> = {}): GraphJob {
+  return {
+    jobId: 10,
+    edgeId: 100,
+    flowType: 'OUTPUT',
+    jobName: 'sync_orders',
+    lastRowCount: 1_200_000,
+    lastBytes: 64 * 1024 * 1024,
+    lastRunAt: '2026-08-04T03:00:00Z',
+    runningAppId: null,
+    ...overrides,
   };
 }
 
@@ -260,7 +275,7 @@ describe('LineageGraph', () => {
     vi.mocked(getGraph).mockResolvedValue({
       data: {
         nodes: [node(1, 'a'), node(2, 'b')],
-        edges: [{ src: 1, dst: 2, jobs: [{ jobId: 10, edgeId: 100, flowType: 'INPUT' }] }],
+        edges: [{ src: 1, dst: 2, jobs: [job({ flowType: 'INPUT' })] }],
         collapsed: [],
         truncated: false,
       },
@@ -284,10 +299,47 @@ describe('LineageGraph', () => {
     await waitFor(() => expect(graphInstances).toHaveLength(1));
 
     const graph = graphInstances[0];
-    graph.handlers['edge:click']({ target: { id: '1->2' } });
+    graph.handlers['edge:click']({ target: { id: '1->job:10' } });
 
     expect(await screen.findByText('关联作业')).toBeInTheDocument();
     await waitFor(() => expect(getJob).toHaveBeenCalledWith(7, 10, { skipErrorHandler: true }));
+  });
+
+  it('opens the job detail drawer when a job node is clicked', async () => {
+    vi.mocked(getGraph).mockResolvedValue({
+      data: {
+        nodes: [node(1, 'a'), node(2, 'b')],
+        edges: [{ src: 1, dst: 2, jobs: [job()] }],
+        collapsed: [],
+        truncated: false,
+      },
+      snapshot: FRESH_SNAPSHOT,
+      sourceFreshness: OK_SOURCE,
+    });
+    vi.mocked(getJob).mockResolvedValue({
+      id: 10,
+      clusterId: 7,
+      jobName: 'sync_orders',
+      engine: 'spark',
+      jobType: 'BATCH',
+      dwLayer: null,
+      owner: null,
+      externalUrl: null,
+      state: 'COMPLETE',
+      updateTime: '2026-08-04T03:00:00Z',
+    });
+
+    renderGraphPage();
+    await waitFor(() => expect(graphInstances).toHaveLength(1));
+
+    graphInstances[0].handlers['node:click']({ target: { id: 'job:10' } });
+
+    expect(await screen.findByText('关联作业')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(getJob).toHaveBeenCalledWith(7, 10, {
+        skipErrorHandler: true,
+      }),
+    );
   });
 
   it('searches by keyword and navigates to the matched table', async () => {
