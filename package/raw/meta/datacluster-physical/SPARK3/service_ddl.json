@@ -241,6 +241,27 @@
           "spark.extraListeners": "io.openlineage.spark.agent.OpenLineageSparkListener"
         },
         {
+          "spark.metrics.conf.*.sink.graphite.class": "org.apache.spark.metrics.sink.GraphiteSink"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.host": "127.0.0.1"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.port": "2003"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.period": "10"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.unit": "seconds"
+        },
+        {
+          "spark.metrics.conf.*.sink.graphite.regex": "\\.executor\\.(records|bytes|shuffle|threadpool|filesystem)|\\.DAGScheduler\\.(job|stage)\\."
+        },
+        {
+          "spark.openlineage.capturedProperties": "spark.master,spark.app.name,spark.app.id"
+        },
+        {
           "spark.openlineage.transport.type": "http"
         },
         {
