@@ -310,11 +310,11 @@ carbonreceiver regex 规则产出的指标名与标签，**T6 查询侧与 T8 �
 | T2 解析 `outputStatistics` | 一 | B | T1 | gravitino | DONE | 2026-08-04 11:34 | `179369cb`; `./gradlew :lineage:test`: 30 tests, 0 failures/errors/skipped, BUILD SUCCESSFUL (13s); Docker IT 未执行（mac-docker-connector stopped） |
 | T4 任务节点渲染与交互 | 一 | B | T3 | ui-v2 | DONE | 2026-08-04 11:39 | `91880aa0` + review fix `bd78629c`; `npm run lint`: passed; `npm run test`: 73 files, 280 tests passed (8.41s) |
 | — **期一验收（Claude）** | 一 | — | T1-T4 | — | DONE | 2026-08-04 11:57 | V1-V6 PASSED；standalone cluster 1 generation 38；浏览器实测任务名、三元图、Drawer `2行 / 687 B / 2026-08-01 10:55:25`、impact/depth；现场 <300 节点，折叠由自动化覆盖；Gravitino JAR `1224f010` |
-| T5 快照纳入运行中 run | 二 | C | — | gravitino | NOT STARTED | | |
-| T7 SPARK3 DDL metrics 配置 | 二 | C | — | datasophon | NOT STARTED | | |
-| T8 OTELCOLLECTOR carbonreceiver | 二 | C | — | datasophon | NOT STARTED | | |
-| T6 `/lineage/job-metrics` 端点 | 二 | D | §3.2/§3.3 契约 | datasophon | NOT STARTED | | |
-| T9 前端运行态渲染 | 二 | D | §3.1/§3.2 契约 | ui-v2 | NOT STARTED | | |
+| T5 快照纳入运行中 run | 二 | C | — | gravitino | DONE | 2026-08-04 12:17 | `5f80088c`; `./gradlew :lineage:test`: 36 tests, 0 failures/errors/skipped, BUILD SUCCESSFUL (13s)；修复复审 no findings；NOTE(C3) hash `780999ef`、COMPLETE SQL 未变；Docker IT 未执行（mac-docker-connector stopped） |
+| T7 SPARK3 DDL metrics 配置 | 二 | C | — | datasophon | DONE | 2026-08-04 12:01 | `c51fd5ea`; JSON parse + 7 项 property 契约通过；regex 正向/排除样本通过，确认不含裸 `.*executor.*`；`git diff --check` passed |
+| T8 OTELCOLLECTOR carbonreceiver | 二 | C | — | datasophon | DONE | 2026-08-04 12:03 | `d4ee6529`; `OtelcolTemplateTest`: 11 tests, 0 failures/errors/skipped, BUILD SUCCESS (8.000s)；FreeMarker 真渲染 + ddh-02 OTel Collector 0.156.0 `validate` exit 0；远端临时文件已清理 |
+| T6 `/lineage/job-metrics` 端点 | 二 | D | §3.2/§3.3 契约 | datasophon | DONE | 2026-08-04 12:25 | `99b7ea1b`; focused 24 tests, 0 failures/errors/skipped, BUILD SUCCESS；最多 50 appIds 固定 5 instant + 1 range；per-series rate 后按 app 汇总；最终复审 no findings；扩展 OTel 84/86，2 项为未触及的 summary/histogram `resource_attributes` 基线失败 |
+| T9 前端运行态渲染 | 二 | D | §3.1/§3.2 契约 | ui-v2 | DONE | 2026-08-04 12:16 | `498c4d52`; lineage 定向 6 files/38 tests passed；`npm run lint` passed（Biome 8 existing info，tsc passed）；`npm run test`: 74 files, 288 tests passed；动画 destroy cancel 测试通过 |
 | — **期二验收（Claude）** | 二 | — | T5-T9 | — | NOT STARTED | | |
 
 ---
