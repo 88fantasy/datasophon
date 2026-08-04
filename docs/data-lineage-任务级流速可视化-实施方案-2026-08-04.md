@@ -309,7 +309,7 @@ carbonreceiver regex 规则产出的指标名与标签，**T6 查询侧与 T8 �
 | T3 三元图数据变换 | 一 | A | — | ui-v2 | DONE | 2026-08-04 11:39 | `7769741f` + review fix `bd78629c`; `npm run test`: 73 files, 280 tests passed (8.41s); 多输出统计保守降级测试通过 |
 | T2 解析 `outputStatistics` | 一 | B | T1 | gravitino | DONE | 2026-08-04 11:34 | `179369cb`; `./gradlew :lineage:test`: 30 tests, 0 failures/errors/skipped, BUILD SUCCESSFUL (13s); Docker IT 未执行（mac-docker-connector stopped） |
 | T4 任务节点渲染与交互 | 一 | B | T3 | ui-v2 | DONE | 2026-08-04 11:39 | `91880aa0` + review fix `bd78629c`; `npm run lint`: passed; `npm run test`: 73 files, 280 tests passed (8.41s) |
-| — **期一验收（Claude）** | 一 | — | T1-T4 | — | NOT STARTED | | |
+| — **期一验收（Claude）** | 一 | — | T1-T4 | — | DONE | 2026-08-04 11:57 | V1-V6 PASSED；standalone cluster 1 generation 38；浏览器实测任务名、三元图、Drawer `2行 / 687 B / 2026-08-01 10:55:25`、impact/depth；现场 <300 节点，折叠由自动化覆盖；Gravitino JAR `1224f010` |
 | T5 快照纳入运行中 run | 二 | C | — | gravitino | NOT STARTED | | |
 | T7 SPARK3 DDL metrics 配置 | 二 | C | — | datasophon | NOT STARTED | | |
 | T8 OTELCOLLECTOR carbonreceiver | 二 | C | — | datasophon | NOT STARTED | | |
