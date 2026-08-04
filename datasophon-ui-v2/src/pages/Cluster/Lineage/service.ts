@@ -22,6 +22,23 @@ export interface GraphJob {
   runningAppId: string | null;
 }
 
+export interface JobMetrics {
+  completeTasks: number;
+  activeTasks: number;
+  recordsWritten: number;
+  bytesWritten: number;
+  recordsWrittenRate: number | null;
+  runningStages: number;
+  sampledAt: string;
+}
+
+export type JobMetricsByAppId = Record<string, JobMetrics>;
+
+export interface JobRatePoint {
+  time: number;
+  value: number;
+}
+
 export interface LogicalEdge {
   src: number;
   dst: number;
@@ -200,6 +217,70 @@ export function getJob(
       ...options,
     }),
   );
+}
+
+export function getJobMetrics(clusterId: number, appIds: string[]) {
+  if (appIds.length === 0) {
+    return Promise.resolve({} as JobMetricsByAppId);
+  }
+
+  return unwrap(
+    request<ApiEnvelope<JobMetricsByAppId>>('/lineage/job-metrics', {
+      method: 'GET',
+      params: { clusterId, appIds: appIds.join(',') },
+      skipErrorHandler: true,
+    }),
+  );
+}
+
+interface PrometheusMatrix {
+  resultType: 'matrix';
+  result: Array<{
+    metric: Record<string, string>;
+    values: Array<[number, string]>;
+  }>;
+}
+
+export function getJobRateHistory(clusterId: number, appId: string) {
+  const end = Math.floor(Date.now() / 1000);
+  const start = end - 3600;
+
+  return unwrap(
+    request<ApiEnvelope<PrometheusMatrix>>(
+      '/observability/otel/metrics/query_range',
+      {
+        method: 'GET',
+        params: {
+          clusterId,
+          metric: 'spark_executor_recordsWritten',
+          rateWindow: '1m',
+          table: 'sum',
+          filters: `app_id:${appId}`,
+          start,
+          end,
+          step: 60,
+        },
+        skipErrorHandler: true,
+      },
+    ),
+  ).then((matrix) => {
+    const totalsByTimestamp = new Map<number, number>();
+    for (const series of matrix.result) {
+      for (const [timestamp, rawValue] of series.values) {
+        const value = Number(rawValue);
+        if (Number.isFinite(value)) {
+          totalsByTimestamp.set(
+            timestamp,
+            (totalsByTimestamp.get(timestamp) ?? 0) + value,
+          );
+        }
+      }
+    }
+
+    return [...totalsByTimestamp.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([timestamp, value]) => ({ time: timestamp * 1000, value }));
+  });
 }
 
 export interface GetImpactParams {

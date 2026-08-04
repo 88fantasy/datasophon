@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   formatBytes,
   formatJobNodeLabel,
+  formatRecordsRate,
   formatRowCount,
+  formatRunningJobLabel,
 } from './lineageFormatters';
+import type { JobMetrics } from './service';
 import type { GraphJob } from './service';
 
 const JOB: GraphJob = {
@@ -15,6 +18,16 @@ const JOB: GraphJob = {
   lastBytes: 64 * 1024 * 1024,
   lastRunAt: '2026-08-04T03:00:00Z',
   runningAppId: null,
+};
+
+const METRICS: JobMetrics = {
+  completeTasks: 12,
+  activeTasks: 2,
+  recordsWritten: 60_000_000,
+  bytesWritten: 2_204_955_464,
+  recordsWrittenRate: 51_234.5,
+  runningStages: 1,
+  sampledAt: '2026-08-04T03:01:44Z',
 };
 
 describe('lineage formatters', () => {
@@ -43,5 +56,10 @@ describe('lineage formatters', () => {
         lastRunAt: null,
       }),
     ).toBe('daily_orders_etl');
+  });
+
+  it('formats running job progress and write rate', () => {
+    expect(formatRunningJobLabel(METRICS)).toBe('✓12 task · 6000万行');
+    expect(formatRecordsRate(METRICS.recordsWrittenRate)).toBe('5.1万行/秒');
   });
 });

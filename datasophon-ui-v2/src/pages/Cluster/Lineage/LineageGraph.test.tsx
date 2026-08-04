@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
 import LineageGraph from './LineageGraph';
-import { getGraph, getImpact, getJob, listTables } from './service';
+import { getGraph, getImpact, getJob, getJobMetrics, listTables } from './service';
 import type { GraphJob } from './service';
 
 const { historyPush } = vi.hoisted(() => ({ historyPush: vi.fn() }));
@@ -24,19 +24,51 @@ vi.mock('@umijs/max', () => ({
 const { graphInstances } = vi.hoisted(() => ({
   graphInstances: [] as Array<{
     handlers: Record<string, (event: unknown) => void>;
-    data: { nodes?: Array<{ id: string; data?: Record<string, unknown> }> };
+    data: {
+      nodes?: Array<{ id: string; data?: Record<string, unknown> }>;
+      edges?: Array<{
+        id: string;
+        source: string;
+        target: string;
+        data?: Record<string, unknown>;
+      }>;
+    };
+    options: Record<string, unknown>;
   }>,
 }));
 
 vi.mock('@antv/g6', () => ({
+  CubicHorizontal: class {
+    protected shapeMap = { key: { animate: vi.fn() } };
+    destroy() {}
+  },
+  ExtensionCategory: { EDGE: 'edge' },
   Graph: class {
     handlers: Record<string, (event: unknown) => void> = {};
-    data: { nodes?: Array<{ id: string; data?: Record<string, unknown> }> };
+    data: {
+      nodes?: Array<{ id: string; data?: Record<string, unknown> }>;
+      edges?: Array<{
+        id: string;
+        source: string;
+        target: string;
+        data?: Record<string, unknown>;
+      }>;
+    };
+    options: Record<string, unknown>;
 
     constructor(options: {
-      data?: { nodes?: Array<{ id: string; data?: Record<string, unknown> }> };
+      data?: {
+        nodes?: Array<{ id: string; data?: Record<string, unknown> }>;
+        edges?: Array<{
+          id: string;
+          source: string;
+          target: string;
+          data?: Record<string, unknown>;
+        }>;
+      };
     }) {
       this.data = options.data ?? {};
+      this.options = options as unknown as Record<string, unknown>;
       graphInstances.push(this);
     }
 
@@ -50,6 +82,12 @@ vi.mock('@antv/g6', () => ({
 
     setData(data: {
       nodes?: Array<{ id: string; data?: Record<string, unknown> }>;
+      edges?: Array<{
+        id: string;
+        source: string;
+        target: string;
+        data?: Record<string, unknown>;
+      }>;
     }) {
       this.data = data;
     }
@@ -69,12 +107,14 @@ vi.mock('@antv/g6', () => ({
 
     destroy() {}
   },
+  register: vi.fn(),
 }));
 
 vi.mock('./service', () => ({
   getGraph: vi.fn(),
   getImpact: vi.fn(),
   getJob: vi.fn(),
+  getJobMetrics: vi.fn(),
   listTables: vi.fn(),
 }));
 
@@ -132,6 +172,8 @@ describe('LineageGraph', () => {
     vi.mocked(getGraph).mockReset();
     vi.mocked(getImpact).mockReset();
     vi.mocked(getJob).mockReset();
+    vi.mocked(getJobMetrics).mockReset();
+    vi.mocked(getJobMetrics).mockResolvedValue({});
     vi.mocked(listTables).mockReset();
   });
 
@@ -351,6 +393,111 @@ describe('LineageGraph', () => {
         skipErrorHandler: true,
       }),
     );
+  });
+
+  it('does not poll job metrics when the graph has no running jobs', async () => {
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+    vi.mocked(getGraph).mockResolvedValue({
+      data: {
+        nodes: [node(1, 'a'), node(2, 'b')],
+        edges: [{ src: 1, dst: 2, jobs: [job()] }],
+        collapsed: [],
+        truncated: false,
+      },
+      snapshot: FRESH_SNAPSHOT,
+      sourceFreshness: OK_SOURCE,
+    });
+
+    renderGraphPage();
+    await waitFor(() => expect(getGraph).toHaveBeenCalledTimes(1));
+
+    expect(getJobMetrics).not.toHaveBeenCalled();
+    expect(
+      setIntervalSpy.mock.calls.some(([, delay]) => delay === 15_000),
+    ).toBe(false);
+    setIntervalSpy.mockRestore();
+  });
+
+  it('polls running job metrics, renders progress/tooltip/flowing edges, and clears the timer on unmount', async () => {
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
+    vi.mocked(getGraph).mockResolvedValue({
+      data: {
+        nodes: [node(1, 'a'), node(2, 'b')],
+        edges: [
+          {
+            src: 1,
+            dst: 2,
+            jobs: [job({ runningAppId: 'application_1' })],
+          },
+        ],
+        collapsed: [],
+        truncated: false,
+      },
+      snapshot: FRESH_SNAPSHOT,
+      sourceFreshness: OK_SOURCE,
+    });
+    vi.mocked(getJobMetrics).mockResolvedValue({
+      application_1: {
+        completeTasks: 12,
+        activeTasks: 2,
+        recordsWritten: 60_000_000,
+        bytesWritten: 2_204_955_464,
+        recordsWrittenRate: 51_234.5,
+        runningStages: 1,
+        sampledAt: '2026-08-04T03:01:44Z',
+      },
+    });
+
+    const view = renderGraphPage();
+
+    await waitFor(() =>
+      expect(getJobMetrics).toHaveBeenCalledWith(7, ['application_1']),
+    );
+    const graph = graphInstances[0];
+    await waitFor(() =>
+      expect(
+        graph.data.nodes?.find((item) => item.id === 'job:10')?.data
+          ?.runtimeLabel,
+      ).toBe('✓12 task · 6000万行'),
+    );
+
+    const intervalIndex = setIntervalSpy.mock.calls.findIndex(
+      ([, delay]) => delay === 15_000,
+    );
+    expect(intervalIndex).toBeGreaterThanOrEqual(0);
+    const intervalId = setIntervalSpy.mock.results[intervalIndex].value;
+
+    const options = graph.options as {
+      node: { style: { labelText: (datum: unknown) => string } };
+      edge: { type: (datum: unknown) => string };
+      plugins: Array<{
+        type: string;
+        getContent?: (event: unknown, items: unknown[]) => Promise<HTMLElement | string>;
+      }>;
+    };
+    const jobNode = graph.data.nodes?.find((item) => item.id === 'job:10');
+    expect(options.node.style.labelText(jobNode)).toBe(
+      '✓12 task · 6000万行',
+    );
+    const runningEdges = graph.data.edges?.filter(
+      (edge) => edge.source === 'job:10' || edge.target === 'job:10',
+    );
+    expect(runningEdges).toHaveLength(2);
+    expect(
+      runningEdges?.every(
+        (edge) => options.edge.type(edge) === 'lineage-flowing-edge',
+      ),
+    ).toBe(true);
+
+    const tooltip = options.plugins.find((plugin) => plugin.type === 'tooltip');
+    const tooltipContent = await tooltip?.getContent?.({}, [jobNode]);
+    expect((tooltipContent as HTMLElement).textContent).toContain('5.1万行/秒');
+
+    view.unmount();
+    expect(clearIntervalSpy).toHaveBeenCalledWith(intervalId);
+    setIntervalSpy.mockRestore();
+    clearIntervalSpy.mockRestore();
   });
 
   it('searches by keyword and navigates to the matched table', async () => {

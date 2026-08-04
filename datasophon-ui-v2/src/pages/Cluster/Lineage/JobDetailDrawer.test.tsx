@@ -1,8 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import JobDetailDrawer from './JobDetailDrawer';
-import { getJob } from './service';
+import { getJob, getJobRateHistory } from './service';
 import type { GraphJob } from './service';
+
+const { lineProps } = vi.hoisted(() => ({
+  lineProps: [] as Array<Record<string, unknown>>,
+}));
+
+vi.mock('@ant-design/plots', () => ({
+  Line: (props: Record<string, unknown>) => {
+    lineProps.push(props);
+    return <div data-testid="job-rate-chart" />;
+  },
+}));
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({
@@ -16,7 +27,10 @@ vi.mock('@umijs/max', () => ({
   }),
 }));
 
-vi.mock('./service', () => ({ getJob: vi.fn() }));
+vi.mock('./service', () => ({
+  getJob: vi.fn(),
+  getJobRateHistory: vi.fn(),
+}));
 
 function job(overrides: Partial<GraphJob> = {}): GraphJob {
   return {
@@ -34,7 +48,10 @@ function job(overrides: Partial<GraphJob> = {}): GraphJob {
 
 describe('JobDetailDrawer', () => {
   beforeEach(() => {
+    lineProps.length = 0;
     vi.mocked(getJob).mockReset();
+    vi.mocked(getJobRateHistory).mockReset();
+    vi.mocked(getJobRateHistory).mockResolvedValue([]);
   });
 
   it('shows an empty state when the edge has no associated jobs', () => {
@@ -121,5 +138,40 @@ describe('JobDetailDrawer', () => {
     );
 
     expect(await screen.findByText('作业详情加载失败')).toBeInTheDocument();
+  });
+
+  it('loads and renders recordsWrittenRate history for a running job', async () => {
+    vi.mocked(getJob).mockResolvedValue({
+      id: 10,
+      clusterId: 7,
+      jobName: 'sync_orders',
+      engine: 'spark',
+      jobType: 'BATCH',
+      dwLayer: null,
+      owner: null,
+      externalUrl: null,
+      state: 'RUNNING',
+      updateTime: '2026-08-04T03:00:00Z',
+    });
+    vi.mocked(getJobRateHistory).mockResolvedValue([
+      { time: 1_800_000_000_000, value: 128.5 },
+      { time: 1_800_000_060_000, value: 256.5 },
+    ]);
+
+    render(
+      <JobDetailDrawer
+        clusterId={7}
+        jobs={[job({ runningAppId: 'application_1' })]}
+        open
+        onClose={() => {}}
+      />,
+    );
+
+    expect(await screen.findByTestId('job-rate-chart')).toBeInTheDocument();
+    expect(getJobRateHistory).toHaveBeenCalledWith(7, 'application_1');
+    expect(lineProps.at(-1)?.data).toEqual([
+      { time: 1_800_000_000_000, value: 128.5 },
+      { time: 1_800_000_060_000, value: 256.5 },
+    ]);
   });
 });

@@ -1,4 +1,4 @@
-import { Graph, type IElementEvent } from '@antv/g6';
+import { Graph, type ElementDatum, type IElementEvent } from '@antv/g6';
 import { history, useIntl, useParams } from '@umijs/max';
 import {
   Alert,
@@ -15,13 +15,19 @@ import {
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import FreshnessAlert from './FreshnessAlert';
+import { FLOWING_LINEAGE_EDGE } from './flowingLineageEdge';
 import JobDetailDrawer from './JobDetailDrawer';
-import { formatJobNodeLabel } from './lineageFormatters';
+import {
+  formatJobNodeLabel,
+  formatRecordsRate,
+  formatRunningJobLabel,
+} from './lineageFormatters';
 import { mergeExpansion, toG6Data } from './lineageGraphData';
-import { getGraph, getImpact, listTables } from './service';
+import { getGraph, getImpact, getJobMetrics, listTables } from './service';
 import type {
   GraphData,
   GraphJob,
+  JobMetricsByAppId,
   LineageDirection,
   SnapshotFreshness,
   SourceFreshness,
@@ -76,6 +82,7 @@ const LineageGraph: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [impactUnavailable, setImpactUnavailable] = useState(false);
   const [selectedJobs, setSelectedJobs] = useState<GraphJob[]>();
+  const [jobMetrics, setJobMetrics] = useState<JobMetricsByAppId>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph>(undefined);
@@ -165,6 +172,44 @@ const LineageGraph: React.FC = () => {
     );
   }, [impactMode, graphData, rootNodeId]);
 
+  const runningAppIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (graphData?.edges ?? []).flatMap((edge) =>
+            edge.jobs.flatMap((job) =>
+              job.runningAppId ? [job.runningAppId] : [],
+            ),
+          ),
+        ),
+      ).sort(),
+    [graphData],
+  );
+
+  useEffect(() => {
+    if (!clusterId || runningAppIds.length === 0) {
+      setJobMetrics({});
+      return;
+    }
+
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const metrics = await getJobMetrics(clusterId, runningAppIds);
+        if (!cancelled) setJobMetrics(metrics);
+      } catch {
+        // 轮询失败时保留上次采样，下一周期自动重试，避免运行态图闪回历史标签。
+      }
+    };
+
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [clusterId, runningAppIds]);
+
   useEffect(() => {
     if (!graphData || graphData.nodes.length === 0) {
       graphRef.current?.destroy();
@@ -172,6 +217,22 @@ const LineageGraph: React.FC = () => {
       return;
     }
     const data = toG6Data(graphData, rootNodeId, impactHighlightIds);
+    const runningJobNodeIds = new Set<string>();
+    data.nodes.forEach((node) => {
+      if (!node.data.isJobNode || !node.data.runningAppId) return;
+      runningJobNodeIds.add(node.id);
+      const metrics = jobMetrics[String(node.data.runningAppId)];
+      if (metrics) {
+        node.data.runtimeLabel = formatRunningJobLabel(metrics);
+        node.data.recordsWrittenRate = metrics.recordsWrittenRate;
+      }
+    });
+    data.edges.forEach((edge) => {
+      edge.data.isRunningLink =
+        !edge.data.isCollapsedLink &&
+        (runningJobNodeIds.has(edge.source) ||
+          runningJobNodeIds.has(edge.target));
+    });
     const renderGraph = (graph: Graph) => {
       void Promise.resolve(graph.render()).then(() => graph.fitView());
     };
@@ -217,7 +278,10 @@ const LineageGraph: React.FC = () => {
               : 'default',
           labelText: (d) =>
             d.data?.isJobNode
-              ? formatJobNodeLabel(d.data as unknown as GraphJob)
+              ? String(
+                  d.data.runtimeLabel ??
+                    formatJobNodeLabel(d.data as unknown as GraphJob),
+                )
               : String(d.data?.canonicalName ?? d.id),
           labelPlacement: 'center',
           labelWordWrap: true,
@@ -227,12 +291,20 @@ const LineageGraph: React.FC = () => {
         },
       },
       edge: {
-        type: 'cubic-horizontal',
+        type: (d) =>
+          d.data?.isRunningLink
+            ? FLOWING_LINEAGE_EDGE
+            : 'cubic-horizontal',
         style: {
           endArrow: true,
           lineWidth: 1.5,
-          stroke: '#99add1',
-          lineDash: (d) => (d.data?.isCollapsedLink ? [4, 4] : undefined),
+          stroke: (d) => (d.data?.isRunningLink ? '#722ed1' : '#99add1'),
+          lineDash: (d) =>
+            d.data?.isCollapsedLink
+              ? [4, 4]
+              : d.data?.isRunningLink
+                ? [8, 4]
+                : undefined,
           cursor: (d) => (d.data?.isCollapsedLink ? 'default' : 'pointer'),
         },
       },
@@ -243,6 +315,33 @@ const LineageGraph: React.FC = () => {
         ranksep: 64,
       },
       behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element'],
+      plugins: [
+        {
+          type: 'tooltip',
+          trigger: 'hover',
+          getContent: async (
+            _event: IElementEvent,
+            items: ElementDatum[],
+          ) => {
+            const item = items[0];
+            const content = document.createElement('div');
+            if (!item?.data?.isJobNode) return content;
+
+            const title = document.createElement('div');
+            title.textContent = String(item.data.jobName ?? '');
+            content.appendChild(title);
+
+            const rate = document.createElement('div');
+            rate.textContent = `写入速率：${formatRecordsRate(
+              typeof item.data.recordsWrittenRate === 'number'
+                ? item.data.recordsWrittenRate
+                : null,
+            )}`;
+            content.appendChild(rate);
+            return content;
+          },
+        },
+      ],
     });
     graph.on('node:click', (event: IElementEvent) => {
       const id = event.target?.id;
@@ -266,7 +365,13 @@ const LineageGraph: React.FC = () => {
     });
     graphRef.current = graph;
     renderGraph(graph);
-  }, [graphData, rootNodeId, impactHighlightIds, handleExpand]);
+  }, [
+    graphData,
+    rootNodeId,
+    impactHighlightIds,
+    handleExpand,
+    jobMetrics,
+  ]);
 
   useEffect(() => {
     return () => {

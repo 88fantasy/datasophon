@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import type { GraphJob } from './service';
+import type { GraphJob, JobMetrics } from './service';
 
 function formatUnit(value: number): string {
   return String(Number(value.toFixed(1)));
@@ -49,6 +49,15 @@ export function formatJobNodeLabel(job: GraphJob, now = Date.now()): string {
   const relativeTime = formatRelativeTime(job.lastRunAt, now);
   if (!relativeTime) return job.jobName;
   return `${job.jobName}\n${formatRowCount(job.lastRowCount)} · ${relativeTime}`;
+}
+
+export function formatRunningJobLabel(metrics: JobMetrics): string {
+  return `✓${metrics.completeTasks} task · ${formatRowCount(metrics.recordsWritten)}`;
+}
+
+export function formatRecordsRate(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '-';
+  return formatRowCount(value).replace(/行$/, '行/秒');
 }
 
 export function formatRunAt(value: string | null): string {

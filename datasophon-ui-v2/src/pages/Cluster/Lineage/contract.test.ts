@@ -5,6 +5,8 @@ import {
   getGraph,
   getImpact,
   getJob,
+  getJobMetrics,
+  getJobRateHistory,
   getOverview,
   getTable,
   listTables,
@@ -96,7 +98,20 @@ describe('Lineage proxy response contract', () => {
   });
 
   it('graph: LineageGraphQueryResponse required fields (nodes/edges/collapsed) survive', async () => {
-    const edge = { src: 1, dst: 42, jobs: [{ jobId: 10, edgeId: 100, flowType: 'TABLE' }] };
+    const edge = {
+      src: 1,
+      dst: 42,
+      jobs: [{
+        jobId: 10,
+        edgeId: 100,
+        flowType: 'TABLE',
+        jobName: 'sync_orders',
+        lastRowCount: null,
+        lastBytes: null,
+        lastRunAt: null,
+        runningAppId: null,
+      }],
+    };
     const collapsedNode = {
       type: 'collapsed',
       nodeId: 1,
@@ -210,5 +225,68 @@ describe('Lineage proxy response contract', () => {
     const result = await rebuild(7);
 
     expect(result).toHaveProperty('generation');
+  });
+
+  it('job metrics: sends app ids as a comma-separated contract parameter', async () => {
+    const metrics = {
+      completeTasks: 12,
+      activeTasks: 2,
+      recordsWritten: 60_000_000,
+      bytesWritten: 2_204_955_464,
+      recordsWrittenRate: 51_234.5,
+      runningStages: 1,
+      sampledAt: '2026-08-04T03:01:44Z',
+    };
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: { 'application_1': metrics },
+    });
+
+    const result = await getJobMetrics(7, ['application_1', 'application_2']);
+
+    expect(request).toHaveBeenCalledWith('/lineage/job-metrics', {
+      method: 'GET',
+      params: { clusterId: 7, appIds: 'application_1,application_2' },
+      skipErrorHandler: true,
+    });
+    expect(result.application_1).toEqual(metrics);
+  });
+
+  it('job rate history: queries app_id range and sums executor series by timestamp', async () => {
+    const nowSpy = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(1_800_000_000_000);
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: {
+        resultType: 'matrix',
+        result: [
+          { metric: { instance: '1' }, values: [[1_799_999_940, '10'], [1_800_000_000, '20']] },
+          { metric: { instance: '2' }, values: [[1_799_999_940, '3'], [1_800_000_000, '4']] },
+        ],
+      },
+    });
+
+    const result = await getJobRateHistory(7, 'application_1');
+
+    expect(request).toHaveBeenCalledWith('/observability/otel/metrics/query_range', {
+      method: 'GET',
+      params: {
+        clusterId: 7,
+        metric: 'spark_executor_recordsWritten',
+        rateWindow: '1m',
+        table: 'sum',
+        filters: 'app_id:application_1',
+        start: 1_799_996_400,
+        end: 1_800_000_000,
+        step: 60,
+      },
+      skipErrorHandler: true,
+    });
+    expect(result).toEqual([
+      { time: 1_799_999_940_000, value: 13 },
+      { time: 1_800_000_000_000, value: 24 },
+    ]);
+    nowSpy.mockRestore();
   });
 });
