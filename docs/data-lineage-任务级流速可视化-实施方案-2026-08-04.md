@@ -313,7 +313,7 @@ carbonreceiver regex 规则产出的指标名与标签，**T6 查询侧与 T8 �
 | T5 快照纳入运行中 run | 二 | C | — | gravitino | DONE | 2026-08-04 12:17 | `5f80088c`; `./gradlew :lineage:test`: 36 tests, 0 failures/errors/skipped, BUILD SUCCESSFUL (13s)；修复复审 no findings；NOTE(C3) hash `780999ef`、COMPLETE SQL 未变；Docker IT 未执行（mac-docker-connector stopped） |
 | T7 SPARK3 DDL metrics 配置 | 二 | C | — | datasophon | DONE | 2026-08-04 12:01 | `c51fd5ea`; JSON parse + 7 项 property 契约通过；regex 正向/排除样本通过，确认不含裸 `.*executor.*`；`git diff --check` passed |
 | T8 OTELCOLLECTOR carbonreceiver | 二 | C | — | datasophon | DONE | 2026-08-04 12:03 | `d4ee6529`; `OtelcolTemplateTest`: 11 tests, 0 failures/errors/skipped, BUILD SUCCESS (8.000s)；FreeMarker 真渲染 + ddh-02 OTel Collector 0.156.0 `validate` exit 0；远端临时文件已清理 |
-| T6 `/lineage/job-metrics` 端点 | 二 | D | §3.2/§3.3 契约 | datasophon | DONE | 2026-08-04 12:25 | `99b7ea1b`; focused 24 tests, 0 failures/errors/skipped, BUILD SUCCESS；最多 50 appIds 固定 5 instant + 1 range；per-series rate 后按 app 汇总；最终复审 no findings；扩展 OTel 84/86，2 项为未触及的 summary/histogram `resource_attributes` 基线失败 |
+| T6 `/lineage/job-metrics` 端点 | 二 | D | §3.2/§3.3 契约 | datasophon | DONE | 2026-08-04 12:40 | `99b7ea1b` + 启动修复 `87f8d002`；定向 11 tests, 0 failures/errors/skipped, BUILD SUCCESS；新增最小 Spring Context 回归，独立复审 no findings；完整 manager 打包 BUILD SUCCESS；ddh-01 替换启动成功，8080/18081 监听，现场配置 hash 保持 `f1c410c0` |
 | T9 前端运行态渲染 | 二 | D | §3.1/§3.2 契约 | ui-v2 | DONE | 2026-08-04 12:16 | `498c4d52`; lineage 定向 6 files/38 tests passed；`npm run lint` passed（Biome 8 existing info，tsc passed）；`npm run test`: 74 files, 288 tests passed；动画 destroy cancel 测试通过 |
 | — **期二验收（Claude）** | 二 | — | T5-T9 | — | NOT STARTED | | |
 
