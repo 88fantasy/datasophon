@@ -306,7 +306,7 @@ carbonreceiver regex 规则产出的指标名与标签，**T6 查询侧与 T8 �
 | 任务 | 期 | 并行组 | 依赖 | 仓库 | 状态 | 完成时间 | 证据（commit / 测试输出） |
 |---|---|---|---|---|---|---|---|
 | T1 `GraphJob` record 扩展 | 一 | A | — | gravitino | DONE | 2026-08-04 11:25 | `94828b65`; `./gradlew :lineage:test`: 27 tests, 0 failures/errors/skipped, BUILD SUCCESSFUL (17s); Docker IT 未执行（mac-docker-connector stopped） |
-| T3 三元图数据变换 | 一 | A | — | ui-v2 | DONE | 2026-08-04 11:39 | `7769741f` + review fix `bd78629c`; `npm run test`: 73 files, 280 tests passed (8.41s); 多输出统计保守降级测试通过 |
+| T3 三元图数据变换 | 一 | A | — | ui-v2 | DONE | 2026-08-04 13:28 | `7769741f` + review fix `bd78629c` + 契约复用 `a4f06b2f`；G6 作业节点直接继承 `GraphJob`；lineage 10 files / 53 tests passed，`npm run lint` passed |
 | T2 解析 `outputStatistics` | 一 | B | T1 | gravitino | DONE | 2026-08-04 11:34 | `179369cb`; `./gradlew :lineage:test`: 30 tests, 0 failures/errors/skipped, BUILD SUCCESSFUL (13s); Docker IT 未执行（mac-docker-connector stopped） |
 | T4 任务节点渲染与交互 | 一 | B | T3 | ui-v2 | DONE | 2026-08-04 11:39 | `91880aa0` + review fix `bd78629c`; `npm run lint`: passed; `npm run test`: 73 files, 280 tests passed (8.41s) |
 | — **期一验收（Claude）** | 一 | — | T1-T4 | — | DONE | 2026-08-04 11:57 | V1-V6 PASSED；standalone cluster 1 generation 38；浏览器实测任务名、三元图、Drawer `2行 / 687 B / 2026-08-01 10:55:25`、impact/depth；现场 <300 节点，折叠由自动化覆盖；Gravitino JAR `1224f010` |
@@ -314,7 +314,7 @@ carbonreceiver regex 规则产出的指标名与标签，**T6 查询侧与 T8 �
 | T7 SPARK3 DDL metrics 配置 | 二 | C | — | datasophon | DONE | 2026-08-04 12:01 | `c51fd5ea`; JSON parse + 7 项 property 契约通过；regex 正向/排除样本通过，确认不含裸 `.*executor.*`；`git diff --check` passed |
 | T8 OTELCOLLECTOR carbonreceiver | 二 | C | — | datasophon | DONE | 2026-08-04 12:03 | `d4ee6529`; `OtelcolTemplateTest`: 11 tests, 0 failures/errors/skipped, BUILD SUCCESS (8.000s)；FreeMarker 真渲染 + ddh-02 OTel Collector 0.156.0 `validate` exit 0；远端临时文件已清理 |
 | T6 `/lineage/job-metrics` 端点 | 二 | D | §3.2/§3.3 契约 | datasophon | DONE | 2026-08-04 12:40 | `99b7ea1b` + 启动修复 `87f8d002`；定向 11 tests, 0 failures/errors/skipped, BUILD SUCCESS；新增最小 Spring Context 回归，独立复审 no findings；完整 manager 打包 BUILD SUCCESS；ddh-01 替换启动成功，8080/18081 监听，现场配置 hash 保持 `f1c410c0` |
-| T9 前端运行态渲染 | 二 | D | §3.1/§3.2 契约 | ui-v2 | DONE | 2026-08-04 13:05 | `498c4d52` + 空值修复 `1342d147`；lineage 定向 53 tests passed，`npm run lint` passed，独立复审 no findings；真实页面标签从“✓3 task · 0行”更新为“✓5 task · 1.2亿行”，流动虚线生效；Drawer 终态显示 `1.2亿行 / 4.3 GB`，不再出现 `NaN行` |
+| T9 前端运行态渲染 | 二 | D | §3.1/§3.2 契约 | ui-v2 | DONE | 2026-08-04 13:28 | `498c4d52` + 空值修复 `1342d147` + 格式化契约复用 `a4f06b2f`；lineage 10 files / 53 tests passed，`npm run lint` passed；真实页面标签从“✓3 task · 0行”更新为“✓5 task · 1.2亿行”，流动虚线生效；Drawer 终态显示 `1.2亿行 / 4.3 GB`，不再出现 `NaN行` |
 | — **期二验收（Claude）** | 二 | — | T5-T9 | — | DONE | 2026-08-04 13:07 | V7-V12 PASSED；OTel Carbon `accepted=3151/refused=0`；真实 Spark/OpenLineage 作业使 graph generation `38→45→47`，运行态标签 `✓3→✓5 task` / `0行→1.2亿行`、流动虚线生效，Drawer 最终显示 `1.2亿行 / 4.3 GB`；ddh-01 API `8080/18081`、ddh-02 Gravitino `8090` 与 Collector `2003/8888` 均健康；NOTE(C3) 逻辑与完成态 SQL 保持不变 |
 
 ---
