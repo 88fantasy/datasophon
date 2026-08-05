@@ -46,6 +46,7 @@ import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import org.junit.jupiter.api.Test;
 
@@ -66,10 +67,11 @@ class ApisixGatewayConfigServiceTest {
     private final ClusterServiceRoleInstanceService roleInstanceService =
             mock(ClusterServiceRoleInstanceService.class);
     private final ServiceInstallService serviceInstallService = mock(ServiceInstallService.class);
+    private final Executor synchronousExecutor = Runnable::run;
 
     private final ApisixGatewayConfigService service = new ApisixGatewayConfigService(
             clusterInfoService, serviceInstanceService, roleGroupService, roleGroupConfigService,
-            roleInstanceService, serviceInstallService);
+            roleInstanceService, serviceInstallService, synchronousExecutor);
 
     private static ClusterServiceInstanceEntity apisixInstance() {
         ClusterServiceInstanceEntity entity = new ClusterServiceInstanceEntity();
@@ -89,6 +91,15 @@ class ApisixGatewayConfigServiceTest {
     private void stubEffectiveConfigs(List<ServiceConfig> configs) {
         when(serviceInstallService.getServiceConfigOption(eq(CLUSTER_ID), eq("APISIX")))
                 .thenReturn(new ArrayList<>(configs));
+    }
+
+    /** T4 各用例保存前的默认已持久化配置（apisixGatewayYaml 已存在，路由/上游走向导默认值）。 */
+    private static List<ServiceConfig> defaultSaveConfigs() {
+        return List.of(
+                config("apisixGatewayYaml", ""),
+                config("apisixRouteUri", "/get"),
+                config("apisixUpstreamHost", "127.0.0.1"),
+                config("apisixUpstreamPort", 8080));
     }
 
     private void stubDefaultRoleGroupAndEmptyPush() {
@@ -278,11 +289,7 @@ class ApisixGatewayConfigServiceTest {
     @Test
     void saveGatewayConfig_acceptsValidYaml_andSavesWithDefaultRoleGroupSentinel() {
         when(serviceInstanceService.getById(INSTANCE_ID)).thenReturn(apisixInstance());
-        stubEffectiveConfigs(List.of(
-                config("apisixGatewayYaml", ""),
-                config("apisixRouteUri", "/get"),
-                config("apisixUpstreamHost", "127.0.0.1"),
-                config("apisixUpstreamPort", 8080)));
+        stubEffectiveConfigs(defaultSaveConfigs());
         stubDefaultRoleGroupAndEmptyPush();
 
         service.saveGatewayConfig(CLUSTER_ID, INSTANCE_ID, VALID_YAML);
@@ -299,11 +306,7 @@ class ApisixGatewayConfigServiceTest {
         ClusterServiceInstanceEntity instance = apisixInstance();
         instance.setNeedRestart(NeedRestart.NO);
         when(serviceInstanceService.getById(INSTANCE_ID)).thenReturn(instance);
-        stubEffectiveConfigs(List.of(
-                config("apisixGatewayYaml", ""),
-                config("apisixRouteUri", "/get"),
-                config("apisixUpstreamHost", "127.0.0.1"),
-                config("apisixUpstreamPort", 8080)));
+        stubEffectiveConfigs(defaultSaveConfigs());
         stubDefaultRoleGroupAndEmptyPush();
         ClusterServiceRoleInstanceEntity roleInstance = new ClusterServiceRoleInstanceEntity();
         roleInstance.setNeedRestart(NeedRestart.YES);
@@ -322,11 +325,7 @@ class ApisixGatewayConfigServiceTest {
         ClusterServiceInstanceEntity instance = apisixInstance();
         instance.setNeedRestart(NeedRestart.YES);
         when(serviceInstanceService.getById(INSTANCE_ID)).thenReturn(instance);
-        stubEffectiveConfigs(List.of(
-                config("apisixGatewayYaml", ""),
-                config("apisixRouteUri", "/get"),
-                config("apisixUpstreamHost", "127.0.0.1"),
-                config("apisixUpstreamPort", 8080)));
+        stubEffectiveConfigs(defaultSaveConfigs());
         stubDefaultRoleGroupAndEmptyPush();
 
         service.saveGatewayConfig(CLUSTER_ID, INSTANCE_ID, VALID_YAML);

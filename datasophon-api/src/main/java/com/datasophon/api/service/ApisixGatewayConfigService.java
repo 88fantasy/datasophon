@@ -44,9 +44,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -98,19 +103,22 @@ public class ApisixGatewayConfigService {
     private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final ServiceInstallService serviceInstallService;
+    private final Executor masterExecutor;
 
     public ApisixGatewayConfigService(ClusterInfoService clusterInfoService,
                                       ClusterServiceInstanceService serviceInstanceService,
                                       ClusterServiceInstanceRoleGroupService roleGroupService,
                                       ClusterServiceRoleGroupConfigService roleGroupConfigService,
                                       ClusterServiceRoleInstanceService roleInstanceService,
-                                      ServiceInstallService serviceInstallService) {
+                                      ServiceInstallService serviceInstallService,
+                                      @Qualifier("masterExecutor") Executor masterExecutor) {
         this.clusterInfoService = clusterInfoService;
         this.serviceInstanceService = serviceInstanceService;
         this.roleGroupService = roleGroupService;
         this.roleGroupConfigService = roleGroupConfigService;
         this.roleInstanceService = roleInstanceService;
         this.serviceInstallService = serviceInstallService;
+        this.masterExecutor = masterExecutor;
     }
 
     public ApisixGatewayResponse getGatewayConfig(Integer clusterId, Integer instanceId) {
@@ -167,14 +175,8 @@ public class ApisixGatewayConfigService {
      */
     private List<ServiceConfig> loadEffectiveConfigs(Integer clusterId) {
         List<ServiceConfig> configs = new ArrayList<>(serviceInstallService.getServiceConfigOption(clusterId, SERVICE_NAME));
-        boolean hasGatewayYamlParam = configs.stream().anyMatch(c -> GATEWAY_YAML_PARAM.equals(c.getName()));
-        if (!hasGatewayYamlParam) {
-            serviceInstallService.getServiceConfigFromDdl(clusterId, SERVICE_NAME).stream()
-                    .filter(c -> GATEWAY_YAML_PARAM.equals(c.getName()))
-                    .findFirst()
-                    .ifPresent(configs::add);
-        }
-        return configs;
+        List<ServiceConfig> ddlConfigs = serviceInstallService.getServiceConfigFromDdl(clusterId, SERVICE_NAME);
+        return ServiceConfigUtils.addAll(configs, ddlConfigs);
     }
 
     private List<ApisixGatewayPushResult> pushToRunningRoles(Integer clusterId, Integer roleGroupId) {
@@ -197,18 +199,32 @@ public class ApisixGatewayConfigService {
                 .filter(e -> e.getServiceRoleState() == ServiceRoleState.RUNNING)
                 .toList();
 
-        List<ApisixGatewayPushResult> results = new ArrayList<>();
+        // 每台网关节点的下发是独立、阻塞的 gRPC 调用（最长 180s 超时），按主机 fan-out 到
+        // masterExecutor，避免多台网关节点时总耗时随节点数线性叠加（同款写法见 HostCheckService）。
+        List<CompletableFuture<ApisixGatewayPushResult>> futures = new ArrayList<>(runningRoles.size());
         for (ClusterServiceRoleInstanceEntity role : runningRoles) {
+            Supplier<ApisixGatewayPushResult> task = () -> pushToRole(clusterInfo, apisixYamlOnly, role);
             try {
-                ExecResult result = ServiceLifecycleUtils.configServiceRoleInstance(clusterInfo, apisixYamlOnly, role);
-                results.add(new ApisixGatewayPushResult(role.getHostname(), result != null && result.isSuccess(),
-                        result != null ? result.getExecOut() : "下发结果为空"));
-            } catch (Exception e) {
-                log.error("push apisix gateway config to {} failed", role.getHostname(), e);
-                results.add(new ApisixGatewayPushResult(role.getHostname(), false, e.getMessage()));
+                futures.add(CompletableFuture.supplyAsync(task, masterExecutor));
+            } catch (RejectedExecutionException e) {
+                // 池满时退化为调用线程串行执行，等价旧行为
+                futures.add(CompletableFuture.completedFuture(task.get()));
             }
         }
-        return results;
+        return futures.stream().map(CompletableFuture::join).toList();
+    }
+
+    private ApisixGatewayPushResult pushToRole(ClusterInfoEntity clusterInfo,
+                                               Map<Generators, List<ServiceConfig>> configFileMap,
+                                               ClusterServiceRoleInstanceEntity role) {
+        try {
+            ExecResult result = ServiceLifecycleUtils.configServiceRoleInstance(clusterInfo, configFileMap, role);
+            return new ApisixGatewayPushResult(role.getHostname(), result != null && result.isSuccess(),
+                    result != null ? result.getExecOut() : "下发结果为空");
+        } catch (Exception e) {
+            log.error("push apisix gateway config to {} failed", role.getHostname(), e);
+            return new ApisixGatewayPushResult(role.getHostname(), false, e.getMessage());
+        }
     }
 
     private void resetNeedRestart(Integer instanceId, Integer roleGroupId) {

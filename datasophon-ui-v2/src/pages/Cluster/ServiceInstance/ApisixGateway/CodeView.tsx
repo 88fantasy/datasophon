@@ -6,9 +6,9 @@
  */
 
 import Editor from '@monaco-editor/react';
+import { useIntl } from '@umijs/max';
 import { Alert, Button, Drawer } from 'antd';
 import React, { useState } from 'react';
-import { useIntl } from '@umijs/max';
 
 interface CodeViewProps {
   text: string;
@@ -16,7 +16,17 @@ interface CodeViewProps {
   managedSuffix: string;
 }
 
-const CodeView: React.FC<CodeViewProps> = ({ text, onChange, managedSuffix }) => {
+const MONACO_YAML_OPTIONS = {
+  minimap: { enabled: false },
+  scrollBeyondLastLine: false,
+  fontSize: 13,
+};
+
+const CodeView: React.FC<CodeViewProps> = ({
+  text,
+  onChange,
+  managedSuffix,
+}) => {
   const intl = useIntl();
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -30,22 +40,26 @@ const CodeView: React.FC<CodeViewProps> = ({ text, onChange, managedSuffix }) =>
           id: 'pages.apisixGateway.banner.managedHint',
         })}
       />
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div
+        style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}
+      >
         <Button onClick={() => setPreviewOpen(true)}>
           {intl.formatMessage({ id: 'pages.apisixGateway.preview.button' })}
         </Button>
       </div>
-      <div style={{ border: '1px solid #e8e8e8', borderRadius: 4, overflow: 'hidden' }}>
+      <div
+        style={{
+          border: '1px solid #e8e8e8',
+          borderRadius: 4,
+          overflow: 'hidden',
+        }}
+      >
         <Editor
           height="60vh"
           language="yaml"
           value={text}
           onChange={(v) => onChange(v ?? '')}
-          options={{
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 13,
-          }}
+          options={MONACO_YAML_OPTIONS}
         />
       </div>
       <Drawer
@@ -58,12 +72,7 @@ const CodeView: React.FC<CodeViewProps> = ({ text, onChange, managedSuffix }) =>
           height="80vh"
           language="yaml"
           value={text + managedSuffix}
-          options={{
-            readOnly: true,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 13,
-          }}
+          options={{ ...MONACO_YAML_OPTIONS, readOnly: true }}
         />
       </Drawer>
     </div>
