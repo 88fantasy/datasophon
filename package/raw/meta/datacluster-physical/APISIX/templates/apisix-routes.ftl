@@ -1,3 +1,4 @@
+<#if (apisixGatewayYaml!"")?has_content>${apisixGatewayYaml}<#else>
 upstreams:
   - id: 1
     type: roundrobin
@@ -19,6 +20,7 @@ global_rules:
       opentelemetry:
         sampler:
           name: always_on
+</#if>
 
 # opentelemetry 插件运行时读取的是 plugin_metadata，不是 config.yaml 的 plugin_attr——
 # 缺失时插件会静默跳过（access.log 报 "plugin_metadata is required"），不生成任何 span。

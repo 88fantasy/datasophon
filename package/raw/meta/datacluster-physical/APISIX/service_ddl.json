@@ -86,7 +86,8 @@
         "includeParams": [
           "apisixRouteUri",
           "apisixUpstreamHost",
-          "apisixUpstreamPort"
+          "apisixUpstreamPort",
+          "apisixGatewayYaml"
         ]
       }
     ]
@@ -140,6 +141,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": 8080
+    },
+    {
+      "name": "apisixGatewayYaml",
+      "label": "网关配置（由网关配置 Tab 管理）",
+      "description": "非空时替换 upstreams/routes/global_rules 段，由 UI 编辑生成",
+      "required": false,
+      "enabled": true,
+      "configType": "map",
+      "type": "textarea",
+      "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
     },
     {
       "name": "apisixPrometheusAddr",

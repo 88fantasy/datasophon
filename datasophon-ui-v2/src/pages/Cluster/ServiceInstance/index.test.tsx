@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
@@ -7,6 +7,7 @@ import ServiceInstance from './index';
 
 const {
   apisixDashboardSpy,
+  apisixGatewaySpy,
   valkeyDashboardSpy,
   dsDashboardSpy,
   dorisDashboardSpy,
@@ -15,6 +16,7 @@ const {
   routeParams,
 } = vi.hoisted(() => ({
   apisixDashboardSpy: vi.fn(),
+  apisixGatewaySpy: vi.fn(),
   valkeyDashboardSpy: vi.fn(),
   dsDashboardSpy: vi.fn(),
   dorisDashboardSpy: vi.fn(),
@@ -111,6 +113,12 @@ vi.mock('@/services/service', () => ({
   getServiceInstance: vi.fn(),
   getServiceWebUis: vi.fn(),
 }));
+vi.mock('./ApisixGateway', () => ({
+  default: (props: { clusterId: number; instanceId: number }) => {
+    apisixGatewaySpy(props);
+    return <div>gateway config</div>;
+  },
+}));
 vi.mock('./Instance', () => ({ default: () => <div>instances</div> }));
 vi.mock('./K8sResource', () => ({ default: () => null }));
 vi.mock('./Queue', () => ({ default: () => null }));
@@ -142,7 +150,7 @@ describe('APISIX service instance tabs', () => {
     await screen.findByText('APISIX dashboard cluster 7');
     const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
 
-    expect(tabs).toEqual(['监控', '概览', '实例', '配置']);
+    expect(tabs).toEqual(['监控', '网关配置', '概览', '实例', '配置']);
     expect(screen.getByTestId('tabs')).toHaveAttribute(
       'data-active-key',
       'monitor',
@@ -153,6 +161,10 @@ describe('APISIX service instance tabs', () => {
         embedded: true,
       }),
     );
+
+    fireEvent.click(screen.getByRole('tab', { name: '网关配置' }));
+    await screen.findByText('gateway config');
+    expect(apisixGatewaySpy).toHaveBeenCalledWith({ clusterId: 7, instanceId: 9 });
   });
 
   it('opens monitoring when navigating from another service to APISIX', async () => {

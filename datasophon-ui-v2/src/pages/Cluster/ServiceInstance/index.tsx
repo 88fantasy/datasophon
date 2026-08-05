@@ -16,6 +16,7 @@ import {
   getServiceInstance,
   getServiceWebUis,
 } from '@/services/service';
+import ApisixGatewayPanel from './ApisixGateway';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';
@@ -203,6 +204,18 @@ const ServiceInstance: React.FC = () => {
       key: 'monitor',
       label: '监控',
       children: primaryMonitor,
+    });
+  }
+  if (isApisix) {
+    items.push({
+      key: 'apisixGateway',
+      label: '网关配置',
+      children: (
+        <ApisixGatewayPanel
+          clusterId={numericClusterId}
+          instanceId={numericInstanceId}
+        />
+      ),
     });
   }
   if (serviceInfo?.dashboardUrl) {
