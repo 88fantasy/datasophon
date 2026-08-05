@@ -114,6 +114,66 @@ public class ApisixStandaloneTemplateTest {
     }
 
     @Test
+    public void rendersLegacyRouteByteIdenticallyWhenGatewayYamlEmpty() throws Exception {
+        Map<String, Object> data = routeData();
+        data.put("apisixGatewayYaml", "");
+        String withEmptyGatewayYaml = render(buildCfg(), "apisix-routes.ftl", data);
+        String legacyBaseline = render(buildCfg(), "apisix-routes.ftl", routeData());
+
+        assertTrue(withEmptyGatewayYaml.equals(legacyBaseline));
+    }
+
+    @Test
+    public void rendersGatewayYamlVerbatimWhenPresent() throws Exception {
+        String customYaml = "upstreams:\n"
+                + "  - id: 1\n"
+                + "    type: roundrobin\n"
+                + "    nodes:\n"
+                + "      '10.0.0.5:8080': 1\n"
+                + "\n"
+                + "routes:\n"
+                + "  - id: 1\n"
+                + "    uri: '/custom'\n"
+                + "    upstream_id: 1\n"
+                + "\n"
+                + "global_rules:\n"
+                + "  - id: 1\n"
+                + "    plugins:\n"
+                + "      prometheus:\n"
+                + "        prefer_name: true\n"
+                + "  - id: 2\n"
+                + "    plugins:\n"
+                + "      opentelemetry:\n"
+                + "        sampler:\n"
+                + "          name: always_on\n";
+        Map<String, Object> data = routeData();
+        data.put("apisixGatewayYaml", customYaml);
+
+        String routes = render(buildCfg(), "apisix-routes.ftl", data);
+        String yaml = routes.replace("#END\n", "");
+        Map<String, Object> document = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+
+        assertTrue(routes.contains("uri: '/custom'"));
+        assertTrue(routes.contains("'10.0.0.5:8080': 1"));
+        // 托管段（plugin_metadata + #END）始终由模板固定输出，不交给 UI，防止被误删导致链路追踪静默失效
+        assertTrue(routes.contains("service.name: apisix"));
+        assertTrue(routes.contains("address: 127.0.0.1:4318"));
+        assertTrue(routes.endsWith("#END\n"));
+        assertTrue(document.containsKey("upstreams"));
+        assertTrue(document.containsKey("routes"));
+        assertTrue(document.containsKey("global_rules"));
+        assertTrue(document.containsKey("plugin_metadata"));
+        // 验收路由参数(apisixRouteUri 等)在 apisixGatewayYaml 非空时不再生效
+        assertFalse(routes.contains("uri: '/get'"));
+        // apisixGatewayYaml 自带结尾换行时，托管段前只应有一个空行分隔（不是两个）——
+        // 沙箱实测曾因 ${var} 独占一行 + 变量自身尾随换行叠加，多渲染出一个空行
+        assertTrue(routes.contains("name: always_on\n\n# opentelemetry"),
+                "apisixGatewayYaml 与托管段之间应恰好一个空行分隔");
+        assertFalse(routes.contains("name: always_on\n\n\n# opentelemetry"),
+                "apisixGatewayYaml 与托管段之间不应有多余空行");
+    }
+
+    @Test
     public void standaloneDdlUsesCustomTemplatesAndMapParameters() throws Exception {
         String ddl = Files.readString(Path.of("..", "package", "raw", "meta", "datacluster-physical", "APISIX", "service_ddl.json"));
 
@@ -131,5 +191,7 @@ public class ApisixStandaloneTemplateTest {
         assertTrue(ddl.contains("\"name\": \"apisixUpstreamPort\",\n      \"key\": \"apisixUpstreamPort\""));
         assertTrue(ddl.contains("\"name\": \"apisixPrometheusAddr\",\n      \"key\": \"apisixPrometheusAddr\""));
         assertTrue(ddl.contains("\"name\": \"apisixPrometheusPort\""));
+        assertTrue(ddl.contains("\"name\": \"apisixGatewayYaml\""));
+        assertTrue(ddl.contains("\"hidden\": true"));
     }
 }

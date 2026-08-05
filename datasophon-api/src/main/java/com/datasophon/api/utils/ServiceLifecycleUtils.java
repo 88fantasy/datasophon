@@ -28,22 +28,24 @@ import com.datasophon.api.master.handler.service.ServiceInstallHandler;
 import com.datasophon.api.master.handler.service.ServiceStartHandler;
 import com.datasophon.api.master.handler.service.ServiceStopHandler;
 import com.datasophon.api.master.handler.service.ServiceUpgradeHandler;
+import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.entity.FrameServiceEntity;
 
 import java.util.List;
 import java.util.Map;
 
 /** 服务启停/安装/升级 Handler 链装配(原 ProcessUtils 拆出)。 */
 public class ServiceLifecycleUtils {
-    
+
     private ServiceLifecycleUtils() {
     }
-    
+
     public static ExecResult restartService(ServiceRoleInfo serviceRoleInfo, boolean needReConfig) throws Exception {
         ServiceHandler serviceStartHandler = new ServiceStartHandler();
         ServiceHandler serviceStopHandler = new ServiceStopHandler();
@@ -56,7 +58,7 @@ public class ServiceLifecycleUtils {
         }
         return serviceStopHandler.handlerRequest(serviceRoleInfo);
     }
-    
+
     public static ExecResult startService(ServiceRoleInfo serviceRoleInfo, boolean needReConfig) throws Exception {
         ExecResult execResult;
         if (needReConfig) {
@@ -70,26 +72,26 @@ public class ServiceLifecycleUtils {
         }
         return execResult;
     }
-    
+
     public static ExecResult stopService(ServiceRoleInfo serviceRoleInfo) throws Exception {
         ServiceHandler serviceStopHandler = new ServiceStopHandler();
         return serviceStopHandler.handlerRequest(serviceRoleInfo);
     }
-    
+
     public static ExecResult startInstallService(ServiceRoleInfo serviceRoleInfo) throws Exception {
         ServiceHandler serviceInstallHandler = new ServiceInstallHandler();
         ServiceHandler serviceConfigureHandler = new ServiceConfigureHandler();
-        
+
         // 安装时，不见是否启动成功(部分软件，需要全部节点启动成功后，状态才能成功)
         ServiceStartHandler serviceStartHandler = new ServiceStartHandler();
         serviceStartHandler.setCheckStatus(false);
-        
+
         serviceInstallHandler.setNext(serviceConfigureHandler);
         serviceConfigureHandler.setNext(serviceStartHandler);
         ExecResult execResult = serviceInstallHandler.handlerRequest(serviceRoleInfo);
         return execResult;
     }
-    
+
     /**
      * 升级角色服务，操作链
      * 1. 停止服务
@@ -99,16 +101,16 @@ public class ServiceLifecycleUtils {
      */
     public static ExecResult upgradeService(ServiceRoleInfo serviceRoleInfo) throws Exception {
         ServiceHandler handler = new ServiceStopHandler();
-        
+
         handler
                 .thenNext(new ServiceUpgradeHandler())
                 .thenNext(new ServiceConfigureHandler())
                 .thenNext(new ServiceStartHandler());
-        
+
         ExecResult execResult = handler.handlerRequest(serviceRoleInfo);
         return execResult;
     }
-    
+
     public static ExecResult configServiceRoleInstance(ClusterInfoEntity clusterInfo,
                                                        Map<Generators, List<ServiceConfig>> configFileMap,
                                                        ClusterServiceRoleInstanceEntity roleInstanceEntity) throws Exception {
@@ -118,6 +120,12 @@ public class ServiceLifecycleUtils {
         serviceRoleInfo.setFrameCode(clusterInfo.getClusterFrame());
         serviceRoleInfo.setConfigFileMap(configFileMap);
         serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
+        // ServiceConfigureHandler.resolvePackageName 依赖 archInfoMap 按主机架构解析安装包名，
+        // 不填充会在任何主机上都报"未找到匹配 CPU 架构的安装包"（ServicePkgNameUtils.getArchInfo 直接返回 null）。
+        FrameServiceService frameServiceService = SpringTool.getApplicationContext().getBean(FrameServiceService.class);
+        FrameServiceEntity frameServiceEntity = frameServiceService.getServiceByFrameCodeAndServiceName(
+                clusterInfo.getClusterFrame(), roleInstanceEntity.getServiceName());
+        serviceRoleInfo.setArchInfoMap(ServicePkgNameUtils.getArchInfo(frameServiceEntity));
         ServiceConfigureHandler configureHandler = new ServiceConfigureHandler();
         return configureHandler.handlerRequest(serviceRoleInfo);
     }

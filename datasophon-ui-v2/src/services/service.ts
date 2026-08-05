@@ -166,3 +166,23 @@ export async function bindRoleGroup(
     { method: 'POST', params },
   );
 }
+
+/** APISIX 网关配置（网关配置 Tab） */
+export async function getApisixGateway(clusterId: number, instanceId: number) {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.ApisixGatewayResponse>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/apisix/gateway`,
+    { method: 'GET' },
+  );
+}
+
+/** 保存 APISIX 网关配置（校验 + 保存 + 只下发不重启） */
+export async function saveApisixGateway(
+  clusterId: number,
+  instanceId: number,
+  gatewayYaml: string,
+) {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.ApisixGatewayPushResult[]>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/apisix/gateway`,
+    { method: 'POST', data: { gatewayYaml } },
+  );
+}

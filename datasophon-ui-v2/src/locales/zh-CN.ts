@@ -1,3 +1,4 @@
+import apisixGateway from './zh-CN/apisixGateway';
 import apisixMonitor from './zh-CN/apisixMonitor';
 import clusterDashboard from './zh-CN/clusterDashboard';
 import component from './zh-CN/component';
@@ -45,4 +46,5 @@ export default {
   ...additionalMonitor,
   ...clusterDashboard,
   ...lineage,
+  ...apisixGateway,
 };
