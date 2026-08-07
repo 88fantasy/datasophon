@@ -33,13 +33,43 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-/** Reads live Spark job metrics from the cluster's Doris OTel store. */
+/**
+ * Reads live job metrics (Spark or Flink) from the cluster's Doris OTel store.
+ *
+ * <p>Flink jobs are told apart from Spark ones purely by {@code appId} shape: a Flink JobID is a
+ * fixed 32-char lowercase hex string ({@link #FLINK_JOB_ID}); Spark app IDs never match that
+ * (they look like {@code local-<epoch>} / {@code application_<epoch>_<seq>}). This lets the same
+ * {@code appIds} request param carry both engines' identifiers without a separate parameter, per
+ * T16 (docs/data-lineage-Flink实时链路验证-实施方案-2026-08-05.md §4.2).
+ *
+ * <p>Flink exposes two independent metric-naming conventions depending on which OTel reporter a
+ * given standalone cluster uses (see T12 findings in the same doc): the native OTLP push reporter
+ * (FLIP-385) writes dotted names ({@code flink.taskmanager.job.task.operator.numRecordsOut}); the
+ * Prometheus-scrape fallback (used where FLIP-385 isn't shipped, e.g. Flink 1.20) writes
+ * underscored names via the OTel Prometheus receiver's usual conversion. A given {@code job_id}
+ * only ever has data under one of the two, so querying both and summing the per-job results is
+ * safe — no double counting, and no need to know in advance which reporter a job used.
+ *
+ * <p>The two conventions also land in different Doris tables. Flink's built-in Prometheus reporter
+ * mislabels every {@code Counter} metric (including {@code numRecordsOut}) as {@code # TYPE ...
+ * gauge} in its {@code /metrics} exposition — a known Flink limitation, not a Collector bug — so
+ * the OTel Prometheus receiver honors that hint and the doris exporter routes it to {@code
+ * otel_metrics_gauge}. The native OTLP push reporter uses correct Sum semantics and lands in
+ * {@code otel_metrics_sum}. Each entry in {@link #FLINK_RECORDS_OUT}/{@link #FLINK_BYTES_OUT}
+ * pairs a metric name with the table it actually lands in (verified against live Doris data during
+ * T16 follow-up, 2026-08-07) — querying the wrong table silently returns zero rows, not an error.
+ *
+ * <p>Flink has no equivalent of Spark's batch task/stage lifecycle (it runs continuously, with no
+ * discrete "stage completes" event) — {@code completeTasks}/{@code activeTasks}/{@code
+ * runningStages} are fixed at 0 for Flink jobs rather than mapped to something misleading.
+ */
 @Service
 public class LineageJobMetricsService {
 
@@ -52,6 +82,29 @@ public class LineageJobMetricsService {
     private static final String RECORDS_WRITTEN = "spark_executor_recordsWritten";
     private static final String BYTES_WRITTEN = "spark_executor_bytesWritten";
     private static final String RUNNING_STAGES = "spark_dagscheduler_stage_runningStages";
+
+    private static final Pattern FLINK_JOB_ID = Pattern.compile("^[0-9a-f]{32}$");
+    /**
+     * Sink-ish operators only. Naming differs by connector: Paimon splits the sink into
+     * `...: Writer` (always reports 0 records — a pass-through stage) and a separate
+     * `...Committer` stage that actually accumulates the count; Doris fuses the sink into a
+     * single `<table>_sink[n]: Committer` operator with no distinct Writer stage. Matching both
+     * keywords is safe against double-counting because Paimon's Writer never contributes a
+     * nonzero value to the summed rate.
+     */
+    private static final String FLINK_SINK_OPERATOR_REGEX = ".*(Writer|Committer).*";
+
+    private record FlinkMetric(String name, String table) {
+    }
+
+    private static final FlinkMetric[] FLINK_RECORDS_OUT = {
+            new FlinkMetric("flink.taskmanager.job.task.operator.numRecordsOut", "sum"),
+            new FlinkMetric("flink_taskmanager_job_task_operator_numRecordsOut", "gauge")
+    };
+    private static final FlinkMetric[] FLINK_BYTES_OUT = {
+            new FlinkMetric("flink.taskmanager.job.task.operator.numBytesOut", "sum"),
+            new FlinkMetric("flink_taskmanager_job_task_operator_numBytesOut", "gauge")
+    };
 
     private static final Logger log = LoggerFactory.getLogger(LineageJobMetricsService.class);
 
@@ -78,7 +131,20 @@ public class LineageJobMetricsService {
                     requestedAppIds.size(), MAX_APP_IDS, clusterId);
         }
 
+        List<String> flinkJobIds = appIds.stream().filter(id -> FLINK_JOB_ID.matcher(id).matches()).toList();
+        List<String> sparkAppIds = appIds.stream().filter(id -> !FLINK_JOB_ID.matcher(id).matches()).toList();
+
         long sampledAt = clock.instant().getEpochSecond();
+        Map<String, JobMetrics> metricsByApp = new LinkedHashMap<>();
+        metricsByApp.putAll(getSparkJobMetrics(clusterId, sparkAppIds, sampledAt));
+        metricsByApp.putAll(getFlinkJobMetrics(clusterId, flinkJobIds, sampledAt));
+        return metricsByApp;
+    }
+
+    private Map<String, JobMetrics> getSparkJobMetrics(Integer clusterId, List<String> appIds, long sampledAt) {
+        if (appIds.isEmpty()) {
+            return Map.of();
+        }
         String appIdRegex = exactRegex(appIds);
         Map<String, Double> completeTasks = queryInstantByApp(
                 clusterId, COMPLETE_TASKS, "gauge", appIdRegex, sampledAt);
@@ -110,6 +176,47 @@ public class LineageJobMetricsService {
                     Instant.ofEpochSecond(sampledAt)));
         }
         return metricsByApp;
+    }
+
+    private Map<String, JobMetrics> getFlinkJobMetrics(Integer clusterId, List<String> jobIds, long sampledAt) {
+        if (jobIds.isEmpty()) {
+            return Map.of();
+        }
+        String jobIdRegex = exactRegex(jobIds);
+        Map<String, Double> recordsWritten = new LinkedHashMap<>();
+        Map<String, Double> bytesWritten = new LinkedHashMap<>();
+        Map<String, Double> recordsWrittenRate = new LinkedHashMap<>();
+        for (FlinkMetric metric : FLINK_RECORDS_OUT) {
+            mergeSum(recordsWritten,
+                    queryInstantByFlinkJobId(clusterId, metric.name(), metric.table(), jobIdRegex, sampledAt));
+            mergeSum(recordsWrittenRate,
+                    queryRateByFlinkJobId(clusterId, metric.name(), metric.table(), jobIdRegex, sampledAt));
+        }
+        for (FlinkMetric metric : FLINK_BYTES_OUT) {
+            mergeSum(bytesWritten,
+                    queryInstantByFlinkJobId(clusterId, metric.name(), metric.table(), jobIdRegex, sampledAt));
+        }
+
+        Map<String, JobMetrics> metricsByJob = new LinkedHashMap<>();
+        for (String jobId : jobIds) {
+            if (!recordsWritten.containsKey(jobId) && !bytesWritten.containsKey(jobId)
+                    && !recordsWrittenRate.containsKey(jobId)) {
+                continue;
+            }
+            metricsByJob.put(jobId, new JobMetrics(
+                    0L,
+                    0L,
+                    toLong(recordsWritten.get(jobId)),
+                    toLong(bytesWritten.get(jobId)),
+                    recordsWrittenRate.get(jobId),
+                    0L,
+                    Instant.ofEpochSecond(sampledAt)));
+        }
+        return metricsByJob;
+    }
+
+    private static void mergeSum(Map<String, Double> target, Map<String, Double> source) {
+        source.forEach((key, value) -> target.merge(key, value, Double::sum));
     }
 
     static List<String> normalizeAppIds(List<String> requestedAppIds) {
@@ -164,6 +271,44 @@ public class LineageJobMetricsService {
             }
         }
         return valuesByApp;
+    }
+
+    private Map<String, Double> queryInstantByFlinkJobId(Integer clusterId, String metric, String table,
+                                                         String jobIdRegex, long sampledAt) {
+        PrometheusVectorResult result = queryService.queryInstant(
+                clusterId, metric, "sum", 1.0, ".+", ".+", Map.of(), Map.of(),
+                Map.of("job_id", jobIdRegex, "operator_name", FLINK_SINK_OPERATOR_REGEX), Map.of(),
+                sampledAt, table, List.of("job_id"));
+        Map<String, Double> valuesByJob = new LinkedHashMap<>();
+        for (PrometheusVectorResult.VectorSample sample : result.result()) {
+            String jobId = sample.metric().get("job_id");
+            Double value = numericValue(sample.value());
+            if (jobId != null && value != null) {
+                valuesByJob.merge(jobId, value, Double::sum);
+            }
+        }
+        return valuesByJob;
+    }
+
+    private Map<String, Double> queryRateByFlinkJobId(Integer clusterId, String metric, String table,
+                                                      String jobIdRegex, long sampledAt) {
+        PrometheusMatrixResult result = queryService.queryRange(
+                clusterId, metric, "1m", 1.0, ".+", ".+", Map.of(), Map.of(),
+                Map.of("job_id", jobIdRegex, "operator_name", FLINK_SINK_OPERATOR_REGEX), Map.of(),
+                List.of("job_id"), sampledAt - RANGE_SECONDS, sampledAt, RANGE_STEP_SECONDS, table, 0.5, null);
+        Map<String, Double> valuesByJob = new LinkedHashMap<>();
+        for (PrometheusMatrixResult.MatrixSeries series : result.result()) {
+            String jobId = series.metric().get("job_id");
+            List<Object[]> values = series.values();
+            if (jobId == null || values.isEmpty()) {
+                continue;
+            }
+            Double value = numericValue(values.get(values.size() - 1));
+            if (value != null) {
+                valuesByJob.merge(jobId, value, Double::sum);
+            }
+        }
+        return valuesByJob;
     }
 
     static String exactRegex(List<String> values) {

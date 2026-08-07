@@ -56,7 +56,10 @@ describe('Lineage proxy response contract', () => {
     lastRebuildError: null,
   };
 
-  const sourceFreshness = { lastEventReceivedAt: '2026-08-01T01:59:00Z', status: 'OK' };
+  const sourceFreshness = {
+    lastEventReceivedAt: '2026-08-01T01:59:00Z',
+    status: 'OK',
+  };
 
   function expectRequiredNodeFields(actual: object) {
     for (const field of [
@@ -68,13 +71,25 @@ describe('Lineage proxy response contract', () => {
       'tableName',
       'canonicalName',
     ]) {
-      expect(actual, `node is missing required field "${field}"`).toHaveProperty(field);
+      expect(
+        actual,
+        `node is missing required field "${field}"`,
+      ).toHaveProperty(field);
     }
   }
 
   function expectRequiredSnapshotFields(actual: object) {
-    for (const field of ['generation', 'targetGeneration', 'builtAt', 'ageSeconds', 'stale']) {
-      expect(actual, `snapshot is missing required field "${field}"`).toHaveProperty(field);
+    for (const field of [
+      'generation',
+      'targetGeneration',
+      'builtAt',
+      'ageSeconds',
+      'stale',
+    ]) {
+      expect(
+        actual,
+        `snapshot is missing required field "${field}"`,
+      ).toHaveProperty(field);
     }
   }
 
@@ -101,16 +116,18 @@ describe('Lineage proxy response contract', () => {
     const edge = {
       src: 1,
       dst: 42,
-      jobs: [{
-        jobId: 10,
-        edgeId: 100,
-        flowType: 'TABLE',
-        jobName: 'sync_orders',
-        lastRowCount: null,
-        lastBytes: null,
-        lastRunAt: null,
-        runningAppId: null,
-      }],
+      jobs: [
+        {
+          jobId: 10,
+          edgeId: 100,
+          flowType: 'TABLE',
+          jobName: 'sync_orders',
+          lastRowCount: null,
+          lastBytes: null,
+          lastRunAt: null,
+          runningAppId: null,
+        },
+      ],
     };
     const collapsedNode = {
       type: 'collapsed',
@@ -122,7 +139,12 @@ describe('Lineage proxy response contract', () => {
     vi.mocked(request).mockResolvedValue({
       success: true,
       data: {
-        data: { nodes: [node], edges: [edge], collapsed: [collapsedNode], truncated: true },
+        data: {
+          nodes: [node],
+          edges: [edge],
+          collapsed: [collapsedNode],
+          truncated: true,
+        },
         snapshot: snapshotFreshness,
         sourceFreshness,
       },
@@ -132,9 +154,10 @@ describe('Lineage proxy response contract', () => {
 
     expectRequiredNodeFields(result.data.nodes[0]);
     for (const field of ['src', 'dst', 'jobs']) {
-      expect(result.data.edges[0], `edge is missing required field "${field}"`).toHaveProperty(
-        field,
-      );
+      expect(
+        result.data.edges[0],
+        `edge is missing required field "${field}"`,
+      ).toHaveProperty(field);
     }
     for (const field of ['jobId', 'edgeId', 'flowType']) {
       expect(
@@ -142,7 +165,13 @@ describe('Lineage proxy response contract', () => {
         `job reference is missing required field "${field}"`,
       ).toHaveProperty(field);
     }
-    for (const field of ['type', 'nodeId', 'token', 'hiddenCount', 'direction']) {
+    for (const field of [
+      'type',
+      'nodeId',
+      'token',
+      'hiddenCount',
+      'direction',
+    ]) {
       expect(
         result.data.collapsed[0],
         `collapsed node is missing required field "${field}"`,
@@ -194,7 +223,11 @@ describe('Lineage proxy response contract', () => {
     const result = await getOverview(7);
 
     expect(result.data.layers[0]).toEqual({ layer: 'DWD', nodeCount: 12 });
-    expect(result.data.edges[0]).toEqual({ srcLayer: 'ODS', dstLayer: 'DWD', count: 5 });
+    expect(result.data.edges[0]).toEqual({
+      srcLayer: 'ODS',
+      dstLayer: 'DWD',
+      count: 5,
+    });
   });
 
   it('job: LineageJobDetail required fields survive (not wrapped in a QueryResponse)', async () => {
@@ -214,13 +247,26 @@ describe('Lineage proxy response contract', () => {
 
     const result = await getJob(7, 100);
 
-    for (const field of ['id', 'jobName', 'engine', 'jobType', 'state', 'updateTime']) {
-      expect(result, `job detail is missing required field "${field}"`).toHaveProperty(field);
+    for (const field of [
+      'id',
+      'jobName',
+      'engine',
+      'jobType',
+      'state',
+      'updateTime',
+    ]) {
+      expect(
+        result,
+        `job detail is missing required field "${field}"`,
+      ).toHaveProperty(field);
     }
   });
 
   it('rebuild: LineageRebuildAccepted required field survives', async () => {
-    vi.mocked(request).mockResolvedValue({ success: true, data: { generation: 17 } });
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: { generation: 17 },
+    });
 
     const result = await rebuild(7);
 
@@ -239,7 +285,7 @@ describe('Lineage proxy response contract', () => {
     };
     vi.mocked(request).mockResolvedValue({
       success: true,
-      data: { 'application_1': metrics },
+      data: { application_1: metrics },
     });
 
     const result = await getJobMetrics(7, ['application_1', 'application_2']);
@@ -253,41 +299,119 @@ describe('Lineage proxy response contract', () => {
   });
 
   it('job rate history: queries app_id range and sums executor series by timestamp', async () => {
-    const nowSpy = vi
-      .spyOn(Date, 'now')
-      .mockReturnValue(1_800_000_000_000);
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
     vi.mocked(request).mockResolvedValue({
       success: true,
       data: {
         resultType: 'matrix',
         result: [
-          { metric: { instance: '1' }, values: [[1_799_999_940, '10'], [1_800_000_000, '20']] },
-          { metric: { instance: '2' }, values: [[1_799_999_940, '3'], [1_800_000_000, '4']] },
+          {
+            metric: { instance: '1' },
+            values: [
+              [1_799_999_940, '10'],
+              [1_800_000_000, '20'],
+            ],
+          },
+          {
+            metric: { instance: '2' },
+            values: [
+              [1_799_999_940, '3'],
+              [1_800_000_000, '4'],
+            ],
+          },
         ],
       },
     });
 
     const result = await getJobRateHistory(7, 'application_1');
 
-    expect(request).toHaveBeenCalledWith('/observability/otel/metrics/query_range', {
-      method: 'GET',
-      params: {
-        clusterId: 7,
-        metric: 'spark_executor_recordsWritten',
-        rateWindow: '1m',
-        table: 'sum',
-        filters: 'app_id:application_1',
-        groupBy: 'app_id',
-        start: 1_799_996_400,
-        end: 1_800_000_000,
-        step: 60,
+    expect(request).toHaveBeenCalledWith(
+      '/observability/otel/metrics/query_range',
+      {
+        method: 'GET',
+        params: {
+          clusterId: 7,
+          metric: 'spark_executor_recordsWritten',
+          rateWindow: '1m',
+          table: 'sum',
+          filters: 'app_id:application_1',
+          groupBy: 'app_id',
+          start: 1_799_996_400,
+          end: 1_800_000_000,
+          step: 60,
+        },
+        skipErrorHandler: true,
       },
-      skipErrorHandler: true,
-    });
+    );
     expect(result).toEqual([
       { time: 1_799_999_940_000, value: 13 },
       { time: 1_800_000_000_000, value: 24 },
     ]);
+    nowSpy.mockRestore();
+  });
+
+  it('job rate history: routes a Flink JobID (32-char hex) to job_id/operator_name queries across both metric-naming conventions', async () => {
+    // A Flink JobID (32-char lowercase hex) never collides with a Spark app_id shape
+    // (local-<epoch> / application_<epoch>_<seq>), so getJobRateHistory tells them apart by
+    // regex alone — no separate "engine" parameter needed (T16).
+    const flinkJobId = '5a08eb018fa0ed1a47275378c0658438';
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
+    vi.mocked(request)
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          resultType: 'matrix',
+          result: [
+            { metric: { job_id: flinkJobId }, values: [[1_800_000_000, '17']] },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { resultType: 'matrix', result: [] },
+      });
+
+    const result = await getJobRateHistory(7, flinkJobId);
+
+    expect(request).toHaveBeenCalledWith(
+      '/observability/otel/metrics/query_range',
+      {
+        method: 'GET',
+        params: {
+          clusterId: 7,
+          metric: 'flink.taskmanager.job.task.operator.numRecordsOut',
+          rateWindow: '1m',
+          table: 'sum',
+          filters: `job_id:${flinkJobId}`,
+          filtersRegex: 'operator_name:.*(Writer|Committer).*',
+          groupBy: 'job_id',
+          start: 1_799_996_400,
+          end: 1_800_000_000,
+          step: 60,
+        },
+        skipErrorHandler: true,
+      },
+    );
+    expect(request).toHaveBeenCalledWith(
+      '/observability/otel/metrics/query_range',
+      {
+        method: 'GET',
+        params: {
+          clusterId: 7,
+          metric: 'flink_taskmanager_job_task_operator_numRecordsOut',
+          rateWindow: '1m',
+          table: 'gauge',
+          filters: `job_id:${flinkJobId}`,
+          filtersRegex: 'operator_name:.*(Writer|Committer).*',
+          groupBy: 'job_id',
+          start: 1_799_996_400,
+          end: 1_800_000_000,
+          step: 60,
+        },
+        skipErrorHandler: true,
+      },
+    );
+    expect(result).toEqual([{ time: 1_800_000_000_000, value: 17 }]);
     nowSpy.mockRestore();
   });
 });
