@@ -1,0 +1,58 @@
+T14 golden 逐字段比对 + 未命中用例断言 — 验证报告
+生成时间：2026-08-07
+数据来源：Doris lineage_flink_verify.dwd_odr_oper_surgery_records_full_hourly（Flink T9 作业，flink-cluster-dwd 2.2.1 升级后现场重新导出，非历史截图）
+golden 期望值来源：docs/lineage/dwd层表数据示例（dwd_odr_oper_surgery_records_full_hourly）.xlsx Sheet1（业务方提供的原始 19 行样例，转存为 docs/lineage/data/golden_dwd_expected.csv）
+比对脚本：docs/lineage/scripts/t14_compare_golden.py
+
+=== Part 1：golden 命中用例逐字段比对 ===
+
+golden 行数: 19
+actual 行数: 19
+比对列数（排除非确定性的 etl_time）: 42
+比对字段总数: 798
+缺失（golden 有、actual 无）: 0 -> []
+多余（actual 有、golden 无，非本次比对范围内的正常现象）: 0
+不一致字段数: 0
+
+结论: PASS（退出码 0）
+
+复现命令：
+  python3 docs/lineage/scripts/t14_compare_golden.py \
+    docs/lineage/data/golden_dwd_expected.csv \
+    docs/lineage/data/doris_actual_20260807.tsv
+
+=== Part 2：A2 验收点 —— 未命中用例的 LEFT JOIN 字段行为断言 ===
+
+标准（实施方案 §8 A2）：未命中用例的 LEFT JOIN 字段应落到 IFNULL 默认值（''），不是 NULL。
+
+用 sqkk（SQL: IFNULL(ad.NAME, '')，有 IFNULL 包裹）与 jxks（SQL: bb.jxks，无 IFNULL 包裹，裸传）
+两列做对照，覆盖当前 Doris 表里全部 14 条"raw"（非 golden）未命中样本行：
+
+  surgery_id                          sqkk（IFNULL 包裹）   jxks（裸传）
+  00004a308f9911ec8b875181e1da8470    ''（空串）             NULL
+  00004ab0637411ef93e4c1207a16930f    ''（空串）             NULL
+  00009a10efb211ed8ca1e3119fea5b18    ''（空串）             NULL
+  0000eb10d96111ef9815d169ac2c2643    ''（空串）             NULL
+  00012de055a811f1baf6972f9cb62838    ''（空串）             NULL
+  0001aec0541611f18a118f48e305d587    ''（空串）             NULL
+  0001c9901f2a11f08670a505cf10993e    ''（空串）             NULL
+  0001e2e09d6711ee848c533d43fa4a40    ''（空串）             NULL
+  000205406ab511ec907f3366fda3e530    ''（空串）             NULL
+  0002147075b611f1ae458de536d6fb58    ''（空串）             NULL
+  00021c60190311f08670a505cf10993e    ''（空串）             NULL
+  000222303f5311ef99e48d6154305305    ''（空串）             NULL
+  000285903b0311eea8f03b0903aec704    ''（空串）             NULL
+  0002a330ae9f11eea5ccd3bbd2f1d2c3    ''（空串）             NULL
+
+14/14 行一致表现：有 IFNULL 包裹的列稳定落空串，无 IFNULL 包裹的列稳定原样传 NULL，
+与原始 Doris SQL 语义、T8 改写对照清单记录的行为完全一致。
+
+结论: PASS —— A2 验收点成立，14 个未命中样本全部符合预期，0 处异常。
+
+=== 总结 ===
+
+A1（golden 逐字段一致）：PASS（798/798）
+A2（未命中用例 IFNULL 语义正确）：PASS（14/14）
+
+本报告数据全部来自 2026-08-07 现场重新导出（Flink 2.2.1 升级、T12 两次 savepoint 恢复之后），
+不是复用 T9 阶段的历史验证结论，证明 savepoint 恢复与 Flink 版本升级均未破坏数据正确性。

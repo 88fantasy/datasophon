@@ -1,16 +1,25 @@
 import { Line } from '@ant-design/plots';
 import { useIntl } from '@umijs/max';
-import { Descriptions, Drawer, Empty, Spin, Table, Tag, Typography } from 'antd';
+import {
+  Descriptions,
+  Drawer,
+  Empty,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
+import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import type { JobOutputStat } from './lineageGraphData';
 import {
   formatBytes,
   formatRecordsRate,
   formatRowCount,
   formatRunAt,
 } from './lineageFormatters';
-import { getJob, getJobRateHistory } from './service';
+import type { JobOutputStat } from './lineageGraphData';
 import type { GraphJob, JobDetail, JobRatePoint } from './service';
+import { getJob, getJobRateHistory } from './service';
 
 interface JobDetailDrawerProps {
   clusterId: number;
@@ -61,9 +70,7 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
     if (!open) return;
     const appIds = Array.from(
       new Set(
-        jobs.flatMap((job) =>
-          job.runningAppId ? [job.runningAppId] : [],
-        ),
+        jobs.flatMap((job) => (job.runningAppId ? [job.runningAppId] : [])),
       ),
     );
     if (appIds.length === 0) {
@@ -102,7 +109,12 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
     >
       <Spin spinning={loading}>
         {jobs.length === 0 ? (
-          <Empty description={t('pages.lineage.jobDrawer.empty', '此边未关联任何作业')} />
+          <Empty
+            description={t(
+              'pages.lineage.jobDrawer.empty',
+              '此边未关联任何作业',
+            )}
+          />
         ) : (
           jobs.map((job) => {
             const detail = details.get(job.jobId);
@@ -122,15 +134,24 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                     rowKey="dstNodeId"
                     dataSource={job.outputs}
                     title={() =>
-                      t('pages.lineage.jobDrawer.latestStatistics', '最近运行统计')
+                      t(
+                        'pages.lineage.jobDrawer.latestStatistics',
+                        '最近运行统计',
+                      )
                     }
                     columns={[
                       {
-                        title: t('pages.lineage.jobDrawer.targetTable', '目标表'),
+                        title: t(
+                          'pages.lineage.jobDrawer.targetTable',
+                          '目标表',
+                        ),
                         dataIndex: 'dstName',
                       },
                       {
-                        title: t('pages.lineage.jobDrawer.rowCount', '写入行数'),
+                        title: t(
+                          'pages.lineage.jobDrawer.rowCount',
+                          '写入行数',
+                        ),
                         dataIndex: 'lastRowCount',
                         render: (value: number | null) => formatRowCount(value),
                       },
@@ -140,7 +161,10 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                         render: (value: number | null) => formatBytes(value),
                       },
                       {
-                        title: t('pages.lineage.jobDrawer.lastRunAt', '最近运行时间'),
+                        title: t(
+                          'pages.lineage.jobDrawer.lastRunAt',
+                          '最近运行时间',
+                        ),
                         dataIndex: 'lastRunAt',
                         render: (value: string | null) => formatRunAt(value),
                       },
@@ -167,7 +191,10 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                       {formatBytes(job.lastBytes)}
                     </Descriptions.Item>
                     <Descriptions.Item
-                      label={t('pages.lineage.jobDrawer.lastRunAt', '最近运行时间')}
+                      label={t(
+                        'pages.lineage.jobDrawer.lastRunAt',
+                        '最近运行时间',
+                      )}
                     >
                       {formatRunAt(job.lastRunAt)}
                     </Descriptions.Item>
@@ -189,8 +216,13 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                           yField="value"
                           height={180}
                           smooth
+                          scale={{ x: { type: 'time' } }}
+                          tooltip={{
+                            title: (datum: JobRatePoint) =>
+                              dayjs(datum.time).format('MM-DD HH:mm:ss'),
+                          }}
                           axis={{
-                            x: { type: 'time', title: false },
+                            x: { title: false },
                             y: {
                               title: false,
                               labelFormatter: (value: number) =>
@@ -219,24 +251,46 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                     style={{ marginTop: 8 }}
                     title={t('pages.lineage.jobDrawer.jobInfo', '作业信息')}
                   >
-                    <Descriptions.Item label={t('pages.lineage.jobDrawer.engine', '引擎')}>
+                    <Descriptions.Item
+                      label={t('pages.lineage.jobDrawer.engine', '引擎')}
+                    >
                       {detail.engine}
                     </Descriptions.Item>
-                    <Descriptions.Item label={t('pages.lineage.jobDrawer.jobType', '类型')}>
+                    <Descriptions.Item
+                      label={t('pages.lineage.jobDrawer.jobType', '类型')}
+                    >
                       {detail.jobType}
                     </Descriptions.Item>
-                    <Descriptions.Item label={t('pages.lineage.jobDrawer.state', '状态')}>
+                    <Descriptions.Item
+                      label={t('pages.lineage.jobDrawer.state', '状态')}
+                    >
                       {detail.state}
                     </Descriptions.Item>
-                    <Descriptions.Item label={t('pages.lineage.jobDrawer.owner', 'Owner')}>
+                    <Descriptions.Item
+                      label={t('pages.lineage.jobDrawer.owner', 'Owner')}
+                    >
                       {detail.owner ?? '-'}
                     </Descriptions.Item>
-                    <Descriptions.Item label={t('pages.lineage.jobDrawer.updateTime', '更新时间')}>
+                    <Descriptions.Item
+                      label={t(
+                        'pages.lineage.jobDrawer.updateTime',
+                        '更新时间',
+                      )}
+                    >
                       {detail.updateTime}
                     </Descriptions.Item>
-                    <Descriptions.Item label={t('pages.lineage.jobDrawer.externalUrl', '外部链接')}>
+                    <Descriptions.Item
+                      label={t(
+                        'pages.lineage.jobDrawer.externalUrl',
+                        '外部链接',
+                      )}
+                    >
                       {detail.externalUrl ? (
-                        <a href={detail.externalUrl} target="_blank" rel="noreferrer">
+                        <a
+                          href={detail.externalUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           {detail.externalUrl}
                         </a>
                       ) : (
@@ -246,8 +300,14 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                   </Descriptions>
                 ) : (
                   !loading && (
-                    <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-                      {t('pages.lineage.jobDrawer.detailUnavailable', '作业详情加载失败')}
+                    <Typography.Text
+                      type="secondary"
+                      style={{ display: 'block', marginTop: 8 }}
+                    >
+                      {t(
+                        'pages.lineage.jobDrawer.detailUnavailable',
+                        '作业详情加载失败',
+                      )}
                     </Typography.Text>
                   )
                 )}

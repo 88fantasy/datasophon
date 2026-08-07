@@ -140,6 +140,84 @@ class LineageJobMetricsServiceTest {
     }
 
     @Test
+    void routesFlinkJobIdsToJobIdAndOperatorNameFilters() {
+        String flinkJobId = "5a08eb018fa0ed1a47275378c0658438";
+        when(queryService.queryInstant(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("sum"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*")), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
+                .thenReturn(vectorByJobId(flinkJobId, 798));
+        when(queryService.queryInstant(eq(7),
+                eq("flink.taskmanager.job.task.operator.numBytesOut"), eq("sum"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*")), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
+                .thenReturn(vectorByJobId(flinkJobId, 40_000));
+        when(queryService.queryRange(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("1m"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*")), eq(Map.of()),
+                eq(List.of("job_id")), eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(15L),
+                eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(matrixSeriesByJobId(flinkJobId, 12.0, 20.0))));
+
+        Map<String, JobMetrics> result = service.getJobMetrics(7, List.of(flinkJobId));
+
+        assertThat(result).containsOnlyKeys(flinkJobId);
+        assertThat(result.get(flinkJobId))
+                .isEqualTo(new JobMetrics(0, 0, 798, 40_000, 20.0, 0, NOW));
+    }
+
+    @Test
+    void sumsAcrossBothFlinkMetricNamingConventionsForTheSameJobId() {
+        // T6 (Prometheus scrape) and T9 (native OTLP) write different metric names for the same
+        // concept — a given job_id only ever has data under one of the two, so summing both
+        // query results is safe and doesn't need to know in advance which reporter a job used.
+        // They also land in different Doris tables: Flink's own Prometheus reporter mislabels
+        // every Counter as `# TYPE ... gauge`, so the underscored name is queried against the
+        // gauge table while the dotted (native OTLP) name stays on the sum table (see class doc).
+        String flinkJobId = "d408c7642465c7236cb10a062875cd02";
+        Map<String, String> filters =
+                Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*");
+        when(queryService.queryInstant(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("sum"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(filters), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
+                .thenReturn(PrometheusVectorResult.of(List.of()));
+        when(queryService.queryInstant(eq(7),
+                eq("flink_taskmanager_job_task_operator_numRecordsOut"), eq("sum"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(filters), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("gauge"), eq(List.of("job_id"))))
+                .thenReturn(vectorByJobId(flinkJobId, 33));
+
+        Map<String, JobMetrics> result = service.getJobMetrics(7, List.of(flinkJobId));
+
+        assertThat(result.get(flinkJobId).recordsWritten()).isEqualTo(33);
+    }
+
+    @Test
+    void queriesUnderscoredFlinkMetricsAgainstTheGaugeTableNotSum() {
+        // Regression for the T16 follow-up bug: Flink's built-in Prometheus reporter mislabels
+        // every Counter (including numRecordsOut) as `# TYPE ... gauge`, so the OTel Collector
+        // stores it in otel_metrics_gauge — querying otel_metrics_sum for this naming convention
+        // silently returns zero rows forever, no matter how much real traffic the job processes.
+        String flinkJobId = "94dfbc7523e3c5aded836f18d7c3b60f";
+        Map<String, String> filters =
+                Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*");
+        when(queryService.queryRange(eq(7),
+                eq("flink_taskmanager_job_task_operator_numRecordsOut"), eq("1m"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(filters), eq(Map.of()),
+                eq(List.of("job_id")), eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(15L),
+                eq("gauge"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(matrixSeriesByJobId(flinkJobId, 33.0, 36.0))));
+
+        Map<String, JobMetrics> result = service.getJobMetrics(7, List.of(flinkJobId));
+
+        assertThat(result.get(flinkJobId).recordsWrittenRate()).isEqualTo(36.0);
+    }
+
+    @Test
     void springContextSelectsTheProductionConstructor() {
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
             context.registerBean(OtelMetricsQueryService.class, () -> queryService);
@@ -166,6 +244,17 @@ class LineageJobMetricsServiceTest {
 
     private static MatrixSeries matrixSeries(String appId, String instance, double first, double last) {
         return new MatrixSeries(Map.of("app_id", appId, "instance", instance), List.of(
+                new Object[]{NOW.getEpochSecond() - 15, Double.toString(first)},
+                new Object[]{NOW.getEpochSecond(), Double.toString(last)}));
+    }
+
+    private static PrometheusVectorResult vectorByJobId(String jobId, Number value) {
+        return PrometheusVectorResult.of(List.of(
+                new VectorSample(Map.of("job_id", jobId), new Object[]{NOW.getEpochSecond(), value.toString()})));
+    }
+
+    private static MatrixSeries matrixSeriesByJobId(String jobId, double first, double last) {
+        return new MatrixSeries(Map.of("job_id", jobId), List.of(
                 new Object[]{NOW.getEpochSecond() - 15, Double.toString(first)},
                 new Object[]{NOW.getEpochSecond(), Double.toString(last)}));
     }
