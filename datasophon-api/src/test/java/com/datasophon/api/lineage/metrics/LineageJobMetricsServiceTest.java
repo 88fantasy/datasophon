@@ -72,6 +72,10 @@ class LineageJobMetricsServiceTest {
                 anyString(), anyString(), anyMap(), anyMap(), anyMap(), anyMap(), anyList(),
                 anyLong(), anyLong(), anyLong(), anyString(), anyDouble(), isNull()))
                 .thenReturn(PrometheusMatrixResult.of(List.of()));
+        when(queryService.queryRangeSum(anyInt(), anyString(), isNull(), anyDouble(),
+                anyString(), anyString(), anyMap(), anyMap(), anyMap(), anyMap(), anyList(),
+                anyLong(), anyLong(), anyLong(), anyString(), anyDouble(), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of()));
     }
 
     @Test
@@ -143,22 +147,29 @@ class LineageJobMetricsServiceTest {
     void routesFlinkJobIdsToJobIdAndOperatorNameFilters() {
         String flinkJobId = "5a08eb018fa0ed1a47275378c0658438";
         when(queryService.queryInstant(eq(7),
-                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("sum"), eq(1.0),
+                eq("flink.taskmanager.job.task.operator.numRecordsIn"), eq("sum"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
-                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*")), eq(Map.of()),
+                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*Writer.*")), eq(Map.of()),
                 eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
                 .thenReturn(vectorByJobId(flinkJobId, 798));
+        when(queryService.queryInstant(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsIn"), eq("count"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$")), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "task_id"))))
+                .thenReturn(taskVectorsByJobId(flinkJobId, "task-a", "task-b"));
         when(queryService.queryInstant(eq(7),
                 eq("flink.taskmanager.job.task.operator.numBytesOut"), eq("sum"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
                 eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*")), eq(Map.of()),
                 eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
                 .thenReturn(vectorByJobId(flinkJobId, 40_000));
-        when(queryService.queryRange(eq(7),
-                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("1m"), eq(1.0),
+        when(queryService.queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsIn"), isNull(), eq(1.0 / 60),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
-                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*")), eq(Map.of()),
-                eq(List.of("job_id")), eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(15L),
+                eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*Writer.*")), eq(Map.of()),
+                eq(List.of("job_id")), eq(NOW.getEpochSecond() - NOW.getEpochSecond() % 60 - 120),
+                eq(NOW.getEpochSecond() - NOW.getEpochSecond() % 60), eq(60L),
                 eq("sum"), eq(0.5), isNull()))
                 .thenReturn(PrometheusMatrixResult.of(List.of(matrixSeriesByJobId(flinkJobId, 12.0, 20.0))));
 
@@ -166,7 +177,7 @@ class LineageJobMetricsServiceTest {
 
         assertThat(result).containsOnlyKeys(flinkJobId);
         assertThat(result.get(flinkJobId))
-                .isEqualTo(new JobMetrics(0, 0, 798, 40_000, 20.0, 0, NOW));
+                .isEqualTo(new JobMetrics(0, 2, 798, 40_000, 20.0, 0, NOW));
     }
 
     @Test
@@ -178,16 +189,18 @@ class LineageJobMetricsServiceTest {
         // every Counter as `# TYPE ... gauge`, so the underscored name is queried against the
         // gauge table while the dotted (native OTLP) name stays on the sum table (see class doc).
         String flinkJobId = "d408c7642465c7236cb10a062875cd02";
-        Map<String, String> filters =
+        Map<String, String> nativeFilters =
+                Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*Writer.*");
+        Map<String, String> fallbackFilters =
                 Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*");
         when(queryService.queryInstant(eq(7),
-                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("sum"), eq(1.0),
-                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(filters), eq(Map.of()),
+                eq("flink.taskmanager.job.task.operator.numRecordsIn"), eq("sum"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(nativeFilters), eq(Map.of()),
                 eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
                 .thenReturn(PrometheusVectorResult.of(List.of()));
         when(queryService.queryInstant(eq(7),
                 eq("flink_taskmanager_job_task_operator_numRecordsOut"), eq("sum"), eq(1.0),
-                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(filters), eq(Map.of()),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(fallbackFilters), eq(Map.of()),
                 eq(NOW.getEpochSecond()), eq("gauge"), eq(List.of("job_id"))))
                 .thenReturn(vectorByJobId(flinkJobId, 33));
 
@@ -208,7 +221,8 @@ class LineageJobMetricsServiceTest {
         when(queryService.queryRange(eq(7),
                 eq("flink_taskmanager_job_task_operator_numRecordsOut"), eq("1m"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(filters), eq(Map.of()),
-                eq(List.of("job_id")), eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(15L),
+                eq(List.of("job_id")), eq(NOW.getEpochSecond() - NOW.getEpochSecond() % 60 - 120),
+                eq(NOW.getEpochSecond() - NOW.getEpochSecond() % 60), eq(60L),
                 eq("gauge"), eq(0.5), isNull()))
                 .thenReturn(PrometheusMatrixResult.of(List.of(matrixSeriesByJobId(flinkJobId, 33.0, 36.0))));
 
@@ -251,6 +265,13 @@ class LineageJobMetricsServiceTest {
     private static PrometheusVectorResult vectorByJobId(String jobId, Number value) {
         return PrometheusVectorResult.of(List.of(
                 new VectorSample(Map.of("job_id", jobId), new Object[]{NOW.getEpochSecond(), value.toString()})));
+    }
+
+    private static PrometheusVectorResult taskVectorsByJobId(String jobId, String... taskIds) {
+        return PrometheusVectorResult.of(java.util.Arrays.stream(taskIds)
+                .map(taskId -> new VectorSample(Map.of("job_id", jobId, "task_id", taskId),
+                        new Object[]{NOW.getEpochSecond(), "1"}))
+                .toList());
     }
 
     private static MatrixSeries matrixSeriesByJobId(String jobId, double first, double last) {

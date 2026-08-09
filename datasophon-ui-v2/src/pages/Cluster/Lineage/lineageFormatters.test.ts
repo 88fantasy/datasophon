@@ -41,25 +41,18 @@ describe('lineage formatters', () => {
     expect(formatBytes(2.5 * 1024 * 1024 * 1024)).toBe('2.5 GB');
   });
 
-  it('builds a two-line job label with row count and relative time', () => {
-    expect(
-      formatJobNodeLabel(JOB, new Date('2026-08-04T03:03:00Z').getTime()),
-    ).toBe('daily_orders_etl\n120万行 · 3分钟前');
+  it('builds a two-line job label with the task name first', () => {
+    expect(formatJobNodeLabel(JOB)).toBe('daily_orders_etl\n- task · -');
   });
 
-  it('shows only the job name when historical statistics are absent', () => {
-    expect(
-      formatJobNodeLabel({
-        ...JOB,
-        lastRowCount: null,
-        lastBytes: null,
-        lastRunAt: null,
-      }),
-    ).toBe('daily_orders_etl');
+  it('keeps the task name while updating the second line with runtime data', () => {
+    expect(formatJobNodeLabel(JOB, '14 task · 5.1万行/秒')).toBe(
+      'daily_orders_etl\n14 task · 5.1万行/秒',
+    );
   });
 
   it('formats running job progress and write rate', () => {
-    expect(formatRunningJobLabel(METRICS)).toBe('✓12 task · 6000万行');
+    expect(formatRunningJobLabel(METRICS)).toBe('14 task · 5.1万行/秒');
     expect(formatRecordsRate(METRICS.recordsWrittenRate)).toBe('5.1万行/秒');
   });
 

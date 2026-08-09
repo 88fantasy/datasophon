@@ -30,30 +30,14 @@ export function formatBytes(value: number | null | undefined): string {
   return `${formatUnit(value / base ** index)} ${units[index]}`;
 }
 
-function formatRelativeTime(value: string, now: number): string | null {
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) return null;
-
-  const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
-  if (seconds < 60) return '刚刚';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟前`;
-  if (seconds < 86_400) return `${Math.floor(seconds / 3600)}小时前`;
-  if (seconds < 2_592_000) return `${Math.floor(seconds / 86_400)}天前`;
-  if (seconds < 31_536_000) return `${Math.floor(seconds / 2_592_000)}个月前`;
-  return `${Math.floor(seconds / 31_536_000)}年前`;
-}
-
-export function formatJobNodeLabel(job: GraphJob, now = Date.now()): string {
-  if (job.lastRowCount === null || job.lastRunAt === null) {
-    return job.jobName;
-  }
-  const relativeTime = formatRelativeTime(job.lastRunAt, now);
-  if (!relativeTime) return job.jobName;
-  return `${job.jobName}\n${formatRowCount(job.lastRowCount)} · ${relativeTime}`;
+export function formatJobNodeLabel(job: GraphJob, runtimeLabel = '- task · -'): string {
+  return `${job.jobName}\n${runtimeLabel}`;
 }
 
 export function formatRunningJobLabel(metrics: JobMetrics): string {
-  return `✓${metrics.completeTasks} task · ${formatRowCount(metrics.recordsWritten)}`;
+  return `${metrics.completeTasks + metrics.activeTasks} task · ${formatRecordsRate(
+    metrics.recordsWrittenRate,
+  )}`;
 }
 
 export function formatRecordsRate(value: number | null): string {

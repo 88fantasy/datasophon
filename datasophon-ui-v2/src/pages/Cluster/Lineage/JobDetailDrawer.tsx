@@ -220,6 +220,12 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                           tooltip={{
                             title: (datum: JobRatePoint) =>
                               dayjs(datum.time).format('MM-DD HH:mm:ss'),
+                            items: [
+                              {
+                                channel: 'y',
+                                valueFormatter: (value: number) => value.toFixed(2),
+                              },
+                            ],
                           }}
                           axis={{
                             x: { title: false },

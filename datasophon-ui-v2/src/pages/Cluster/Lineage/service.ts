@@ -260,16 +260,23 @@ const FLINK_JOB_ID = /^[0-9a-f]{32}$/;
  * 影响。查错表不会报错，只会静默返回空结果——这是 T16 后续排查（2026-08-07）用真实数据核实到的。
  */
 const FLINK_RECORDS_OUT_METRICS = [
-  { metric: 'flink.taskmanager.job.task.operator.numRecordsOut', table: 'sum' },
+  // Native OTLP 的 Doris Writer 没有 numRecordsOut，Committer 的值恒为 0。Writer 的
+  // numRecordsIn 是每个采样间隔内实际交给 Doris connector 的行数（delta Sum）；按 60 秒桶求和
+  // 再除以 60，才是实际行/秒，不能按 monotonic counter 的相邻值差分。
+  {
+    metric: 'flink.taskmanager.job.task.operator.numRecordsIn',
+    table: 'sum',
+    operatorRegex: '.*Writer.*',
+    valueAggregation: 'sum',
+    scale: 1 / 60,
+  },
   {
     metric: 'flink_taskmanager_job_task_operator_numRecordsOut',
     table: 'gauge',
+    operatorRegex: '.*(Writer|Committer).*',
+    rateWindow: '1m',
   },
 ];
-// Paimon 的两阶段提交把 sink 拆成 `...: Writer`（恒为 0，只是 pass-through）和真正累积写入数的
-// `...Committer`；Doris connector 把 sink 融合成单一的 `<table>_sink[n]: Committer`，没有独立的
-// Writer 节点。两者都匹配不会重复计数——Paimon 的 Writer 分支值恒为 0。
-const FLINK_SINK_OPERATOR_REGEX = '.*(Writer|Committer).*';
 
 function queryRateMatrix(
   clusterId: number,
@@ -314,19 +321,30 @@ function sumMatricesByTimestamp(matrices: PrometheusMatrix[]): JobRatePoint[] {
 export function getJobRateHistory(clusterId: number, appId: string) {
   const end = Math.floor(Date.now() / 1000);
   const start = end - 3600;
-  const rangeParams = { rateWindow: '1m', table: 'sum', start, end, step: 60 };
+  const rangeParams = { start, end, step: 60 };
 
   if (FLINK_JOB_ID.test(appId)) {
     return Promise.all(
-      FLINK_RECORDS_OUT_METRICS.map(({ metric, table }) =>
-        queryRateMatrix(clusterId, {
-          ...rangeParams,
-          table,
+      FLINK_RECORDS_OUT_METRICS.map(
+        ({
           metric,
-          filters: `job_id:${appId}`,
-          filtersRegex: `operator_name:${FLINK_SINK_OPERATOR_REGEX}`,
-          groupBy: 'job_id',
-        }),
+          table,
+          operatorRegex,
+          rateWindow,
+          valueAggregation,
+          scale,
+        }) =>
+          queryRateMatrix(clusterId, {
+            ...rangeParams,
+            table,
+            metric,
+            filters: `job_id:${appId}`,
+            filtersRegex: `operator_name:${operatorRegex}`,
+            groupBy: 'job_id',
+            ...(rateWindow ? { rateWindow } : {}),
+            ...(valueAggregation ? { valueAggregation } : {}),
+            ...(scale ? { scale } : {}),
+          }),
       ),
     ).then(sumMatricesByTimestamp);
   }
@@ -339,6 +357,8 @@ export function getJobRateHistory(clusterId: number, appId: string) {
   return queryRateMatrix(clusterId, {
     ...rangeParams,
     metric: 'spark_executor_recordsWritten',
+    rateWindow: '1m',
+    table: 'sum',
     filters: `app_id:${appId}`,
     groupBy: 'app_id',
   }).then((matrix) => sumMatricesByTimestamp([matrix]));

@@ -217,6 +217,24 @@ class OtelMetricsQueryControllerTest {
                 eq("summary"), eq(0.5), eq("count"));
     }
 
+    @Test
+    void queryRange_sumAggregationRoutesDeltaSamplesToBucketSumQuery() {
+        when(service.queryRangeSum(any(), any(), isNull(), anyDouble(), any(), any(),
+                any(), any(), any(), any(), any(), anyLong(), anyLong(), anyLong(), any(), anyDouble(), any()))
+                .thenReturn(PrometheusMatrixResult.of(Collections.emptyList()));
+
+        ApiResponse<PrometheusMatrixResult> response =
+                controller.queryRange("flink.taskmanager.job.task.operator.numRecordsIn", null, 1.0 / 60,
+                        ".+", ".+", 1000L, 2000L, 60L, 7, "sum", 0.5, null,
+                        "job_id:job-1", null, "operator_name:.*Writer.*", null, "job_id", "sum");
+
+        assertThat(response.isSuccess()).isTrue();
+        verify(service).queryRangeSum(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsIn"), isNull(),
+                eq(1.0 / 60), eq(".+"), eq(".+"), eq(Map.of("job_id", "job-1")), eq(Map.of()),
+                eq(Map.of("operator_name", ".*Writer.*")), eq(Map.of()), eq(List.of("job_id")),
+                eq(1000L), eq(2000L), eq(60L), eq("sum"), eq(0.5), isNull());
+    }
+
     // ─── parseFilters / parseGroupBy 测试 ────────────────────────────────────────
 
     @Nested

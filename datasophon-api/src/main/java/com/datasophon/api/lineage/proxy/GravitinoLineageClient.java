@@ -32,6 +32,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -82,7 +83,9 @@ public class GravitinoLineageClient {
     }
 
     public JsonNode getJob(long clusterId, long jobId) {
-        return get(clusterId, "lineage/job/" + jobId, Map.of(), NodeInjection.ROOT);
+        JsonNode response = get(clusterId, "lineage/job/" + jobId, Map.of(), NodeInjection.ROOT);
+        enrichFlinkStreamingJob(response);
+        return response;
     }
 
     public JsonNode post(long clusterId, String resource) {
@@ -173,6 +176,34 @@ public class GravitinoLineageClient {
 
     private static String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    /**
+     * Fills in the standard job facets for a running Flink job only when the producer did not
+     * supply them. The T6/T9 emitter carries its Flink JobID through the legacy
+     * {@code spark_properties} compatibility facet, so historical events have no
+     * {@code processing_engine} or {@code jobType} fields for Gravitino to return.
+     */
+    private static void enrichFlinkStreamingJob(JsonNode response) {
+        if (!(response instanceof ObjectNode job) || !isFlinkNamespace(job.path("jobName").asText())) {
+            return;
+        }
+        if ("UNKNOWN".equalsIgnoreCase(job.path("engine").asText())) {
+            job.put("engine", "FLINK");
+        }
+        if ("UNKNOWN".equalsIgnoreCase(job.path("jobType").asText())
+                && "RUNNING".equalsIgnoreCase(job.path("state").asText())) {
+            job.put("jobType", "STREAMING");
+        }
+    }
+
+    private static boolean isFlinkNamespace(String jobName) {
+        int namespaceEnd = jobName.indexOf('.');
+        if (namespaceEnd <= 0) {
+            return false;
+        }
+        String namespace = jobName.substring(0, namespaceEnd).toLowerCase(Locale.ROOT);
+        return namespace.equals("flink") || namespace.startsWith("flink-") || namespace.startsWith("flink_");
     }
 
     /**
