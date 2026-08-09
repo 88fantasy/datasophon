@@ -231,5 +231,9 @@ describe('JobDetailDrawer', () => {
       { time: 1_800_000_000_000, value: 128.5 },
       { time: 1_800_000_060_000, value: 256.5 },
     ]);
+    const tooltip = lineProps.at(-1)?.tooltip as {
+      items: Array<{ valueFormatter: (value: number) => string }>;
+    };
+    expect(tooltip.items[0].valueFormatter(3.456)).toBe('3.46');
   });
 });

@@ -17,7 +17,7 @@ import ClusterContext from '@/context/ClusterContext';
 import FreshnessAlert from './FreshnessAlert';
 import { FLOWING_LINEAGE_EDGE } from './flowingLineageEdge';
 import JobDetailDrawer from './JobDetailDrawer';
-import { formatJobNodeLabel, formatRecordsRate } from './lineageFormatters';
+import { formatJobNodeLabel } from './lineageFormatters';
 import { applyJobMetrics, mergeExpansion, toG6Data } from './lineageGraphData';
 import type { JobOutputStat } from './lineageGraphData';
 import { getGraph, getImpact, getJobMetrics, listTables } from './service';
@@ -71,7 +71,7 @@ const LineageGraph: React.FC = () => {
     [intl],
   );
 
-  const [depth, setDepth] = useState(2);
+  const [depth, setDepth] = useState(3);
   const [direction, setDirection] = useState<LineageDirection>('both');
   const [impactMode, setImpactMode] = useState(false);
   const [graphData, setGraphData] = useState<GraphData>();
@@ -237,7 +237,7 @@ const LineageGraph: React.FC = () => {
       node: {
         type: (d) => (d.data?.isJobNode ? 'diamond' : 'rect'),
         style: {
-          size: (d) => (d.data?.isJobNode ? [200, 84] : [180, 52]),
+          size: (d) => (d.data?.isJobNode ? [240, 84] : [180, 52]),
           radius: 8,
           fill: (d) =>
             d.data?.isCollapsedPlaceholder
@@ -266,14 +266,16 @@ const LineageGraph: React.FC = () => {
               : 'default',
           labelText: (d) =>
             d.data?.isJobNode
-              ? String(
-                  d.data.runtimeLabel ??
-                    formatJobNodeLabel(d.data as unknown as GraphJob),
+              ? formatJobNodeLabel(
+                  d.data as unknown as GraphJob,
+                  typeof d.data.runtimeLabel === 'string'
+                    ? d.data.runtimeLabel
+                    : undefined,
                 )
-              : String(d.data?.canonicalName ?? d.id),
+              : String(d.data?.tableName || d.data?.canonicalName || d.id),
           labelPlacement: 'center',
           labelWordWrap: true,
-          labelMaxWidth: (d) => (d.data?.isJobNode ? 150 : 160),
+          labelMaxWidth: (d) => (d.data?.isJobNode ? 200 : 160),
           labelFontSize: 12,
           labelLineHeight: 18,
         },
@@ -313,19 +315,36 @@ const LineageGraph: React.FC = () => {
           ) => {
             const item = items[0];
             const content = document.createElement('div');
-            if (!item?.data?.isJobNode) return content;
+            content.style.maxWidth = 'min(520px, calc(100vw - 48px))';
+            content.style.whiteSpace = 'normal';
+            content.style.overflowWrap = 'anywhere';
+            if (!item?.data) return content;
+
+            if (!item.data.isJobNode) {
+              const details = [
+                ['表名', item.data.tableName],
+                ['完整名称', item.data.canonicalName],
+                ['连接器', item.data.connector],
+                ['Catalog', item.data.catalogName],
+                ['数据库', item.data.databaseName],
+                ['数仓层', item.data.dwLayer ?? '-'],
+              ];
+              details.forEach(([label, value]) => {
+                const detail = document.createElement('div');
+                detail.textContent = `${label}：${value || '-'}`;
+                detail.style.overflowWrap = 'anywhere';
+                content.appendChild(detail);
+              });
+              return content;
+            }
 
             const title = document.createElement('div');
             title.textContent = String(item.data.jobName ?? '');
             content.appendChild(title);
 
-            const rate = document.createElement('div');
-            rate.textContent = `写入速率：${formatRecordsRate(
-              typeof item.data.recordsWrittenRate === 'number'
-                ? item.data.recordsWrittenRate
-                : null,
-            )}`;
-            content.appendChild(rate);
+            const runtime = document.createElement('div');
+            runtime.textContent = String(item.data.runtimeLabel ?? '- task · -');
+            content.appendChild(runtime);
             return content;
           },
         },

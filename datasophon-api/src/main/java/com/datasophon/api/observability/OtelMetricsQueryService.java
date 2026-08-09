@@ -82,7 +82,7 @@ public class OtelMetricsQueryService {
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
                     "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id",
-                    "job_id", "operator_name");
+                    "job_id", "task_id", "operator_name");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
@@ -240,6 +240,41 @@ public class OtelMetricsQueryService {
                                              List<String> groupByKeys,
                                              long start, long end, long step,
                                              String table, double quantile, String field) {
+        return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
+                filtersRegex, filtersNotRegex, groupByKeys, start, end, step, table, quantile, field, false);
+    }
+
+    /**
+     * Range 查询，把同一时间桶内的原始采样值求和而非求均值。
+     *
+     * <p>用于 OTLP delta temporality 的 Sum 指标：每个采样值就是采样间隔内的增量，不能再按
+     * counter 做相邻值差分。调用方可通过 {@code scale} 除以桶宽，得到每秒速率。
+     */
+    public PrometheusMatrixResult queryRangeSum(Integer clusterId, String metric,
+                                                String rateWindow, double scale,
+                                                String instance, String job,
+                                                Map<String, String> filters,
+                                                Map<String, String> filtersNe,
+                                                Map<String, String> filtersRegex,
+                                                Map<String, String> filtersNotRegex,
+                                                List<String> groupByKeys,
+                                                long start, long end, long step,
+                                                String table, double quantile, String field) {
+        return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
+                filtersRegex, filtersNotRegex, groupByKeys, start, end, step, table, quantile, field, true);
+    }
+
+    private PrometheusMatrixResult queryRange(Integer clusterId, String metric,
+                                              String rateWindow, double scale,
+                                              String instance, String job,
+                                              Map<String, String> filters,
+                                              Map<String, String> filtersNe,
+                                              Map<String, String> filtersRegex,
+                                              Map<String, String> filtersNotRegex,
+                                              List<String> groupByKeys,
+                                              long start, long end, long step,
+                                              String table, double quantile, String field,
+                                              boolean sumSamples) {
         JdbcClient client = createReader(clusterId);
 
         List<String> validGroupBy = toValidGroupBy(groupByKeys);
@@ -317,7 +352,8 @@ public class OtelMetricsQueryService {
                 ? buildRangeRateSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
                         filtersRegex, filtersNotRegex, validGroupBy, otelTable)
                 : buildRangeGaugeSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
-                        filtersRegex, filtersNotRegex, validGroupBy, otelTable);
+                        filtersRegex, filtersNotRegex, validGroupBy, otelTable,
+                        sumSamples ? "SUM" : "AVG");
 
         JdbcClient.StatementSpec spec = client.sql(sql)
                 .param("metric", metric)
@@ -797,6 +833,15 @@ public class OtelMetricsQueryService {
                                      Map<String, String> filters, Map<String, String> filtersNe,
                                      Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
                                      List<String> groupByKeys, String otelTable) {
+        return buildRangeGaugeSql(filterInstance, filterJob, filters, filtersNe,
+                filtersRegex, filtersNotRegex, groupByKeys, otelTable, "AVG");
+    }
+
+    static String buildRangeGaugeSql(boolean filterInstance, boolean filterJob,
+                                     Map<String, String> filters, Map<String, String> filtersNe,
+                                     Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                     List<String> groupByKeys, String otelTable, String aggregation) {
+        String aggregationFn = "SUM".equalsIgnoreCase(aggregation) ? "SUM" : "AVG";
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
         StringBuilder sql = new StringBuilder(
@@ -804,7 +849,7 @@ public class OtelMetricsQueryService {
                         + "       " + JOB_EXPR + " AS job"
                         + extraSelect
                         + ",\n       FLOOR(UNIX_TIMESTAMP(timestamp) / :step) * :step AS bucket,\n"
-                        + "       AVG(value) AS value\n"
+                        + "       " + aggregationFn + "(value) AS value\n"
                         + "FROM otel." + otelTable + "\n"
                         + "WHERE metric_name = :metric\n"
                         + "  AND timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)");

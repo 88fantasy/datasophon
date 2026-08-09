@@ -9,6 +9,10 @@ import { formatRunningJobLabel } from './lineageFormatters';
 
 export interface G6NodeData {
   canonicalName: string;
+  connector: string;
+  catalogName: string;
+  databaseName: string;
+  tableName: string;
   dwLayer: string | null;
   isRoot: boolean;
   isCollapsedPlaceholder: boolean;
@@ -77,6 +81,10 @@ export function toG6Data(
     id: String(node.id),
     data: {
       canonicalName: node.canonicalName,
+      connector: node.connector,
+      catalogName: node.catalogName,
+      databaseName: node.databaseName,
+      tableName: node.tableName,
       dwLayer: node.dwLayer,
       isRoot: node.id === rootNodeId,
       isCollapsedPlaceholder: false,
@@ -169,6 +177,10 @@ export function toG6Data(
       id: placeholderId,
       data: {
         canonicalName: `+${collapsed.hiddenCount}`,
+        connector: '',
+        catalogName: '',
+        databaseName: '',
+        tableName: '',
         dwLayer: null,
         isRoot: false,
         isCollapsedPlaceholder: true,

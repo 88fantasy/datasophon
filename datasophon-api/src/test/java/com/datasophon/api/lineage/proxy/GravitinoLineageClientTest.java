@@ -64,7 +64,8 @@ class GravitinoLineageClientTest {
                             + "\"edges\":[],\"collapsed\":[],\"truncated\":false}}");
         });
         server.createContext("/api/lineage/job/9", exchange -> respond(exchange, 200,
-                "{\"id\":9,\"jobName\":\"daily job\",\"engine\":\"UNKNOWN\"}"));
+                "{\"id\":9,\"jobName\":\"flink-lineage-verify.t6_cdc_prod_20260807\","
+                        + "\"engine\":\"UNKNOWN\",\"jobType\":\"UNKNOWN\",\"state\":\"RUNNING\"}"));
         server.createContext("/api/lineage/bad-request", exchange -> respond(exchange, 400, "{\"message\":\"bad depth\"}"));
         server.createContext("/api/lineage/crash", exchange -> respond(exchange, 500, "{\"message\":\"boom\"}"));
         server.createContext("/api/lineage/broken-node", exchange -> respond(exchange, 200,
@@ -91,6 +92,8 @@ class GravitinoLineageClientTest {
 
         JsonNode job = client.getJob(7L, 9L);
         assertThat(job.path("clusterId").asLong()).isEqualTo(7L);
+        assertThat(job.path("engine").asText()).isEqualTo("FLINK");
+        assertThat(job.path("jobType").asText()).isEqualTo("STREAMING");
     }
 
     @Test
