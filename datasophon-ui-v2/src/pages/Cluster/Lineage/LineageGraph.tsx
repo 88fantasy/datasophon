@@ -12,7 +12,15 @@ import {
   Spin,
   Switch,
 } from 'antd';
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import FreshnessAlert from './FreshnessAlert';
 import { FLOWING_LINEAGE_EDGE } from './flowingLineageEdge';
@@ -86,6 +94,21 @@ const LineageGraph: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph>(undefined);
+  const [graphHeight, setGraphHeight] = useState(560);
+
+  // 图容器高度按视口剩余空间动态计算，而非固定 560px，避免大屏下图区域下方留白
+  // （上方的 clusterBar / 提示 Alert 数量会变化，故不用固定 calc(100vh - Npx)，
+  // 而是实测容器实际的 top 偏移）。
+  useLayoutEffect(() => {
+    const recompute = () => {
+      if (!containerRef.current) return;
+      const top = containerRef.current.getBoundingClientRect().top;
+      setGraphHeight(Math.max(480, window.innerHeight - top - 24));
+    };
+    recompute();
+    window.addEventListener('resize', recompute);
+    return () => window.removeEventListener('resize', recompute);
+  }, [freshness, impactUnavailable, graphData?.truncated]);
 
   const fetchRoot = useCallback(async () => {
     if (!clusterId || !rootNodeId) return;
@@ -232,6 +255,7 @@ const LineageGraph: React.FC = () => {
     if (!containerRef.current) return;
     const graph = new Graph({
       container: containerRef.current,
+      autoResize: true,
       padding: 24,
       data,
       node: {
@@ -402,6 +426,12 @@ const LineageGraph: React.FC = () => {
     void graph.draw();
   }, [jobMetrics, graphData, rootNodeId, impactHighlightIds]);
 
+  // graphHeight 由布局测量得出（非窗口 resize 事件触发），G6 的 autoResize 只监听
+  // window.onresize，容器高度自身变化（如 Alert 数量变化）需要手动 resize 一次。
+  useEffect(() => {
+    graphRef.current?.resize();
+  }, [graphHeight]);
+
   useEffect(() => {
     return () => {
       graphRef.current?.destroy();
@@ -491,7 +521,7 @@ const LineageGraph: React.FC = () => {
         {graphData && graphData.nodes.length === 0 ? (
           <Empty style={{ padding: '80px 0' }} />
         ) : (
-          <div ref={containerRef} style={{ height: 560 }} />
+          <div ref={containerRef} style={{ height: graphHeight }} />
         )}
       </Spin>
       <JobDetailDrawer
