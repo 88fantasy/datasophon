@@ -17,7 +17,14 @@ import {
   Tag,
 } from 'antd';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import OverviewStats from './OverviewStats';
 import { useObservabilityStyles } from './observabilityStyles';
 import type {
@@ -188,6 +195,20 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
   const [selectedService, setSelectedService] = useState<string>();
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph>(undefined);
+  const [graphHeight, setGraphHeight] = useState(560);
+
+  // 图容器高度按视口剩余空间动态计算，而非固定 560px，避免大屏下图区域下方留白
+  // （同 LineageGraph.tsx 的做法：实测容器实际的 top 偏移，而不是硬编码 calc(100vh - Npx)）。
+  useLayoutEffect(() => {
+    const recompute = () => {
+      if (!containerRef.current) return;
+      const top = containerRef.current.getBoundingClientRect().top;
+      setGraphHeight(Math.max(480, window.innerHeight - top - 24));
+    };
+    recompute();
+    window.addEventListener('resize', recompute);
+    return () => window.removeEventListener('resize', recompute);
+  }, [topology, renderFailed]);
 
   const slowNodes = useMemo(
     () =>
@@ -252,6 +273,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
     if (!containerRef.current) return;
     const graph = new Graph({
       container: containerRef.current,
+      autoResize: true,
       padding: 24,
       data,
       node: {
@@ -465,6 +487,12 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
     renderGraph(graph);
   }, [topology, viewFilters, slowTop5Ids, highlightId, t]);
 
+  // graphHeight 由布局测量得出（非窗口 resize 事件触发），G6 的 autoResize 只监听
+  // window.onresize，容器高度自身变化（如上方提示 Alert 出现/消失）需要手动 resize 一次。
+  useEffect(() => {
+    graphRef.current?.resize();
+  }, [graphHeight]);
+
   useEffect(() => {
     return () => {
       graphRef.current?.destroy();
@@ -642,7 +670,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
                   )}
                 />
               )}
-              <div ref={containerRef} style={{ height: 560 }} />
+              <div ref={containerRef} style={{ height: graphHeight }} />
             </div>
             <aside className={styles.insightPanel}>
               <div className={styles.insightTitle}>
