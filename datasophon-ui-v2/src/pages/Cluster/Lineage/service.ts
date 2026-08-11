@@ -30,6 +30,8 @@ export interface JobMetrics {
   recordsWrittenRate: number | null;
   runningStages: number;
   sampledAt: string;
+  /** 'SPARK' | 'FLINK'——两种引擎的 task 计数语义不同，展示端据此分别渲染 */
+  engine: string;
 }
 
 export type JobMetricsByAppId = Record<string, JobMetrics>;
@@ -233,135 +235,30 @@ export function getJobMetrics(clusterId: number, appIds: string[]) {
   );
 }
 
-interface PrometheusMatrix {
-  resultType: 'matrix';
-  result: Array<{
-    metric: Record<string, string>;
-    values: Array<[number, string]>;
-  }>;
-}
-
 /**
- * 一个 Flink JobID 是固定 32 位小写十六进制串；Spark 的 app_id 从不长这样
- * （`local-<epoch>` / `application_<epoch>_<seq>`）。跟后端 `LineageJobMetricsService`
- * 用同一条规则区分两种引擎，appId 参数不需要额外带引擎标记。
- */
-const FLINK_JOB_ID = /^[0-9a-f]{32}$/;
-
-/**
- * Flink 有两套互不相交的指标命名（见 T12/T16 记录）：原生 OTLP push（FLIP-385）用点号命名，
- * Prometheus scrape 兜底路径（如 Flink 1.20 没有 FLIP-385）用下划线命名。一个 job_id 只会落在
- * 其中一套里，并行查两套再按时间戳求和是安全的——不会重复计数。
+ * 写入速率折线的数据源。
  *
- * 两套命名落的 Doris 表也不一样：Flink 自带的 Prometheus Reporter 把所有 Counter 类型指标
- * （含 numRecordsOut）在 `/metrics` 输出里都误标成 `# TYPE ... gauge`（Flink 自身的已知行为，
- * 不是 Collector 的 bug），OTel Collector 尊重这个 TYPE 标注，下划线命名的指标因此落进
- * otel_metrics_gauge，而不是 otel_metrics_sum；原生 OTLP push 走标准 Sum 语义，落 sum 表不受
- * 影响。查错表不会报错，只会静默返回空结果——这是 T16 后续排查（2026-08-07）用真实数据核实到的。
+ * <p>Spark 与 Flink 的指标名、所在 Doris 表、delta/累积语义各不相同，Flink 还因 reporter
+ * 不同存在两套并存的命名——这些全部由后端 `LineageJobMetricsService` 处理。前端只传 appId，
+ * 不再各留一份指标定义：两份定义必须手工保持同步，而它们曾经真的漂移过。
+ *
+ * 查询失败时静默返回空数组（图上显示"暂无速率数据"），但仍打一条 warn，
+ * 以便区分"确实没有数据"和"接口出错"。
  */
-const FLINK_RECORDS_OUT_METRICS = [
-  // Native OTLP 的 Doris Writer 没有 numRecordsOut，Committer 的值恒为 0。Writer 的
-  // numRecordsIn 是每个采样间隔内实际交给 Doris connector 的行数（delta Sum）；按 60 秒桶求和
-  // 再除以 60，才是实际行/秒，不能按 monotonic counter 的相邻值差分。
-  {
-    metric: 'flink.taskmanager.job.task.operator.numRecordsIn',
-    table: 'sum',
-    operatorRegex: '.*Writer.*',
-    valueAggregation: 'sum',
-    scale: 1 / 60,
-  },
-  {
-    metric: 'flink_taskmanager_job_task_operator_numRecordsOut',
-    table: 'gauge',
-    operatorRegex: '.*(Writer|Committer).*',
-    rateWindow: '1m',
-  },
-];
-
-function queryRateMatrix(
-  clusterId: number,
-  params: Record<string, string | number>,
-) {
-  // 这里没有直接复用 monitor/_shared/dorisService.ts 的 queryDorisRange：它返回未解包的
-  // ApiResponse 且不支持 skipErrorHandler，而这个查询失败时要静默显示"暂无速率数据"、
-  // 不弹全局错误提示——强行复用会引入 lineage→monitor 的跨页耦合，还得在外面把这个行为
-  // 重新包一层，不如就这样直接发请求。
-  return unwrap(
-    request<ApiEnvelope<PrometheusMatrix>>(
-      '/observability/otel/metrics/query_range',
-      {
-        method: 'GET',
-        params: { clusterId, ...params },
-        skipErrorHandler: true,
-      },
-    ),
-  ).catch(() => ({ resultType: 'matrix' as const, result: [] }));
-}
-
-function sumMatricesByTimestamp(matrices: PrometheusMatrix[]): JobRatePoint[] {
-  const totalsByTimestamp = new Map<number, number>();
-  for (const matrix of matrices) {
-    for (const series of matrix.result) {
-      for (const [timestamp, rawValue] of series.values) {
-        const value = Number(rawValue);
-        if (Number.isFinite(value)) {
-          totalsByTimestamp.set(
-            timestamp,
-            (totalsByTimestamp.get(timestamp) ?? 0) + value,
-          );
-        }
-      }
-    }
-  }
-  return [...totalsByTimestamp.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([timestamp, value]) => ({ time: timestamp * 1000, value }));
-}
-
 export function getJobRateHistory(clusterId: number, appId: string) {
   const end = Math.floor(Date.now() / 1000);
   const start = end - 3600;
-  const rangeParams = { start, end, step: 60 };
 
-  if (FLINK_JOB_ID.test(appId)) {
-    return Promise.all(
-      FLINK_RECORDS_OUT_METRICS.map(
-        ({
-          metric,
-          table,
-          operatorRegex,
-          rateWindow,
-          valueAggregation,
-          scale,
-        }) =>
-          queryRateMatrix(clusterId, {
-            ...rangeParams,
-            table,
-            metric,
-            filters: `job_id:${appId}`,
-            filtersRegex: `operator_name:${operatorRegex}`,
-            groupBy: 'job_id',
-            ...(rateWindow ? { rateWindow } : {}),
-            ...(valueAggregation ? { valueAggregation } : {}),
-            ...(scale ? { scale } : {}),
-          }),
-      ),
-    ).then(sumMatricesByTimestamp);
-  }
-
-  // groupBy=app_id 与 T6 端点（LineageJobMetricsService）的口径保持一致：carbon receiver
-  // 目前不写 resource attributes，所有 Spark 指标的 (service_instance_id, service_name)
-  // 恰好同值，不传 groupBy 也能算对，但这依赖一个未来可能失效的偶然条件——一旦给 carbon
-  // 链路加 resource processor，同一 app 的多条 series 就会被 SQL 默认分组拆开。显式声明
-  // 分组维度，行为不再依赖这个偶然条件。
-  return queryRateMatrix(clusterId, {
-    ...rangeParams,
-    metric: 'spark_executor_recordsWritten',
-    rateWindow: '1m',
-    table: 'sum',
-    filters: `app_id:${appId}`,
-    groupBy: 'app_id',
-  }).then((matrix) => sumMatricesByTimestamp([matrix]));
+  return unwrap(
+    request<ApiEnvelope<JobRatePoint[]>>('/lineage/job-rate-history', {
+      method: 'GET',
+      params: { clusterId, appId, start, end, step: 60 },
+      skipErrorHandler: true,
+    }),
+  ).catch((error) => {
+    console.warn('[lineage] 写入速率历史查询失败', error);
+    return [] as JobRatePoint[];
+  });
 }
 
 export interface GetImpactParams {

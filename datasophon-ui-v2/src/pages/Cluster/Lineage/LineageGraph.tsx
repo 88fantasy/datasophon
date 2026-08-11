@@ -16,12 +16,12 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import ClusterContext from '@/context/ClusterContext';
+import { useFillViewportHeight } from '../_shared/useFillViewportHeight';
 import FreshnessAlert from './FreshnessAlert';
 import { FLOWING_LINEAGE_EDGE } from './flowingLineageEdge';
 import JobDetailDrawer from './JobDetailDrawer';
@@ -94,21 +94,11 @@ const LineageGraph: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph>(undefined);
-  const [graphHeight, setGraphHeight] = useState(560);
-
-  // 图容器高度按视口剩余空间动态计算，而非固定 560px，避免大屏下图区域下方留白
-  // （上方的 clusterBar / 提示 Alert 数量会变化，故不用固定 calc(100vh - Npx)，
-  // 而是实测容器实际的 top 偏移）。
-  useLayoutEffect(() => {
-    const recompute = () => {
-      if (!containerRef.current) return;
-      const top = containerRef.current.getBoundingClientRect().top;
-      setGraphHeight(Math.max(480, window.innerHeight - top - 24));
-    };
-    recompute();
-    window.addEventListener('resize', recompute);
-    return () => window.removeEventListener('resize', recompute);
-  }, [freshness, impactUnavailable, graphData?.truncated]);
+  const graphHeight = useFillViewportHeight(
+    containerRef,
+    [freshness, impactUnavailable, graphData?.truncated],
+    { onHeightChange: () => graphRef.current?.resize() },
+  );
 
   const fetchRoot = useCallback(async () => {
     if (!clusterId || !rootNodeId) return;
@@ -346,12 +336,24 @@ const LineageGraph: React.FC = () => {
 
             if (!item.data.isJobNode) {
               const details = [
-                ['表名', item.data.tableName],
-                ['完整名称', item.data.canonicalName],
-                ['连接器', item.data.connector],
-                ['Catalog', item.data.catalogName],
-                ['数据库', item.data.databaseName],
-                ['数仓层', item.data.dwLayer ?? '-'],
+                [t('pages.lineage.tooltip.tableName', '表名'), item.data.tableName],
+                [
+                  t('pages.lineage.tooltip.canonicalName', '完整名称'),
+                  item.data.canonicalName,
+                ],
+                [
+                  t('pages.lineage.tooltip.connector', '连接器'),
+                  item.data.connector,
+                ],
+                [t('pages.lineage.tooltip.catalog', 'Catalog'), item.data.catalogName],
+                [
+                  t('pages.lineage.tooltip.database', '数据库'),
+                  item.data.databaseName,
+                ],
+                [
+                  t('pages.lineage.tooltip.dwLayer', '数仓层'),
+                  item.data.dwLayer ?? '-',
+                ],
               ];
               details.forEach(([label, value]) => {
                 const detail = document.createElement('div');
@@ -367,7 +369,8 @@ const LineageGraph: React.FC = () => {
             content.appendChild(title);
 
             const runtime = document.createElement('div');
-            runtime.textContent = String(item.data.runtimeLabel ?? '- task · -');
+            // 没有运行态指标时不再显示 "- task · -" 这种假占位，交给下面的历史统计行
+            runtime.textContent = String(item.data.runtimeLabel ?? '-');
             content.appendChild(runtime);
             return content;
           },
@@ -425,12 +428,6 @@ const LineageGraph: React.FC = () => {
     if (edgeUpdates.length > 0) graph.updateEdgeData(edgeUpdates);
     void graph.draw();
   }, [jobMetrics, graphData, rootNodeId, impactHighlightIds]);
-
-  // graphHeight 由布局测量得出（非窗口 resize 事件触发），G6 的 autoResize 只监听
-  // window.onresize，容器高度自身变化（如 Alert 数量变化）需要手动 resize 一次。
-  useEffect(() => {
-    graphRef.current?.resize();
-  }, [graphHeight]);
 
   useEffect(() => {
     return () => {

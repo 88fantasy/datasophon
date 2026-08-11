@@ -282,6 +282,7 @@ describe('Lineage proxy response contract', () => {
       recordsWrittenRate: 51_234.5,
       runningStages: 1,
       sampledAt: '2026-08-04T03:01:44Z',
+      engine: 'SPARK',
     };
     vi.mocked(request).mockResolvedValue({
       success: true,
@@ -298,51 +299,31 @@ describe('Lineage proxy response contract', () => {
     expect(result.application_1).toEqual(metrics);
   });
 
-  it('job rate history: queries app_id range and sums executor series by timestamp', async () => {
+  it('job rate history: delegates engine detection to the backend endpoint', async () => {
+    // 引擎判定、指标名、Doris 表、delta/累积语义全部在后端 LineageJobMetricsService；
+    // 前端只传 appId 并透传结果，不再维护第二份指标定义。
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
     vi.mocked(request).mockResolvedValue({
       success: true,
-      data: {
-        resultType: 'matrix',
-        result: [
-          {
-            metric: { instance: '1' },
-            values: [
-              [1_799_999_940, '10'],
-              [1_800_000_000, '20'],
-            ],
-          },
-          {
-            metric: { instance: '2' },
-            values: [
-              [1_799_999_940, '3'],
-              [1_800_000_000, '4'],
-            ],
-          },
-        ],
-      },
+      data: [
+        { time: 1_799_999_940_000, value: 13 },
+        { time: 1_800_000_000_000, value: 24 },
+      ],
     });
 
     const result = await getJobRateHistory(7, 'application_1');
 
-    expect(request).toHaveBeenCalledWith(
-      '/observability/otel/metrics/query_range',
-      {
-        method: 'GET',
-        params: {
-          clusterId: 7,
-          metric: 'spark_executor_recordsWritten',
-          rateWindow: '1m',
-          table: 'sum',
-          filters: 'app_id:application_1',
-          groupBy: 'app_id',
-          start: 1_799_996_400,
-          end: 1_800_000_000,
-          step: 60,
-        },
-        skipErrorHandler: true,
+    expect(request).toHaveBeenCalledWith('/lineage/job-rate-history', {
+      method: 'GET',
+      params: {
+        clusterId: 7,
+        appId: 'application_1',
+        start: 1_799_996_400,
+        end: 1_800_000_000,
+        step: 60,
       },
-    );
+      skipErrorHandler: true,
+    });
     expect(result).toEqual([
       { time: 1_799_999_940_000, value: 13 },
       { time: 1_800_000_000_000, value: 24 },
@@ -350,69 +331,37 @@ describe('Lineage proxy response contract', () => {
     nowSpy.mockRestore();
   });
 
-  it('job rate history: routes a Flink JobID (32-char hex) to job_id/operator_name queries across both metric-naming conventions', async () => {
-    // A Flink JobID (32-char lowercase hex) never collides with a Spark app_id shape
-    // (local-<epoch> / application_<epoch>_<seq>), so getJobRateHistory tells them apart by
-    // regex alone — no separate "engine" parameter needed (T16).
+  it('job rate history: a Flink JobID takes the same path — no client-side branching', async () => {
     const flinkJobId = '5a08eb018fa0ed1a47275378c0658438';
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
-    vi.mocked(request)
-      .mockResolvedValueOnce({
-        success: true,
-        data: {
-          resultType: 'matrix',
-          result: [
-            { metric: { job_id: flinkJobId }, values: [[1_800_000_000, '17']] },
-          ],
-        },
-      })
-      .mockResolvedValueOnce({
-        success: true,
-        data: { resultType: 'matrix', result: [] },
-      });
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      data: [{ time: 1_800_000_000_000, value: 17 }],
+    });
 
     const result = await getJobRateHistory(7, flinkJobId);
 
-    expect(request).toHaveBeenCalledWith(
-      '/observability/otel/metrics/query_range',
-      {
-        method: 'GET',
-        params: {
-          clusterId: 7,
-          metric: 'flink.taskmanager.job.task.operator.numRecordsIn',
-          table: 'sum',
-          filters: `job_id:${flinkJobId}`,
-          filtersRegex: 'operator_name:.*Writer.*',
-          groupBy: 'job_id',
-          valueAggregation: 'sum',
-          scale: 1 / 60,
-          start: 1_799_996_400,
-          end: 1_800_000_000,
-          step: 60,
-        },
-        skipErrorHandler: true,
+    expect(request).toHaveBeenCalledWith('/lineage/job-rate-history', {
+      method: 'GET',
+      params: {
+        clusterId: 7,
+        appId: flinkJobId,
+        start: 1_799_996_400,
+        end: 1_800_000_000,
+        step: 60,
       },
-    );
-    expect(request).toHaveBeenCalledWith(
-      '/observability/otel/metrics/query_range',
-      {
-        method: 'GET',
-        params: {
-          clusterId: 7,
-          metric: 'flink_taskmanager_job_task_operator_numRecordsOut',
-          rateWindow: '1m',
-          table: 'gauge',
-          filters: `job_id:${flinkJobId}`,
-          filtersRegex: 'operator_name:.*(Writer|Committer).*',
-          groupBy: 'job_id',
-          start: 1_799_996_400,
-          end: 1_800_000_000,
-          step: 60,
-        },
-        skipErrorHandler: true,
-      },
-    );
+      skipErrorHandler: true,
+    });
     expect(result).toEqual([{ time: 1_800_000_000_000, value: 17 }]);
     nowSpy.mockRestore();
+  });
+
+  it('job rate history: a failed query degrades to an empty series and warns', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(request).mockRejectedValue(new Error('doris unreachable'));
+
+    await expect(getJobRateHistory(7, 'application_1')).resolves.toEqual([]);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

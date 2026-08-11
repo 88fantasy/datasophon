@@ -487,6 +487,7 @@ describe('LineageGraph', () => {
         recordsWrittenRate: 51_234.5,
         runningStages: 1,
         sampledAt: '2026-08-04T03:01:44Z',
+        engine: 'SPARK',
       },
     });
 
@@ -500,7 +501,7 @@ describe('LineageGraph', () => {
       expect(
         graph.data.nodes?.find((item) => item.id === 'job:10')?.data
           ?.runtimeLabel,
-      ).toBe('14 task · 5.1万行/秒'),
+      ).toBe('✓12 task · 5.1万行/秒'),
     );
 
     // P1 回归：runtimeLabel 的这次变化来自指标轮询（初次 refresh()，与之后每 15 秒的
@@ -525,7 +526,7 @@ describe('LineageGraph', () => {
     };
     const jobNode = graph.data.nodes?.find((item) => item.id === 'job:10');
     expect(options.node.style.labelText(jobNode)).toBe(
-      'sync_orders\n14 task · 5.1万行/秒',
+      'sync_orders\n✓12 task · 5.1万行/秒',
     );
     const runningEdges = graph.data.edges?.filter(
       (edge) => edge.source === 'job:10' || edge.target === 'job:10',
@@ -539,7 +540,7 @@ describe('LineageGraph', () => {
 
     const tooltip = options.plugins.find((plugin) => plugin.type === 'tooltip');
     const tooltipContent = await tooltip?.getContent?.({}, [jobNode]);
-    expect((tooltipContent as HTMLElement).textContent).toContain('14 task · 5.1万行/秒');
+    expect((tooltipContent as HTMLElement).textContent).toContain('✓12 task · 5.1万行/秒');
 
     const tableNode = graph.data.nodes?.find((item) => item.id === '1');
     const tableTooltip = await tooltip?.getContent?.({}, [tableNode]);

@@ -9,10 +9,11 @@ import { formatRunningJobLabel } from './lineageFormatters';
 
 export interface G6NodeData {
   canonicalName: string;
-  connector: string;
-  catalogName: string;
-  databaseName: string;
-  tableName: string;
+  /** 下列表元信息只有真实的表节点才有；折叠占位节点没有对应的库表实体 */
+  connector?: string;
+  catalogName?: string;
+  databaseName?: string;
+  tableName?: string;
   dwLayer: string | null;
   isRoot: boolean;
   isCollapsedPlaceholder: boolean;
@@ -177,10 +178,6 @@ export function toG6Data(
       id: placeholderId,
       data: {
         canonicalName: `+${collapsed.hiddenCount}`,
-        connector: '',
-        catalogName: '',
-        databaseName: '',
-        tableName: '',
         dwLayer: null,
         isRoot: false,
         isCollapsedPlaceholder: true,
