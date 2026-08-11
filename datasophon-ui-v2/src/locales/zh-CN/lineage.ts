@@ -10,6 +10,12 @@ export default {
   'pages.lineage.column.database': '库名',
   'pages.lineage.column.tableName': '表名',
   'pages.lineage.table.empty': '暂无血缘表数据',
+  'pages.lineage.tooltip.tableName': '表名',
+  'pages.lineage.tooltip.canonicalName': '表全限定名',
+  'pages.lineage.tooltip.connector': 'Connector',
+  'pages.lineage.tooltip.catalog': 'Catalog',
+  'pages.lineage.tooltip.database': '库名',
+  'pages.lineage.tooltip.dwLayer': '分层',
 
   'pages.lineage.freshness.rebuildAccepted': '已提交重建请求',
   'pages.lineage.freshness.snapshotBuiltAt': '快照构建于',

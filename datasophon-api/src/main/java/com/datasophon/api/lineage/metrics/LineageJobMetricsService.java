@@ -96,6 +96,9 @@ public class LineageJobMetricsService {
     private record FlinkMetric(String name, String table, String operatorRegex, boolean deltaSamples) {
     }
 
+    private record FlinkSubtask(String taskId, String subtaskIndex) {
+    }
+
     private static final FlinkMetric[] FLINK_RECORDS_OUT = {
             // Flink 2.x native OTLP reports Doris Writer numRecordsIn as delta Sum samples. A Writer has
             // no numRecordsOut (and its paired Committer always has 0), so sum samples per bucket.
@@ -276,24 +279,26 @@ public class LineageJobMetricsService {
         return metricsByJob;
     }
 
-    /** Counts running Flink task vertices from the reporter's stable {@code task_id} label. */
+    /** Counts running Flink subtasks by their stable {@code task_id}/{@code subtask_index} pair. */
     private Map<String, Long> queryFlinkTaskCounts(Integer clusterId, String jobIdRegex, long sampledAt) {
-        Map<String, LinkedHashSet<String>> taskIdsByJob = new LinkedHashMap<>();
+        Map<String, LinkedHashSet<FlinkSubtask>> subtasksByJob = new LinkedHashMap<>();
         for (FlinkMetric metric : FLINK_RECORDS_OUT) {
             PrometheusVectorResult result = queryService.queryInstant(
                     clusterId, metric.name(), "count", 1.0, ".+", ".+", Map.of(), Map.of(),
                     Map.of("job_id", jobIdRegex), Map.of(), sampledAt, metric.table(),
-                    List.of("job_id", "task_id"));
+                    List.of("job_id", "task_id", "subtask_index"));
             for (PrometheusVectorResult.VectorSample sample : result.result()) {
                 String jobId = sample.metric().get("job_id");
                 String taskId = sample.metric().get("task_id");
-                if (jobId != null && taskId != null) {
-                    taskIdsByJob.computeIfAbsent(jobId, ignored -> new LinkedHashSet<>()).add(taskId);
+                String subtaskIndex = sample.metric().get("subtask_index");
+                if (jobId != null && taskId != null && subtaskIndex != null) {
+                    subtasksByJob.computeIfAbsent(jobId, ignored -> new LinkedHashSet<>())
+                            .add(new FlinkSubtask(taskId, subtaskIndex));
                 }
             }
         }
         Map<String, Long> taskCountsByJob = new LinkedHashMap<>();
-        taskIdsByJob.forEach((jobId, taskIds) -> taskCountsByJob.put(jobId, (long) taskIds.size()));
+        subtasksByJob.forEach((jobId, subtasks) -> taskCountsByJob.put(jobId, (long) subtasks.size()));
         return taskCountsByJob;
     }
 

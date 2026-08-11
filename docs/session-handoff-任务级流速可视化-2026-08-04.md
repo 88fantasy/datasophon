@@ -149,4 +149,3 @@ debug exporter 走 **info** 级别输出。`service.telemetry.logs.level: warn` 
 - **task 总数分母**：D9 已决策不做。Spark 指标里没有（E14），要拿只能去打 Spark UI REST API，那会把"拉取式"的复杂度请回来一部分，需另行评估。
 - **YARN 适配**：阶段 B 立项后另说。
 - **Flink / DS 引擎的同类能力**：本方案只覆盖 Spark。
-

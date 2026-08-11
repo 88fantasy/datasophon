@@ -19,24 +19,24 @@
 
 ```sql
 CREATE TABLE `doris_prod`. dwd_odr_oper_surgery_records_full_hourly (
-`surgery_id` VARCHAR(255) NOT NULL COMMENT '手术id' , 
-`zyh` VARCHAR(100) NULL COMMENT '住院号' ,  
-`xm` VARCHAR(255) NULL COMMENT '姓名' ,  
-`xb` VARCHAR(255) NULL COMMENT '性别' , 
-`nl` VARCHAR(255) NULL COMMENT '年龄' , 
+`surgery_id` VARCHAR(255) NOT NULL COMMENT '手术id' ,
+`zyh` VARCHAR(100) NULL COMMENT '住院号' ,
+`xm` VARCHAR(255) NULL COMMENT '姓名' ,
+`xb` VARCHAR(255) NULL COMMENT '性别' ,
+`nl` VARCHAR(255) NULL COMMENT '年龄' ,
 `szks` VARCHAR(255) NULL COMMENT '患者所在科室' ,
 `sqkk` VARCHAR(255) NULL COMMENT '医生所在科室' ,
-`ch` VARCHAR(255) NULL COMMENT '床号' ,  
-`surgery_type` VARCHAR(255) NULL COMMENT '手术类型' , 
-`ssmc` VARCHAR(500) NULL COMMENT '手术名称' , 
-`sqzd` VARCHAR(255) NULL COMMENT '术前诊断' , 
-`yblx` VARCHAR(255) NULL COMMENT '医保类型' , 
-`sqsj` VARCHAR(255) NULL COMMENT '手术申请时间' , 
-`ssrq` VARCHAR(255) NULL COMMENT '手术日期' ,  
-`rssj` VARCHAR(255) NULL COMMENT '入手术间时间' ,  
-`cssj` VARCHAR(255) NULL COMMENT '出手术间时间' ,  
-`sskssj` VARCHAR(255) NULL COMMENT '手术开始时间' , 
-`ssjssj` VARCHAR(255) NULL COMMENT '手术结束时间' , 
+`ch` VARCHAR(255) NULL COMMENT '床号' ,
+`surgery_type` VARCHAR(255) NULL COMMENT '手术类型' ,
+`ssmc` VARCHAR(500) NULL COMMENT '手术名称' ,
+`sqzd` VARCHAR(255) NULL COMMENT '术前诊断' ,
+`yblx` VARCHAR(255) NULL COMMENT '医保类型' ,
+`sqsj` VARCHAR(255) NULL COMMENT '手术申请时间' ,
+`ssrq` VARCHAR(255) NULL COMMENT '手术日期' ,
+`rssj` VARCHAR(255) NULL COMMENT '入手术间时间' ,
+`cssj` VARCHAR(255) NULL COMMENT '出手术间时间' ,
+`sskssj` VARCHAR(255) NULL COMMENT '手术开始时间' ,
+`ssjssj` VARCHAR(255) NULL COMMENT '手术结束时间' ,
 `mzkssj` VARCHAR(255) NULL COMMENT '麻醉开始时间' ,
 `mzjssj` VARCHAR(255) NULL COMMENT '麻醉结束时间' ,
 `sszt` VARCHAR(255) NULL COMMENT '手术状态' ,
@@ -53,12 +53,12 @@ CREATE TABLE `doris_prod`. dwd_odr_oper_surgery_records_full_hourly (
 `anes_doctor1_name` VARCHAR(255) NULL COMMENT '麻醉医生姓名' ,
 `doctor_sync_id` VARCHAR(255) NULL COMMENT '麻醉医生id' ,
 `mzzs` VARCHAR(255) NULL COMMENT '麻醉助手' ,
-`visit_id` VARCHAR(255) NULL COMMENT '' , 
+`visit_id` VARCHAR(255) NULL COMMENT '' ,
 `sync_id` VARCHAR(255) NULL COMMENT '' ,
 `hzid` VARCHAR(255) NULL COMMENT '' ,
 `surgery_level` VARCHAR(255) NULL COMMENT '手术级别' ,
-`jxks` VARCHAR(255) NULL COMMENT '绩效科室' , 
-`jxks_sync_id` VARCHAR(255) NULL COMMENT '绩效科室id' , 
+`jxks` VARCHAR(255) NULL COMMENT '绩效科室' ,
+`jxks_sync_id` VARCHAR(255) NULL COMMENT '绩效科室id' ,
 `etl_time` VARCHAR(255) NULL COMMENT '',
 `jxks1` VARCHAR(255) NULL COMMENT '绩效科室id',
 `modify_time` VARCHAR(255) NULL COMMENT '修改时间'
@@ -152,7 +152,7 @@ FROM
     LEFT JOIN ods_smxt_lancet_aims_pat_surgery_notice_full_daily psn ON psn.PATIENT_ID = ps.PATIENT_ID
   LEFT JOIN ods_smxt_lancet_aims_sys_dept_full_daily ad ON ad.ID = psn.APPLY_DEPT_ID
   LEFT JOIN ods_xy_jxkh_cwc_hsjxdyb_full_daily bb ON ad.sync_id = bb.ksbm
-  
+
   LEFT JOIN ods_smxt_lancet_aims_sys_user_full_daily su on ps.doctor_dept_id = su.dept_id
   and ps.surgery_doctor_id = su.id
   LEFT join ods_xy_jxkh_v_ryb_full_daily cc on su.sync_id = cc.ygbh

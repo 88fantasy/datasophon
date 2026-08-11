@@ -22,16 +22,26 @@ import org.slf4j.LoggerFactory;
  * onJobSubmitted} — not {@code result.getJobID()} — is what ties COMPLETE/FAIL back to the same
  * runs as the earlier START events.
  */
+interface LineageEventEmitter {
+  void emitStart(
+      UUID runId, String flinkJobIdHex, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs);
+
+  void emitComplete(UUID runId, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs);
+
+  void emitFail(UUID runId, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs);
+}
+
 final class GravitinoLineageJobListener implements JobListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(GravitinoLineageJobListener.class);
 
-  private final GravitinoLineageEmitter emitter;
+  private final LineageEventEmitter emitter;
   private final List<DatasetResolver.Pipeline> pipelines;
   private UUID[] runIds;
-  private boolean terminalEventEmitted;
+  private boolean[] startEventsEmitted;
+  private boolean[] terminalEventsEmitted;
 
-  GravitinoLineageJobListener(GravitinoLineageEmitter emitter, List<DatasetResolver.Pipeline> pipelines) {
+  GravitinoLineageJobListener(LineageEventEmitter emitter, List<DatasetResolver.Pipeline> pipelines) {
     this.emitter = emitter;
     this.pipelines = pipelines;
   }
@@ -42,16 +52,36 @@ final class GravitinoLineageJobListener implements JobListener {
       LOG.warn("[lineage] job submission failed, no runId to report lineage against", throwable);
       return;
     }
-    String jobIdHex = jobClient.getJobID().toHexString();
+    emitStartForJob(jobClient.getJobID().toHexString());
+  }
+
+  synchronized void emitStartForJob(String jobIdHex) {
     UUID[] ids = new UUID[pipelines.size()];
-    synchronized (this) {
-      for (int i = 0; i < pipelines.size(); i++) {
-        DatasetResolver.Pipeline pipeline = pipelines.get(i);
-        UUID id = GravitinoLineageEmitter.runIdFor(jobIdHex, pipeline.output());
+    boolean[] starts = new boolean[pipelines.size()];
+    runIds = ids;
+    startEventsEmitted = starts;
+    terminalEventsEmitted = new boolean[pipelines.size()];
+
+    RuntimeException failure = null;
+    for (int i = 0; i < pipelines.size(); i++) {
+      DatasetResolver.Pipeline pipeline = pipelines.get(i);
+      UUID id = GravitinoLineageEmitter.runIdFor(jobIdHex, pipeline.output());
+      ids[i] = id;
+      try {
         emitter.emitStart(id, jobIdHex, pipeline.inputs(), Set.of(pipeline.output()));
-        ids[i] = id;
+        starts[i] = true;
+      } catch (RuntimeException e) {
+        LOG.error("[lineage] failed to emit START for output {}", pipeline.output().name(), e);
+        failure = accumulate(failure, e);
       }
-      runIds = ids;
+    }
+    if (failure != null) {
+      try {
+        emitTerminal(true);
+      } catch (RuntimeException compensationFailure) {
+        failure.addSuppressed(compensationFailure);
+      }
+      throw failure;
     }
   }
 
@@ -70,22 +100,43 @@ final class GravitinoLineageJobListener implements JobListener {
   }
 
   private synchronized void emitTerminal(boolean failed) {
-    if (runIds == null) {
+    if (runIds == null || startEventsEmitted == null || terminalEventsEmitted == null) {
       LOG.warn("[lineage] job terminated without prior START events, skipping");
       return;
     }
-    if (terminalEventEmitted) {
-      return;
-    }
-    terminalEventEmitted = true;
+    RuntimeException failure = null;
     for (int i = 0; i < pipelines.size(); i++) {
+      if (!startEventsEmitted[i] || terminalEventsEmitted[i]) {
+        continue;
+      }
       DatasetResolver.Pipeline pipeline = pipelines.get(i);
       UUID id = runIds[i];
-      if (failed) {
-        emitter.emitFail(id, pipeline.inputs(), Set.of(pipeline.output()));
-      } else {
-        emitter.emitComplete(id, pipeline.inputs(), Set.of(pipeline.output()));
+      try {
+        if (failed) {
+          emitter.emitFail(id, pipeline.inputs(), Set.of(pipeline.output()));
+        } else {
+          emitter.emitComplete(id, pipeline.inputs(), Set.of(pipeline.output()));
+        }
+        terminalEventsEmitted[i] = true;
+      } catch (RuntimeException e) {
+        LOG.error(
+            "[lineage] failed to emit {} for output {}",
+            failed ? "FAIL" : "COMPLETE",
+            pipeline.output().name(),
+            e);
+        failure = accumulate(failure, e);
       }
     }
+    if (failure != null) {
+      throw failure;
+    }
+  }
+
+  private static RuntimeException accumulate(RuntimeException current, RuntimeException next) {
+    if (current == null) {
+      return next;
+    }
+    current.addSuppressed(next);
+    return current;
   }
 }

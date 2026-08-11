@@ -42,7 +42,6 @@ export function useFillViewportHeight(
     recompute();
     window.addEventListener('resize', recompute);
     return () => window.removeEventListener('resize', recompute);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: deps 由调用方声明，是本 hook 的入参
   }, [containerRef, minHeight, bottomGap, ...deps]);
 
   useEffect(() => {

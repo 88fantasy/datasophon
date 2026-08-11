@@ -160,8 +160,9 @@ class LineageJobMetricsServiceTest {
                 eq("flink.taskmanager.job.task.operator.numRecordsIn"), eq("count"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
                 eq(Map.of("job_id", "^(?:" + flinkJobId + ")$")), eq(Map.of()),
-                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "task_id"))))
-                .thenReturn(taskVectorsByJobId(flinkJobId, "task-a", "task-b"));
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "task_id", "subtask_index"))))
+                .thenReturn(subtaskVectorsByJobId(flinkJobId,
+                        new String[]{"task-a", "0"}, new String[]{"task-a", "1"}));
         when(queryService.queryInstant(eq(7),
                 eq("flink.taskmanager.job.task.operator.numBytesOut"), eq("sum"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
@@ -291,9 +292,12 @@ class LineageJobMetricsServiceTest {
                 new VectorSample(Map.of("job_id", jobId), new Object[]{NOW.getEpochSecond(), value.toString()})));
     }
 
-    private static PrometheusVectorResult taskVectorsByJobId(String jobId, String... taskIds) {
-        return PrometheusVectorResult.of(java.util.Arrays.stream(taskIds)
-                .map(taskId -> new VectorSample(Map.of("job_id", jobId, "task_id", taskId),
+    private static PrometheusVectorResult subtaskVectorsByJobId(String jobId, String[]... subtasks) {
+        return PrometheusVectorResult.of(java.util.Arrays.stream(subtasks)
+                .map(subtask -> new VectorSample(Map.of(
+                        "job_id", jobId,
+                        "task_id", subtask[0],
+                        "subtask_index", subtask[1]),
                         new Object[]{NOW.getEpochSecond(), "1"}))
                 .toList());
     }

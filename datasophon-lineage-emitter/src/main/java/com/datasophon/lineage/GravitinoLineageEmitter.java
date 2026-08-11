@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
  * string. This class never mints or inspects the token — it only forwards it as a Bearer header,
  * same as {@code spark.openlineage.transport.auth.apiKey} does for Spark.
  */
-final class GravitinoLineageEmitter implements AutoCloseable {
+final class GravitinoLineageEmitter implements AutoCloseable, LineageEventEmitter {
 
   private static final Logger LOG = LoggerFactory.getLogger(GravitinoLineageEmitter.class);
   private static final URI PRODUCER =
-      URI.create("https://github.com/88fantasy/datasophon/tree/main/docs/lineage/lineage-emitter");
+      URI.create("https://github.com/88fantasy/datasophon/tree/main/datasophon-lineage-emitter");
   private static final String LINEAGE_ENDPOINT_PATH = "/api/lineage";
 
   private final OpenLineage openLineage = new OpenLineage(PRODUCER);
@@ -71,7 +71,8 @@ final class GravitinoLineageEmitter implements AutoCloseable {
    * back to {@code null} the moment COMPLETE/FAIL is emitted — the frontend job-metrics poller keys
    * off exactly that transition.
    */
-  void emitStart(
+  @Override
+  public void emitStart(
       UUID runId, String flinkJobIdHex, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs) {
     OpenLineage.DefaultRunFacet appIdFacet = new OpenLineage.DefaultRunFacet(PRODUCER);
     appIdFacet.getAdditionalProperties().put("properties", Map.of("spark.app.id", flinkJobIdHex));
@@ -79,11 +80,13 @@ final class GravitinoLineageEmitter implements AutoCloseable {
     emit(EventType.START, runId, facets, inputs, outputs);
   }
 
-  void emitComplete(UUID runId, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs) {
+  @Override
+  public void emitComplete(UUID runId, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs) {
     emit(EventType.COMPLETE, runId, null, inputs, outputs);
   }
 
-  void emitFail(UUID runId, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs) {
+  @Override
+  public void emitFail(UUID runId, Set<DatasetIdentity> inputs, Set<DatasetIdentity> outputs) {
     emit(EventType.FAIL, runId, null, inputs, outputs);
   }
 

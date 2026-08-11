@@ -12,7 +12,7 @@ class SqlScriptParserTest {
   void parsesAllT6StatementSetInserts() throws Exception {
     String sql =
         Files.readString(
-            Path.of("../sql/t6_mysql_cdc_to_paimon.sql"));
+            Path.of("../docs/lineage/sql/t6_mysql_cdc_to_paimon.sql"));
 
     SqlScript script = SqlScriptParser.parse(sql);
 
