@@ -77,10 +77,14 @@ final class SqlSecretRenderer {
       throw new IllegalArgumentException("Secrets file must contain a non-empty JSON object");
     }
     for (Map.Entry<String, String> entry : values.entrySet()) {
+      // 反斜杠被排除：render() 只做 SQL-92 的 '' 转义，而这些 SQL 里的 connector 参数最终会
+      // 到 MySQL，MySQL 默认没开 NO_BACKSLASH_ESCAPES，反斜杠在那边仍是转义符——值里带 \
+      // 时两端语义不一致，转义就不完整。与其做一套依赖目标方言的转义，不如直接拒绝。
       if (!entry.getKey().matches("[A-Z][A-Z0-9_]*")
           || entry.getValue() == null
           || entry.getValue().isEmpty()
           || entry.getValue().indexOf('\0') >= 0
+          || entry.getValue().indexOf('\\') >= 0
           || entry.getValue().contains("\n")
           || entry.getValue().contains("\r")) {
         throw new IllegalArgumentException("Secrets file contains an invalid entry");
@@ -106,10 +110,34 @@ final class SqlSecretRenderer {
     validateOwnerOnlyPermissions(secretsFile);
   }
 
+  /**
+   * 判断 {@code index} 处是否位于单引号字符串字面量内部。
+   *
+   * <p>必须跳过 SQL 注释：注释里出现奇数个撇号（英文缩写 "don't" 就够了）会翻转字面量状态，
+   * 让后面真正的占位符被判反。判成"不在字面量内"只是误拒合法脚本，判成"在字面量内"则会把
+   * 密钥拼到字面量之外——那是注入。
+   */
   private static boolean isInsideSingleQuotedLiteral(String sql, int index) {
     boolean inLiteral = false;
     for (int i = 0; i < index; i++) {
-      if (sql.charAt(i) != '\'') {
+      char ch = sql.charAt(i);
+      if (!inLiteral && ch == '-' && i + 1 < sql.length() && sql.charAt(i + 1) == '-') {
+        int lineEnd = sql.indexOf('\n', i);
+        if (lineEnd < 0 || lineEnd >= index) {
+          return false; // 占位符本身落在行注释里
+        }
+        i = lineEnd;
+        continue;
+      }
+      if (!inLiteral && ch == '/' && i + 1 < sql.length() && sql.charAt(i + 1) == '*') {
+        int blockEnd = sql.indexOf("*/", i + 2);
+        if (blockEnd < 0 || blockEnd >= index) {
+          return false; // 占位符本身落在块注释里
+        }
+        i = blockEnd + 1;
+        continue;
+      }
+      if (ch != '\'') {
         continue;
       }
       if (inLiteral && i + 1 < index && sql.charAt(i + 1) == '\'') {

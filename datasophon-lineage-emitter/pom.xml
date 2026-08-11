@@ -7,8 +7,13 @@
   <!--
     独立 Maven 项目，不进 datasophon 根 pom 的模块列表：它是提交到 Flink 集群的作业壳 jar
     （通过 `bin/flink run` 执行，Flink 相关依赖在 provided 作用域，由集群 lib/ 提供），
-    与 datasophon-api 这类 Spring Boot 服务的构建/发布节奏无关。
+    与 datasophon-api 这类 Spring Boot 服务的构建/发布节奏无关。把它挂进根 reactor 会让每次
+    `./mvnw package` 都去解析整套 Flink 依赖，代价与收益不成比例。
     对应实施方案 T10（血缘发射器）/ T11（CompiledPlan dataset 提取）。
+
+    构建方式（不随根构建触发，需显式进入本目录）：
+      cd datasophon-lineage-emitter && mvn package               # Flink 2.0
+      cd datasophon-lineage-emitter && mvn package -Pflink-1.20  # Flink 1.20
   -->
   <groupId>com.datasophon</groupId>
   <artifactId>lineage-emitter</artifactId>
@@ -16,6 +21,11 @@
   <packaging>jar</packaging>
 
   <properties>
+    <!--
+      故意停在 17，不跟随 datasophon 平台的 JDK 21：这个 jar 运行在 Flink 集群的 JVM 上，
+      不是平台自身的进程。编成 21 会在仍跑 JDK 17 的集群上直接 UnsupportedClassVersionError。
+      要提高到 21，先确认目标 Flink 集群的 JVM 版本。
+    -->
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <flink.version>2.0.2</flink.version>
