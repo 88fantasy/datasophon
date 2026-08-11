@@ -10,6 +10,12 @@ export default {
   'pages.lineage.column.database': 'Database',
   'pages.lineage.column.tableName': 'Table',
   'pages.lineage.table.empty': 'No lineage tables found',
+  'pages.lineage.tooltip.tableName': 'Table',
+  'pages.lineage.tooltip.canonicalName': 'Canonical name',
+  'pages.lineage.tooltip.connector': 'Connector',
+  'pages.lineage.tooltip.catalog': 'Catalog',
+  'pages.lineage.tooltip.database': 'Database',
+  'pages.lineage.tooltip.dwLayer': 'Layer',
 
   'pages.lineage.freshness.rebuildAccepted': 'Rebuild request submitted',
   'pages.lineage.freshness.snapshotBuiltAt': 'Snapshot built at',

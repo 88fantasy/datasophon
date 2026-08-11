@@ -28,6 +28,7 @@ const METRICS: JobMetrics = {
   recordsWrittenRate: 51_234.5,
   runningStages: 1,
   sampledAt: '2026-08-04T03:01:44Z',
+  engine: 'SPARK',
 };
 
 describe('lineage formatters', () => {
@@ -41,25 +42,42 @@ describe('lineage formatters', () => {
     expect(formatBytes(2.5 * 1024 * 1024 * 1024)).toBe('2.5 GB');
   });
 
-  it('builds a two-line job label with row count and relative time', () => {
+  it('falls back to historical statistics when the job has no live metrics', () => {
+    // 没有运行态指标不等于没有信息可显示：lastRowCount / lastRunAt 本来就查得到，
+    // 退成 "- task · -" 这种占位是白白丢掉历史作业唯一能展示的东西。
     expect(
-      formatJobNodeLabel(JOB, new Date('2026-08-04T03:03:00Z').getTime()),
+      formatJobNodeLabel(JOB, undefined, new Date('2026-08-04T03:03:00Z').getTime()),
     ).toBe('daily_orders_etl\n120万行 · 3分钟前');
   });
 
-  it('shows only the job name when historical statistics are absent', () => {
+  it('shows only the job name when neither live metrics nor history exist', () => {
     expect(
-      formatJobNodeLabel({
-        ...JOB,
-        lastRowCount: null,
-        lastBytes: null,
-        lastRunAt: null,
-      }),
+      formatJobNodeLabel(
+        { ...JOB, lastRowCount: null, lastBytes: null, lastRunAt: null },
+        undefined,
+        new Date('2026-08-04T03:03:00Z').getTime(),
+      ),
     ).toBe('daily_orders_etl');
   });
 
-  it('formats running job progress and write rate', () => {
-    expect(formatRunningJobLabel(METRICS)).toBe('✓12 task · 6000万行');
+  it('keeps the task name while updating the second line with runtime data', () => {
+    expect(formatJobNodeLabel(JOB, '14 task · 5.1万行/秒')).toBe(
+      'daily_orders_etl\n14 task · 5.1万行/秒',
+    );
+  });
+
+  it('labels Spark task counts as completed and Flink ones as parallel subtasks', () => {
+    // Spark 的 completeTasks 是累计完成数，Flink 恒为 0 而 activeTasks 才是并行度。
+    // 两者相加会得到一个在两种引擎下含义不同的数字，所以按 engine 分别取。
+    expect(formatRunningJobLabel(METRICS)).toBe('✓12 task · 5.1万行/秒');
+    expect(
+      formatRunningJobLabel({
+        ...METRICS,
+        engine: 'FLINK',
+        completeTasks: 0,
+        activeTasks: 14,
+      }),
+    ).toBe('14 task · 5.1万行/秒');
     expect(formatRecordsRate(METRICS.recordsWrittenRate)).toBe('5.1万行/秒');
   });
 

@@ -77,6 +77,7 @@
 | 13 | GRAVITINO 元数据服务接入（独立于阶段 A/B，分支 `feat/gravitino-metadata-service`） | PASSED | 每个真实 bug 修复前均现场核对 | §7.13：2026-07-29 ddh-02 实机 11 步全部通过；过程中发现并修复 4 个真实 bug（Nexus md5 sidecar 缺失、`worker.properties` MySQL 连接信息渲染缺失的平台级缺陷、`gravitino-env.ftl` 巡检路径 javaagent 失效、沙箱 Master jar 版本滞后） |
 | 14 | Gravitino catalog 创建：Paimon fs / Paimon S3 / Doris（独立于阶段 A/B，为平台级数据血缘 epic `feat/data-lineage-l1` 的 L0/L2 采样做准备） | PASSED | — | §7.14：2026-07-30 三个 catalog 均建 schema+建表验证到底；补齐两个内置 provider 缺失的运行时 jar（mysql-connector-j、paimon-s3）；发现并绕过 Paimon S3 catalog 的 `s3.*` 标准 key 失效坑（需同时用 `gravitino.bypass.*` 透传）。**仅是基础设施准备，尚未提交真实 Spark 作业采样 canonical_name** |
 | 15 | Gravitino 血缘权威端替换与 Datasophon 查询代理 | PASSED | 备份、独立 schema、真实 Spark 事件、原生/兼容 API、L3 页面与回滚条件全部核对 | §7.15：2026-08-01 完成 ddh-01/ddh-02 现场升级、真实 Spark/OpenLineage、MySQL/HTTP/重启恢复及 ego-browser 页面验收；旧血缘表行数未增长 |
+| 16 | 前端血缘图/链路图容器高度修复部署（独立于阶段 A/B，分支 `feat/flink-lineage`，复用 ddh-01 已在跑的 `datasophon-api` 作前端验证环境） | PASSED | 用户已批准真实部署并重启 `datasophon-api` | §7.16：2026-08-10 ddh-01 现场部署，`static/` 目录整体替换 + 重启，served chunk 内容比对确认修复生效；未在阶段 A/B 拓扑或数据面做任何改动 |
 
 状态只能取 `NOT STARTED`、`IN PROGRESS`、`BLOCKED`、`PASSED`、`FAILED`、`ROLLED BACK`。
 
@@ -696,6 +697,26 @@ APISIX 不再是阶段 A 的已知问题；验收上游仍仅用于最小代理�
 
 移除 `SPARK3`/`ZOOKEEPER` 依赖后，DS 不再需要 Spark/Hive/HDFS/ZooKeeper 任何一环即可安装启动（Spark/Hive 等仍是可选任务插件，未装不影响 API/Master/Worker/Alert 四个核心角色运行），`resource.hdfs.*`/`yarn.*` 等可选资源存储参数原样保留、未做改动（只在用户后续启用对应任务类型时才生效）。
 
+### 7.9.1 APISIX Standalone 原生 Dashboard 代理可行性验证（2026-08-04，ddh-01）
+
+**背景**：为 APISIX 详情页新增「代理 APISIX 原生 Dashboard」Tab 的需求提出后，源码静态调研（`apisix/cli/ngx_tpl.lua`、`ops.lua`、`admin/init.lua`、`admin/standalone.lua`、`ui/assets/index-*.js`）指向结论——原生 Dashboard 在当前 file-driven standalone 架构下是空壳。本节是该结论的现场实机验证，验证环境为 ddh-01（`192.168.10.131`，APISIX 3.17.0 唯一在跑节点）。验证期间临时修改 `config.yaml` 并重启 APISIX，全程未触碰 DataSophon 前后端代码，结束后已完整回滚。
+
+**验证前置**：备份 `config.yaml`/`apisix.yaml`（`*.bak-20260804-214323`），记录基线：`apisix.yaml` sha256 = `2f903f8e...1df569`；`9091` metrics（用配置的 `export_addr.ip=192.168.10.131`，非 `127.0.0.1`）返回 200；`9080 /get` 返回 404（既有 upstream 指向本机 8080 端口的 datasophon-api `/ddh`，无 `/get` 路由，非本次改动引入）。
+
+**V1（能否用 traditional+yaml+admin 启动）—— 通过**：将 `config.yaml` 切为 `role: traditional` + `role_traditional.config_provider: yaml` + `apisix.enable_admin: true` + 一次性 `admin_key`，未显式补 `etcd` 段，`systemctl restart apisix` 后 `active (running)`。追加代码走读定位到 `apisix/cli/file.lua:280-305`（`read_yaml_conf`）会把 `role_traditional.config_provider` 归一化写入运行时的顶层 `deployment.config_provider`，且 `etcd_schema` 的 `required={"prefix","host"}` 由 `cli/config.lua` 的默认 `etcd` 段自动合并满足——不需要真实 etcd 实例，也不需要手工补占位段。
+
+**V2（9180 / `/ui/` 是否可达）—— 通过**：`ss -lntp` 确认 9180 已监听；`curl http://127.0.0.1:9180/ui/` 返回 200 HTML；`/ui` 301 跳转 `/ui/` 正常。
+
+**V3（Dashboard 是否空壳）—— 坐实，且比预判更彻底**：用 ego-browser 打开 `http://192.168.10.131:9180/ui/`（过程中先触发 `allow_admin`（默认 `127.0.0.0/24`）的 IP 白名单 403，ego-browser 出口 IP `192.168.0.93` 不在其中；临时加入白名单后复测）。**页面首屏即崩在 React 错误边界**——"Something went wrong! / Request failed with status code 404"，尚未到登录页。用 `performance.getEntriesByType('resource')` 精确定位：Dashboard 加载后发出的第一个请求是 `GET /apisix/admin/services?page=1&page_size=10`，命中 `admin/init.lua:478-490` 定义的 `standalone_uri_route`（该路由表在 standalone 模式下只注册 `HEAD /apisix/admin`、`GET|PUT /apisix/admin/configs`、`POST /apisix/admin/configs/validate` 三项），`/services` 直接 404。截图存于本机（`apisix-dashboard-v3-404.png`，Git 外）。
+
+**V4（`/configs` 是否回写 apisix.yaml）—— 坐实**：`PUT /apisix/admin/configs`（需带 `X-Digest` 头，否则 400 `missing digest header`）提交一条测试路由，返回 `202`；`GET /apisix/admin/configs` 确认内存态已含该路由；`apisix.yaml` 的 sha256 提交前后完全一致（`2f903f8e...1df569`），未被写入。附带发现：即便内存态写入成功，`9080` 上该路由当时仍返回 404（未即时生效于转发面），与 C6 结论无关，未深究根因。
+
+**V5（内存态是否重启即失）—— 坐实**：V4 之后 `systemctl restart apisix`，再次 `GET /apisix/admin/configs`，全部 `*_conf_version` 归零、`routes` 键消失——确认无持久化。
+
+**V6（回滚）—— 通过**：还原两份 `.bak` 文件（`apisix.yaml` sha256 校验与基线一致），重启后 `9180` 拒绝连接、`9080 /get` 恢复基线 404、`9091` metrics 恢复 200，与 §7.9 现场验收基线及 §10.3 已批准状态一致。
+
+**结论**：C1-C9（详见调研阶段结论表）全部被现场实测坐实，无一被推翻。原生 Dashboard 代理方案不成立——它不仅不能用 DataSophon 现有 `configWriter` 体系管理配置（写入不落盘、重启即丢），连自身在 standalone 模式下的只读展示能力都不具备（首屏即因 404 崩溃）。「代理 APISIX 原生 Dashboard」需求就此作废；后续若要在 APISIX 详情页提供图形化网关配置能力，需走「DataSophon 自建配置 Tab，复用现有 `apisix-routes.ftl` 模板热加载链路」路线，另行立项规划。
+
 ### 7.10 DolphinScheduler 现场安装：5 个真实 bug 的排查与修复 + S3 存储插件缺失（已知问题）（2026-07-17）
 
 从前端发起 DS 安装（`ApiServer`/`MasterServer`/`AlertServer` → ddh-02，`WorkerServer` × 3 → ddh-03/04/05），过程中连续暴露 5 个真实 bug，逐一定位修复：
@@ -969,6 +990,77 @@ Datasophon 侧和 Spark 侧可以用同一个 token，也可以各铸造一个�
    - L3 页面通过 Datasophon 会话仍可正常查询；
    - 提交一次真实 Spark 作业，确认 catalog 联邦（建表）成功 **且** `lineage_event` 表行数增长——两者分别
      覆盖 catalog 联邦和 OpenLineage 摄入这两条独立路径，任一失败都说明只有一条路径鉴权配置对了。
+
+### 7.16 前端血缘图/链路图容器高度修复：真实部署到 ddh-01（2026-08-10）
+
+**背景**：分支 `feat/flink-lineage` 上修复了两处前端图容器固定高度 `560px` 导致大屏下方留白的问题——`datasophon-ui-v2/src/pages/Cluster/Lineage/LineageGraph.tsx`（数据血缘图）与 `datasophon-ui-v2/src/pages/Cluster/ObservabilityCollector/TopologyTab.tsx`（服务调用链路图），均改为按视口剩余空间动态计算高度并给 G6 `Graph` 加 `autoResize: true`。用户本机 dev server 验证通过后要求把改动真实部署到本文档记录的 ddh-01 环境（`192.168.10.131`，已在跑的 `datasophon-api` 进程，PID 见下）以便持久验证，与阶段 A/B 的拓扑、数据面、服务 DAG 均无关，仅复用该沙箱已运行的前端宿主。
+
+**部署机制现场确认（供后续复用本文档者参考）**：`datasophon-ui-v2/pom.xml` 的 `maven-resources-plugin` 有明确注释说明"路线②"——`npm run build` 产物 `dist/` 会被拷到 `${project.parent.basedir}/static`（仓库根目录的 `static/`），而不是打进 `datasophon-ui-v2-3.0-SNAPSHOT.jar`（该 jar 本身设计上是空的，`mvn package` 会打印 `JAR will be empty` 属预期，不是构建失败）。`datasophon-assembly` 把这个仓库根 `static/` 目录整体打进最终 `datasophon-manager-*.tar.gz`，与 `lib/`、`conf/`、`bin/` 同级。部署前用 MD5 比对本机新构建的 `static/index.html` 与 ddh-01 `curl http://127.0.0.1:8080/ddh/` 的实际返回内容，确认两者一致，实锤了"磁盘上这份 `static/` 目录就是实际被服务的内容"（而非某个 jar 里内嵌的旧资源），避免了改错部署对象。
+
+**执行步骤**：
+
+1. 本机构建：`JAVA_HOME=<GraalVM 21.0.7> ./mvnw -pl datasophon-ui-v2 -am clean package -DskipTests -Dspotless.check.skip=true -s ~/.m2/setting.xml`。**加 `-Dspotless.check.skip=true` 是因为根 pom 的 `spotless:check` 挡在 reactor 最前面，当前仓库另有几份 Markdown 文档（`docs/lineage/sql/T8-改写对照清单.md` 等）存在与本次改动无关的既有格式违规，会导致整个 reactor 直接 FAILURE、连 `datasophon-ui-v2` 都构建不到；只跳过 spotless 检查本身，未改动任何文件，也未修复这些无关的格式问题。**
+2. ddh-01 现场备份：`cp -a static static.bak-20260810-100846`（未删除旧内容，可原样回滚）。
+3. 本机 `tar` 打包 `static/` 经 `ssh` 管道传到 ddh-01 暂存目录并解包，清理 macOS `tar` 产生的 `._*` AppleDouble 元数据文件后，原子替换：`rm -rf static && mv static.new/static static`。
+4. `bin/datasophon-api.sh restart`（标准脚本：SIGTERM → 5s 等待 → 必要时 SIGKILL → 重新 `nohup` 启动），新 PID 于 `2026-08-10 10:10` 起稳定运行。
+
+**验证**：`curl http://127.0.0.1:8080/ddh/` 返回 `200`；重启后日志除下方"已知无关噪音"外无其它异常；直接定位到含修复代码的具体 chunk（`_6f2b3fb8.f4863848.async.js`，`grep graphHeight` 命中），`curl http://127.0.0.1:8080/ddh/static/_6f2b3fb8.f4863848.async.js` 返回 `200` 且内容命中同一标记——确认新前端已真实生效，不是仅本机验证。
+
+**已知无关噪音（未处理，非本次引入）**：重启日志出现一条 `LoadServiceMeta` 报错——`APISIX.bak-apisixgateway-20260805120153与ddl定义的不一致`，是 §7.9.1（2026-08-04 APISIX Dashboard 可行性验证）现场操作时在 Nexus 留下的一份带 `.bak-` 后缀的元数据备份目录，命名不符合 DDL 校验规则，每次 `LoadServiceMeta` 启动扫描都会报一次错但不阻断后续加载（紧跟着的 `DS` DDL 正常加载成功）。这条报错与本次前端部署无关，本次未清理。
+
+**回滚方式**（如需）：ddh-01 上 `cd /data/datasophon-api/datasophon-manager-3.0-SNAPSHOT && rm -rf static && mv static.bak-20260810-100846 static && bin/datasophon-api.sh restart`。
+
+### 7.17 PR #40 代码审查修复的实机验证：暴露出两个真实 bug（2026-08-11）
+
+**背景**：`feat/flink-lineage` 分支经代码审查后修复了一批问题（指标名拼写、速率查询下沉后端、
+`JobMetrics` 新增 `engine` 字段等，见 PR #40），需要在本文档的 ddh-01 环境实机验证。与 §7.16 只部署
+前端不同，本次含后端改动，因此 `lib/datasophon-api-3.0-SNAPSHOT.jar` 与 `static/` 一并替换，
+**未动 `conf/`**（避开"全新解压丢 `api.local.properties` 凭据"那个坑）。
+
+**端点路径**：lineage 端点实际挂在 `/ddh/api/v2/lineage/**`（`LineageV2Controller` 的
+`@RequestMapping("/v2/lineage")`，前端 baseURL 含 `/v2`）。用 `/ddh/api/lineage/**` 请求会落到
+静态资源处理器并返回 `{"msg":"No static resource ...","code":10000}`，不是 404，排查时容易误判。
+
+**现场数据面基线**：两个 Flink 作业分别走两套指标命名，互不重叠，正好覆盖两条代码路径——
+
+| 作业 | job_id | 指标命名 | 落表 |
+| --- | --- | --- | --- |
+| flink-cluster-dwd（Flink 2.2.1） | `d09b581d…36cc` | 点号（native OTLP，delta Sum） | `otel_metrics_sum` |
+| flink-cluster-cdc（Flink 1.20） | `94dfbc75…b60f` | 下划线（Prometheus scrape） | `otel_metrics_gauge` |
+
+**验证暴露的 bug 1：`INSTANT_SERIES_ATTR_KEYS` 漏加 Flink 维度**。PR 把 `job_id`/`task_id`/
+`operator_name` 加进了 `ALLOWED_ATTR_FILTER_KEYS`（过滤白名单），却漏了 `INSTANT_SERIES_ATTR_KEYS`
+（instant 查询的 `PARTITION BY` 粒度白名单）。后果是同一 job 的几十个算子被并成一条序列，
+`ROW_NUMBER() … rn = 1` 只留最新的一行，取到哪个算子纯看采样先后。现场实测：Doris 里直查
+`flink_taskmanager_job_task_operator_numBytesOut` 有 `557,521,920` 字节，API 却返回 `0`
+（最新一行恰好是 value 恒为 0 的 Committer）。
+
+**验证暴露的 bug 2：delta 采样不能取"最新一条"当累计值**。native OTLP 的 `numRecordsIn` 是 delta
+temporality，每个采样值只是一个间隔内的增量，多数间隔没有新记录因而是 `0`。原实现用 instant 查询取
+最新一条，现场连调 5 次得到 `0 / 97 / 0 / 111 / 0`——在 0 和某个批量之间反复跳。累计口径改为按
+`RANGE_SECONDS`（120 秒）窗口求和。**注意语义差异**：Spark 的 `recordsWritten` 是本次运行累计值，
+Flink 是"最近 120 秒写入量"，两者口径不同，展示端如需标注应按 `engine` 字段区分。
+
+**修复前后对照（同一环境、同一作业，真实数据）**：
+
+| 指标 | 修复前 | 修复后 | 交叉核对 |
+| --- | ---: | ---: | --- |
+| `94dfbc75…` `bytesWritten` | `0` | `558,427,143` | 与直查 Doris 的 `557,521,920` 吻合（期间继续写入） |
+| `94dfbc75…` `recordsWritten` | `0` | `822,801` | — |
+| `d09b581d…` `recordsWritten` | `0/97/0/111/0` 跳变 | `312/415/309/309` 稳定 | 与 rate ≈3.4 行/秒 × 120 秒量级一致 |
+
+**指标名拼写修复的独立证据**：同一时间窗内，PR 原先写的混合点号名
+`flink_taskmanager_job_task_operator.numBytesOut` 查得 **0 行**，修正后的全下划线名查得 **6692 行**——
+实锤"查错名不会报错，只会静默返回零行"。
+
+**其余验证**：新端点 `/v2/lineage/job-rate-history` 返回 60 个采样点（1.83～3.67 行/秒）；
+`job-metrics` 的 `engine` 字段返回 `FLINK`，`completeTasks=0 / activeTasks=8`，符合 Flink 无批式
+task 生命周期的预期；前端 chunk `_5a083072.3437df59.async.js` 命中 `job-rate-history` 且
+`HTTP 200`，`static/index.html` MD5 与本机构建产物一致。启动日志除 §7.16 已记录的 `APISIX.bak-*`
+噪音外无异常。
+
+**回滚方式**：ddh-01 上
+`cd /data/datasophon-api/datasophon-manager-3.0-SNAPSHOT && cp lib/datasophon-api-3.0-SNAPSHOT.jar.bak-20260811-1152 lib/datasophon-api-3.0-SNAPSHOT.jar && rm -rf static && mv static.bak-20260811-1152 static && bin/datasophon-api.sh restart`。
 
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 

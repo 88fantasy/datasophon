@@ -25,6 +25,7 @@ package com.datasophon.api.controller.v2;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.lineage.metrics.LineageJobMetricsService;
 import com.datasophon.api.lineage.metrics.LineageJobMetricsService.JobMetrics;
+import com.datasophon.api.lineage.metrics.LineageJobMetricsService.RatePoint;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient.NodeInjection;
 
@@ -120,6 +121,22 @@ public class LineageV2Controller extends ApiController {
         } catch (Exception e) {
             log.error("Lineage job metrics query failed: clusterId={} reason={}", clusterId, e.getMessage(), e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "任务指标查询失败");
+        }
+    }
+
+    @GetMapping("/job-rate-history")
+    public List<RatePoint> jobRateHistory(
+                                          @RequestParam Integer clusterId,
+                                          @RequestParam String appId,
+                                          @RequestParam long start,
+                                          @RequestParam long end,
+                                          @RequestParam(defaultValue = "60") long step) {
+        try {
+            return jobMetricsService.getJobRateHistory(clusterId, appId, start, end, step);
+        } catch (Exception e) {
+            log.error("Lineage job rate history query failed: clusterId={} appId={} reason={}",
+                    clusterId, appId, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "任务速率查询失败");
         }
     }
 

@@ -17,7 +17,14 @@ import {
   Tag,
 } from 'antd';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useFillViewportHeight } from '../_shared/useFillViewportHeight';
 import OverviewStats from './OverviewStats';
 import { useObservabilityStyles } from './observabilityStyles';
 import type {
@@ -188,6 +195,9 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
   const [selectedService, setSelectedService] = useState<string>();
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph>(undefined);
+  const graphHeight = useFillViewportHeight(containerRef, [topology, renderFailed], {
+    onHeightChange: () => graphRef.current?.resize(),
+  });
 
   const slowNodes = useMemo(
     () =>
@@ -252,6 +262,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
     if (!containerRef.current) return;
     const graph = new Graph({
       container: containerRef.current,
+      autoResize: true,
       padding: 24,
       data,
       node: {
@@ -642,7 +653,7 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
                   )}
                 />
               )}
-              <div ref={containerRef} style={{ height: 560 }} />
+              <div ref={containerRef} style={{ height: graphHeight }} />
             </div>
             <aside className={styles.insightPanel}>
               <div className={styles.insightTitle}>

@@ -81,14 +81,19 @@ public class OtelMetricsQueryService {
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id");
+                    "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id",
+                    "job_id", "task_id", "subtask_index", "operator_name");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause", "cmd", "db", "direction");
+                    "area", "result", "status", "level", "cause", "cmd", "db", "direction",
+                    // Flink：同一个 job_id 下每个算子/subtask 是一条独立序列。不列在这里的话，
+                    // instant 查询的 PARTITION BY 会把它们并成一条，ROW_NUMBER 只留最新的一行——
+                    // 一个作业几十个算子最终只算进一个，而且取到哪个纯看采样先后。
+                    "operator_name", "task_id", "subtask_index");
 
     static final List<String> LABEL_ATTR_KEYS = List.of("vol_name", "mp", "method", "cmd", "db");
 
@@ -239,6 +244,46 @@ public class OtelMetricsQueryService {
                                              List<String> groupByKeys,
                                              long start, long end, long step,
                                              String table, double quantile, String field) {
+        return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
+                filtersRegex, filtersNotRegex, groupByKeys, start, end, step, table, quantile, field, false);
+    }
+
+    /**
+     * Range 查询，把同一时间桶内的原始采样值求和而非求均值。
+     *
+     * <p>用于 OTLP delta temporality 的 Sum 指标：每个采样值就是采样间隔内的增量，不能再按
+     * counter 做相邻值差分。调用方可通过 {@code scale} 除以桶宽，得到每秒速率。
+     */
+    public PrometheusMatrixResult queryRangeSum(Integer clusterId, String metric,
+                                                String rateWindow, double scale,
+                                                String instance, String job,
+                                                Map<String, String> filters,
+                                                Map<String, String> filtersNe,
+                                                Map<String, String> filtersRegex,
+                                                Map<String, String> filtersNotRegex,
+                                                List<String> groupByKeys,
+                                                long start, long end, long step,
+                                                String table, double quantile, String field) {
+        return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
+                filtersRegex, filtersNotRegex, groupByKeys, start, end, step, table, quantile, field, true);
+    }
+
+    private PrometheusMatrixResult queryRange(Integer clusterId, String metric,
+                                              String rateWindow, double scale,
+                                              String instance, String job,
+                                              Map<String, String> filters,
+                                              Map<String, String> filtersNe,
+                                              Map<String, String> filtersRegex,
+                                              Map<String, String> filtersNotRegex,
+                                              List<String> groupByKeys,
+                                              long start, long end, long step,
+                                              String table, double quantile, String field,
+                                              boolean sumSamples) {
+        // rateWindow 会把查询路由到 rate 分支，那里按相邻采样差分，不经过桶内聚合——sumSamples
+        // 会被静默忽略，调用方却以为拿到的是 delta 求和。与其悄悄给出错误口径，不如直接拒绝。
+        if (sumSamples && rateWindow != null && !rateWindow.isBlank()) {
+            throw new IllegalArgumentException("valueAggregation=sum cannot be combined with rateWindow");
+        }
         JdbcClient client = createReader(clusterId);
 
         List<String> validGroupBy = toValidGroupBy(groupByKeys);
@@ -316,7 +361,7 @@ public class OtelMetricsQueryService {
                 ? buildRangeRateSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
                         filtersRegex, filtersNotRegex, validGroupBy, otelTable)
                 : buildRangeGaugeSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
-                        filtersRegex, filtersNotRegex, validGroupBy, otelTable);
+                        filtersRegex, filtersNotRegex, validGroupBy, otelTable, sumSamples);
 
         JdbcClient.StatementSpec spec = client.sql(sql)
                 .param("metric", metric)
@@ -796,6 +841,19 @@ public class OtelMetricsQueryService {
                                      Map<String, String> filters, Map<String, String> filtersNe,
                                      Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
                                      List<String> groupByKeys, String otelTable) {
+        return buildRangeGaugeSql(filterInstance, filterJob, filters, filtersNe,
+                filtersRegex, filtersNotRegex, groupByKeys, otelTable, false);
+    }
+
+    /**
+     * @param sumSamples 桶内聚合方式：{@code false} 求均值（gauge 的常规语义），{@code true} 求和
+     *                   （OTLP delta Sum，每个采样值本身就是区间增量）
+     */
+    static String buildRangeGaugeSql(boolean filterInstance, boolean filterJob,
+                                     Map<String, String> filters, Map<String, String> filtersNe,
+                                     Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                     List<String> groupByKeys, String otelTable, boolean sumSamples) {
+        String aggregationFn = sumSamples ? "SUM" : "AVG";
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
         StringBuilder sql = new StringBuilder(
@@ -803,7 +861,7 @@ public class OtelMetricsQueryService {
                         + "       " + JOB_EXPR + " AS job"
                         + extraSelect
                         + ",\n       FLOOR(UNIX_TIMESTAMP(timestamp) / :step) * :step AS bucket,\n"
-                        + "       AVG(value) AS value\n"
+                        + "       " + aggregationFn + "(value) AS value\n"
                         + "FROM otel." + otelTable + "\n"
                         + "WHERE metric_name = :metric\n"
                         + "  AND timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)");

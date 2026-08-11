@@ -37,7 +37,7 @@ export default defineConfig({
    * @description 让 build 之后的产物包含 hash 后缀。通常用于增量发布和避免浏览器加载缓存。
    * @doc https://umijs.org/docs/api/config#hash
    */
-  hash: false,
+  hash: true,
 
   // dev 环境用 '/'，避免静态资源被 /ddh proxy 规则拦截转发到后端导致 504；计算方式见 ./publicPath.ts
   publicPath: PUBLIC_PATH,

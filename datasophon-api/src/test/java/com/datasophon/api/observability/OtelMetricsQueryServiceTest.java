@@ -58,6 +58,17 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void rangeGauge_sumAggregationSumsDeltaSamplesInEachBucket() {
+        String sql = OtelMetricsQueryService.buildRangeGaugeSql(
+                false, false, Map.of(), Map.of(), Map.of("operator_name", ".*Writer.*"), Map.of(),
+                List.of("job_id"), "otel_metrics_sum", true);
+
+        assertThat(sql).contains("SUM(value) AS value");
+        assertThat(sql).contains("attributes['job_id']");
+        assertThat(sql).contains("CAST(attributes['operator_name'] AS STRING) REGEXP :afr_operator_name");
+    }
+
+    @Test
     void instantAgg_count_containsCountFunction() {
         String sql = OtelMetricsQueryService.buildInstantAggSql(
                 "count", false, false, null, null, "otel_metrics_gauge");
@@ -95,6 +106,17 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("attributes['vol_name']");
         assertThat(sql).contains("attributes['mp']");
         assertThat(sql).contains("attributes['method']");
+    }
+
+    @Test
+    void allowedAttrFilterKeys_includeFlinkSubtaskDimensions() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                .contains("task_id", "subtask_index");
+        String sql = OtelMetricsQueryService.buildInstantAggSql(
+                "count", false, false, null, null, null, null,
+                List.of("job_id"), "otel_metrics_sum");
+        assertThat(sql).contains("attributes['task_id']");
+        assertThat(sql).contains("attributes['subtask_index']");
     }
 
     @Test

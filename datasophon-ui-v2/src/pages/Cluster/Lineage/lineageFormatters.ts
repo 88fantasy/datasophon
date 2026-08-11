@@ -43,7 +43,20 @@ function formatRelativeTime(value: string, now: number): string | null {
   return `${Math.floor(seconds / 31_536_000)}年前`;
 }
 
-export function formatJobNodeLabel(job: GraphJob, now = Date.now()): string {
+/**
+ * 作业节点标签：第一行永远是任务名，第二行是运行态信息。
+ *
+ * 有实时指标（作业正在跑）时用 `runtimeLabel`；没有则回退到历史统计"行数 · 相对时间"，
+ * 而不是显示占位的 `- task · -`——历史作业的这两个字段本来就查得到，退成占位是白白丢信息。
+ */
+export function formatJobNodeLabel(
+  job: GraphJob,
+  runtimeLabel?: string,
+  now = Date.now(),
+): string {
+  if (runtimeLabel) {
+    return `${job.jobName}\n${runtimeLabel}`;
+  }
   if (job.lastRowCount === null || job.lastRunAt === null) {
     return job.jobName;
   }
@@ -52,8 +65,17 @@ export function formatJobNodeLabel(job: GraphJob, now = Date.now()): string {
   return `${job.jobName}\n${formatRowCount(job.lastRowCount)} · ${relativeTime}`;
 }
 
+/**
+ * Flink 没有 Spark 那样的批式 task 生命周期：它的 `completeTasks` 恒为 0，
+ * `activeTasks` 是并行 subtask 数；Spark 的 `completeTasks` 则是累计完成数。
+ * 两者相加会得到一个在两种引擎下含义不同的数字，所以按引擎分别取。
+ */
 export function formatRunningJobLabel(metrics: JobMetrics): string {
-  return `✓${metrics.completeTasks} task · ${formatRowCount(metrics.recordsWritten)}`;
+  const tasks =
+    metrics.engine === 'FLINK'
+      ? `${metrics.activeTasks} task`
+      : `✓${metrics.completeTasks} task`;
+  return `${tasks} · ${formatRecordsRate(metrics.recordsWrittenRate)}`;
 }
 
 export function formatRecordsRate(value: number | null): string {

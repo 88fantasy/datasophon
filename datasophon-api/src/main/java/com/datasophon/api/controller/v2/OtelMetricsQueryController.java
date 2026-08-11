@@ -127,6 +127,8 @@ public class OtelMetricsQueryController extends ApiController {
      * @param filtersRegex    可选正则过滤，格式 {@code "status:5.."}
      * @param filtersNotRegex 可选正则不匹配过滤，格式 {@code "status:5.."}
      * @param groupBy    可选额外 GROUP BY 维度，格式 {@code "mode"} 或 {@code "mode,path"}
+     * @param valueAggregation 无 rateWindow 时的桶内聚合："avg"（默认）或 "sum"；后者用于
+     *                         OTLP delta Sum 指标
      * @param field      histogram 表专用："count"/"sum" 表示字段 rate，缺省或 "quantile" 表示分位数
      */
     @GetMapping("/query_range")
@@ -147,11 +149,28 @@ public class OtelMetricsQueryController extends ApiController {
                                                           @RequestParam(required = false) String filtersNe,
                                                           @RequestParam(required = false) String filtersRegex,
                                                           @RequestParam(required = false) String filtersNotRegex,
-                                                          @RequestParam(required = false) String groupBy) {
+                                                          @RequestParam(required = false) String groupBy,
+                                                          @RequestParam(required = false) String valueAggregation) {
         try {
+            boolean sumSamples = "sum".equalsIgnoreCase(valueAggregation);
+            if (valueAggregation != null && !valueAggregation.isBlank() && !sumSamples
+                    && !"avg".equalsIgnoreCase(valueAggregation)) {
+                throw new IllegalArgumentException("Unsupported valueAggregation: " + valueAggregation);
+            }
+            // valueAggregation 与 rateWindow 的互斥由 OtelMetricsQueryService 统一把关，
+            // 这样绕过 HTTP 层直接调 service 的路径（如 LineageJobMetricsService）同样受保护。
+            Map<String, String> equalsFilters = parseFilters(filters);
+            Map<String, String> notEqualsFilters = parseFilters(filtersNe);
+            Map<String, String> regexFilters = parseFilters(filtersRegex);
+            Map<String, String> notRegexFilters = parseFilters(filtersNotRegex);
+            List<String> groupByKeys = parseGroupBy(groupBy);
+            if (sumSamples) {
+                return ApiResponse.ok(queryService.queryRangeSum(clusterId, metric, rateWindow, scale,
+                        instance, job, equalsFilters, notEqualsFilters, regexFilters, notRegexFilters,
+                        groupByKeys, start, end, step, table, quantile, field));
+            }
             return ApiResponse.ok(queryService.queryRange(clusterId, metric, rateWindow, scale,
-                    instance, job, parseFilters(filters), parseFilters(filtersNe),
-                    parseFilters(filtersRegex), parseFilters(filtersNotRegex), parseGroupBy(groupBy),
+                    instance, job, equalsFilters, notEqualsFilters, regexFilters, notRegexFilters, groupByKeys,
                     start, end, step, table, quantile, field));
         } catch (Exception e) {
             log.error("Doris range query failed: metric={} cluster={} reason={}",

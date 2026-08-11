@@ -9,6 +9,11 @@ import { formatRunningJobLabel } from './lineageFormatters';
 
 export interface G6NodeData {
   canonicalName: string;
+  /** 下列表元信息只有真实的表节点才有；折叠占位节点没有对应的库表实体 */
+  connector?: string;
+  catalogName?: string;
+  databaseName?: string;
+  tableName?: string;
   dwLayer: string | null;
   isRoot: boolean;
   isCollapsedPlaceholder: boolean;
@@ -77,6 +82,10 @@ export function toG6Data(
     id: String(node.id),
     data: {
       canonicalName: node.canonicalName,
+      connector: node.connector,
+      catalogName: node.catalogName,
+      databaseName: node.databaseName,
+      tableName: node.tableName,
       dwLayer: node.dwLayer,
       isRoot: node.id === rootNodeId,
       isCollapsedPlaceholder: false,
