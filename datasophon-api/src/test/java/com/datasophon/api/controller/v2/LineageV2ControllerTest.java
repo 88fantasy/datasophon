@@ -111,7 +111,7 @@ class LineageV2ControllerTest {
     @Test
     void jobMetricsParsesAppIdsAndDoesNotCallGravitino() {
         JobMetrics metrics = new JobMetrics(12, 2, 60_000_000, 2_204_955_464L,
-                51_234.5, 1, Instant.parse("2026-08-04T03:01:44Z"), "SPARK");
+                51_234.5, 1, Instant.parse("2026-08-04T03:01:44Z"), "SPARK", null);
         when(jobMetricsService.getJobMetrics(7, java.util.List.of("app-1", "app-2")))
                 .thenReturn(Map.of("app-1", metrics));
 
@@ -136,6 +136,29 @@ class LineageV2ControllerTest {
         assertThatThrownBy(() -> controller.jobMetrics(7, "app-1"))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
                 .hasMessageContaining("任务指标查询失败")
+                .hasMessageNotContaining("SELECT secret");
+    }
+
+    @Test
+    void jobRateHistoryRejectsOversizedWindowsWith400() {
+        // 参数越界要和"Doris 查询挂了"区分开：前者是调用方该改请求，后者才是服务端故障
+        when(jobMetricsService.getJobRateHistory(7, "app-1", 0L, 999_999_999L, 1L))
+                .thenThrow(new IllegalArgumentException("Rate history window is too large"));
+
+        assertThatThrownBy(() -> controller.jobRateHistory(7, "app-1", 0L, 999_999_999L, 1L))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .extracting(e -> ((org.springframework.web.server.ResponseStatusException) e).getStatusCode())
+                .isEqualTo(org.springframework.http.HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void jobRateHistoryHidesDorisFailureDetails() {
+        when(jobMetricsService.getJobRateHistory(7, "app-1", 1000L, 2000L, 60L))
+                .thenThrow(new IllegalStateException("SELECT secret FROM otel_metrics_sum"));
+
+        assertThatThrownBy(() -> controller.jobRateHistory(7, "app-1", 1000L, 2000L, 60L))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("任务速率查询失败")
                 .hasMessageNotContaining("SELECT secret");
     }
 }

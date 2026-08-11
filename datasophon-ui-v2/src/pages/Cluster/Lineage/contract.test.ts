@@ -283,6 +283,7 @@ describe('Lineage proxy response contract', () => {
       runningStages: 1,
       sampledAt: '2026-08-04T03:01:44Z',
       engine: 'SPARK',
+      windowSeconds: null,
     };
     vi.mocked(request).mockResolvedValue({
       success: true,
@@ -297,6 +298,8 @@ describe('Lineage proxy response contract', () => {
       skipErrorHandler: true,
     });
     expect(result.application_1).toEqual(metrics);
+    // 口径字段属于契约的一部分：没有它，前端无法区分累计值和窗口增量
+    expect(result.application_1).toHaveProperty('windowSeconds');
   });
 
   it('job rate history: delegates engine detection to the backend endpoint', async () => {

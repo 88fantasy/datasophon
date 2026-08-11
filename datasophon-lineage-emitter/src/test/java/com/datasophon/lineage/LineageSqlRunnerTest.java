@@ -2,9 +2,12 @@ package com.datasophon.lineage;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class LineageSqlRunnerTest {
@@ -78,5 +81,44 @@ class LineageSqlRunnerTest {
                 + "INSERT INTO sink SELECT * FROM source;");
 
     assertEquals(true, LineageSqlRunner.isContinuous(script));
+  }
+
+  @Test
+  void retriesTerminalEmissionUntilItSucceeds() {
+    AtomicInteger attempts = new AtomicInteger();
+
+    LineageSqlRunner.emitTerminalWithRetry(
+        () -> {
+          if (attempts.incrementAndGet() < 3) {
+            throw new IllegalStateException("temporary Gravitino failure");
+          }
+        },
+        3,
+        0);
+
+    assertEquals(3, attempts.get());
+  }
+
+  @Test
+  void preservesJobFailureWhenFailEmissionExhaustsRetries() {
+    ExecutionException jobFailure = new ExecutionException("Flink job failed", new RuntimeException());
+    AtomicInteger attempts = new AtomicInteger();
+
+    ExecutionException thrown =
+        assertThrows(
+            ExecutionException.class,
+            () ->
+                LineageSqlRunner.emitFailureAndRethrow(
+                    () -> {
+                      attempts.incrementAndGet();
+                      throw new IllegalStateException("Gravitino unavailable");
+                    },
+                    jobFailure,
+                    3,
+                    0));
+
+    assertSame(jobFailure, thrown);
+    assertEquals(3, attempts.get());
+    assertEquals(1, thrown.getSuppressed().length);
   }
 }

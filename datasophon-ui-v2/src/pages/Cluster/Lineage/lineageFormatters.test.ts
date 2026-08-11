@@ -29,6 +29,7 @@ const METRICS: JobMetrics = {
   runningStages: 1,
   sampledAt: '2026-08-04T03:01:44Z',
   engine: 'SPARK',
+  windowSeconds: null,
 };
 
 describe('lineage formatters', () => {

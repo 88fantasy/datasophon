@@ -23,6 +23,8 @@
 package com.datasophon.api.lineage.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -34,6 +36,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.lineage.metrics.LineageJobMetricsService.JobMetrics;
@@ -98,7 +101,7 @@ class LineageJobMetricsServiceTest {
         assertThat(result).containsOnlyKeys("app-1");
         assertThat(result.get("app-1"))
                 .isEqualTo(new JobMetrics(12, 2, 60_000_000, 2_204_955_464L,
-                        6.0, 1, NOW, "SPARK"));
+                        6.0, 1, NOW, "SPARK", null));
         verify(queryService).queryRange(eq(7), eq("spark_executor_recordsWritten"), eq("1m"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
                 eq(Map.of("app_id", "^(?:app-1)$")), eq(Map.of()), eq(List.of("app_id")),
@@ -163,12 +166,13 @@ class LineageJobMetricsServiceTest {
                 eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "task_id", "subtask_index"))))
                 .thenReturn(subtaskVectorsByJobId(flinkJobId,
                         new String[]{"task-a", "0"}, new String[]{"task-a", "1"}));
-        when(queryService.queryInstant(eq(7),
-                eq("flink.taskmanager.job.task.operator.numBytesOut"), eq("sum"), eq(1.0),
+        when(queryService.queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numBytesOut"), isNull(), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
                 eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*")), eq(Map.of()),
-                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
-                .thenReturn(vectorByJobId(flinkJobId, 40_000));
+                eq(List.of("job_id")), eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(120L),
+                eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(matrixSeriesByJobId(flinkJobId, 15_000, 25_000))));
         when(queryService.queryRangeSum(eq(7),
                 eq("flink.taskmanager.job.task.operator.numRecordsIn"), isNull(), eq(1.0 / 60),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
@@ -182,7 +186,64 @@ class LineageJobMetricsServiceTest {
 
         assertThat(result).containsOnlyKeys(flinkJobId);
         assertThat(result.get(flinkJobId))
-                .isEqualTo(new JobMetrics(0, 2, 798, 40_000, 20.0, 0, NOW, "FLINK"));
+                // 两个累计量都来自 delta 采样，windowSeconds=120 标明它们是窗口增量而非累计值
+                .isEqualTo(new JobMetrics(0, 2, 798, 40_000, 20.0, 0, NOW, "FLINK", 120L));
+    }
+
+    @Test
+    void alignsFlinkRateHistoryToCompleteStepBuckets() {
+        String flinkJobId = "5a08eb018fa0ed1a47275378c0658438";
+        long end = NOW.getEpochSecond();
+        long start = end - 3600;
+        long alignedEndExclusive = end - Math.floorMod(end, 60);
+        long alignedStart = alignedEndExclusive - 3600;
+        Map<String, String> nativeFilters =
+                Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*Writer.*");
+        Map<String, String> fallbackFilters =
+                Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*");
+        when(queryService.queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsIn"), isNull(), eq(1.0 / 60),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(nativeFilters), eq(Map.of()),
+                eq(List.of("job_id")), eq(alignedStart), eq(alignedEndExclusive), eq(60L),
+                eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(new MatrixSeries(
+                        Map.of("job_id", flinkJobId),
+                        List.of(
+                                new Object[]{alignedEndExclusive - 60, "12.5"},
+                                new Object[]{alignedEndExclusive, "99"})))));
+
+        List<LineageJobMetricsService.RatePoint> result =
+                service.getJobRateHistory(7, flinkJobId, start, end, 60);
+
+        assertThat(result).containsExactly(
+                new LineageJobMetricsService.RatePoint((alignedEndExclusive - 60) * 1000, 12.5));
+        verify(queryService).queryRange(eq(7),
+                eq("flink_taskmanager_job_task_operator_numRecordsOut"), eq("1m"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(fallbackFilters), eq(Map.of()),
+                eq(List.of("job_id")), eq(alignedStart), eq(alignedEndExclusive), eq(60L),
+                eq("gauge"), eq(0.5), isNull());
+    }
+
+    @Test
+    void rejectsRateHistoryWindowsThatWouldScanTooManyBuckets() {
+        // 这个上限是该端点唯一的资源保护：step=1 加一年跨度会切出三千万个时间桶。
+        long end = NOW.getEpochSecond();
+        long tooWide = end - (LineageJobMetricsService.MAX_RATE_POINTS + 1) * 60L;
+
+        assertThatThrownBy(() -> service.getJobRateHistory(7, "app-1", tooWide, end, 60))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("too large");
+
+        verifyNoInteractions(queryService);
+    }
+
+    @Test
+    void allowsRateHistoryWindowsAtTheBucketLimit() {
+        long end = NOW.getEpochSecond();
+        long atLimit = end - LineageJobMetricsService.MAX_RATE_POINTS * 60L;
+
+        assertThatCode(() -> service.getJobRateHistory(7, "app-1", atLimit, end, 60))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -212,6 +273,9 @@ class LineageJobMetricsServiceTest {
         Map<String, JobMetrics> result = service.getJobMetrics(7, List.of(flinkJobId));
 
         assertThat(result.get(flinkJobId).recordsWritten()).isEqualTo(33);
+        // scrape 路径拿到的是进程累计 gauge，不是窗口增量——windowSeconds 必须为 null，
+        // 否则展示端会把它和 OTLP 路径的 120 秒增量当成同一种数字。
+        assertThat(result.get(flinkJobId).windowSeconds()).isNull();
     }
 
     @Test

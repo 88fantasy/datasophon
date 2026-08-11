@@ -75,6 +75,8 @@ import org.springframework.stereotype.Service;
 public class LineageJobMetricsService {
 
     static final int MAX_APP_IDS = 50;
+    /** 速率历史单次请求的最大采样点数；前端默认 1 小时 / 60 秒 = 60 个点，留足余量。 */
+    static final int MAX_RATE_POINTS = 1500;
     private static final long RANGE_SECONDS = 120;
     private static final long RANGE_STEP_SECONDS = 15;
     private static final long FLINK_RATE_STEP_SECONDS = 60;
@@ -109,7 +111,7 @@ public class LineageJobMetricsService {
     };
     private static final FlinkMetric[] FLINK_BYTES_OUT = {
             new FlinkMetric("flink.taskmanager.job.task.operator.numBytesOut", "sum",
-                    FLINK_SINK_OPERATOR_REGEX, false),
+                    FLINK_SINK_OPERATOR_REGEX, true),
             new FlinkMetric("flink_taskmanager_job_task_operator_numBytesOut", "gauge",
                     FLINK_SINK_OPERATOR_REGEX, false)
     };
@@ -157,18 +159,38 @@ public class LineageJobMetricsService {
      * 各自落在哪张 Doris 表，也不会在这些细节变化时跟着改。
      *
      * @param step 采样桶宽（秒）；delta Sum 指标按此宽度求和后换算成每秒速率
+     * @throws IllegalArgumentException 请求窗口按 {@code step} 切分后超过 {@link #MAX_RATE_POINTS}
+     *                                  个桶。这个上限直接约束 Doris 的返回行数，也是这个端点唯一的
+     *                                  资源保护——{@code step=1} 加一年跨度会让一次请求扫出上千万个
+     *                                  时间桶。超限时明确报错而不是悄悄夹紧，否则调用方拿到的是与
+     *                                  请求参数不符的数据。
      */
     public List<RatePoint> getJobRateHistory(Integer clusterId, String appId,
                                              long start, long end, long step) {
-        if (appId == null || appId.isBlank() || step <= 0) {
+        if (appId == null || appId.isBlank() || step <= 0 || end <= start) {
             return List.of();
         }
+        if ((end - start) / step > MAX_RATE_POINTS) {
+            throw new IllegalArgumentException(
+                    "Rate history window is too large: at most " + MAX_RATE_POINTS + " buckets allowed");
+        }
         Map<Long, Double> totalsByTimestamp = new TreeMap<>();
+        Long completeBucketEndExclusive = null;
         if (FLINK_JOB_ID.matcher(appId).matches()) {
+            long completeBuckets = (end - start) / step;
+            if (completeBuckets == 0) {
+                return List.of();
+            }
+            // delta Sum 的每个桶都会除以完整 step。以当前秒查询会让首尾两个桶都不完整，
+            // 进而在折线两端制造假低点；保持请求窗口的桶数不变，并向前对齐到最近完整桶。
+            long alignedEndExclusive = end - Math.floorMod(end, step);
+            long alignedStart = alignedEndExclusive - completeBuckets * step;
+            completeBucketEndExclusive = alignedEndExclusive;
             String jobIdRegex = exactRegex(List.of(appId));
             for (FlinkMetric metric : FLINK_RECORDS_OUT) {
                 accumulateByTimestamp(totalsByTimestamp,
-                        queryFlinkRateMatrix(clusterId, metric, jobIdRegex, start, end, step));
+                        queryFlinkRateMatrix(clusterId, metric, jobIdRegex,
+                                alignedStart, alignedEndExclusive, step));
             }
         } else {
             // groupBy=app_id 与 getSparkJobMetrics 的口径保持一致：carbon receiver 目前不写
@@ -178,7 +200,11 @@ public class LineageJobMetricsService {
                     "1m", 1.0, ".+", ".+", Map.of("app_id", appId), Map.of(), Map.of(), Map.of(),
                     List.of("app_id"), start, end, step, "sum", 0.5, null));
         }
+        Long resultEndExclusive = completeBucketEndExclusive;
         return totalsByTimestamp.entrySet().stream()
+                // SQL 的时间条件是 BETWEEN。保留 exclusive 边界用于完整采集上一桶，再丢弃
+                // 恰好落在边界的新桶；不能简单减一秒，否则会漏掉最后一秒内的毫秒级采样。
+                .filter(entry -> resultEndExclusive == null || entry.getKey() < resultEndExclusive)
                 .map(entry -> new RatePoint(entry.getKey() * 1000, entry.getValue()))
                 .toList();
     }
@@ -235,7 +261,8 @@ public class LineageJobMetricsService {
                     recordsWrittenRate.get(appId),
                     toLong(runningStages.get(appId)),
                     Instant.ofEpochSecond(sampledAt),
-                    ENGINE_SPARK));
+                    ENGINE_SPARK,
+                    null));
         }
         return metricsByApp;
     }
@@ -248,15 +275,19 @@ public class LineageJobMetricsService {
         Map<String, Double> recordsWritten = new LinkedHashMap<>();
         Map<String, Double> bytesWritten = new LinkedHashMap<>();
         Map<String, Double> recordsWrittenRate = new LinkedHashMap<>();
+        // 哪些 job 的累计量来自 delta 采样——决定 recordsWritten/bytesWritten 是窗口增量还是累计值
+        LinkedHashSet<String> windowedJobs = new LinkedHashSet<>();
         for (FlinkMetric metric : FLINK_RECORDS_OUT) {
-            mergeSum(recordsWritten,
-                    queryInstantByFlinkJobId(clusterId, metric, jobIdRegex, sampledAt));
+            Map<String, Double> instant = queryInstantByFlinkJobId(clusterId, metric, jobIdRegex, sampledAt);
+            markWindowed(windowedJobs, instant, metric);
+            mergeSum(recordsWritten, instant);
             mergeSum(recordsWrittenRate,
                     queryRateByFlinkJobId(clusterId, metric, jobIdRegex, sampledAt));
         }
         for (FlinkMetric metric : FLINK_BYTES_OUT) {
-            mergeSum(bytesWritten,
-                    queryInstantByFlinkJobId(clusterId, metric, jobIdRegex, sampledAt));
+            Map<String, Double> instant = queryInstantByFlinkJobId(clusterId, metric, jobIdRegex, sampledAt);
+            markWindowed(windowedJobs, instant, metric);
+            mergeSum(bytesWritten, instant);
         }
         Map<String, Long> activeTasks = queryFlinkTaskCounts(clusterId, jobIdRegex, sampledAt);
 
@@ -274,9 +305,18 @@ public class LineageJobMetricsService {
                     recordsWrittenRate.get(jobId),
                     0L,
                     Instant.ofEpochSecond(sampledAt),
-                    ENGINE_FLINK));
+                    ENGINE_FLINK,
+                    windowedJobs.contains(jobId) ? RANGE_SECONDS : null));
         }
         return metricsByJob;
+    }
+
+    /** 记录哪些 job 的取值来自 delta 采样指标——它们的累计量是窗口增量，不是进程累计值。 */
+    private static void markWindowed(LinkedHashSet<String> windowedJobs,
+                                     Map<String, Double> valuesByJob, FlinkMetric metric) {
+        if (metric.deltaSamples()) {
+            windowedJobs.addAll(valuesByJob.keySet());
+        }
     }
 
     /** Counts running Flink subtasks by their stable {@code task_id}/{@code subtask_index} pair. */
@@ -481,10 +521,16 @@ public class LineageJobMetricsService {
      *                      （Spark 的 {@code completeTasks} 是累计完成数，Flink 恒为 0 而
      *                      {@code activeTasks} 是并行 subtask 数），展示端必须据此分别渲染，
      *                      不能把两个字段相加成一个笼统的数字。
-     * @param recordsWritten Spark 是本次运行的累计写入行数；Flink 走 OTLP delta 采样，没有可读的
-     *                       累计值，这里是**最近 {@link #RANGE_SECONDS} 秒**的写入量。两种引擎口径
-     *                       不同，展示端如需标注请按 {@code engine} 区分。
+     * @param recordsWritten 累计写入行数或窗口增量，口径由 {@code windowSeconds} 指明
+     * @param bytesWritten   累计写入字节数或窗口增量，口径同上
      * @param runningStages Flink 无对应概念，恒为 0
+     * @param windowSeconds {@code recordsWritten}/{@code bytesWritten} 的统计口径：{@code null}
+     *                      表示进程累计值，非 null 表示这是**最近该秒数**内的增量。
+     *                      <p>Spark 恒为 {@code null}。Flink 取决于该作业用哪套 reporter：原生
+     *                      OTLP 推送的是 delta Sum 采样，没有可读的累计值，只能按窗口求和
+     *                      （{@link #RANGE_SECONDS} 秒）；Prometheus scrape 落地的是进程累计
+     *                      gauge，为 {@code null}。**两者的数字不可直接比较**，展示端要么按本字段
+     *                      分别标注，要么只用 {@code recordsWrittenRate}（速率口径两者一致）。
      */
     public record JobMetrics(
                              long completeTasks,
@@ -494,7 +540,8 @@ public class LineageJobMetricsService {
                              Double recordsWrittenRate,
                              long runningStages,
                              Instant sampledAt,
-                             String engine) {
+                             String engine,
+                             Long windowSeconds) {
     }
 
     /** 速率折线的一个采样点。{@code time} 为毫秒时间戳，与前端图表控件的取值一致。 */

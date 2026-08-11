@@ -86,6 +86,14 @@ jar 依赖,前端 npm install/build 绑在 `generate-resources` 阶段,直接 `-
 > 若改动后 `test-compile` 报 "Nothing to compile - all classes are up to date" 但预期应有编译
 > 错误,是增量编译误判,用 `clean test-compile` 强制重新检查。
 
+**`datasophon-lineage-emitter` 不在根 reactor**(有意为之,理由见其 `pom.xml` 顶部注释):它是提交到
+Flink 集群的作业壳 jar,`./mvnw test` **跑不到它的测试**。改动该模块后必须显式跑:
+
+```bash
+./mvnw -f datasophon-lineage-emitter/pom.xml test        # 21 个单元测试
+./mvnw -f datasophon-lineage-emitter/pom.xml package     # Flink 2.0;-Pflink-1.20 切 1.20
+```
+
 ### 3.3 前端(`datasophon-ui-v2`,当前默认)
 
 Node ≥ 22,包管理器固定 **npm**(`package-lock.json`),lint 用 **Biome**(无 ESLint / Prettier)。详细规则(禁改 `src/services/ant-design-pro/` 生成目录、`npx antd info` 先行等)见 [datasophon-ui-v2/CLAUDE.md](./datasophon-ui-v2/CLAUDE.md)。

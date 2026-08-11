@@ -155,7 +155,8 @@ public class OtelMetricsQueryController extends ApiController {
             boolean sumSamples = "sum".equalsIgnoreCase(valueAggregation);
             if (valueAggregation != null && !valueAggregation.isBlank() && !sumSamples
                     && !"avg".equalsIgnoreCase(valueAggregation)) {
-                throw new IllegalArgumentException("Unsupported valueAggregation: " + valueAggregation);
+                // 不把入参值回显进错误消息：它会原样出现在响应体里
+                throw new IllegalArgumentException("valueAggregation must be either 'avg' or 'sum'");
             }
             // valueAggregation 与 rateWindow 的互斥由 OtelMetricsQueryService 统一把关，
             // 这样绕过 HTTP 层直接调 service 的路径（如 LineageJobMetricsService）同样受保护。
@@ -172,6 +173,11 @@ public class OtelMetricsQueryController extends ApiController {
             return ApiResponse.ok(queryService.queryRange(clusterId, metric, rateWindow, scale,
                     instance, job, equalsFilters, notEqualsFilters, regexFilters, notRegexFilters, groupByKeys,
                     start, end, step, table, quantile, field));
+        } catch (IllegalArgumentException e) {
+            // 参数组合非法（valueAggregation 取值、与 rateWindow 互斥）是调用方的问题，不是服务端故障
+            log.warn("Doris range query rejected: metric={} cluster={} reason={}",
+                    metric, clusterId, e.getMessage());
+            return ApiResponse.fail(400, e.getMessage());
         } catch (Exception e) {
             log.error("Doris range query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);

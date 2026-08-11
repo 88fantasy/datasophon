@@ -26,6 +26,8 @@ public final class LineageSqlRunner {
       Pattern.compile(
           "^SET\\s+'execution\\.runtime-mode'\\s*=\\s*'(batch|streaming)'$",
           Pattern.CASE_INSENSITIVE);
+  private static final int TERMINAL_EMIT_MAX_ATTEMPTS = 3;
+  private static final long TERMINAL_EMIT_INITIAL_RETRY_DELAY_MILLIS = 250;
 
   private LineageSqlRunner() {}
 
@@ -96,12 +98,71 @@ public final class LineageSqlRunner {
       TableResult result = compiledPlan.execute();
       try {
         result.await();
-        listener.emitCompleteAfterAwait();
+        emitTerminalWithRetry(
+            listener::emitCompleteAfterAwait,
+            TERMINAL_EMIT_MAX_ATTEMPTS,
+            TERMINAL_EMIT_INITIAL_RETRY_DELAY_MILLIS);
       } catch (ExecutionException e) {
-        listener.emitFailAfterAwait();
-        throw e;
+        emitFailureAndRethrow(
+            listener::emitFailAfterAwait,
+            e,
+            TERMINAL_EMIT_MAX_ATTEMPTS,
+            TERMINAL_EMIT_INITIAL_RETRY_DELAY_MILLIS);
       }
     }
+  }
+
+  static void emitTerminalWithRetry(
+      Runnable terminalEmission, int maxAttempts, long initialRetryDelayMillis) {
+    if (maxAttempts < 1 || initialRetryDelayMillis < 0) {
+      throw new IllegalArgumentException("Invalid terminal emission retry configuration");
+    }
+    RuntimeException firstFailure = null;
+    long retryDelayMillis = initialRetryDelayMillis;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        terminalEmission.run();
+        return;
+      } catch (RuntimeException failure) {
+        if (firstFailure == null) {
+          firstFailure = failure;
+        } else if (failure != firstFailure) {
+          firstFailure.addSuppressed(failure);
+        }
+        if (attempt == maxAttempts) {
+          break;
+        }
+        LOG.warn(
+            "[lineage] terminal emission attempt {}/{} failed; retrying in {} ms",
+            attempt,
+            maxAttempts,
+            retryDelayMillis,
+            failure);
+        try {
+          Thread.sleep(retryDelayMillis);
+        } catch (InterruptedException interrupted) {
+          Thread.currentThread().interrupt();
+          firstFailure.addSuppressed(interrupted);
+          throw firstFailure;
+        }
+        retryDelayMillis *= 2;
+      }
+    }
+    throw firstFailure;
+  }
+
+  static void emitFailureAndRethrow(
+      Runnable failureEmission,
+      ExecutionException jobFailure,
+      int maxAttempts,
+      long initialRetryDelayMillis)
+      throws ExecutionException {
+    try {
+      emitTerminalWithRetry(failureEmission, maxAttempts, initialRetryDelayMillis);
+    } catch (RuntimeException terminalFailure) {
+      jobFailure.addSuppressed(terminalFailure);
+    }
+    throw jobFailure;
   }
 
   static void validateCompileOnly(SqlScript script) {

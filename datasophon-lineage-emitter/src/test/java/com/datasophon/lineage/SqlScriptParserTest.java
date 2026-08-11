@@ -19,4 +19,25 @@ class SqlScriptParserTest {
     assertEquals(4, script.insertStatements().size());
     assertEquals(4, script.tempTables().size());
   }
+
+  @Test
+  void keepsOptionValuesIntactWhenTheyContainEscapedSingleQuotes() {
+    // SqlSecretRenderer 用 '' 转义密钥里的单引号，所以渲染后的 SQL 真的会长这样。
+    // 不认这个转义的话，password 会被截断成 "pa"，后续 option 的解析也可能错位。
+    String sql =
+        "CREATE TEMPORARY TABLE src (\n"
+            + "  id INT\n"
+            + ") WITH (\n"
+            + "  'connector' = 'mysql-cdc',\n"
+            + "  'password' = 'pa''ss',\n"
+            + "  'hostname' = 'db-1'\n"
+            + ");";
+
+    SqlScript script = SqlScriptParser.parse(sql);
+
+    var options = script.tempTables().get("src").options();
+    assertEquals("mysql-cdc", options.get("connector"));
+    assertEquals("pa'ss", options.get("password"));
+    assertEquals("db-1", options.get("hostname"));
+  }
 }

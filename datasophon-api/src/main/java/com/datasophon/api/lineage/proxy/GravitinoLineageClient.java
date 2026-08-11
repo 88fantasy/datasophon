@@ -184,6 +184,11 @@ public class GravitinoLineageClient {
      * {@code spark_properties} compatibility facet, so historical events have no
      * {@code engine} or {@code jobType} values for Gravitino to return — both come back
      * as {@code UNKNOWN}, which is the only case this fills in.
+     *
+     * <p>TODO: delete once the emitter sets the {@code processing_engine} facet on every event
+     * and the events predating that change have aged out of Gravitino. Until then this stays,
+     * but note the cost of keeping it: a Flink job whose engine/type is genuinely unknown gets
+     * a fabricated value here, and the UI cannot tell that apart from a real one.
      */
     private static void enrichFlinkStreamingJob(JsonNode response) {
         if (!(response instanceof ObjectNode job) || !isFlinkNamespace(job.path("jobName").asText())) {
