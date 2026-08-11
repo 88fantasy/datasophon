@@ -32,6 +32,15 @@ export interface JobMetrics {
   sampledAt: string;
   /** 'SPARK' | 'FLINK'——两种引擎的 task 计数语义不同，展示端据此分别渲染 */
   engine: string;
+  /**
+   * `recordsWritten`/`bytesWritten` 的统计口径：null 表示进程累计值，非 null 表示这是最近
+   * 该秒数内的增量。
+   *
+   * Spark 恒为 null；Flink 取决于该作业用哪套 reporter（原生 OTLP 只有 delta 采样，没有可读
+   * 的累计值）。**两者的数字不可直接比较**——要展示累计量就得按本字段分别标注，只想要一个
+   * 可比的数字则用 `recordsWrittenRate`，速率口径两种 reporter 是一致的。
+   */
+  windowSeconds: number | null;
 }
 
 export type JobMetricsByAppId = Record<string, JobMetrics>;

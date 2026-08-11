@@ -1062,6 +1062,61 @@ task 生命周期的预期；前端 chunk `_5a083072.3437df59.async.js` 命中 `
 **回滚方式**：ddh-01 上
 `cd /data/datasophon-api/datasophon-manager-3.0-SNAPSHOT && cp lib/datasophon-api-3.0-SNAPSHOT.jar.bak-20260811-1152 lib/datasophon-api-3.0-SNAPSHOT.jar && rm -rf static && mv static.bak-20260811-1152 static && bin/datasophon-api.sh restart`。
 
+### 7.18 第二轮代码审查修复的实机验证：口径字段与参数校验（2026-08-11 下午）
+
+**背景**：§7.17 那轮之后又做了一次代码审查，修复 6 项（Flink 累计量口径字段、emitter 构建命令、
+速率端点桶数上限、`SqlScriptParser` 的 `''` 转义、兜底逻辑 TODO、参数错误 400）。本次只替换
+`lib/datasophon-api-3.0-SNAPSHOT.jar`（MD5 `f8a4d313…0842`），**未动 `conf/` 与 `static/`**——
+本轮前端只改了 TS 类型声明与注释，编译产物无变化。备份 `jar.bak-20260811-1637`。新 PID 于
+`2026-08-11 16:45` 起稳定运行。
+
+**先用 Doris 直查确立数据面事实（未经 API，排除自证）**：两个 Flink 作业的采样序列形态截然不同——
+
+| 作业 | reporter | 实测采样序列 | 形态 |
+| --- | --- | --- | --- |
+| `d09b581d…36cc`（Flink 2.2.1） | 原生 OTLP | `numRecordsIn` 在 `0…1187` 之间反复波动 | delta 增量 |
+| `94dfbc75…b60f`（Flink 1.20） | Prometheus scrape | `numRecordsOut` = `22883→22887→22891→22895→22899→22903` | 单调递增累计 |
+
+**验证的核心问题**：修复前这两种数字落在同一个 `recordsWritten` 字段、同一种前端渲染，
+消费方无从区分。修复后 `JobMetrics` 新增 `windowSeconds` 显式标明口径，实测：
+
+```
+d09b581d…36cc  recordsWritten=314      windowSeconds=120    ← 最近 120 秒写入量
+94dfbc75…b60f  recordsWritten=947141   windowSeconds=null   ← 进程累计值
+```
+
+`314` 与 `947141` 相差三千倍，但两者的 `recordsWrittenRate` 分别是 `3.50` 和 `3.72` 行/秒——
+**两个作业实际吞吐相当**。这条旁证同时说明：速率是两种 reporter 之间唯一可直接比较的数字，
+展示端若要显示累计量必须按 `windowSeconds` 分别标注。
+
+**参数校验（全部实测通过）**：
+
+| 场景 | 期望 | 实测 |
+| --- | --- | --- |
+| `job-rate-history` 1 小时 / 60 秒 | 200，60 个采样点 | 200，60 点（`3.52`～`21.13` 行/秒） |
+| `job-rate-history` 跨度一年 / `step=1` | 400 | 400 `Rate history window is too large: at most 1500 buckets allowed` |
+| `valueAggregation=median` | 400，且不回显入参值 | 400 `valueAggregation must be either 'avg' or 'sum'`，响应体无 `median` |
+| `valueAggregation=sum` + `rateWindow=1m` | 400 | 400 `valueAggregation=sum cannot be combined with rateWindow` |
+| `valueAggregation=avg` | 200 | 200 |
+
+服务端日志中这三次拒绝均以 `WARN ... rejected` 记录（非 `ERROR`），与"调用方参数问题不是服务端故障"
+的分级一致。重启后日志除 §7.16 已记录的 `APISIX.bak-*` 噪音及既有的 `AiProperties` 默认 token
+提示外无异常。
+
+**本轮暴露的遗留问题（未修，需单独决策）**：原生 OTLP 路径的 `bytesWritten` 恒为 `0`。
+Doris 直查确认 `flink.taskmanager.job.task.operator.numBytesOut` 在该作业的**全部算子上 30 分钟内
+均为 0**，且该 Paimon sink 只有 `Committer` 没有 `Writer` 算子（`numRecordsIn` 侧则确实存在
+`…_sink[19]: Writer`）。因此：
+
+- 前端"写入字节数"对走原生 OTLP 的 Flink 2.x 作业永远显示 0（Prometheus 路径的
+  `94dfbc75…` 正常返回 `622,083,112`，不受影响）。
+- 工作区里那处把 `FLINK_BYTES_OUT` 首项 `deltaSamples` 由 `false` 改为 `true` 的改动，
+  在本环境**无任何可观察差异**——该指标本身没有非零数据，两种口径都是 0。该改动既未被证实
+  也未被证伪，合入前需要另找有真实 `numBytesOut` 输出的 Flink 2.x 作业验证。
+
+**回滚方式**：ddh-01 上
+`cd /data/datasophon-api/datasophon-manager-3.0-SNAPSHOT && cp lib/datasophon-api-3.0-SNAPSHOT.jar.bak-20260811-1637 lib/datasophon-api-3.0-SNAPSHOT.jar && bin/datasophon-api.sh restart`。
+
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
 基础环境验收：hostname 和 hosts、节点 SSH、NTP、Nexus、MySQL、RustFS S3、plan 状态、数据盘与 JDK17 可用。确认无 Kubernetes 业务组件及 Hadoop 业务进程。

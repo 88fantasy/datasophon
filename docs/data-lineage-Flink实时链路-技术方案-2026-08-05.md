@@ -10,17 +10,27 @@
 > 已全部完成并实测验证——MySQL CDC → Paimon ODS → 7 表 Lookup Join → Doris DWD 全链路打通，
 > 19 条 golden 数据与实际输出 798 处字段（42 列×19 行）精确匹配。本文原先标注 `[待 P0 核实]`/`[待核实]`
 > 的条目，凡是 Phase 0-2 范围内的均已替换为实测结论（标 **✅ 已验证**），少数设计与实测有出入的地方
-> 标注了实际做法与原因。**Phase 3（血缘发射 T10-T13）/ Phase 4（前端可视化 + 最终验收 T14-T17）尚未开始**，
-> 相关章节的 `[待核实]` 标记原样保留。
+> 标注了实际做法与原因。
+>
+> **2026-08-07 更新说明**：Phase 3（血缘发射 T10-T13）与 Phase 4（前端可视化 + 验收 T14-T16）**已全部完成
+> 并实机验证通过**，本文 §5/§6/§7/§8 已按实测结论更新（详见各节 ✅ 标注）。**唯一未完成的是 T17（阶梯变速
+> 端到端验证）**，仍是 `NOT STARTED`，A6（流速曲线形状与投递速率一致）尚未验证，见配套
+> [实施方案](./data-lineage-Flink实时链路验证-实施方案-2026-08-05.md) §6 进度表与 §8 验收清单。
+> 实施期间发现并修复了 2 个原设计未预见的真实 bug：① T6 血缘边一度是笛卡尔积（`runId` 公式从"每
+> JobID 一个"改为"每 JobID 的每个 sink 各一个"，见 §5.1 D-runId'）；② T6 流速图表长期空白的真正根因
+> 是 Flink 自带 Prometheus Reporter 把 Counter 指标误标成 gauge，导致数据落错 Doris 表（见 §6.2）。
+> 另外 T9 承载集群最终从 Flink 2.0.2 升级到 **2.2.1**（Paimon/flink-doris-connector 均无 2.3 官方
+> 连接器，2.2.1 是两者支持的最高 2.x 版本），本文相关版本号已同步更新。
 
 ---
 
 ## 1. 总体架构
 
-> **✅ 已验证（2026-08-06）**：下图结构与实测一致，唯一差异是**两个作业跑在两套独立的 Flink standalone 集群上**
-> （D3' 修订，见实施方案 §2.1/§3.0）——`flink-cluster-cdc`（Flink 1.20.4）承载作业1，`flink-cluster-dwd`
-> （Flink 2.0.2）承载作业2，原因是 flink-cdc 3.6.0 与 Paimon 1.2.0 在任何 Flink 2.x 版本上都凑不出官方支持
-> 的组合。两套集群通过同一个 RustFS S3 warehouse 路径共享 Paimon 数据，不影响下图的数据流向。
+> **✅ 已验证（2026-08-06，2026-08-07 版本号更新）**：下图结构与实测一致，唯一差异是**两个作业跑在两套独立的
+> Flink standalone 集群上**（D3' 修订，见实施方案 §2.1/§3.0）——`flink-cluster-cdc`（Flink 1.20.4）承载作业1，
+> `flink-cluster-dwd`（Flink **2.2.1**，2026-08-07 从 2.0.2 升级，见下方版本修订说明）承载作业2，原因是
+> flink-cdc 3.6.0 与 Paimon 1.2.0 在任何 Flink 2.x 版本上都凑不出官方支持的组合。两套集群通过同一个
+> RustFS S3 warehouse 路径共享 Paimon 数据，不影响下图的数据流向。
 
 ```mermaid
 flowchart LR
@@ -85,9 +95,14 @@ flowchart LR
 链路断成两截。这就是实施方案 §8 强调"必须浏览器实机核对"的原因。
 
 > **数据层面已间接验证**：作业1 写 Paimon、作业2 读同一批 Paimon 表，物理层面确认是同一批表
-> （T9 读到的是 T6 写的真实数据，798 处字段精确匹配，不可能读错表）。但 A4 验证的是**血缘图节点**
-> 层面的 identifier 一致性（Gravitino 侧），这需要 T10/T11（血缘发射）先做完、T15（L3 图浏览器核对）
-> 才能验证，**目前仍是 `[待核实]`**，不能拿数据层面的正确性替代图层面的验证。
+> （T9 读到的是 T6 写的真实数据，798 处字段精确匹配，不可能读错表）。A4 验证的是**血缘图节点**
+> 层面的 identifier 一致性（Gravitino 侧），**✅ 已于 2026-08-07（T15）ego-browser 实机验证通过**：
+> L3 血缘图正确渲染出 `mysql-cdc 4 张表 → 作业1 → paimon 8 张表 → 作业2 → doris 1 张表` 两跳链路，
+> 放大截图逐节点核对确认 Paimon 那 4 张表确实是同一批节点，无重复。**验证过程中额外发现并修复了一个
+> A4 视觉验收本身查不出的深层问题**：图形是"数据集→作业→数据集"枢纽布局，掩盖了作业1（`EXECUTE
+> STATEMENT SET` 4 条 INSERT）的血缘边一度是 4×4=16 条笛卡尔积（12 条事实错误，如
+> `pat_surgery → ods_sys_user_full_daily`），根治办法见 §5.1 D-runId' 修订。这是本方案"不能拿数据层面
+> 的正确性替代图层面的验证"这一原则被自己的实测坐实的一个例子。
 
 ---
 
@@ -295,8 +310,14 @@ PROPERTIES (
 
 ## 5. 血缘上报设计
 
-> ⚠️ **本章对应 T10-T11，尚未实施**，以下 `[待核实]` 标记原样保留。但 Phase 0 核实过程中发现两处
-> 会影响本章设计假设的事实，已更新：`CanonicalNameResolver` 实际类名与鉴权方式。
+> ✅ **T10/T11（2026-08-06）+ T15（2026-08-07）已全部实机验证通过**，本章 `[待核实]` 标记已按实测结论
+> 替换。相比原设计有两处实质性变化：① `runId` 公式从"每 Flink JobID 一个"改为"每 JobID 的每个 sink
+> pipeline 各一个"（D-runId' 修订，见 §5.1），根治了 T15 浏览器实机验证时发现的血缘边笛卡尔积问题；
+> ② §5.2 原设计的 `lineage-fallback.yaml` 兜底机制经实测确认**不需要**——`CREATE TEMPORARY TABLE` 的
+> WITH 选项本来就在同一份 SQL 文本里，直接解析即可。发射器源码落在独立 Maven 模块
+> `datasophon-lineage-emitter/`（`DatasetResolver`/`GravitinoLineageEmitter`/`GravitinoLineageJobListener`/
+> `LineageSqlRunner` 等 8 个 Java 源文件），两个 Flink profile（1.20 / 2.0）各自 `clean test package`
+> 验证通过。
 
 ### 5.1 发射机制
 
@@ -314,10 +335,11 @@ sequenceDiagram
   J->>J: tEnv.compilePlanSql(sql) → 提取 dataset
   J->>F: executeSql()
   F->>L: onJobSubmitted(JobID)
-  L->>G: POST /api/lineage {eventType: START, runId: JobID, inputs, outputs}
+  Note over L: runId = f(JobID, 该 pipeline 的输出表)<br/>多 INSERT 作业每个 sink 各发一组独立事件
+  L->>G: POST /api/lineage {eventType: START, runId, inputs, outputs}
   Note over F: 作业持续运行（数天）<br/>期间无血缘事件<br/>可见性由 OTel 承担
   F->>L: onJobExecuted(JobID, throwable?)
-  L->>G: POST /api/lineage {eventType: COMPLETE 或 FAIL}
+  L->>G: POST /api/lineage {eventType: COMPLETE 或 FAIL}（对每个 pipeline 各发一次）
   G->>D: 血缘库 → Gravitino 快照 → datasophon 代理 → L3 图
 ```
 
@@ -331,26 +353,54 @@ connector 实现 `LineageVertexProvider`，至今**只有 Kafka**，Paimon / Dor
 > 2. **原描述的"已知缺陷"（E7）经源码实读证伪**：`LineageDatasetParser.parse()` 全程没有任何 `UNRESOLVED_DATASET` 拒绝分支，能正确处理"`namespace` 含完整 `catalog/database` 路径"和"`namespace=scheme://host` + `name=db.table`"两种常见命名习惯，**T10 发射端按本文 §4.3 契约命名即可，不需要改 gravitino fork**。
 >
 > **鉴权方式已变化**（E14，2026-08-03 起）：Gravitino REST API 收紧为纯 `oauth`，`/api/lineage` 一律要求
-> HS256 签名的 Bearer JWT，**不能像下面时序图暗示的那样直接 POST**。已有先例：Spark 侧走
+> HS256 签名的 Bearer JWT，**不能像上面时序图暗示的那样直接 POST**。已有先例：Spark 侧走
 > `gravitinoLineageToken` 静态 JWT（部署手册 L938-980，用 `gravitino.authenticator.oauth.defaultSignKey`
-> 铸造），**T10 的 Flink JobListener 必须复用同一套铸造机制**，不能自行发明鉴权方式。
+> 铸造），**✅ T10 的 `GravitinoLineageJobListener` 已复用同一套铸造机制实机验证通过**（未自行发明鉴权方式）。
+>
+> **✅ D-runId' 实现细节（2026-08-07，T15 浏览器验证后修订）**：`runId` 公式从最初的"仅 JobID"改为
+> `UUID.nameUUIDFromBytes(("flink-job:" + jobIdHex + ":" + output.namespace() + "/" + output.name()).getBytes(UTF_8))`
+> ——即每个 JobID 的每个 sink pipeline 各一个 runId。触发原因：`EXECUTE STATEMENT SET` 这类多 INSERT
+> 作业（如作业1，4 张表各一条独立 INSERT）原本共用一个 runId，Gravitino 落库时只能按"这个 run 摸到过
+> 这些 input、这些 output"存储，退化成 4×4=16 条边的笛卡尔积（12 条事实错误）——这是 OpenLineage 单
+> `RunEvent` 协议本身的表达力上限，一个事件只有扁平 `inputs`/`outputs`，无法表达"谁喂谁"。配套修改
+> `DatasetResolver`：不再"遍历全部节点拍平成两个集合"，改为解析 `CompiledPlan` JSON 的顶层 `edges`
+> 数组，从每个 `dynamicTableSink` 节点反向 BFS 精确回溯该 sink 真实可达的输入，返回
+> `List<Pipeline(output, inputs)>`；`GravitinoLineageJobListener`/`LineageSqlRunner` 同步改为按 pipeline
+> 循环发射。单 INSERT 作业（如作业2）退化为原来的行为（1 个 runId，不受影响）。实机验证：作业1 4 个新
+> runId 各自精确对应 1 条边（`pat_surgery→pat_surgery_full_daily` 等一一对应，无交叉污染），Doris 目标
+> 表行数全程保持一致。
+>
+> **✅ 事件格式合规性（E28，源码实读确认）**：Gravitino `/api/lineage` POST 直接反序列化标准
+> `io.openlineage.server.OpenLineage.RunEvent`（`openlineage-java:1.29.0`，与 Spark 侧使用的
+> `openlineage-spark_2.12-1.29.0.jar` 同一大版本），`runId` 字段类型即 UUID（这是上面 D-runId' 公式
+> 必须做哈希映射的直接原因，Flink JobID 原始十六进制串不满足 UUID 类型）；dataset 身份按
+> `(namespace, name)` 字符串精确匹配去重，这是 A4"两个作业共用同一批 Paimon 节点"能成立的底层机制。
 
 ### 5.2 dataset 提取（D5）
 
 **主路**：`tEnv.compilePlanSql(sql).asJsonString()` → 解析 JSON plan，
 从 source / sink 节点提取表标识。这是**执行计划真相**，不会与实际跑的 SQL 漂移。
 
-**兜底**：`CompiledPlan` 提取不到的（预期是 lookup join 的维表 [待 P0 核实]），
-从 SQL 同目录的 `lineage-fallback.yaml` 读取。
-
-**强制约束**：兜底补进来的 dataset **必须在日志里逐条标出**，格式如：
-
-```
-[lineage] dataset resolved from CompiledPlan: paimon://.../ods_..._pat_surgery_full_daily
-[lineage] dataset resolved from FALLBACK CONFIG: paimon://.../ods_..._sys_dept_full_daily
-```
-
-不许"自动提取"和"人工补录"混在一起还看不出来 —— 否则半年后没人知道这张图有多少是真的。
+> ✅ **T11 已实机验证（2026-08-06），原设计的"兜底 fallback yaml"机制经实测确认不需要，已从设计中移除**：
+> `CompiledPlan` 对**真正的 catalog 表**（Paimon `paimon_s3` 上的持久化表）能给出准确的
+> `` `catalog`.`database`.`table` `` identifier，且**自动展开了 `CREATE TEMPORARY VIEW`**（作业2 里
+> 补 `proc_time` 的那层视图在 plan 里会正确解析回底层 Paimon 物理表，不是视图名）——这是主路的核心
+> 价值，省得自己重写视图展开逻辑。但对 **`CREATE TEMPORARY TABLE`**（MySQL CDC source、Doris sink 都是
+> 这个语法，见 §2.2/§4.2 结构级改写 S3/S5）：plan JSON 里的 identifier 只是"会话默认 catalog/database
+> 前缀 + 本地临时表名"，`dynamicTableSink.table` 节点完全没有 `resolvedTable.options` 字段，拿不到
+> connector/fenodes/table.identifier 等物理信息。**解决方式不是另立一份 `lineage-fallback.yaml`**——
+> 临时表的 WITH 选项本来就在 T10 自己要解析的同一份 SQL 文本里（`CREATE TEMPORARY TABLE ... WITH
+> (...)`），`DatasetResolver` 直接从 SQL 文本解析这部分，不必引入一份可能与 SQL 文件不同步的独立配置。
+>
+> **✅ 额外修复的真实 bug（Lookup Join 场景）**：`DatasetResolver` 最初实现只处理
+> `node.scanTableSource.table.identifier` 路径，对 `stream-exec-lookup-join` 类型节点完全没有处理——
+> 首次对作业2 跑 `--compile-only` 只解析出 `1 input/1 output`（漏掉全部 7 个 lookup join 维表），远低于
+> 预期的 `8 input/1 output`。用一次独立的 `COMPILE PLAN` SQL Client 探测（未提交作业）拿到真实 plan
+> JSON 后确认 lookup join 节点的表标识符实际路径是
+> `node.temporalTable.lookupTableSource.table.identifier`，补上该解析分支后修复，并补了单测
+> `DatasetResolverTest.resolvesLookupJoinTemporalTableAsInput` 锁定回归。修复后作业1 `resolved 4 input
+> dataset(s), 4 output dataset(s)`、作业2 `resolved 8 input dataset(s), 1 output dataset(s)`，均与预期
+> 精确匹配。
 
 ### 5.3 事件格式
 
@@ -360,7 +410,7 @@ connector 实现 `LineageVertexProvider`，至今**只有 Kafka**，Paimon / Dor
 {
   "eventType": "START",              // START / COMPLETE / FAIL
   "eventTime": "2026-08-05T10:00:00.000Z",
-  "run":  { "runId": "<Flink JobID>" },
+  "run":  { "runId": "<UUID.nameUUIDFromBytes(jobId + 该 pipeline 的输出表)，见 §5.1 D-runId'>" },
   "job":  { "namespace": "flink://ddh-02:8081", "name": "<作业名>" },
   "inputs":  [ { "namespace": "...", "name": "..." } ],
   "outputs": [ { "namespace": "...", "name": "..." } ],
@@ -368,30 +418,56 @@ connector 实现 `LineageVertexProvider`，至今**只有 Kafka**，Paimon / Dor
 }
 ```
 
-`namespace` / `name` 的确切拼写以 P0-3 的实测结论为准（§4.3 契约）。
+`namespace` / `name` 的确切拼写以 P0-3 的实测结论为准（§4.3 契约）。**✅ 已实机验证**：`runId` 字段
+（D-runId' 修订后）不再是原设计注释里的"Flink JobID"直接透传，而是按 §5.1 公式做的确定性 UUID 映射，
+多 INSERT 作业每个 sink pipeline 各发一组独立的 START/COMPLETE/FAIL 事件，均已在 Gravitino 血缘库
+（`lineage_run`/`lineage_event`/`lineage_event_edge`）核实落库正确。
 
 ---
 
 ## 6. 指标采集设计
 
-> ⚠️ **本章对应 T12-T13，尚未实施**，但 Phase 0 已核实两个关键前提（P0-5/P0-6），更新如下。
+> ✅ **T12 已实机验证通过（2026-08-07），T13 确认 N/A（P0-6 结论是"未按字面实现 FLIP-33 但有等价数据"，
+> 见 §6.2）**。相比原设计有一处实质性变化：**两套 Flink 集群走的是两条不同的采集通路，不是统一的
+> OTLP 推送**（见 §6.1），且这个版本差异牵出了一个原设计完全没预见的真实 bug——**同一个指标概念，
+> 因为集群走的通路不同，最终会落进 Doris 里两张不同的表**（`otel_metrics_sum` vs `otel_metrics_gauge`，
+> 见 §6.2），这是 T16 前端流速图表长期空白问题的真正根因，用了整整一轮排查才定位到。
 
 ### 6.1 通路
 
+> ✅ **已实机验证，与原设计的差异**：`flink-cluster-dwd`（Flink 2.2.1）走原设计的 FLIP-385 OTLP 推送；
+> `flink-cluster-cdc`（Flink 1.20.4）**因 FLIP-385 自 Flink 2.0.0 起才提供、1.20 无此插件**，改走
+> Flink 自带的 `metrics-prometheus` 插件 + otelcol `prometheus/local` receiver scrape（新增两个 scrape
+> job：JobManager `:9250`、TaskManager `:9251`）。两条通路最终都落进 `otel_metrics_*` 表，但**落进的
+> 具体表不同**，是下方 §6.2 表格新增一列的原因。
+
 ```
-Flink TaskManager/JobManager
+flink-cluster-dwd（2.2.1）TaskManager/JobManager
   │  flink-metrics-otel (FLIP-385)  ✅ 已验证：自 Flink 2.0.0 起随官方发行版原生提供，非第三方插件
   ↓  OTLP gRPC
-otelcol @ ddh-02:4317
-  │  metrics pipeline（须确认白名单放行 Flink 标签）
-  ↓
+otelcol @ ddh-02:4317  → Doris otel_metrics_sum 表
+
+flink-cluster-cdc（1.20.4）TaskManager/JobManager                    ⚠️ 与原设计不同：1.20 无 FLIP-385
+  │  metrics-prometheus 插件（Flink 自带）
+  ↓  HTTP /metrics（JM :9250 / TM :9251）
+otelcol @ ddh-02  prometheus/local receiver scrape  → Doris otel_metrics_gauge 表
+  │
+  ▼（两条路径汇合）
 Doris otel_metrics_* 表
-  │  counter 字段级 rate builder（复用 JuiceFS 模式）
+  │  counter 字段级 rate builder（复用 JuiceFS 模式），按命名法分表查询（点号→sum，下划线→gauge）
   ↓
 datasophon-api 速率端点（复用任务级流速方案 §3.2 契约）
   ↓
 ui-v2 前端展示
 ```
+
+> ✅ **实机踩过的一个配置坑（E29）**：Flink 的 `metrics.reporters` 配置项名字带"LIST"但
+> `ReporterSetup.fromConfiguration`（源码实读确认，Flink 2.0.2/1.20.4 共有此行为）实际按纯 `String`
+> 读取——`config.yaml` 若写成 YAML 列表语法（`metrics.reporters: [otel]` 或 `- otel`），Flink 的 YAML
+> 加载器会把值解析成 List 对象，取 String 时被隐式 `toString()` 成字面量 `"[otel]"`，与真实 reporter 名
+> `"otel"` 精确比较不相等，**reporter 被静默排除、不报错不崩溃**，唯一线索是日志里一行不起眼的
+> `Excluding metrics reporter otel, not configured in reporter list ([otel])`。**必须写裸标量**
+> （`metrics.reporters: otel`，多个用逗号分隔在一个字符串里如 `otel,jmx`），不能用 YAML 列表语法。
 
 **为什么用 OTLP 推送而不是 Prometheus scrape**：与 PhaseG P1 已定方向一致 ——
 Flink JM/TM 是按作业生命周期存在的进程，端口会漂移，静态 scrape target 不适用；
@@ -405,6 +481,26 @@ Flink JM/TM 是按作业生命周期存在的进程，端口会漂移，静态 s
 | `numRecordsOut{operator_name=~".*(Writer\|Committer).*"}` | Paimon / Doris sink | **出边**的行数。⚠️ **2026-08-07 T16 实机验证修订**：原设计的 `Sink.*` 正则是未经验证的猜测，实测两个 connector 的真实算子命名都不含"Sink"字样——Paimon 走两阶段提交，拆成 `...: Writer`（**恒为 0，纯 pass-through，不计数**）和真正累积写入数的 `...Committer` 两个独立算子；Doris connector 把 sink 融合成单一的 `<table>_sink[n]: Committer`，没有独立 Writer 阶段。改用 `.*(Writer\|Committer).*` 后两个 connector 都能命中，且不会双重计数（Paimon 的 Writer 分支贡献恒为 0） |
 | `numBytesOut` | 算子间网络 | ⚠️ **sink 写外部系统的字节不计入，很可能是 0** |
 | `numBytesSend` / `numRecordsSend`（FLIP-33） | sink 专用 | ✅ **已验证：Paimon、Doris connector 均未按字面实现这两个标准指标名**，但都有等价数据——Doris `DorisWriter`/`DorisWriteMetrics` 用 `SinkWriterMetricGroup` 注册自定义计数器 `totalFlushLoadedRows`/`totalFlushLoadBytes`；Paimon `CommitterMetrics`（committer 阶段）用 `IO_NUM_RECORDS_OUT`/`IO_NUM_BYTES_OUT`（复用算子级 IO 指标命名）。**T16 实测未采用这条路径**：改用上一行的通用 operator 级 `numRecordsOut` + `operator_name` 正则筛选，理由是能与入边（source）指标走同一套查询模型和同一套白名单（`job_id`/`operator_name`），不需要为每个 connector 单独适配指标名；这两个 connector 专属指标目前仍未被订阅，**T13 自研埋点依旧判定用不上** |
+
+> ⚠️ **T6/T16 实机验证发现的关键坑：同一个指标概念因采集通路不同会落进两张不同的 Doris 表**（这不是
+> OTel Collector 的 bug，是 Flink 自身已知限制）：Flink 自带的 Prometheus Reporter 会把**所有**
+> `Counter` 类型指标（含 `numRecordsOut`）在 `/metrics` 暴露端点里**统一标成 `# TYPE ... gauge`**。
+> OTel Collector 按这个（错误的）类型标注把数据存表，导致：
+>
+> | 采集路径 | 承载集群 | 指标命名风格 | 落进的 Doris 表 |
+> |---|---|---|---|
+> | 原生 OTLP push（FLIP-385） | `flink-cluster-dwd`（2.2.1） | 点号（如 `flink.taskmanager.job.task.operator.numRecordsOut`） | `otel_metrics_sum`（OTel 原生导出器正确识别 Counter → Sum 语义） |
+> | Prometheus scrape 兜底 | `flink-cluster-cdc`（1.20.4） | 下划线（如 `flink_taskmanager_job_task_operator_numRecordsOut`） | `otel_metrics_gauge`（**OTel Prometheus receiver 尊重了 Flink 自己标错的 `# TYPE`**） |
+>
+> 前后端代码若对两种命名统一硬编码查 `sum` 表，Prometheus-scrape 路径的作业（如作业1/`flink-cluster-cdc`）
+> 速率图表会永远查到空结果，且**查询本身不报错、后端测试全绿**——这正是 T16 交接文档记录的"T6 图表
+> 从未有数据"长期被误判为采集链路问题的真正根因。**修复方式**：查询侧按命名法（点号 vs 下划线）分别
+> 查各自正确的表，一个 `job_id` 只会落在其中一套命名/一张表里，不会重复计数（后端
+> `LineageJobMetricsService.java` 与前端 `service.ts` 均已改为 `{metric, table}` 配对数组，见
+> [T16 交接文档](./session-handoff-T16-flink-flow-rate-2026-08-07.md) §2）。**排查方法论（下次同类
+> "图表空白但链路看起来都通"问题可直接复用）**：① 先查 Flink 自己的 REST API `/jobs/<id>` 确认
+> `write-records` 是否有真实增长；② 再直接 curl TaskManager 的 `/metrics` 确认指标名和值都对，**顺便看
+> `# TYPE` 那一行**；③ 最后才查 Doris 里到底落进了哪张表，不要预设查询代码用的表名就是数据实际落的表名。
 
 **Flink 相对 Spark 的优势**：Spark 的 `ExecutorSource` 只有 executor 级聚合，
 给不出"这条边的流速"（流速调研文档 §4 的核心风险点）。
@@ -437,12 +533,29 @@ Flink 的 metric 天然带 `operator_name`，而 SQL 作业的 source / sink 是
 **若实机发现该契约对 Flink 不适用**（例如 Spark 的 `key_instance` 维度在 Flink 下语义不同），
 **带具体证据回来找用户确认，不得擅自另起一套** —— 否则半年后会有两套速率模型。
 
+> ✅ **T16 已实机验证（2026-08-07），契约本身成立，不需要另起一套**：`LineageJobMetricsService`/
+> `OtelMetricsQueryService`/前端 `service.ts` 均改为 Flink JobID（32 位十六进制）与 Spark `app_id` 分流、
+> 两套指标命名求和；`GravitinoLineageEmitter` 通过复用 Gravitino 既有的 `spark_properties.properties`
+> facet 解析路径挂载 Flink 场景，零改 fork。浏览器实机验证（作业2/`t9_dwd_prod_20260807` 节点）能看到
+> "写入速率（近 1 小时）"折线图有真实非零数据。**验证过程中额外发现并修复的 3 个真实 bug**：①
+> `FLINK_SINK_OPERATOR_REGEX` 常量原值 `.*Writer.*` 只是照着 Paimon connector 验证的，对 Doris connector
+> （sink 融合成单一 `Committer` 算子，无独立 Writer 阶段）零匹配，见 §6.2 更新；② 同一常量在后端
+> `LineageJobMetricsService.java` 与前端 `service.ts` 各维护一份独立拷贝，改的时候两处都要改；③
+> `JobDetailDrawer.tsx` 图表 x 轴显示原始毫秒时间戳而非格式化时间——`@ant-design/plots` v2（G2 v5）
+> 把"数据类型映射"（`scale`）和"视觉呈现"（`axis`）拆成两层配置，`type: 'time'` 错放在 `axis.x` 下会被
+> 静默丢弃不生效，需放进 `scale={{ x: { type: 'time' } }}`。**作业1（`flink-cluster-cdc`）走 Prometheus
+> scrape 采集，仍会显示"暂无速率数据"**——独立于本次改动的更早期基础设施缺口，源端 `:9251/metrics`
+> 确认有真实数据、collector scrape job 也已正确注册，但从未有一行数据写入 Doris，根因未定位（exporter
+> 无失败日志），**留给后续单独排查，不阻塞 T16 验收**（验收标准只要求任一节点验证通过）。
+
 ---
 
 ## 8. 待核实项汇总
 
 本文所有 `[待核实]` 标记的集中清单，与实施方案 Phase 0 对应。**2026-08-06 更新**：1-3、6-10 共 8 项
-已在 Phase 0-2 实测验证完毕；4 项因命名过期已更正结论；剩余仅 5 一项对应 T11，Phase 3 未开始。
+已在 Phase 0-2 实测验证完毕；4 项因命名过期已更正结论。**2026-08-07 更新**：5 也已随 T11 实机验证完毕
+（见 §5.2），**至此本表全部 10 项均已核实，无遗留 `[待核实]` 项**。Phase 3/4（T10-T16）已全部完成，
+仅 T17（阶梯变速端到端验证）未开始，不在本表覆盖范围内（属实施方案 §8 验收清单 A6 的验证对象）。
 
 | # | 待核实 | 对应 P0/T | 结论 |
 |---|---|---|---|
@@ -450,7 +563,7 @@ Flink 的 metric 天然带 `operator_name`，而 SQL 作业的 source / sink 是
 | 2 | Paimon 1.2.0 streaming read 的确切参数名 | P0-1 | ✅ **已验证：不需要任何参数**，Paimon 主键表默认即为流式读，直接 `SELECT *` 即可（见 §2.2） |
 | 3 | MySQL binlog 状态与可用 `server-id` 区间 | P0-2 | ✅ **已验证：binlog 本来就绪，无需改配置重启**；`server-id` 未显式设置也未冲突（见 §2.1） |
 | 4 | `CanonicalNameResolver` 实际接受的格式 | P0-3 | ✅ **已核实，命名已过期**：实际类是 `LineageDatasetParser`，源码实读确认原设想的"已知缺陷"（E7）不存在，无需改 gravitino fork（见 §5.1） |
-| 5 | `CompiledPlan` 能否提取 lookup join 维表名 | P0-1/T11 | **仍未验证**——T11（Phase 3）未开始 |
+| 5 | `CompiledPlan` 能否提取 lookup join 维表名 | P0-1/T11 | ✅ **已验证，且修复了一个真实 bug**：初次实测只解析出 `1 input/1 output`（`DatasetResolver` 漏处理 `stream-exec-lookup-join` 节点），补上 `node.temporalTable.lookupTableSource.table.identifier` 路径后重跑得到预期的 `8 input/1 output`（见 §5.2） |
 | 6 | Flink `flink-metrics-otel` (FLIP-385) 可用性 | P0-5 | ✅ **已验证：自 Flink 2.0.0 起原生提供**，无需改用 Prometheus scrape（见 §6.1） |
 | 7 | Paimon/Doris sink 是否实现 FLIP-33 sink metrics | P0-6 | ✅ **已验证：均未按字面实现，但有等价数据**（各自的自定义指标名），T13 大概率不需要自研埋点（见 §6.2） |
 | 8 | Flink 是否有 `LOCATE` / `IFNULL` / `CONCAT_WS` 及其 NULL 语义 | T8 | ✅ **已验证：三者 Flink 均有，语义与 Doris/MySQL 一致**；最终改写选用 `POSITION`（非 `LOCATE`）是工程选择而非必须（见 §4.1 F4/F7） |
@@ -465,7 +578,8 @@ Flink 的 metric 天然带 `operator_name`，而 SQL 作业的 source / sink 是
 
 ## 9. 参考
 
-- [实施方案（任务清单与进度）](./data-lineage-Flink实时链路验证-实施方案-2026-08-05.md)
+- [实施方案（任务清单与进度）](./data-lineage-Flink实时链路验证-实施方案-2026-08-05.md) — §6 进度表全部 T1-T16 均 `DONE`（T13 为 `N/A`），仅 T17 `NOT STARTED`
+- [T16 交接文档](./session-handoff-T16-flink-flow-rate-2026-08-07.md) — T6 流速图表空白的真正根因排查过程、`conf/api.local.properties` 全新部署丢配置的系统性坑
 - [平台级血缘架构](./data-lineage-平台级血缘架构-2026-07-29.md) — §1.1 能力矩阵、§3.3 身份规范
 - [任务级流速可视化实施方案](./data-lineage-任务级流速可视化-实施方案-2026-08-04.md) — §3 契约来源
 - [流速采集调研](./data-lineage-流速采集调研-2026-08-04.md) — §4 粒度不匹配风险

@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.dto.ApiResponse;
@@ -233,6 +234,21 @@ class OtelMetricsQueryControllerTest {
                 eq(1.0 / 60), eq(".+"), eq(".+"), eq(Map.of("job_id", "job-1")), eq(Map.of()),
                 eq(Map.of("operator_name", ".*Writer.*")), eq(Map.of()), eq(List.of("job_id")),
                 eq(1000L), eq(2000L), eq(60L), eq("sum"), eq(0.5), isNull());
+    }
+
+    @Test
+    void queryRange_unsupportedValueAggregationIsRejectedAsBadRequest() {
+        // 参数取值非法是调用方的问题，不能报成 500 让人以为 Doris 挂了
+        ApiResponse<PrometheusMatrixResult> response =
+                controller.queryRange("some_metric", null, 1.0, ".+", ".+",
+                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null,
+                        null, null, null, "median");
+
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getErrorCode()).isEqualTo(400);
+        // 入参值不回显，避免原样出现在响应体里
+        assertThat(response.getErrorMessage()).doesNotContain("median");
+        verifyNoInteractions(service);
     }
 
     // ─── parseFilters / parseGroupBy 测试 ────────────────────────────────────────

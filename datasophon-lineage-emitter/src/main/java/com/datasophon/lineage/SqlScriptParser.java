@@ -31,8 +31,13 @@ final class SqlScriptParser {
           "^\\s*CREATE\\s+TEMPORARY\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?`?([A-Za-z_][A-Za-z0-9_]*)`?",
           Pattern.CASE_INSENSITIVE);
   private static final Pattern WITH_CLAUSE = Pattern.compile("\\bWITH\\s*\\(", Pattern.CASE_INSENSITIVE);
+  /**
+   * `'key' = 'value'`。字面量内的 `''` 必须算作转义单引号而不是字面量结束：{@link
+   * SqlSecretRenderer} 正是用 `''` 转义密钥里的单引号，不认它会让该 option 的值被截断在
+   * 引号处。
+   */
   private static final Pattern OPTION_ENTRY =
-      Pattern.compile("'((?:[^'\\\\]|\\\\.)*)'\\s*=\\s*'((?:[^'\\\\]|\\\\.)*)'");
+      Pattern.compile("'((?:[^'\\\\]|\\\\.|'')*)'\\s*=\\s*'((?:[^'\\\\]|\\\\.|'')*)'");
 
   private SqlScriptParser() {}
 
@@ -121,8 +126,13 @@ final class SqlScriptParser {
     Map<String, String> options = new LinkedHashMap<>();
     Matcher entry = OPTION_ENTRY.matcher(body);
     while (entry.find()) {
-      options.put(entry.group(1), entry.group(2));
+      options.put(unescapeLiteral(entry.group(1)), unescapeLiteral(entry.group(2)));
     }
     return options;
+  }
+
+  /** 还原 SQL 字面量里的 `''` 转义，使 option 值与 SQL 作者写下的原值一致。 */
+  private static String unescapeLiteral(String literal) {
+    return literal.replace("''", "'");
   }
 }

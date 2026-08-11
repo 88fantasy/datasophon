@@ -133,6 +133,11 @@ public class LineageV2Controller extends ApiController {
                                           @RequestParam(defaultValue = "60") long step) {
         try {
             return jobMetricsService.getJobRateHistory(clusterId, appId, start, end, step);
+        } catch (IllegalArgumentException e) {
+            // 请求参数越界（如窗口切出的桶数超限）是调用方的问题，不是服务端故障
+            log.warn("Lineage job rate history rejected: clusterId={} appId={} reason={}",
+                    clusterId, appId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
             log.error("Lineage job rate history query failed: clusterId={} appId={} reason={}",
                     clusterId, appId, e.getMessage(), e);
