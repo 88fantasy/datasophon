@@ -42,6 +42,7 @@ front/
 node/
 
 *.flattened-pom.xml
+dependency-reduced-pom.xml
 /static
 logs
 
@@ -56,6 +57,13 @@ openspec
 .codegraph/
 .mcp.json
 docs/superpowers
+
+# 血缘验证用的业务样例数据不入库：源自真实医疗生产库，含患者与医护个人信息。
+# 仅在内网环境维护，仓库内只保留 DDL、清洗 SQL 与验证脚本。
+docs/lineage/data/*
+!docs/lineage/data/README.md
+docs/lineage/**/*.xlsx
+docs/lineage/**/*.docx
 
 
 /worktrees

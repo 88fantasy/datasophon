@@ -167,4 +167,5 @@ WHERE
 
 ![血缘图（表级血缘，8张ODS表汇入dwd_odr_oper_surgery_records_full_hourly）](images/lineage-diagram-1.png)
 
-![数据资源平台「数据血缘」页面截图（同一血缘关系，含节点详情面板）](images/lineage-diagram-2.png)
+> 另一张「数据血缘」页面截图（含节点详情面板）因包含客户方空间名与真实创建人姓名，
+> 不随仓库分发，见 [data/README.md](data/README.md)。
