@@ -1010,6 +1010,58 @@ Datasophon 侧和 Spark 侧可以用同一个 token，也可以各铸造一个�
 
 **回滚方式**（如需）：ddh-01 上 `cd /data/datasophon-api/datasophon-manager-3.0-SNAPSHOT && rm -rf static && mv static.bak-20260810-100846 static && bin/datasophon-api.sh restart`。
 
+### 7.17 PR #40 代码审查修复的实机验证：暴露出两个真实 bug（2026-08-11）
+
+**背景**：`feat/flink-lineage` 分支经代码审查后修复了一批问题（指标名拼写、速率查询下沉后端、
+`JobMetrics` 新增 `engine` 字段等，见 PR #40），需要在本文档的 ddh-01 环境实机验证。与 §7.16 只部署
+前端不同，本次含后端改动，因此 `lib/datasophon-api-3.0-SNAPSHOT.jar` 与 `static/` 一并替换，
+**未动 `conf/`**（避开"全新解压丢 `api.local.properties` 凭据"那个坑）。
+
+**端点路径**：lineage 端点实际挂在 `/ddh/api/v2/lineage/**`（`LineageV2Controller` 的
+`@RequestMapping("/v2/lineage")`，前端 baseURL 含 `/v2`）。用 `/ddh/api/lineage/**` 请求会落到
+静态资源处理器并返回 `{"msg":"No static resource ...","code":10000}`，不是 404，排查时容易误判。
+
+**现场数据面基线**：两个 Flink 作业分别走两套指标命名，互不重叠，正好覆盖两条代码路径——
+
+| 作业 | job_id | 指标命名 | 落表 |
+| --- | --- | --- | --- |
+| flink-cluster-dwd（Flink 2.2.1） | `d09b581d…36cc` | 点号（native OTLP，delta Sum） | `otel_metrics_sum` |
+| flink-cluster-cdc（Flink 1.20） | `94dfbc75…b60f` | 下划线（Prometheus scrape） | `otel_metrics_gauge` |
+
+**验证暴露的 bug 1：`INSTANT_SERIES_ATTR_KEYS` 漏加 Flink 维度**。PR 把 `job_id`/`task_id`/
+`operator_name` 加进了 `ALLOWED_ATTR_FILTER_KEYS`（过滤白名单），却漏了 `INSTANT_SERIES_ATTR_KEYS`
+（instant 查询的 `PARTITION BY` 粒度白名单）。后果是同一 job 的几十个算子被并成一条序列，
+`ROW_NUMBER() … rn = 1` 只留最新的一行，取到哪个算子纯看采样先后。现场实测：Doris 里直查
+`flink_taskmanager_job_task_operator_numBytesOut` 有 `557,521,920` 字节，API 却返回 `0`
+（最新一行恰好是 value 恒为 0 的 Committer）。
+
+**验证暴露的 bug 2：delta 采样不能取"最新一条"当累计值**。native OTLP 的 `numRecordsIn` 是 delta
+temporality，每个采样值只是一个间隔内的增量，多数间隔没有新记录因而是 `0`。原实现用 instant 查询取
+最新一条，现场连调 5 次得到 `0 / 97 / 0 / 111 / 0`——在 0 和某个批量之间反复跳。累计口径改为按
+`RANGE_SECONDS`（120 秒）窗口求和。**注意语义差异**：Spark 的 `recordsWritten` 是本次运行累计值，
+Flink 是"最近 120 秒写入量"，两者口径不同，展示端如需标注应按 `engine` 字段区分。
+
+**修复前后对照（同一环境、同一作业，真实数据）**：
+
+| 指标 | 修复前 | 修复后 | 交叉核对 |
+| --- | ---: | ---: | --- |
+| `94dfbc75…` `bytesWritten` | `0` | `558,427,143` | 与直查 Doris 的 `557,521,920` 吻合（期间继续写入） |
+| `94dfbc75…` `recordsWritten` | `0` | `822,801` | — |
+| `d09b581d…` `recordsWritten` | `0/97/0/111/0` 跳变 | `312/415/309/309` 稳定 | 与 rate ≈3.4 行/秒 × 120 秒量级一致 |
+
+**指标名拼写修复的独立证据**：同一时间窗内，PR 原先写的混合点号名
+`flink_taskmanager_job_task_operator.numBytesOut` 查得 **0 行**，修正后的全下划线名查得 **6692 行**——
+实锤"查错名不会报错，只会静默返回零行"。
+
+**其余验证**：新端点 `/v2/lineage/job-rate-history` 返回 60 个采样点（1.83～3.67 行/秒）；
+`job-metrics` 的 `engine` 字段返回 `FLINK`，`completeTasks=0 / activeTasks=8`，符合 Flink 无批式
+task 生命周期的预期；前端 chunk `_5a083072.3437df59.async.js` 命中 `job-rate-history` 且
+`HTTP 200`，`static/index.html` MD5 与本机构建产物一致。启动日志除 §7.16 已记录的 `APISIX.bak-*`
+噪音外无异常。
+
+**回滚方式**：ddh-01 上
+`cd /data/datasophon-api/datasophon-manager-3.0-SNAPSHOT && cp lib/datasophon-api-3.0-SNAPSHOT.jar.bak-20260811-1152 lib/datasophon-api-3.0-SNAPSHOT.jar && rm -rf static && mv static.bak-20260811-1152 static && bin/datasophon-api.sh restart`。
+
 ## 8. Phase 7～8：控制面健康与前端集群初始化
 
 基础环境验收：hostname 和 hosts、节点 SSH、NTP、Nexus、MySQL、RustFS S3、plan 状态、数据盘与 JDK17 可用。确认无 Kubernetes 业务组件及 Hadoop 业务进程。

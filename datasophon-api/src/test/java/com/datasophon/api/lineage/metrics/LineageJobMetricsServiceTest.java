@@ -146,12 +146,16 @@ class LineageJobMetricsServiceTest {
     @Test
     void routesFlinkJobIdsToJobIdAndOperatorNameFilters() {
         String flinkJobId = "5a08eb018fa0ed1a47275378c0658438";
-        when(queryService.queryInstant(eq(7),
-                eq("flink.taskmanager.job.task.operator.numRecordsIn"), eq("sum"), eq(1.0),
+        // numRecordsIn 是 OTLP delta 采样：每个值只是一个采样间隔内的增量，多数间隔是 0。
+        // 取"最新一条"会在 0 和某个批量之间来回跳（现场实测 0/97/0/111/0），所以累计口径按
+        // RANGE_SECONDS 窗口求和，走 queryRangeSum 而不是 queryInstant。
+        when(queryService.queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsIn"), isNull(), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
                 eq(Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*Writer.*")), eq(Map.of()),
-                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id"))))
-                .thenReturn(vectorByJobId(flinkJobId, 798));
+                eq(List.of("job_id")), eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(120L),
+                eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(matrixSeriesByJobId(flinkJobId, 300.0, 498.0))));
         when(queryService.queryInstant(eq(7),
                 eq("flink.taskmanager.job.task.operator.numRecordsIn"), eq("count"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),

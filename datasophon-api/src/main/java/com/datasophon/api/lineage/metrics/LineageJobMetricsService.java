@@ -357,6 +357,12 @@ public class LineageJobMetricsService {
 
     private Map<String, Double> queryInstantByFlinkJobId(Integer clusterId, FlinkMetric metric,
                                                          String jobIdRegex, long sampledAt) {
+        if (metric.deltaSamples()) {
+            // delta 采样的每个值只是一个采样间隔内的增量，多数间隔没有新记录因而是 0。取"最新
+            // 一条"拿到的是最后一个间隔的增量，会在 0 和某个批量之间来回跳（现场实测 0/97/0/111/0）。
+            // 这类指标没有可读的累计值，只能按窗口求和，口径是"最近 RANGE_SECONDS 秒写入量"。
+            return sumDeltaOverWindow(clusterId, metric, jobIdRegex, sampledAt);
+        }
         PrometheusVectorResult result = queryService.queryInstant(
                 clusterId, metric.name(), "sum", 1.0, ".+", ".+", Map.of(), Map.of(),
                 Map.of("job_id", jobIdRegex, "operator_name", metric.operatorRegex()), Map.of(),
@@ -367,6 +373,30 @@ public class LineageJobMetricsService {
             Double value = numericValue(sample.value());
             if (jobId != null && value != null) {
                 valuesByJob.merge(jobId, value, Double::sum);
+            }
+        }
+        return valuesByJob;
+    }
+
+    /** delta Sum 指标在最近 {@link #RANGE_SECONDS} 秒内的总增量，按 job_id 汇总。 */
+    private Map<String, Double> sumDeltaOverWindow(Integer clusterId, FlinkMetric metric,
+                                                   String jobIdRegex, long sampledAt) {
+        PrometheusMatrixResult result = queryService.queryRangeSum(clusterId, metric.name(), null, 1.0,
+                ".+", ".+", Map.of(), Map.of(),
+                Map.of("job_id", jobIdRegex, "operator_name", metric.operatorRegex()), Map.of(),
+                List.of("job_id"), sampledAt - RANGE_SECONDS, sampledAt, RANGE_SECONDS,
+                metric.table(), 0.5, null);
+        Map<String, Double> valuesByJob = new LinkedHashMap<>();
+        for (PrometheusMatrixResult.MatrixSeries series : result.result()) {
+            String jobId = series.metric().get("job_id");
+            if (jobId == null) {
+                continue;
+            }
+            for (Object[] point : series.values()) {
+                Double value = numericValue(point);
+                if (value != null) {
+                    valuesByJob.merge(jobId, value, Double::sum);
+                }
             }
         }
         return valuesByJob;
@@ -446,6 +476,9 @@ public class LineageJobMetricsService {
      *                      （Spark 的 {@code completeTasks} 是累计完成数，Flink 恒为 0 而
      *                      {@code activeTasks} 是并行 subtask 数），展示端必须据此分别渲染，
      *                      不能把两个字段相加成一个笼统的数字。
+     * @param recordsWritten Spark 是本次运行的累计写入行数；Flink 走 OTLP delta 采样，没有可读的
+     *                       累计值，这里是**最近 {@link #RANGE_SECONDS} 秒**的写入量。两种引擎口径
+     *                       不同，展示端如需标注请按 {@code engine} 区分。
      * @param runningStages Flink 无对应概念，恒为 0
      */
     public record JobMetrics(

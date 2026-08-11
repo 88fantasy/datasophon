@@ -89,7 +89,11 @@ public class OtelMetricsQueryService {
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
-                    "area", "result", "status", "level", "cause", "cmd", "db", "direction");
+                    "area", "result", "status", "level", "cause", "cmd", "db", "direction",
+                    // Flink：同一个 job_id 下每个算子/subtask 是一条独立序列。不列在这里的话，
+                    // instant 查询的 PARTITION BY 会把它们并成一条，ROW_NUMBER 只留最新的一行——
+                    // 一个作业几十个算子最终只算进一个，而且取到哪个纯看采样先后。
+                    "operator_name", "task_id");
 
     static final List<String> LABEL_ATTR_KEYS = List.of("vol_name", "mp", "method", "cmd", "db");
 
