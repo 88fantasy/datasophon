@@ -111,7 +111,7 @@ class LineageV2ControllerTest {
     @Test
     void jobMetricsParsesAppIdsAndDoesNotCallGravitino() {
         JobMetrics metrics = new JobMetrics(12, 2, 60_000_000, 2_204_955_464L,
-                51_234.5, 1, Instant.parse("2026-08-04T03:01:44Z"));
+                51_234.5, 1, Instant.parse("2026-08-04T03:01:44Z"), "SPARK");
         when(jobMetricsService.getJobMetrics(7, java.util.List.of("app-1", "app-2")))
                 .thenReturn(Map.of("app-1", metrics));
 

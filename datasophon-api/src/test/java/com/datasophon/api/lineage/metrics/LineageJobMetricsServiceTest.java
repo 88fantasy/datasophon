@@ -98,7 +98,7 @@ class LineageJobMetricsServiceTest {
         assertThat(result).containsOnlyKeys("app-1");
         assertThat(result.get("app-1"))
                 .isEqualTo(new JobMetrics(12, 2, 60_000_000, 2_204_955_464L,
-                        6.0, 1, NOW));
+                        6.0, 1, NOW, "SPARK"));
         verify(queryService).queryRange(eq(7), eq("spark_executor_recordsWritten"), eq("1m"), eq(1.0),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
                 eq(Map.of("app_id", "^(?:app-1)$")), eq(Map.of()), eq(List.of("app_id")),
@@ -177,7 +177,7 @@ class LineageJobMetricsServiceTest {
 
         assertThat(result).containsOnlyKeys(flinkJobId);
         assertThat(result.get(flinkJobId))
-                .isEqualTo(new JobMetrics(0, 2, 798, 40_000, 20.0, 0, NOW));
+                .isEqualTo(new JobMetrics(0, 2, 798, 40_000, 20.0, 0, NOW, "FLINK"));
     }
 
     @Test
@@ -229,6 +229,26 @@ class LineageJobMetricsServiceTest {
         Map<String, JobMetrics> result = service.getJobMetrics(7, List.of(flinkJobId));
 
         assertThat(result.get(flinkJobId).recordsWrittenRate()).isEqualTo(36.0);
+    }
+
+    @Test
+    void queriesTheUnderscoredFlinkBytesMetricWithAConsistentName() {
+        // Regression: the gauge-table entry of FLINK_BYTES_OUT used to mix both naming conventions
+        // ("...operator.numBytesOut"), a name the Prometheus receiver never produces — it always
+        // emits fully underscored names. Querying a name that exists nowhere returns zero rows
+        // silently rather than failing, so bytesWritten stayed 0 for every job on the scrape path.
+        String flinkJobId = "b17c0f2e94a84d1fa0d3e5c8b7691a4d";
+        Map<String, String> filters =
+                Map.of("job_id", "^(?:" + flinkJobId + ")$", "operator_name", ".*(Writer|Committer).*");
+        when(queryService.queryInstant(eq(7),
+                eq("flink_taskmanager_job_task_operator_numBytesOut"), eq("sum"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), eq(filters), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("gauge"), eq(List.of("job_id"))))
+                .thenReturn(vectorByJobId(flinkJobId, 51_200));
+
+        Map<String, JobMetrics> result = service.getJobMetrics(7, List.of(flinkJobId));
+
+        assertThat(result.get(flinkJobId).bytesWritten()).isEqualTo(51_200);
     }
 
     @Test

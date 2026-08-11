@@ -61,7 +61,7 @@ class OtelMetricsQueryServiceTest {
     void rangeGauge_sumAggregationSumsDeltaSamplesInEachBucket() {
         String sql = OtelMetricsQueryService.buildRangeGaugeSql(
                 false, false, Map.of(), Map.of(), Map.of("operator_name", ".*Writer.*"), Map.of(),
-                List.of("job_id"), "otel_metrics_sum", "SUM");
+                List.of("job_id"), "otel_metrics_sum", true);
 
         assertThat(sql).contains("SUM(value) AS value");
         assertThat(sql).contains("attributes['job_id']");

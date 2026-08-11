@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -84,6 +85,9 @@ public class LineageJobMetricsService {
     private static final String BYTES_WRITTEN = "spark_executor_bytesWritten";
     private static final String RUNNING_STAGES = "spark_dagscheduler_stage_runningStages";
 
+    static final String ENGINE_SPARK = "SPARK";
+    static final String ENGINE_FLINK = "FLINK";
+
     private static final Pattern FLINK_JOB_ID = Pattern.compile("^[0-9a-f]{32}$");
     /** Paimon 的真实输出在 Committer；Doris 的行数在 Writer 输入端。 */
     private static final String FLINK_SINK_OPERATOR_REGEX = ".*(Writer|Committer).*";
@@ -103,7 +107,7 @@ public class LineageJobMetricsService {
     private static final FlinkMetric[] FLINK_BYTES_OUT = {
             new FlinkMetric("flink.taskmanager.job.task.operator.numBytesOut", "sum",
                     FLINK_SINK_OPERATOR_REGEX, false),
-            new FlinkMetric("flink_taskmanager_job_task_operator.numBytesOut", "gauge",
+            new FlinkMetric("flink_taskmanager_job_task_operator_numBytesOut", "gauge",
                     FLINK_SINK_OPERATOR_REGEX, false)
     };
 
@@ -142,6 +146,59 @@ public class LineageJobMetricsService {
         return metricsByApp;
     }
 
+    /**
+     * 单个作业的写入速率时间序列，供作业详情抽屉画折线图。
+     *
+     * <p>与 {@link #getJobMetrics} 复用同一份 {@link #FLINK_RECORDS_OUT} 指标定义和同一条
+     * {@link #FLINK_JOB_ID} 引擎判定规则：调用方只消费结果，不需要知道 Flink 有两套指标命名、
+     * 各自落在哪张 Doris 表，也不会在这些细节变化时跟着改。
+     *
+     * @param step 采样桶宽（秒）；delta Sum 指标按此宽度求和后换算成每秒速率
+     */
+    public List<RatePoint> getJobRateHistory(Integer clusterId, String appId,
+                                             long start, long end, long step) {
+        if (appId == null || appId.isBlank() || step <= 0) {
+            return List.of();
+        }
+        Map<Long, Double> totalsByTimestamp = new TreeMap<>();
+        if (FLINK_JOB_ID.matcher(appId).matches()) {
+            String jobIdRegex = exactRegex(List.of(appId));
+            for (FlinkMetric metric : FLINK_RECORDS_OUT) {
+                accumulateByTimestamp(totalsByTimestamp,
+                        queryFlinkRateMatrix(clusterId, metric, jobIdRegex, start, end, step));
+            }
+        } else {
+            // groupBy=app_id 与 getSparkJobMetrics 的口径保持一致：carbon receiver 目前不写
+            // resource attributes，同一 app 的多条 series 不显式分组也能算对，但那依赖一个未来
+            // 可能失效的偶然条件。
+            accumulateByTimestamp(totalsByTimestamp, queryService.queryRange(clusterId, RECORDS_WRITTEN,
+                    "1m", 1.0, ".+", ".+", Map.of("app_id", appId), Map.of(), Map.of(), Map.of(),
+                    List.of("app_id"), start, end, step, "sum", 0.5, null));
+        }
+        return totalsByTimestamp.entrySet().stream()
+                .map(entry -> new RatePoint(entry.getKey() * 1000, entry.getValue()))
+                .toList();
+    }
+
+    private static void accumulateByTimestamp(Map<Long, Double> totals, PrometheusMatrixResult result) {
+        for (PrometheusMatrixResult.MatrixSeries series : result.result()) {
+            for (Object[] point : series.values()) {
+                Long timestamp = epochSecond(point);
+                Double value = numericValue(point);
+                if (timestamp != null && value != null) {
+                    totals.merge(timestamp, value, Double::sum);
+                }
+            }
+        }
+    }
+
+    private static Long epochSecond(Object[] point) {
+        if (point == null || point.length < 1 || !(point[0] instanceof Number epochSeconds)) {
+            return null;
+        }
+        return epochSeconds.longValue();
+    }
+
     private Map<String, JobMetrics> getSparkJobMetrics(Integer clusterId, List<String> appIds, long sampledAt) {
         if (appIds.isEmpty()) {
             return Map.of();
@@ -174,7 +231,8 @@ public class LineageJobMetricsService {
                     toLong(bytesWritten.get(appId)),
                     recordsWrittenRate.get(appId),
                     toLong(runningStages.get(appId)),
-                    Instant.ofEpochSecond(sampledAt)));
+                    Instant.ofEpochSecond(sampledAt),
+                    ENGINE_SPARK));
         }
         return metricsByApp;
     }
@@ -212,7 +270,8 @@ public class LineageJobMetricsService {
                     toLong(bytesWritten.get(jobId)),
                     recordsWrittenRate.get(jobId),
                     0L,
-                    Instant.ofEpochSecond(sampledAt)));
+                    Instant.ofEpochSecond(sampledAt),
+                    ENGINE_FLINK));
         }
         return metricsByJob;
     }
@@ -313,21 +372,29 @@ public class LineageJobMetricsService {
         return valuesByJob;
     }
 
+    /**
+     * 一条 Flink 指标的速率时间序列。delta Sum 指标按桶求和再除以桶宽得到每秒速率；
+     * 累积型指标走常规 rate 窗口差分。瞬时速率与速率历史共用这一个查询构造，
+     * 避免两处各写一遍口径。
+     */
+    private PrometheusMatrixResult queryFlinkRateMatrix(Integer clusterId, FlinkMetric metric,
+                                                        String jobIdRegex, long start, long end, long step) {
+        Map<String, String> regexFilters =
+                Map.of("job_id", jobIdRegex, "operator_name", metric.operatorRegex());
+        return metric.deltaSamples()
+                ? queryService.queryRangeSum(clusterId, metric.name(), null, 1.0 / step,
+                        ".+", ".+", Map.of(), Map.of(), regexFilters, Map.of(),
+                        List.of("job_id"), start, end, step, metric.table(), 0.5, null)
+                : queryService.queryRange(clusterId, metric.name(), "1m", 1.0, ".+", ".+",
+                        Map.of(), Map.of(), regexFilters, Map.of(),
+                        List.of("job_id"), start, end, step, metric.table(), 0.5, null);
+    }
+
     private Map<String, Double> queryRateByFlinkJobId(Integer clusterId, FlinkMetric metric,
                                                       String jobIdRegex, long sampledAt) {
         long endOfLastCompleteMinute = sampledAt - Math.floorMod(sampledAt, FLINK_RATE_STEP_SECONDS);
-        PrometheusMatrixResult result = metric.deltaSamples()
-                ? queryService.queryRangeSum(clusterId, metric.name(), null, 1.0 / FLINK_RATE_STEP_SECONDS,
-                        ".+", ".+", Map.of(), Map.of(),
-                        Map.of("job_id", jobIdRegex, "operator_name", metric.operatorRegex()), Map.of(),
-                        List.of("job_id"), endOfLastCompleteMinute - RANGE_SECONDS,
-                        endOfLastCompleteMinute, FLINK_RATE_STEP_SECONDS,
-                        metric.table(), 0.5, null)
-                : queryService.queryRange(clusterId, metric.name(), "1m", 1.0, ".+", ".+", Map.of(), Map.of(),
-                        Map.of("job_id", jobIdRegex, "operator_name", metric.operatorRegex()), Map.of(),
-                        List.of("job_id"), endOfLastCompleteMinute - RANGE_SECONDS,
-                        endOfLastCompleteMinute, FLINK_RATE_STEP_SECONDS,
-                        metric.table(), 0.5, null);
+        PrometheusMatrixResult result = queryFlinkRateMatrix(clusterId, metric, jobIdRegex,
+                endOfLastCompleteMinute - RANGE_SECONDS, endOfLastCompleteMinute, FLINK_RATE_STEP_SECONDS);
         Map<String, Double> valuesByJob = new LinkedHashMap<>();
         for (PrometheusMatrixResult.MatrixSeries series : result.result()) {
             String jobId = series.metric().get("job_id");
@@ -374,6 +441,13 @@ public class LineageJobMetricsService {
         return value == null ? 0L : value.longValue();
     }
 
+    /**
+     * @param engine        {@code "SPARK"} 或 {@code "FLINK"}。两种引擎的 task 计数语义不同
+     *                      （Spark 的 {@code completeTasks} 是累计完成数，Flink 恒为 0 而
+     *                      {@code activeTasks} 是并行 subtask 数），展示端必须据此分别渲染，
+     *                      不能把两个字段相加成一个笼统的数字。
+     * @param runningStages Flink 无对应概念，恒为 0
+     */
     public record JobMetrics(
                              long completeTasks,
                              long activeTasks,
@@ -381,6 +455,11 @@ public class LineageJobMetricsService {
                              long bytesWritten,
                              Double recordsWrittenRate,
                              long runningStages,
-                             Instant sampledAt) {
+                             Instant sampledAt,
+                             String engine) {
+    }
+
+    /** 速率折线的一个采样点。{@code time} 为毫秒时间戳，与前端图表控件的取值一致。 */
+    public record RatePoint(long time, double value) {
     }
 }

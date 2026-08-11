@@ -275,6 +275,11 @@ public class OtelMetricsQueryService {
                                               long start, long end, long step,
                                               String table, double quantile, String field,
                                               boolean sumSamples) {
+        // rateWindow 会把查询路由到 rate 分支，那里按相邻采样差分，不经过桶内聚合——sumSamples
+        // 会被静默忽略，调用方却以为拿到的是 delta 求和。与其悄悄给出错误口径，不如直接拒绝。
+        if (sumSamples && rateWindow != null && !rateWindow.isBlank()) {
+            throw new IllegalArgumentException("valueAggregation=sum cannot be combined with rateWindow");
+        }
         JdbcClient client = createReader(clusterId);
 
         List<String> validGroupBy = toValidGroupBy(groupByKeys);
@@ -352,8 +357,7 @@ public class OtelMetricsQueryService {
                 ? buildRangeRateSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
                         filtersRegex, filtersNotRegex, validGroupBy, otelTable)
                 : buildRangeGaugeSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
-                        filtersRegex, filtersNotRegex, validGroupBy, otelTable,
-                        sumSamples ? "SUM" : "AVG");
+                        filtersRegex, filtersNotRegex, validGroupBy, otelTable, sumSamples);
 
         JdbcClient.StatementSpec spec = client.sql(sql)
                 .param("metric", metric)
@@ -834,14 +838,18 @@ public class OtelMetricsQueryService {
                                      Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
                                      List<String> groupByKeys, String otelTable) {
         return buildRangeGaugeSql(filterInstance, filterJob, filters, filtersNe,
-                filtersRegex, filtersNotRegex, groupByKeys, otelTable, "AVG");
+                filtersRegex, filtersNotRegex, groupByKeys, otelTable, false);
     }
 
+    /**
+     * @param sumSamples 桶内聚合方式：{@code false} 求均值（gauge 的常规语义），{@code true} 求和
+     *                   （OTLP delta Sum，每个采样值本身就是区间增量）
+     */
     static String buildRangeGaugeSql(boolean filterInstance, boolean filterJob,
                                      Map<String, String> filters, Map<String, String> filtersNe,
                                      Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
-                                     List<String> groupByKeys, String otelTable, String aggregation) {
-        String aggregationFn = "SUM".equalsIgnoreCase(aggregation) ? "SUM" : "AVG";
+                                     List<String> groupByKeys, String otelTable, boolean sumSamples) {
+        String aggregationFn = sumSamples ? "SUM" : "AVG";
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
         StringBuilder sql = new StringBuilder(

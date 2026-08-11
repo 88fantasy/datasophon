@@ -182,7 +182,8 @@ public class GravitinoLineageClient {
      * Fills in the standard job facets for a running Flink job only when the producer did not
      * supply them. The T6/T9 emitter carries its Flink JobID through the legacy
      * {@code spark_properties} compatibility facet, so historical events have no
-     * {@code processing_engine} or {@code jobType} fields for Gravitino to return.
+     * {@code engine} or {@code jobType} values for Gravitino to return — both come back
+     * as {@code UNKNOWN}, which is the only case this fills in.
      */
     private static void enrichFlinkStreamingJob(JsonNode response) {
         if (!(response instanceof ObjectNode job) || !isFlinkNamespace(job.path("jobName").asText())) {

@@ -97,7 +97,7 @@ class OtelMetricsQueryControllerTest {
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("jvm_memory_heap_used", null, 1.0, ".+", ".+",
                         1000L, 2000L, 15L, 1, null, 0.5, "sum", null, null,
-                        null, null, null);
+                        null, null, null, null);
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().resultType()).isEqualTo("matrix");
@@ -163,7 +163,7 @@ class OtelMetricsQueryControllerTest {
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("some_metric", null, 1.0, ".+", ".+",
                         1000L, 2000L, 15L, 1, null, 0.5, null, null, null,
-                        null, null, null);
+                        null, null, null, null);
         
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(500);
@@ -207,7 +207,7 @@ class OtelMetricsQueryControllerTest {
 
         controller.queryRange("http_server_requests_seconds", "1m", 1.0, ".+", "ApiServer",
                 1000L, 2000L, 15L, 1, "summary", 0.5, "count",
-                "method:GET", "method:POST", "status:5..", "status:2..", "status");
+                "method:GET", "method:POST", "status:5..", "status:2..", "status", null);
 
         verify(service).queryRange(eq(1), eq("http_server_requests_seconds"), eq("1m"), eq(1.0),
                 eq(".+"), eq("ApiServer"),

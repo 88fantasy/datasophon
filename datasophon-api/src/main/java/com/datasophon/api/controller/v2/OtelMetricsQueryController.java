@@ -157,9 +157,8 @@ public class OtelMetricsQueryController extends ApiController {
                     && !"avg".equalsIgnoreCase(valueAggregation)) {
                 throw new IllegalArgumentException("Unsupported valueAggregation: " + valueAggregation);
             }
-            if (sumSamples && rateWindow != null && !rateWindow.isBlank()) {
-                throw new IllegalArgumentException("valueAggregation=sum cannot be combined with rateWindow");
-            }
+            // valueAggregation 与 rateWindow 的互斥由 OtelMetricsQueryService 统一把关，
+            // 这样绕过 HTTP 层直接调 service 的路径（如 LineageJobMetricsService）同样受保护。
             Map<String, String> equalsFilters = parseFilters(filters);
             Map<String, String> notEqualsFilters = parseFilters(filtersNe);
             Map<String, String> regexFilters = parseFilters(filtersRegex);
@@ -178,29 +177,6 @@ public class OtelMetricsQueryController extends ApiController {
                     metric, clusterId, e.getMessage(), e);
             return ApiResponse.fail(500, "指标查询失败");
         }
-    }
-
-    /** Backward-compatible Java entry point for callers that do not use valueAggregation. */
-    ApiResponse<PrometheusMatrixResult> queryRange(
-                                                   String metric,
-                                                   String rateWindow,
-                                                   double scale,
-                                                   String instance,
-                                                   String job,
-                                                   long start,
-                                                   long end,
-                                                   long step,
-                                                   Integer clusterId,
-                                                   String table,
-                                                   double quantile,
-                                                   String field,
-                                                   String filters,
-                                                   String filtersNe,
-                                                   String filtersRegex,
-                                                   String filtersNotRegex,
-                                                   String groupBy) {
-        return queryRange(metric, rateWindow, scale, instance, job, start, end, step, clusterId, table,
-                quantile, field, filters, filtersNe, filtersRegex, filtersNotRegex, groupBy, null);
     }
 
     /**
