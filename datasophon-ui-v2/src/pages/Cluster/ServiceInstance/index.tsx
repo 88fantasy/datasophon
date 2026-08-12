@@ -8,6 +8,7 @@ import MonitorTab from '@/pages/Cluster/ObservabilityCollector/MonitorTab';
 import ApisixDashboard from '@/pages/monitor/ApisixMonitor';
 import DSDashboard from '@/pages/monitor/DolphinSchedulerMonitor';
 import DorisDashboard from '@/pages/monitor/DorisMonitor';
+import GravitinoDashboard from '@/pages/monitor/GravitinoMonitor';
 import NacosDashboard from '@/pages/monitor/NacosMonitor';
 import ValkeyDashboard from '@/pages/monitor/ValkeyMonitor';
 import { listK8sResourceTypes } from '@/services/k8s';
@@ -178,9 +179,16 @@ const ServiceInstance: React.FC = () => {
   const isDS = serviceInfo?.serviceName === 'DS';
   const isDoris = serviceInfo?.serviceName === 'DORIS';
   const isNacos = serviceInfo?.serviceName === 'NACOS';
+  const isGravitino = serviceInfo?.serviceName === 'GRAVITINO';
   const isOtelCollector = serviceInfo?.serviceName === 'OTELCOLLECTOR';
   const hasPrimaryMonitor =
-    isApisix || isValkey || isDS || isDoris || isNacos || isOtelCollector;
+    isApisix ||
+    isValkey ||
+    isDS ||
+    isDoris ||
+    isNacos ||
+    isGravitino ||
+    isOtelCollector;
   if (hasPrimaryMonitor) {
     let primaryMonitor: React.ReactNode = null;
     if (isApisix) {
@@ -197,6 +205,10 @@ const ServiceInstance: React.FC = () => {
       primaryMonitor = <DorisDashboard clusterId={numericClusterId} embedded />;
     } else if (isNacos) {
       primaryMonitor = <NacosDashboard clusterId={numericClusterId} embedded />;
+    } else if (isGravitino) {
+      primaryMonitor = (
+        <GravitinoDashboard clusterId={numericClusterId} embedded />
+      );
     } else if (isOtelCollector) {
       primaryMonitor = <MonitorTab clusterId={numericClusterId} embedded />;
     }
