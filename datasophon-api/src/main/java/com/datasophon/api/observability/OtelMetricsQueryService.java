@@ -82,7 +82,7 @@ public class OtelMetricsQueryService {
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
                     "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id",
-                    "job_id", "task_id", "subtask_index", "operator_name");
+                    "job_id", "task_id", "subtask_index", "operator_name", "operation");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
@@ -93,7 +93,10 @@ public class OtelMetricsQueryService {
                     // Flink：同一个 job_id 下每个算子/subtask 是一条独立序列。不列在这里的话，
                     // instant 查询的 PARTITION BY 会把它们并成一条，ROW_NUMBER 只留最新的一行——
                     // 一个作业几十个算子最终只算进一个，而且取到哪个纯看采样先后。
-                    "operator_name", "task_id", "subtask_index");
+                    "operator_name", "task_id", "subtask_index",
+                    // Gravitino：HTTP 指标按 operation（create-catalog/list-schema 等，共 125 个取值）
+                    // 区分不同 API。同理，不列在这里的话 instant 查询会把 125 个 operation 并成一条。
+                    "operation");
 
     static final List<String> LABEL_ATTR_KEYS = List.of("vol_name", "mp", "method", "cmd", "db");
 

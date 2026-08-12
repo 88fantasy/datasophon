@@ -193,6 +193,16 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_includeGravitinoOperationDimension() {
+        // Gravitino HTTP 指标按 operation 属性区分不同 API（create-catalog/list-schema 等），
+        // 需将其加入白名单，监控看板才能按 operation 维度拆分请求速率曲线。
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("operation");
+        String sql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, null, null, List.of("operation"), "otel_metrics_sum");
+        assertThat(sql).contains("attributes['operation']").contains("PARTITION BY instance, job, operation");
+    }
+
+    @Test
     void sparkAppRate_filtersAppIdAndCalculatesPerSeriesBeforeSumming() {
         assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("app_id");
         String sql = OtelMetricsQueryService.buildRangeRateSql(
