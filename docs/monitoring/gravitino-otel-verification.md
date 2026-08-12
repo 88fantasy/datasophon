@@ -63,7 +63,7 @@ Gravitino 的 Prometheus 指标抓取早已打通，本次只是新增查询/面
 | G05 | JDBC 活跃连接 | gauge `gravitino_relational_store_datasource_active_connections` | |
 | G06 | JVM Heap 使用率 | gauge `jvm_heap_usage`（已是 0~1 比值） | % |
 | G07 | HTTP 响应速率（按状态类） | sum `gravitino_server_{1..5}xx_responses_total`，rate 1m | 5 条曲线 |
-| G08 | Top 操作请求速率 | sum `gravitino_server_2xx_responses_total`，按 `operation` 属性分组，rate 1m | 依赖后端 operation 白名单改动 |
+| G08 | Top 操作请求速率 | sum `gravitino_server_2xx_responses_total`，按 `operation` 属性分组，rate 1m | 后端返回完整 operation 序列，前端按当前时间范围累计速率展示 Top 10 |
 | G09 | 错误请求速率（按操作） | sum `gravitino_server_{4,5}xx_responses_total`，按 `operation` 分组，rate 1m | 依赖后端 operation 白名单改动 |
 | G10 | HTTP 请求延迟 p99（按操作） | summary `gravitino_server_http_request_duration_seconds`，quantile 0.99，按 `operation` 分组 | 见 §6，最终改为单一分位数 + groupBy，与 G08/G09 视觉语言一致 |
 | G11 | Jetty 线程数 | gauge busy/idle/total/max 四条 | |
@@ -73,8 +73,8 @@ Gravitino 的 Prometheus 指标抓取早已打通，本次只是新增查询/面
 | G15 | 实体存储失败速率 | 同上两个指标的 `_failure_total` 后缀 | |
 | G16 | 后台清理任务速率 | sum `..._deleteTableMetasByLegacyTimeline_success_total` / `..._deleteFilesetVersionsByRetentionCount_success_total`，rate 1m | |
 | G17 | JVM 堆内存 | gauge `jvm_heap_used`/`_committed`/`_max` | |
-| G18 | GC 频率 | gauge `jvm_G1_{Young,Old}_Generation_count`，rate 1m | |
-| G19 | GC 耗时 | gauge `jvm_G1_{Young,Old}_Generation_time`，rate 1m | |
+| G18 | GC 频率 | gauge `jvm_G1_{Young,Old}_Generation_count`，rate 1m | 页面单位为 collections/s |
+| G19 | GC 耗时 | gauge `jvm_G1_{Young,Old}_Generation_time`，rate 1m | 页面单位为 ms/s |
 | G20 | 非堆与直接内存 | gauge `jvm_non_heap_used`/`jvm_pools_Metaspace_used`/`jvm_direct_used` | |
 
 **明确不做的面板及原因**：
@@ -134,7 +134,10 @@ Jetty 线程占用率 2.8%、排队请求数 0、JDBC 活跃连接数 0、JVM He
 
 - 直接调用 G08 背后接口（`gravitino_server_2xx_responses_total`，`groupBy=operation`）：返回
   **125 条独立 series**，每条 `metric.operation` 各不相同，与端点实测的 125 个 operation 取值精确吻合。
-- 页面 G08/G09 图表正确渲染出按 operation 拆分的多条曲线。
+- 原现场验证确认 G08/G09 能按 operation 拆分曲线；后续代码审查发现 G08 的“Top”语义未落实，已改为按当前
+  时间范围累计速率稳定筛选 Top 10，避免把 125 条曲线和图例同时塞进单个面板。该 Top 10 展示修复已通过
+  前端单元测试、类型检查和生产构建，尚未重新部署到 ddh-01 做页面复验；G09 继续保留错误 operation 的完整
+  分组序列，便于定位低频错误。
 
 ### 7.4 延迟面板复测结果（G10）
 

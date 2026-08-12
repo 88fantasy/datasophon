@@ -23,6 +23,7 @@
 import type { DorisPanelDescriptor } from '../_shared/dorisService';
 
 export const GRAVITINO_JOB_FILTER = '^GravitinoServer$';
+export const GRAVITINO_QUEUED_REQUEST_THRESHOLDS: [number, number] = [1, 1];
 
 export const ALL_PANEL_IDS = Array.from(
   { length: 20 },
@@ -154,7 +155,10 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
     queries: [
       { label: 'Busy', metric: 'gravitino_server_http_server_busy_thread_num' },
       { label: 'Idle', metric: 'gravitino_server_http_server_idle_thread_num' },
-      { label: 'Total', metric: 'gravitino_server_http_server_total_thread_num' },
+      {
+        label: 'Total',
+        metric: 'gravitino_server_http_server_total_thread_num',
+      },
       { label: 'Max', metric: 'gravitino_server_http_server_max_thread_num' },
     ],
   },
@@ -205,7 +209,8 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
       },
       {
         label: 'Get Metalake',
-        metric: 'gravitino_relational_store_getMetalakeByIdentifier_success_total',
+        metric:
+          'gravitino_relational_store_getMetalakeByIdentifier_success_total',
         table: 'sum',
         rate: '1m',
       },
@@ -222,7 +227,8 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
       },
       {
         label: 'Get Metalake',
-        metric: 'gravitino_relational_store_getMetalakeByIdentifier_failure_total',
+        metric:
+          'gravitino_relational_store_getMetalakeByIdentifier_failure_total',
         table: 'sum',
         rate: '1m',
       },

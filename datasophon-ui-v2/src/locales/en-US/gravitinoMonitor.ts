@@ -1,6 +1,10 @@
 export default {
   'pages.gravitinoMonitor.title': 'Gravitino Monitor Dashboard',
   'pages.gravitinoMonitor.toolbar.instance': 'Gravitino Instance',
+  'pages.gravitinoMonitor.partialLoad.title':
+    'Some monitoring panels failed to load',
+  'pages.gravitinoMonitor.partialLoad.description':
+    'Unavailable panels: {panels}. Their values are shown as unavailable; other panels remain usable.',
   'pages.gravitinoMonitor.panel.G01': 'Gravitino Nodes',
   'pages.gravitinoMonitor.panel.G02': 'Current HTTP QPS',
   'pages.gravitinoMonitor.panel.G03': 'Jetty Thread Utilization',

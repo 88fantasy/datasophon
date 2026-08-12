@@ -1,6 +1,9 @@
 export default {
   'pages.gravitinoMonitor.title': 'Gravitino 监控看板',
   'pages.gravitinoMonitor.toolbar.instance': 'Gravitino 实例',
+  'pages.gravitinoMonitor.partialLoad.title': '部分监控面板加载失败',
+  'pages.gravitinoMonitor.partialLoad.description':
+    '不可用面板：{panels}。失败面板显示为无数据，其余面板仍可使用。',
   'pages.gravitinoMonitor.panel.G01': 'Gravitino 节点数',
   'pages.gravitinoMonitor.panel.G02': '当前 HTTP QPS',
   'pages.gravitinoMonitor.panel.G03': 'Jetty 线程占用率',

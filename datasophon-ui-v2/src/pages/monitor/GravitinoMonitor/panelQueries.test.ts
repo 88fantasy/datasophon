@@ -24,6 +24,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_PANEL_IDS,
   GRAVITINO_JOB_FILTER,
+  GRAVITINO_QUEUED_REQUEST_THRESHOLDS,
   PANEL_QUERIES,
 } from './panelQueries';
 
@@ -74,5 +75,9 @@ describe('GravitinoMonitor panel queries', () => {
       metric: 'jvm_heap_usage',
     });
     expect(PANEL_QUERIES.G06).not.toHaveProperty('denominatorMetric');
+  });
+
+  it('marks every positive queued request count as critical', () => {
+    expect(GRAVITINO_QUEUED_REQUEST_THRESHOLDS).toEqual([1, 1]);
   });
 });

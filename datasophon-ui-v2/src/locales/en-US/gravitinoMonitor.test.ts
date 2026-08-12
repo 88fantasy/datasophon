@@ -6,6 +6,8 @@ describe('en-US Gravitino monitor locale', () => {
     const requiredKeys = [
       'pages.gravitinoMonitor.title',
       'pages.gravitinoMonitor.toolbar.instance',
+      'pages.gravitinoMonitor.partialLoad.title',
+      'pages.gravitinoMonitor.partialLoad.description',
       ...Array.from(
         { length: 20 },
         (_, index) =>

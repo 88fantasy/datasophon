@@ -84,12 +84,12 @@
   },
   {
     "title": "Top 操作请求速率",
-    "promql": ["sum by (operation) (rate(gravitino_server_2xx_responses_total[1m]))"],
+    "promql": ["topk(10, sum by (operation) (rate(gravitino_server_2xx_responses_total[1m])))"],
     "unit": "rps",
     "chartType": "timeseries",
     "thresholds": null,
     "legend": "operation",
-    "note": "[G08｜HTTP 流量] 依赖后端 operation 属性白名单改动（当前并行子任务，尚未合并）；改动前该维度不可查询"
+    "note": "[G08｜HTTP 流量] 后端按 operation 返回完整序列，前端按当前时间范围累计速率稳定选取 Top 10"
   },
   {
     "title": "错误请求速率（按操作）",
@@ -127,7 +127,7 @@
     "promql": [
       "gravitino_server_http_server_busy_thread_num",
       "gravitino_server_http_server_idle_thread_num",
-      "gravitino_server_http_server_thread_num",
+      "gravitino_server_http_server_total_thread_num",
       "gravitino_server_http_server_max_thread_num"
     ],
     "unit": "short",
@@ -142,7 +142,7 @@
       "total": false,
       "values": true
     },
-    "note": "[G11｜Jetty/连接池] busy/max 后缀已实测确认；idle/current 后缀按同一命名模式推断，集成阶段需现场核对实际指标名"
+    "note": "[G11｜Jetty/连接池] busy/idle/total/max 四个指标均按现场验证后的实际名称配置"
   },
   {
     "title": "健康探针响应速率",
@@ -288,7 +288,7 @@
       "rate(jvm_G1_Young_Generation_time[1m])",
       "rate(jvm_G1_Old_Generation_time[1m])"
     ],
-    "unit": "s",
+    "unit": "ms/s",
     "chartType": "timeseries",
     "thresholds": [],
     "legend": {
@@ -300,7 +300,7 @@
       "total": false,
       "values": false
     },
-    "note": "[G19｜JVM]"
+    "note": "[G19｜JVM] GC 累计耗时的每秒速率，页面显示为 ms/s"
   },
   {
     "title": "非堆与直接内存",

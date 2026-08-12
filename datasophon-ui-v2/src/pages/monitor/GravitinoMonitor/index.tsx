@@ -21,7 +21,7 @@
  */
 
 import { useIntl } from '@umijs/max';
-import { Row } from 'antd';
+import { Alert, Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import { CHART_COLORS, colorByThreshold } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
@@ -31,12 +31,19 @@ import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import PanelCol from '../_shared/PanelCol';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
+import {
+  gcCollectionRateFormatter,
+  gcTimeRateFormatter,
+  requestRateFormatter,
+} from './formatters';
 import { useGravitinoDashboard } from './hooks/useGravitinoDashboard';
-import { GRAVITINO_JOB_FILTER } from './panelQueries';
+import {
+  GRAVITINO_JOB_FILTER,
+  GRAVITINO_QUEUED_REQUEST_THRESHOLDS,
+} from './panelQueries';
 import GravitinoDashboardToolbar from './toolbar/GravitinoDashboardToolbar';
 
 const countFormatter = (value: number) => value.toFixed(0);
-const rateFormatter = (value: number) => `${value.toFixed(2)} req/s`;
 const millisecondFormatter = (value: number) => `${value.toFixed(2)} ms`;
 const percentFormatter = (value: number) => `${value.toFixed(1)}%`;
 const bytesFormatter = (value: number) => {
@@ -145,12 +152,13 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
     setRefreshKey((key) => key + 1);
   }, []);
 
-  const { instant, series, instances, loading } = useGravitinoDashboard({
-    instance,
-    timeRange,
-    clusterId,
-    refreshKey,
-  });
+  const { instant, series, instances, loading, failedPanelIds } =
+    useGravitinoDashboard({
+      instance,
+      timeRange,
+      clusterId,
+      refreshKey,
+    });
 
   return (
     <MonitorDashboardLayout
@@ -171,6 +179,18 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
       meta={`service_name=~"${GRAVITINO_JOB_FILTER}" · instance=~"${instance}" · range=${timeRange}`}
       loading={loading}
     >
+      {failedPanelIds.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          title={t('pages.gravitinoMonitor.partialLoad.title')}
+          description={intl.formatMessage(
+            { id: 'pages.gravitinoMonitor.partialLoad.description' },
+            { panels: failedPanelIds.join(', ') },
+          )}
+          style={{ marginBottom: 16 }}
+        />
+      )}
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={4}>
           <StatPanel
@@ -184,7 +204,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
             title={panelTitle('G02')}
             value={instant.httpQps}
             color={CHART_COLORS.primary}
-            formatter={rateFormatter}
+            formatter={requestRateFormatter}
           />
         </PanelCol>
         <PanelCol span={4}>
@@ -199,7 +219,10 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <StatPanel
             title={panelTitle('G04')}
             value={instant.queuedRequests}
-            color={colorByThreshold(instant.queuedRequests, [10, 50])}
+            color={colorByThreshold(
+              instant.queuedRequests,
+              GRAVITINO_QUEUED_REQUEST_THRESHOLDS,
+            )}
           />
         </PanelCol>
         <PanelCol span={4}>
@@ -224,7 +247,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G07')}
             data={series.G07}
-            yFormatter={rateFormatter}
+            yFormatter={requestRateFormatter}
             colorMap={STATUS_COLORS}
           />
         </PanelCol>
@@ -232,7 +255,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G08')}
             data={series.G08}
-            yFormatter={rateFormatter}
+            yFormatter={requestRateFormatter}
           />
         </PanelCol>
       </Row>
@@ -241,7 +264,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G09')}
             data={series.G09}
-            yFormatter={rateFormatter}
+            yFormatter={requestRateFormatter}
             colorMap={ERROR_STATUS_COLORS}
           />
         </PanelCol>
@@ -268,7 +291,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G12')}
             data={series.G12}
-            yFormatter={rateFormatter}
+            yFormatter={requestRateFormatter}
             colorMap={HEALTH_COLORS}
           />
         </PanelCol>
@@ -287,7 +310,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G14')}
             data={series.G14}
-            yFormatter={rateFormatter}
+            yFormatter={requestRateFormatter}
             colorMap={METADATA_READ_COLORS}
           />
         </PanelCol>
@@ -297,7 +320,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G15')}
             data={series.G15}
-            yFormatter={rateFormatter}
+            yFormatter={requestRateFormatter}
             colorMap={METADATA_READ_COLORS}
           />
         </PanelCol>
@@ -305,7 +328,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G16')}
             data={series.G16}
-            yFormatter={rateFormatter}
+            yFormatter={requestRateFormatter}
             colorMap={CLEANUP_COLORS}
           />
         </PanelCol>
@@ -324,7 +347,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G18')}
             data={series.G18}
-            yFormatter={rateFormatter}
+            yFormatter={gcCollectionRateFormatter}
             colorMap={GC_COLORS}
           />
         </PanelCol>
@@ -334,7 +357,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
           <TimeSeriesPanel
             title={panelTitle('G19')}
             data={series.G19}
-            yFormatter={millisecondFormatter}
+            yFormatter={gcTimeRateFormatter}
             colorMap={GC_COLORS}
           />
         </PanelCol>

@@ -22,7 +22,11 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { latestSeriesValue, useGravitinoDashboard } from './useGravitinoDashboard';
+import {
+  latestSeriesValue,
+  topSeriesByTotalValue,
+  useGravitinoDashboard,
+} from './useGravitinoDashboard';
 
 const mocks = vi.hoisted(() => ({
   fetchDorisLabels: vi.fn(),
@@ -53,6 +57,7 @@ describe('useGravitinoDashboard', () => {
         ],
       },
       loading: false,
+      failedPanelIds: [],
     });
   });
 
@@ -94,5 +99,44 @@ describe('useGravitinoDashboard', () => {
         { time: 1000, value: 0, series: 'two' },
       ]),
     ).toBe(0);
+  });
+
+  it('keeps only the ten busiest operation series', () => {
+    const points = Array.from({ length: 12 }, (_, index) => ({
+      time: 1000,
+      value: index,
+      series: `operation-${String(index).padStart(2, '0')}`,
+    }));
+
+    const top = topSeriesByTotalValue(points, 10);
+    const names = new Set(top.map((point) => point.series));
+
+    expect(names).toHaveLength(10);
+    expect(names).not.toContain('operation-00');
+    expect(names).not.toContain('operation-01');
+    expect(names).toContain('operation-11');
+  });
+
+  it('marks the derived QPS unavailable when its G07 source is incomplete', () => {
+    mocks.useDorisDashboardData.mockReturnValue({
+      instant: {},
+      series: {
+        G07: [{ time: 1000, value: 2, series: '2xx' }],
+      },
+      loading: false,
+      failedPanelIds: ['G07'],
+    });
+
+    const { result } = renderHook(() =>
+      useGravitinoDashboard({
+        instance: '.+',
+        timeRange: '1h',
+        clusterId: 9,
+        refreshKey: 0,
+      }),
+    );
+
+    expect(result.current.instant.httpQps).toBeNaN();
+    expect(result.current.failedPanelIds).toEqual(['G02', 'G07']);
   });
 });

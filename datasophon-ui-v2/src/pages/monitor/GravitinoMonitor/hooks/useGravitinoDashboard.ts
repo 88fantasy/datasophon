@@ -45,6 +45,7 @@ export interface GravitinoDashboardData {
   instances: string[];
   loading: boolean;
   error?: string;
+  failedPanelIds: string[];
 }
 
 export interface UseGravitinoDashboardParams {
@@ -63,6 +64,29 @@ export function latestSeriesValue(points: TimeSeriesPoint[]): number {
   return points
     .filter((point) => point.time === latestTime)
     .reduce((sum, point) => sum + point.value, 0);
+}
+
+/** 按当前时间范围内的累计速率选出最活跃的 series。 */
+export function topSeriesByTotalValue(
+  points: TimeSeriesPoint[],
+  limit: number,
+): TimeSeriesPoint[] {
+  const totals = new Map<string, number>();
+  for (const point of points) {
+    if (!Number.isFinite(point.value)) continue;
+    totals.set(point.series, (totals.get(point.series) ?? 0) + point.value);
+  }
+  const topSeries = new Set(
+    [...totals.entries()]
+      .sort(([leftName, leftValue], [rightName, rightValue]) =>
+        rightValue === leftValue
+          ? leftName.localeCompare(rightName)
+          : rightValue - leftValue,
+      )
+      .slice(0, Math.max(0, limit))
+      .map(([series]) => series),
+  );
+  return points.filter((point) => topSeries.has(point.series));
 }
 
 export function useGravitinoDashboard({
@@ -96,6 +120,10 @@ export function useGravitinoDashboard({
     clusterId,
     refreshKey,
   });
+  const failedPanelIds = new Set(data.failedPanelIds);
+  if (failedPanelIds.has('G07')) {
+    failedPanelIds.add('G02');
+  }
 
   return {
     instant: {
@@ -104,11 +132,17 @@ export function useGravitinoDashboard({
       queuedRequests: data.instant.G04 ?? Number.NaN,
       activeConnections: data.instant.G05 ?? Number.NaN,
       heapUsage: data.instant.G06 ?? Number.NaN,
-      httpQps: latestSeriesValue(data.series.G07 ?? []),
+      httpQps: failedPanelIds.has('G02')
+        ? Number.NaN
+        : latestSeriesValue(data.series.G07 ?? []),
     },
-    series: data.series,
+    series: {
+      ...data.series,
+      G08: topSeriesByTotalValue(data.series.G08 ?? [], 10),
+    },
     instances,
     loading: data.loading,
     error: data.error,
+    failedPanelIds: [...failedPanelIds].sort(),
   };
 }
