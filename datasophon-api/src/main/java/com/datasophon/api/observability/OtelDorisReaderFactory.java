@@ -84,7 +84,11 @@ public class OtelDorisReaderFactory {
         List<ClusterServiceRoleInstanceEntity> fes = roleService
                 .getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, "DorisFE")
                 .stream()
-                .filter(r -> ServiceRoleState.RUNNING.equals(r.getServiceRoleState()))
+                // EXISTS_ALARM 仍是可查询的活跃 FE（只是挂了一条告警规则），只有 STOP/DECOMMISSIONING/
+                // DECOMMISSIONED 才代表进程真的不可用；此前只放行 RUNNING 导致任意一次告警（哪怕是
+                // Doris 查询错误率刚好越过阈值的边缘毛刺）就会让全平台 OTel-Doris 查询链路全部 500。
+                .filter(r -> ServiceRoleState.RUNNING.equals(r.getServiceRoleState())
+                        || ServiceRoleState.EXISTS_ALARM.equals(r.getServiceRoleState()))
                 .toList();
         if (fes.isEmpty()) {
             throw new IllegalStateException("No running DorisFE for cluster " + clusterId);

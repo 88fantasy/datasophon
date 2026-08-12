@@ -23,11 +23,17 @@
 package com.datasophon.api.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -36,6 +42,41 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.zaxxer.hikari.HikariDataSource;
 
 class OtelDorisReaderFactoryTest {
+
+    @Test
+    void treatsDorisFeWithActiveAlarmAsUsable() {
+        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
+        ClusterVariableService variableService = mock(ClusterVariableService.class);
+        when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
+                .thenReturn(List.of(role("ddh-01", ServiceRoleState.EXISTS_ALARM)));
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                roleService, variableService, new OtelCredentialService(variableService));
+
+        factory.create(7);
+
+        assertThat(factory.poolSizeForTest()).isEqualTo(1);
+    }
+
+    @Test
+    void rejectsClusterWithNoUsableDorisFe() {
+        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
+        ClusterVariableService variableService = mock(ClusterVariableService.class);
+        when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
+                .thenReturn(List.of(role("ddh-01", ServiceRoleState.STOP)));
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                roleService, variableService, new OtelCredentialService(variableService));
+
+        assertThatThrownBy(() -> factory.create(7))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No running DorisFE for cluster 7");
+    }
+
+    private static ClusterServiceRoleInstanceEntity role(String hostname, ServiceRoleState state) {
+        ClusterServiceRoleInstanceEntity role = new ClusterServiceRoleInstanceEntity();
+        role.setHostname(hostname);
+        role.setServiceRoleState(state);
+        return role;
+    }
 
     @Test
     void reusesPoolForSameConnectionSettings() {
