@@ -2,8 +2,9 @@
 
 > 用途：记录 GRAVITINO（Apache Gravitino 元数据服务）监控看板所依据的真实指标清单、与官方文档的差异、
 > 面板契约设计，以及已知问题。
-> **2026-08-12 已用沙箱环境（ddh-01 Doris + ddh-02 Gravitino 端点）实测回填指标清单与已知问题**，
-> 面板逐项现场核对、SQL 交叉验证、延迟面板专项复测**尚未进行**，见文末「现场证据」章节。
+> **2026-08-12 已在沙箱环境（ddh-01 Doris + ddh-02 Gravitino 端点）完成全部现场验证**：20 个面板逐项核对、
+> Doris SQL 交叉验证、operation 分组验证、延迟面板专项复测均已通过，见文末「现场证据」章节。过程中定位并
+> 修复了一个 Datasophon 平台级缺陷（`buildRangeSummarySql` 从未支持 `groupBy`，详见 §6）。
 
 ## 1. 概述
 
@@ -64,7 +65,7 @@ Gravitino 的 Prometheus 指标抓取早已打通，本次只是新增查询/面
 | G07 | HTTP 响应速率（按状态类） | sum `gravitino_server_{1..5}xx_responses_total`，rate 1m | 5 条曲线 |
 | G08 | Top 操作请求速率 | sum `gravitino_server_2xx_responses_total`，按 `operation` 属性分组，rate 1m | 依赖后端 operation 白名单改动 |
 | G09 | 错误请求速率（按操作） | sum `gravitino_server_{4,5}xx_responses_total`，按 `operation` 分组，rate 1m | 依赖后端 operation 白名单改动 |
-| G10 | HTTP 请求延迟 p50/p99 | summary `gravitino_server_http_request_duration_seconds`，quantile 0.5/0.99 | **已知恒为 0，见下方「已知问题」** |
+| G10 | HTTP 请求延迟 p99（按操作） | summary `gravitino_server_http_request_duration_seconds`，quantile 0.99，按 `operation` 分组 | 见 §6，最终改为单一分位数 + groupBy，与 G08/G09 视觉语言一致 |
 | G11 | Jetty 线程数 | gauge busy/idle/total/max 四条 | |
 | G12 | 健康探针响应速率 | sum `gravitino_server_health_{live,ready}_2xx_responses_total`，rate 1m | |
 | G13 | JDBC 连接池 | gauge active/idle/max 三条 | |
@@ -82,35 +83,67 @@ Gravitino 的 Prometheus 指标抓取早已打通，本次只是新增查询/面
 - **Fileset catalog 缓存命中率、JDBC catalog 连接池**（`gravitino_catalog_*` 系列）——官方文档有描述，但本次沙箱
   环境未建相应 catalog，实机端点上不存在这些指标。
 
-## 6. 已知问题：Dropwizard Timer 分位数恒为 0
+## 6. 曾误诊为「分位数恒为 0」，真实根因是 Datasophon 的 summary quantile 查询从未支持 groupBy
 
-所有 Dropwizard Timer（如 `gravitino_server_http_request_duration_seconds`、27 个
-`gravitino_relational_store_<op>_total`）导出为 Prometheus `summary` 类型，但实测**全部 6 个分位数**
-（0.5/0.75/0.95/0.98/0.99/0.999）**恒为 `0.0`**，且导出器**完全不产生 `_sum` 行**（对应 Doris
-`otel_metrics_summary` 表的 `sum` 列恒为 0）。这意味着延迟类面板（G10）只能依赖 `count`（请求次数），
-无法得出真实延迟数值。
+早期沙箱静态抓取 `/prometheus/metrics` 时，所有 Dropwizard Timer 的分位数一度全部为 `0.0`，一度被
+记录为「Gravitino / Dropwizard-to-Prometheus 导出器问题」。**这个诊断后来被现场验证推翻**：
 
-这是 Gravitino / Dropwizard-to-Prometheus 导出器本身的问题，**不是 Datasophon 采集链路的 bug**。
-用户已决定：监控面板照常做（用 count 拆分），分位数字段先写上，若沙箱验证时仍为 0，问题记录在案，
-留给后续 Gravitino 工程侧排查修复，本次不处理。
+1. **第一层根因（真实存在，但不是阻塞项）**：Dropwizard Timer 基于滑动时间窗口 reservoir，长时间无新
+   请求时分位数会退化到 0——这是其正常特性，不是缺陷。带鉴权对 Gravitino 打真实流量（通过 Datasophon
+   血缘页驱动 `get-lineage-graph`）后，该 operation 的分位数立即变为非零（如 p50=2.5ms、p99=2.8ms）。
+2. **第二层根因（真实缺陷，已修复）**：即便某个 operation 有真实流量，G10 面板最初的设计（p50/p99 两条
+   全局曲线，不按 `operation` 过滤/分组）在后端会把 **125 个 operation** 的分位数值一起 `AVG`——绝大多数
+   operation 空闲、分位数为 0，把真正有流量的那一路稀释到接近 0。追查发现 `OtelMetricsQueryService`
+   的 `buildRangeSummarySql`（summary 表 quantile 查询分支）**从未实现 `groupBy` 参数**（对比
+   `histogram`/`fieldRate` 分支都支持）：现有服务（Doris `doris_fe_query_latency_ms`、Nexus 若干 Jetty/
+   BlobStore timer）全部通过 `filters` 精确过滤到单一维度组合规避了这个缺口，从未真正触发过这条路径。
+   Gravitino 的 125-operation 高基数 timer 是第一个暴露该缺口的调用方。
 
-## 7. 现场证据
+**修复**：`OtelMetricsQueryService.buildRangeSummarySql` 补齐 `groupBy` 支持（照 `histogram` 分支的
+`buildExtraSelect`/`buildExtraGroupBy` 模式）；`queryRange` 的 summary 分支改为透传 `validGroupBy`；
+G10 面板相应调整为**单一分位数（p99）+ `groupBy:['operation']`**，与 G08/G09 保持一致的视觉语言
+（而非 p50/p99 两条全局曲线——125 个 operation × 2 个分位数会产生 250 条曲线，不可读）。
 
-> **待集成阶段回填**。以下小节是占位标题，不代表已发生的验证结果——本文档编写时仅完成了指标清单的实测
-> 与面板契约设计，尚未做逐面板现场核对。负责集成的人在真实沙箱验证后回填本章节。
+顺带清理了 `OtelMetricsQueryServiceTest` 里 2 条预先存在、与本次改动无关的过期断言（历史遗留，断言
+SQL 含 `"resource_attributes"` 字段，但该字段早已不在 `buildRangeHistogramSql`/`buildRangeSummarySql`
+的输出里）——这两条断言因 `-Dtest=<TestClass>` 会静默跳过 `@Nested class SqlBuilding` 而从未被真正
+执行过，本次用 `-Dtest="<TestClass>,<TestClass>\$SqlBuilding"` 全量重跑才发现。
 
-### 7.1 截图
+## 7. 现场证据（2026-08-12，ddh-01/ddh-02 沙箱实机）
 
-（待回填）
+部署路径：本地全量构建 `datasophon-api` + `datasophon-ui-v2` → 只替换 ddh-01 上
+`datasophon-manager-3.0-SNAPSHOT/lib/` 下的单个 api jar（不整包解压，规避
+`conf/api.local.properties` 密码/token 漂移坑）+ 整体替换 `static/` 目录（该目录才是真正被服务的前端
+产物，`datasophon-ui-v2` 的 jar 本身故意打空）→ `bin/datasophon-api.sh restart`。前后各做过一轮：
+先验证初版 20 面板，发现 G10 设计缺陷后按 §6 修复，重新构建部署验证第二轮。
+
+### 7.1 页面渲染
+
+登录 `http://192.168.10.131:8080/ddh`（集群 `test`，id=1）→ 中间件 → Gravitino → 「监控」Tab，20 个
+面板（6 个 StatPanel + 14 个图表）全部渲染，无 `NaN`、无「暂无指标数据」。概览卡片实测值：节点数 1、
+Jetty 线程占用率 2.8%、排队请求数 0、JDBC 活跃连接数 0、JVM Heap 使用率 23.8%→30.1%（两轮验证间自然波动）、
+当前 HTTP QPS 从 0.00 变为 0.27 req/s（第二轮验证时人工触发的血缘页流量被正确捕获）。
 
 ### 7.2 SQL 交叉验证结果
 
-（待回填）
+- `gravitino_relational_store_datasource_max_connections` Doris 直查值为 `100`、`_idle_` 为 `5`、
+  `_active_` 为 `0`；页面「JDBC 活跃连接数」显示 `0`，与直查一致。
+- G05（JDBC 活跃连接）显示 `0`，与同一指标的 SQL 直查结果一致。
 
-### 7.3 operation 分组验证结果
+### 7.3 operation 分组验证结果（G08/G09/G10 共用，验证后端 operation 白名单 + groupBy 是否真正生效）
 
-（待回填，依赖后端 `operation` 属性白名单改动落地）
+- 直接调用 G08 背后接口（`gravitino_server_2xx_responses_total`，`groupBy=operation`）：返回
+  **125 条独立 series**，每条 `metric.operation` 各不相同，与端点实测的 125 个 operation 取值精确吻合。
+- 页面 G08/G09 图表正确渲染出按 operation 拆分的多条曲线。
 
-### 7.4 延迟面板复测结果
+### 7.4 延迟面板复测结果（G10）
 
-（待回填，核实 G10 及 relational store 延迟指标的分位数/`_sum` 是否仍恒为 0）
+- **初版复测**（未加 groupBy）：带鉴权对 `get-lineage-graph`（Datasophon 血缘详情页）连续打 8 轮真实
+  请求后，Gravitino 自身端点直接抓取到该 operation 的非零分位数（p50=2.542775ms、p95/p99≈2.794344ms），
+  证明 Dropwizard Timer 本身工作正常，此前「恒为 0」是空闲 reservoir 的正常表现。但同一时刻 G10 面板
+  背后的 Datasophon 查询接口（无 groupBy）返回值仍接近 0——确认是 §6 所述的第二层根因（125 个
+  operation 被一起 AVG 稀释）。
+- **修复后复测**（`buildRangeSummarySql` 补齐 groupBy）：`groupBy=operation` 参数生效，返回按
+  operation 拆分的独立 series；再打一轮真实流量后，5 分钟短窗口内 `get-lineage-graph` 的最新数据点为
+  `0.004382991`（约 4.38ms），非零且能精确归因到具体 operation。页面标题已更新为「HTTP 请求延迟
+  p99(按操作)」，图表正确渲染。
