@@ -56,15 +56,16 @@ describe('GravitinoMonitor panel queries', () => {
     }
   });
 
-  it('reads HTTP request latency quantiles from the summary table', () => {
+  it('reads HTTP request latency p99 from the summary table, grouped by operation', () => {
     const latency = PANEL_QUERIES.G10;
     expect(latency.type).toBe('multi-range');
     if (latency.type !== 'multi-range') return;
     for (const query of latency.queries) {
       expect(query.table).toBe('summary');
       expect(query.field).toBe('quantile');
+      expect(query.groupBy).toEqual(['operation']);
     }
-    expect(latency.queries.map((q) => q.quantile)).toEqual([0.5, 0.99]);
+    expect(latency.queries.map((q) => q.quantile)).toEqual([0.99]);
   });
 
   it('reads JVM heap usage directly from jvm_heap_usage without a client-side ratio', () => {

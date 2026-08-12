@@ -130,17 +130,12 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
       },
     ],
   },
+  // 按 operation 分组展示 p99（而非 p50+p99 两条全局曲线）：Gravitino 单个 timer 下有 125 个
+  // operation，若不分组，summary quantile 查询会把绝大多数空闲 operation 的 0 值和真正有流量
+  // 的那一路一起 AVG，稀释成接近 0；与 G08/G09 保持同一视觉语言（单一分位数 + groupBy）。
   G10: {
     type: 'multi-range',
     queries: [
-      {
-        label: 'p50',
-        metric: 'gravitino_server_http_request_duration_seconds',
-        table: 'summary',
-        field: 'quantile',
-        quantile: 0.5,
-        scale: 1000,
-      },
       {
         label: 'p99',
         metric: 'gravitino_server_http_request_duration_seconds',
@@ -148,6 +143,7 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
         field: 'quantile',
         quantile: 0.99,
         scale: 1000,
+        groupBy: ['operation'],
       },
     ],
   },

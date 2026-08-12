@@ -346,7 +346,26 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":start");
             assertThat(sql).contains(":end");
             assertThat(sql).containsIgnoringCase("BETWEEN FROM_UNIXTIME");
-            assertThat(sql).contains("resource_attributes");
+        }
+
+        @Test
+        void rangeSummary_withGroupBy_addsAttributeColumnToSelectAndGroupBy() {
+            // Gravitino gravitino_server_http_request_duration_seconds 下有 125 个 operation 取值，
+            // 不分组时 AVG 会把绝大多数空闲 operation 的 0 值和真正有流量的那一路混在一起，稀释成
+            // 接近 0——此前所有调用方都是靠 filters 精确过滤到单一维度组合规避这个缺口，从未真正
+            // 触发过这条 groupBy 路径。
+            String sql = OtelMetricsQueryService.buildRangeSummarySql(
+                    false, false, null, null, null, null, List.of("operation"));
+            assertThat(sql).contains("CAST(attributes['operation'] AS STRING) AS operation");
+            String groupByClause = sql.substring(sql.indexOf("GROUP BY"));
+            assertThat(groupByClause).contains("CAST(attributes['operation'] AS STRING)");
+        }
+
+        @Test
+        void rangeSummary_withoutGroupBy_matchesNoArgOverload() {
+            String withEmptyList = OtelMetricsQueryService.buildRangeSummarySql(
+                    false, false, null, null, null, null, List.of());
+            assertThat(withEmptyList).isEqualTo(OtelMetricsQueryService.buildRangeSummarySql());
         }
 
         // ── histogram range 分位数 ──
@@ -370,7 +389,6 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":rateWindow");
             assertThat(sql).contains(":quantile");
             assertThat(sql).contains("otel_metrics_histogram");
-            assertThat(sql).contains("resource_attributes");
         }
 
         @Test

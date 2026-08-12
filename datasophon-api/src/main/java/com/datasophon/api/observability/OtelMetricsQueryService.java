@@ -314,7 +314,7 @@ public class OtelMetricsQueryService {
 
         if ("summary".equalsIgnoreCase(table)) {
             String sql = buildRangeSummarySql(needsFilter(instance), needsFilter(job),
-                    filters, filtersNe, filtersRegex, filtersNotRegex);
+                    filters, filtersNe, filtersRegex, filtersNotRegex, validGroupBy);
             JdbcClient.StatementSpec spec = client.sql(sql)
                     .param("metric", metric)
                     .param("start", start)
@@ -568,15 +568,34 @@ public class OtelMetricsQueryService {
     }
 
     static String buildRangeSummarySql() {
-        return buildRangeSummarySql(false, false, null, null, null, null);
+        return buildRangeSummarySql(false, false, null, null, null, null, List.of());
     }
 
     static String buildRangeSummarySql(boolean filterInstance, boolean filterJob,
                                        Map<String, String> filters, Map<String, String> filtersNe,
                                        Map<String, String> filtersRegex, Map<String, String> filtersNotRegex) {
+        return buildRangeSummarySql(filterInstance, filterJob, filters, filtersNe, filtersRegex, filtersNotRegex,
+                List.of());
+    }
+
+    /**
+     * summary quantile range 查询。{@code groupByKeys} 非空时按额外属性维度分组，而不是像此前
+     * 那样把同一 metric 下所有维度组合的 quantile 值笼统 AVG 成一条 series——高基数属性（如
+     * Gravitino 的 {@code operation}，125 个取值）场景下，绝大多数维度组合空闲、分位数为 0，
+     * 会把真正有流量的那一路稀释到接近 0，此前所有调用方都是靠 {@code filters} 精确过滤到单一
+     * 维度组合规避这个缺口，从未真正用到 groupBy（Gravitino HTTP 延迟面板是第一个触发该路径的
+     * 调用方，已用真实沙箱数据复现并验证修复）。
+     */
+    static String buildRangeSummarySql(boolean filterInstance, boolean filterJob,
+                                       Map<String, String> filters, Map<String, String> filtersNe,
+                                       Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                       List<String> groupByKeys) {
+        String extraSelect = buildExtraSelect(groupByKeys);
+        String extraGroupBy = buildExtraGroupBy(groupByKeys);
         StringBuilder sql = new StringBuilder("SELECT " + INST_EXPR + " AS instance,\n"
                 + "       " + JOB_EXPR + " AS job,\n"
-                + "       FLOOR(UNIX_TIMESTAMP(s.timestamp) / :step) * :step AS bucket,\n"
+                + "       FLOOR(UNIX_TIMESTAMP(s.timestamp) / :step) * :step AS bucket"
+                + extraSelect + ",\n"
                 + "       AVG(STRUCT_ELEMENT(qv, 'value')) AS value\n"
                 + "FROM otel.otel_metrics_summary s\n"
                 + "LATERAL VIEW EXPLODE(s.quantile_values) t AS qv\n"
@@ -588,7 +607,7 @@ public class OtelMetricsQueryService {
         sql.append("\n"
                 + "GROUP BY " + INST_EXPR + ",\n"
                 + "         " + JOB_EXPR + ",\n"
-                + "         bucket\n"
+                + "         bucket" + extraGroupBy + "\n"
                 + "ORDER BY instance, job, bucket");
         return sql.toString();
     }

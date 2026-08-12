@@ -10,7 +10,7 @@ export default {
   'pages.gravitinoMonitor.panel.G07': 'HTTP 响应速率(按状态类)',
   'pages.gravitinoMonitor.panel.G08': 'Top 操作请求速率',
   'pages.gravitinoMonitor.panel.G09': '错误请求速率(按操作)',
-  'pages.gravitinoMonitor.panel.G10': 'HTTP 请求延迟 p50/p99',
+  'pages.gravitinoMonitor.panel.G10': 'HTTP 请求延迟 p99(按操作)',
   'pages.gravitinoMonitor.panel.G11': 'Jetty 线程数',
   'pages.gravitinoMonitor.panel.G12': '健康探针响应速率',
   'pages.gravitinoMonitor.panel.G13': 'JDBC 连接池',
