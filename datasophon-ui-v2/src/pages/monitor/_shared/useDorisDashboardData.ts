@@ -49,6 +49,7 @@ export interface DorisDashboardData {
   series: Record<string, TimeSeriesPoint[]>;
   loading: boolean;
   error?: string;
+  failedPanelIds: string[];
 }
 
 const EMPTY_MATRIX: PrometheusMatrix = { resultType: 'matrix', result: [] };
@@ -137,6 +138,7 @@ export function useDorisDashboardData({
     instant: {},
     series: Object.fromEntries(panelIds.map((id) => [id, []])),
     loading: true,
+    failedPanelIds: [],
   });
 
   // 用 ref 持有最新值，避免依赖数组含模块常量导致无限循环
@@ -152,11 +154,17 @@ export function useDorisDashboardData({
           instant: {},
           series: Object.fromEntries(panelIds.map((id) => [id, []])),
           loading: false,
+          failedPanelIds: [],
         });
         return;
       }
 
-      setData((prev) => ({ ...prev, loading: true }));
+      setData((prev) => ({
+        ...prev,
+        loading: true,
+        error: undefined,
+        failedPanelIds: [],
+      }));
       try {
         const rangeSeconds = TIME_RANGE_SECONDS[timeRange] ?? 3600;
         const end = Math.floor(Date.now() / 1000);
@@ -164,6 +172,7 @@ export function useDorisDashboardData({
         const step = Math.max(15, Math.floor(rangeSeconds / 200));
 
         const _descriptors = descriptorsRef.current;
+        const failedPanelIds = new Set<string>();
 
         const instantIds = panelIds.filter(
           (id) => _descriptors[id]?.type === 'instant',
@@ -230,9 +239,13 @@ export function useDorisDashboardData({
               }
 
               const res = await queryDorisInstant(numParams);
-              return [id, res?.data ? vectorToScalar(res.data) : 0] as const;
+              return [
+                id,
+                res?.data ? vectorToScalar(res.data) : Number.NaN,
+              ] as const;
             } catch {
-              return [id, 0] as const;
+              failedPanelIds.add(id);
+              return [id, Number.NaN] as const;
             }
           });
 
@@ -243,9 +256,10 @@ export function useDorisDashboardData({
             if (def.type !== 'node-count') return [id, 0] as const;
             try {
               const res = await fetchDorisNodeCount(def.roleName, clusterId);
-              return [id, res?.data ?? 0] as const;
+              return [id, res?.data ?? Number.NaN] as const;
             } catch {
-              return [id, 0] as const;
+              failedPanelIds.add(id);
+              return [id, Number.NaN] as const;
             }
           });
 
@@ -276,7 +290,8 @@ export function useDorisDashboardData({
                 matrixToLatestScalar(res?.data ?? EMPTY_MATRIX),
               ] as const;
             } catch {
-              return [id, 0] as const;
+              failedPanelIds.add(id);
+              return [id, Number.NaN] as const;
             }
           });
 
@@ -368,6 +383,7 @@ export function useDorisDashboardData({
                   matrix: res?.data ?? EMPTY_MATRIX,
                 };
               } catch {
+                failedPanelIds.add(id);
                 return { label: q.label, matrix: EMPTY_MATRIX };
               }
             }),
@@ -390,6 +406,7 @@ export function useDorisDashboardData({
 
         if (cancelled) return;
 
+        const failedIds = [...failedPanelIds].sort();
         setData({
           instant: Object.fromEntries([
             ...instantResults,
@@ -398,6 +415,7 @@ export function useDorisDashboardData({
           ]),
           series: Object.fromEntries(multiRangeResults),
           loading: false,
+          failedPanelIds: failedIds,
         });
       } catch (err) {
         if (cancelled) return;
@@ -405,6 +423,7 @@ export function useDorisDashboardData({
           ...prev,
           loading: false,
           error: err instanceof Error ? err.message : 'Unknown error',
+          failedPanelIds: [...panelIds],
         }));
       }
     }

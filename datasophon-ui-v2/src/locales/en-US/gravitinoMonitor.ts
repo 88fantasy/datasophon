@@ -1,0 +1,28 @@
+export default {
+  'pages.gravitinoMonitor.title': 'Gravitino Monitor Dashboard',
+  'pages.gravitinoMonitor.toolbar.instance': 'Gravitino Instance',
+  'pages.gravitinoMonitor.partialLoad.title':
+    'Some monitoring panels failed to load',
+  'pages.gravitinoMonitor.partialLoad.description':
+    'Unavailable panels: {panels}. Their values are shown as unavailable; other panels remain usable.',
+  'pages.gravitinoMonitor.panel.G01': 'Gravitino Nodes',
+  'pages.gravitinoMonitor.panel.G02': 'Current HTTP QPS',
+  'pages.gravitinoMonitor.panel.G03': 'Jetty Thread Utilization',
+  'pages.gravitinoMonitor.panel.G04': 'Queued Requests',
+  'pages.gravitinoMonitor.panel.G05': 'JDBC Active Connections',
+  'pages.gravitinoMonitor.panel.G06': 'JVM Heap Usage',
+  'pages.gravitinoMonitor.panel.G07': 'HTTP Response Rate by Status',
+  'pages.gravitinoMonitor.panel.G08': 'Top Operation Request Rate',
+  'pages.gravitinoMonitor.panel.G09': 'Error Request Rate by Operation',
+  'pages.gravitinoMonitor.panel.G10': 'HTTP Request Latency p99 (Top 10 Operations)',
+  'pages.gravitinoMonitor.panel.G11': 'Jetty Thread Pool',
+  'pages.gravitinoMonitor.panel.G12': 'Health Probe Response Rate',
+  'pages.gravitinoMonitor.panel.G13': 'JDBC Connection Pool',
+  'pages.gravitinoMonitor.panel.G14': 'Metadata Read Rate',
+  'pages.gravitinoMonitor.panel.G15': 'Entity Store Failure Rate',
+  'pages.gravitinoMonitor.panel.G16': 'Background Cleanup Task Rate',
+  'pages.gravitinoMonitor.panel.G17': 'JVM Heap Memory',
+  'pages.gravitinoMonitor.panel.G18': 'GC Frequency',
+  'pages.gravitinoMonitor.panel.G19': 'GC Time',
+  'pages.gravitinoMonitor.panel.G20': 'Non-Heap and Direct Memory',
+};

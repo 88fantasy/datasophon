@@ -12,6 +12,7 @@ const {
   dsDashboardSpy,
   dorisDashboardSpy,
   nacosDashboardSpy,
+  gravitinoDashboardSpy,
   otelCollectorMonitorSpy,
   routeParams,
 } = vi.hoisted(() => ({
@@ -21,6 +22,7 @@ const {
   dsDashboardSpy: vi.fn(),
   dorisDashboardSpy: vi.fn(),
   nacosDashboardSpy: vi.fn(),
+  gravitinoDashboardSpy: vi.fn(),
   otelCollectorMonitorSpy: vi.fn(),
   routeParams: { clusterId: '7', instanceId: '9' },
 }));
@@ -87,6 +89,12 @@ vi.mock('@/pages/monitor/NacosMonitor', () => ({
   default: (props: { clusterId: number; embedded?: boolean }) => {
     nacosDashboardSpy(props);
     return <div>Nacos dashboard cluster {props.clusterId}</div>;
+  },
+}));
+vi.mock('@/pages/monitor/GravitinoMonitor', () => ({
+  default: (props: { clusterId: number; embedded?: boolean }) => {
+    gravitinoDashboardSpy(props);
+    return <div>Gravitino dashboard cluster {props.clusterId}</div>;
   },
 }));
 vi.mock('@/pages/monitor/ValkeyMonitor', () => ({
@@ -493,6 +501,46 @@ describe('NACOS service instance tabs', () => {
     );
     await waitFor(() =>
       expect(nacosDashboardSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
+    );
+  });
+});
+
+describe('GRAVITINO service instance tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routeParams.clusterId = '7';
+    routeParams.instanceId = '55';
+    vi.mocked(getServiceInstance).mockResolvedValue({
+      data: {
+        serviceName: 'GRAVITINO',
+        dashboardUrl: 'http://grafana.example/gravitino',
+      },
+    } as never);
+    vi.mocked(getServiceWebUis).mockResolvedValue({ data: [] } as never);
+  });
+
+  it('places monitoring first and opens it with the route cluster id', async () => {
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('Gravitino dashboard cluster 7');
+    const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+
+    expect(tabs).toEqual(['监控', '概览', '实例', '配置']);
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'monitor',
+    );
+    await waitFor(() =>
+      expect(gravitinoDashboardSpy).toHaveBeenCalledWith({
         clusterId: 7,
         embedded: true,
       }),

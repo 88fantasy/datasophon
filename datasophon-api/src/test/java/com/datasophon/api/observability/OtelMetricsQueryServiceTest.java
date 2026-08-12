@@ -193,6 +193,16 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_includeGravitinoOperationDimension() {
+        // Gravitino HTTP 指标按 operation 属性区分不同 API（create-catalog/list-schema 等），
+        // 需将其加入白名单，监控看板才能按 operation 维度拆分请求速率曲线。
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("operation");
+        String sql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, null, null, List.of("operation"), "otel_metrics_sum");
+        assertThat(sql).contains("attributes['operation']").contains("PARTITION BY instance, job, operation");
+    }
+
+    @Test
     void sparkAppRate_filtersAppIdAndCalculatesPerSeriesBeforeSumming() {
         assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).contains("app_id");
         String sql = OtelMetricsQueryService.buildRangeRateSql(
@@ -336,7 +346,26 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":start");
             assertThat(sql).contains(":end");
             assertThat(sql).containsIgnoringCase("BETWEEN FROM_UNIXTIME");
-            assertThat(sql).contains("resource_attributes");
+        }
+
+        @Test
+        void rangeSummary_withGroupBy_addsAttributeColumnToSelectAndGroupBy() {
+            // Gravitino gravitino_server_http_request_duration_seconds 下有 125 个 operation 取值，
+            // 不分组时 AVG 会把绝大多数空闲 operation 的 0 值和真正有流量的那一路混在一起，稀释成
+            // 接近 0——此前所有调用方都是靠 filters 精确过滤到单一维度组合规避这个缺口，从未真正
+            // 触发过这条 groupBy 路径。
+            String sql = OtelMetricsQueryService.buildRangeSummarySql(
+                    false, false, null, null, null, null, List.of("operation"));
+            assertThat(sql).contains("CAST(attributes['operation'] AS STRING) AS operation");
+            String groupByClause = sql.substring(sql.indexOf("GROUP BY"));
+            assertThat(groupByClause).contains("CAST(attributes['operation'] AS STRING)");
+        }
+
+        @Test
+        void rangeSummary_withoutGroupBy_matchesNoArgOverload() {
+            String withEmptyList = OtelMetricsQueryService.buildRangeSummarySql(
+                    false, false, null, null, null, null, List.of());
+            assertThat(withEmptyList).isEqualTo(OtelMetricsQueryService.buildRangeSummarySql());
         }
 
         // ── histogram range 分位数 ──
@@ -360,7 +389,6 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":rateWindow");
             assertThat(sql).contains(":quantile");
             assertThat(sql).contains("otel_metrics_histogram");
-            assertThat(sql).contains("resource_attributes");
         }
 
         @Test
