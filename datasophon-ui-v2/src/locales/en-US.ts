@@ -5,6 +5,7 @@ import component from './en-US/component';
 import dolphinSchedulerMonitor from './en-US/dolphinSchedulerMonitor';
 import dorisMonitor from './en-US/dorisMonitor';
 import globalHeader from './en-US/globalHeader';
+import gravitinoMonitor from './en-US/gravitinoMonitor';
 import juicefsMonitor from './en-US/juicefsMonitor';
 import additionalMonitor from './en-US/additionalMonitor';
 import lineage from './en-US/lineage';
@@ -38,6 +39,7 @@ export default {
   ...dolphinSchedulerMonitor,
   ...dorisMonitor,
   ...nacosMonitor,
+  ...gravitinoMonitor,
   ...nginxMonitor,
   ...valkeyMonitor,
   ...apisixMonitor,
