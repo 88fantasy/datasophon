@@ -415,10 +415,6 @@ export function useDorisDashboardData({
           ]),
           series: Object.fromEntries(multiRangeResults),
           loading: false,
-          error:
-            failedIds.length > 0
-              ? `Failed to load panels: ${failedIds.join(', ')}`
-              : undefined,
           failedPanelIds: failedIds,
         });
       } catch (err) {

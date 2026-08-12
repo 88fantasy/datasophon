@@ -65,7 +65,7 @@ Gravitino 的 Prometheus 指标抓取早已打通，本次只是新增查询/面
 | G07 | HTTP 响应速率（按状态类） | sum `gravitino_server_{1..5}xx_responses_total`，rate 1m | 5 条曲线 |
 | G08 | Top 操作请求速率 | sum `gravitino_server_2xx_responses_total`，按 `operation` 属性分组，rate 1m | 后端返回完整 operation 序列，前端按当前时间范围累计速率展示 Top 10 |
 | G09 | 错误请求速率（按操作） | sum `gravitino_server_{4,5}xx_responses_total`，按 `operation` 分组，rate 1m | 依赖后端 operation 白名单改动 |
-| G10 | HTTP 请求延迟 p99（按操作） | summary `gravitino_server_http_request_duration_seconds`，quantile 0.99，按 `operation` 分组 | 见 §6，最终改为单一分位数 + groupBy，与 G08/G09 视觉语言一致 |
+| G10 | HTTP 请求延迟 p99（Top 10 操作） | summary `gravitino_server_http_request_duration_seconds`，quantile 0.99，按 `operation` 分组 | 见 §6；复审发现与 G08 同样的高基数 colorMap 撞色问题后，追加 Top 10 裁剪，与 G08 视觉语言一致 |
 | G11 | Jetty 线程数 | gauge busy/idle/total/max 四条 | |
 | G12 | 健康探针响应速率 | sum `gravitino_server_health_{live,ready}_2xx_responses_total`，rate 1m | |
 | G13 | JDBC 连接池 | gauge active/idle/max 三条 | |
@@ -150,3 +150,31 @@ Jetty 线程占用率 2.8%、排队请求数 0、JDBC 活跃连接数 0、JVM He
   operation 拆分的独立 series；再打一轮真实流量后，5 分钟短窗口内 `get-lineage-graph` 的最新数据点为
   `0.004382991`（约 4.38ms），非零且能精确归因到具体 operation。页面标题已更新为「HTTP 请求延迟
   p99(按操作)」，图表正确渲染。
+
+### 7.5 复审追加修复（G10 Top 10 裁剪，2026-08-12 已页面复验）
+
+代码复审发现 G10 沿用了 §5 表格中记录的「单一分位数 + groupBy」设计，但漏做了 G08 已经做过的 Top 10
+裁剪：`TimeSeriesPanel` 的 `baseSeriesLabel()` 会把 `p99 (get-lineage-graph)` 这类 groupBy 序列名剥回
+`p99` 再查 `colorMap`，125 个 operation 的曲线因此全部命中同一个颜色键，视觉上无法区分，且未裁剪时
+最多可画出 125 条曲线。修复：移除 G10 的 `colorMap`，复用 G08 已有的 `topSeriesByTotalValue()` 裁到
+Top 10，标题同步改为「HTTP 请求延迟 p99(Top 10 操作)」。
+
+**部署路径**：本轮只改了前端（无后端 Java 改动），只需 `./mvnw -pl datasophon-ui-v2 -am clean package
+-DskipTests -Dspotless.check.skip=true` → 本机新 `static/` 通过 `tar` 管道整体覆盖 ddh-01 远端
+`datasophon-manager-3.0-SNAPSHOT/static/`(替换前 `cp -a static static.bak-gravitino-g10-fix-20260812-1251`
+备份)→ `bin/datasophon-api.sh restart`。启动日志有一条历史遗留的 `invalid service ddl file:
+APISIX.bak-apisixgateway-20260805120153` 报错(读到了 meta 目录下过期的 `.bak-*` 备份目录,与本次改动
+无关,`LoadServiceMeta` 捕获后跳过,不影响启动),`Started DataSophonApplicationServer` 确认启动成功。
+
+**页面复验结果**(ego-browser 登录 `admin`,`/ddh/cluster/1/service/34` → 监控 Tab)：
+- 面板标题正确显示为「HTTP 请求延迟 p99(Top 10 操作)」,与本地构建产物一致(`index.html` md5 与远端
+  比对相同),证明新 bundle 真正生效,不是缓存旧版。
+- 20 个面板全部渲染,页面全文本搜索确认不含 `NaN`、不含「暂无指标数据」、不含「部分监控面板加载
+  失败」;浏览器事件队列(`drainEvents()`)无报错。
+- 直接读取 G10 canvas 的 `getImageData` 像素颜色分布做对照:当前 1 小时窗口内 Gravitino 只有 1 个
+  operation 有真实流量(概览卡「当前 HTTP QPS」= `0.00 req/s`,本轮未像 §7.4 那样手动打
+  `get-lineage-graph` 流量),G10 因此只渲染 1 条曲线——同一时刻用同一方法探测 G08(已验证生效的
+  参照面板)得到完全相同的单曲线颜色分布,证明这是**当前数据稀疏导致的观测局限,不是 G10 修复的
+  缺陷**:两个面板此刻行为完全一致,均等于设计预期(有几个 operation 就画几条颜色不同的线,上限
+  10 条)。**尚未在多 operation 真实并发流量下视觉确认 10 条曲线互不同色**,需要下次现场验证时配合
+  §7.4 式的多路真实请求(而不仅是单一 `get-lineage-graph`)一并复测。

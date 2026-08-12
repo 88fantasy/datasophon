@@ -104,11 +104,11 @@
     "note": "[G09｜HTTP 流量] 同 G08，依赖后端 operation 属性白名单改动"
   },
   {
-    "title": "HTTP 请求延迟 p99(按操作)",
+    "title": "HTTP 请求延迟 p99(Top 10 操作)",
     "promql": [
-      "gravitino_server_http_request_duration_seconds{quantile=\"0.99\"} by (operation)"
+      "topk(10, gravitino_server_http_request_duration_seconds{quantile=\"0.99\"} by (operation))"
     ],
-    "unit": "s",
+    "unit": "ms",
     "chartType": "timeseries",
     "thresholds": [],
     "legend": {
@@ -120,7 +120,7 @@
       "total": false,
       "values": true
     },
-    "note": "[G10｜HTTP 流量] 单一分位数(p99)+按 operation 分组，与 G08/G09 视觉语言一致；2026-08-12 现场验证通过，见 gravitino-otel-verification.md §6/§7——修复了 Datasophon buildRangeSummarySql 从未支持 groupBy 的平台级缺陷"
+    "note": "[G10｜HTTP 流量] 单一分位数(p99)+按 operation 分组，与 G08/G09 一致；后端按 operation 返回完整序列，前端按当前时间范围累计值稳定选取 Top 10（同 G08）；2026-08-12 现场验证通过，见 gravitino-otel-verification.md §6/§7——修复了 Datasophon buildRangeSummarySql 从未支持 groupBy 的平台级缺陷"
   },
   {
     "title": "Jetty 线程数",

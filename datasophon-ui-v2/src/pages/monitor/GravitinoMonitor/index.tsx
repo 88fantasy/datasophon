@@ -71,11 +71,6 @@ const ERROR_STATUS_COLORS = {
   '5xx': CHART_COLORS.error,
 };
 
-const QUANTILE_COLORS = {
-  p50: CHART_COLORS.primary,
-  p99: CHART_COLORS.warning,
-};
-
 const THREAD_COLORS = {
   Busy: CHART_COLORS.error,
   Idle: CHART_COLORS.success,
@@ -97,6 +92,11 @@ const CONNECTION_COLORS = {
 const METADATA_READ_COLORS = {
   'List Metalakes': CHART_COLORS.primary,
   'Get Metalake': CHART_COLORS.success,
+};
+
+const METADATA_FAILURE_COLORS = {
+  'List Metalakes': CHART_COLORS.warning,
+  'Get Metalake': CHART_COLORS.error,
 };
 
 const CLEANUP_COLORS = {
@@ -273,7 +273,6 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
             title={panelTitle('G10')}
             data={series.G10}
             yFormatter={millisecondFormatter}
-            colorMap={QUANTILE_COLORS}
           />
         </PanelCol>
       </Row>
@@ -321,7 +320,7 @@ const GravitinoDashboard: FC<GravitinoDashboardProps> = ({
             title={panelTitle('G15')}
             data={series.G15}
             yFormatter={requestRateFormatter}
-            colorMap={METADATA_READ_COLORS}
+            colorMap={METADATA_FAILURE_COLORS}
           />
         </PanelCol>
         <PanelCol span={12}>

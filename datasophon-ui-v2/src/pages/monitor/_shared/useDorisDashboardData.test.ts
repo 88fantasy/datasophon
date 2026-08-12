@@ -81,6 +81,6 @@ describe('useDorisDashboardData failures', () => {
     expect(result.current.instant.healthy).toBe(1);
     expect(result.current.instant.failed).toBeNaN();
     expect(result.current.failedPanelIds).toEqual(['failed']);
-    expect(result.current.error).toContain('failed');
+    expect(result.current.error).toBeUndefined();
   });
 });

@@ -139,6 +139,7 @@ export function useGravitinoDashboard({
     series: {
       ...data.series,
       G08: topSeriesByTotalValue(data.series.G08 ?? [], 10),
+      G10: topSeriesByTotalValue(data.series.G10 ?? [], 10),
     },
     instances,
     loading: data.loading,
