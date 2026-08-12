@@ -1,0 +1,323 @@
+[
+  {
+    "title": "节点数",
+    "promql": [],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [{ "color": "green", "value": null }],
+    "legend": null,
+    "note": "[G01｜概览] 数据来源=角色注册表（非 Prometheus/Doris），GravitinoServer 角色 RUNNING 实例数"
+  },
+  {
+    "title": "当前 HTTP QPS",
+    "promql": [],
+    "unit": "rps",
+    "chartType": "stat",
+    "thresholds": [{ "color": "green", "value": null }],
+    "legend": null,
+    "note": "[G02｜概览] 派生自 G07 最新时间桶（各状态类曲线求和），不单独发起查询"
+  },
+  {
+    "title": "Jetty 线程占用率",
+    "promql": [
+      "gravitino_server_http_server_busy_thread_num",
+      "gravitino_server_http_server_max_thread_num"
+    ],
+    "unit": "percent",
+    "chartType": "gauge",
+    "thresholds": [
+      { "color": "green", "value": null },
+      { "color": "orange", "value": 70 },
+      { "color": "red", "value": 90 }
+    ],
+    "legend": null,
+    "note": "[G03｜概览] 比值面板：busy_thread_num/max_thread_num*100；2026-08-12 ddh-02 实测两个指标均存在"
+  },
+  {
+    "title": "排队请求数",
+    "promql": ["gravitino_server_http_server_queued_request_num"],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      { "color": "green", "value": null },
+      { "color": "red", "value": 1 }
+    ],
+    "legend": null,
+    "note": "[G04｜概览]"
+  },
+  {
+    "title": "JDBC 活跃连接",
+    "promql": ["gravitino_relational_store_datasource_active_connections"],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [{ "color": "green", "value": null }],
+    "legend": null,
+    "note": "[G05｜概览]"
+  },
+  {
+    "title": "JVM Heap 使用率",
+    "promql": ["jvm_heap_usage"],
+    "unit": "percentunit",
+    "chartType": "gauge",
+    "thresholds": [
+      { "color": "green", "value": null },
+      { "color": "orange", "value": 0.7 },
+      { "color": "red", "value": 0.9 }
+    ],
+    "legend": null,
+    "note": "[G06｜概览] jvm_heap_usage 已是 0~1 比值，无需再除以 max"
+  },
+  {
+    "title": "HTTP 响应速率（按状态类）",
+    "promql": [
+      "rate(gravitino_server_1xx_responses_total[1m])",
+      "rate(gravitino_server_2xx_responses_total[1m])",
+      "rate(gravitino_server_3xx_responses_total[1m])",
+      "rate(gravitino_server_4xx_responses_total[1m])",
+      "rate(gravitino_server_5xx_responses_total[1m])"
+    ],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "status_class",
+    "note": "[G07｜HTTP 流量] 5 条曲线，counter rate"
+  },
+  {
+    "title": "Top 操作请求速率",
+    "promql": ["sum by (operation) (rate(gravitino_server_2xx_responses_total[1m]))"],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "operation",
+    "note": "[G08｜HTTP 流量] 依赖后端 operation 属性白名单改动（当前并行子任务，尚未合并）；改动前该维度不可查询"
+  },
+  {
+    "title": "错误请求速率（按操作）",
+    "promql": [
+      "sum by (operation) (rate(gravitino_server_4xx_responses_total[1m]))",
+      "sum by (operation) (rate(gravitino_server_5xx_responses_total[1m]))"
+    ],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "operation",
+    "note": "[G09｜HTTP 流量] 同 G08，依赖后端 operation 属性白名单改动"
+  },
+  {
+    "title": "HTTP 请求延迟 p50/p99",
+    "promql": [
+      "gravitino_server_http_request_duration_seconds{quantile=\"0.5\"}",
+      "gravitino_server_http_request_duration_seconds{quantile=\"0.99\"}"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": true
+    },
+    "note": "[G10｜HTTP 流量] 已知缺陷：2026-08-12 ddh-02 实测全部 6 个分位数恒为 0.0 且无 _sum 行，见 gravitino-otel-verification.md §6；分位数字段先写上，问题记录在案不阻塞面板上线"
+  },
+  {
+    "title": "Jetty 线程数",
+    "promql": [
+      "gravitino_server_http_server_busy_thread_num",
+      "gravitino_server_http_server_idle_thread_num",
+      "gravitino_server_http_server_thread_num",
+      "gravitino_server_http_server_max_thread_num"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": true
+    },
+    "note": "[G11｜Jetty/连接池] busy/max 后缀已实测确认；idle/current 后缀按同一命名模式推断，集成阶段需现场核对实际指标名"
+  },
+  {
+    "title": "健康探针响应速率",
+    "promql": [
+      "rate(gravitino_server_health_live_2xx_responses_total[1m])",
+      "rate(gravitino_server_health_ready_2xx_responses_total[1m])"
+    ],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    },
+    "note": "[G12｜Jetty/连接池]"
+  },
+  {
+    "title": "JDBC 连接池",
+    "promql": [
+      "gravitino_relational_store_datasource_active_connections",
+      "gravitino_relational_store_datasource_idle_connections",
+      "gravitino_relational_store_datasource_max_connections"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": true
+    },
+    "note": "[G13｜Jetty/连接池] active_connections 已实测确认；idle/max 后缀按同一命名模式推断，集成阶段需现场核对"
+  },
+  {
+    "title": "元数据读取速率",
+    "promql": [
+      "rate(gravitino_relational_store_listMetalakes_success_total[1m])",
+      "rate(gravitino_relational_store_getMetalakeByIdentifier_success_total[1m])"
+    ],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    },
+    "note": "[G14｜元数据存储]"
+  },
+  {
+    "title": "实体存储失败速率",
+    "promql": [
+      "rate(gravitino_relational_store_listMetalakes_failure_total[1m])",
+      "rate(gravitino_relational_store_getMetalakeByIdentifier_failure_total[1m])"
+    ],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    },
+    "note": "[G15｜元数据存储] 同 G14 两个指标的 _failure_total 后缀"
+  },
+  {
+    "title": "后台清理任务速率",
+    "promql": [
+      "rate(gravitino_relational_store_deleteTableMetasByLegacyTimeline_success_total[1m])",
+      "rate(gravitino_relational_store_deleteFilesetVersionsByRetentionCount_success_total[1m])"
+    ],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    },
+    "note": "[G16｜元数据存储]"
+  },
+  {
+    "title": "JVM 堆内存",
+    "promql": ["jvm_heap_used", "jvm_heap_committed", "jvm_heap_max"],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": true
+    },
+    "note": "[G17｜JVM] Dropwizard 命名，非标准 jvm_memory_* 命名"
+  },
+  {
+    "title": "GC 频率",
+    "promql": [
+      "rate(jvm_G1_Young_Generation_count[1m])",
+      "rate(jvm_G1_Old_Generation_count[1m])"
+    ],
+    "unit": "ops",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    },
+    "note": "[G18｜JVM]"
+  },
+  {
+    "title": "GC 耗时",
+    "promql": [
+      "rate(jvm_G1_Young_Generation_time[1m])",
+      "rate(jvm_G1_Old_Generation_time[1m])"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    },
+    "note": "[G19｜JVM]"
+  },
+  {
+    "title": "非堆与直接内存",
+    "promql": ["jvm_non_heap_used", "jvm_pools_Metaspace_used", "jvm_direct_used"],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": true,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": true
+    },
+    "note": "[G20｜JVM]"
+  }
+]

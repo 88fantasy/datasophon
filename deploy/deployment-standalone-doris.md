@@ -78,6 +78,7 @@
 | 14 | Gravitino catalog 创建：Paimon fs / Paimon S3 / Doris（独立于阶段 A/B，为平台级数据血缘 epic `feat/data-lineage-l1` 的 L0/L2 采样做准备） | PASSED | — | §7.14：2026-07-30 三个 catalog 均建 schema+建表验证到底；补齐两个内置 provider 缺失的运行时 jar（mysql-connector-j、paimon-s3）；发现并绕过 Paimon S3 catalog 的 `s3.*` 标准 key 失效坑（需同时用 `gravitino.bypass.*` 透传）。**仅是基础设施准备，尚未提交真实 Spark 作业采样 canonical_name** |
 | 15 | Gravitino 血缘权威端替换与 Datasophon 查询代理 | PASSED | 备份、独立 schema、真实 Spark 事件、原生/兼容 API、L3 页面与回滚条件全部核对 | §7.15：2026-08-01 完成 ddh-01/ddh-02 现场升级、真实 Spark/OpenLineage、MySQL/HTTP/重启恢复及 ego-browser 页面验收；旧血缘表行数未增长 |
 | 16 | 前端血缘图/链路图容器高度修复部署（独立于阶段 A/B，分支 `feat/flink-lineage`，复用 ddh-01 已在跑的 `datasophon-api` 作前端验证环境） | PASSED | 用户已批准真实部署并重启 `datasophon-api` | §7.16：2026-08-10 ddh-01 现场部署，`static/` 目录整体替换 + 重启，served chunk 内容比对确认修复生效；未在阶段 A/B 拓扑或数据面做任何改动 |
+| 17 | GRAVITINO 元数据服务监控看板补全（独立于阶段 A/B，分支 `feat/gravitino-monitor-dashboard`） | IN PROGRESS | 现场逐面板核对 + Doris SQL 交叉验证 + 延迟面板专项复测 | 待补充（集成阶段回填现场证据）；本阶段先完成文档先行（指标清单、面板契约、已知问题），代码与部署验证随后进行 |
 
 状态只能取 `NOT STARTED`、`IN PROGRESS`、`BLOCKED`、`PASSED`、`FAILED`、`ROLLED BACK`。
 
