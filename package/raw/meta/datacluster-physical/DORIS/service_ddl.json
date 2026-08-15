@@ -3,18 +3,18 @@
   "type": "MIDDLEWARE",
   "label": "Doris",
   "description": "简单易用、高性能和统一的分析数据库",
-  "version": "4.0.6",
+  "version": "4.1.3",
   "sortNum": 11,
   "createDecompressDir": false,
   "dependencies": [],
   "arch": {
     "x86_64": {
-      "packageName": "apache-doris-4.0.6-bin-x64.tar.gz",
-      "decompressPackageName": "apache-doris-4.0.6"
+      "packageName": "apache-doris-4.1.3-bin-x64.tar.gz",
+      "decompressPackageName": "apache-doris-4.1.3"
     },
     "aarch64": {
-      "packageName": "apache-doris-4.0.6-bin-arm64.tar.gz",
-      "decompressPackageName": "apache-doris-4.0.6"
+      "packageName": "apache-doris-4.1.3-bin-arm64.tar.gz",
+      "decompressPackageName": "apache-doris-4.1.3"
     }
   },
   "serviceHooks": [
@@ -103,15 +103,6 @@
           "params": {
             "source": "${ROOT.VosManager.INSTALL_PATH}/datasophon-worker/otel/opentelemetry-javaagent.jar",
             "target": "fe/otel/opentelemetry-javaagent.jar"
-          }
-        },
-        {
-          "type": "POST_INSTALL",
-          "action": "append_line",
-          "params": {
-            "line": 2,
-            "text": "export JAVA_TOOL_OPTIONS=\"-javaagent:$(pwd)/fe/otel/opentelemetry-javaagent.jar -Dotel.service.name=doris-fe -Dotel.exporter.otlp.endpoint=http://localhost:4317 -Dotel.exporter.otlp.protocol=grpc -Dotel.traces.exporter=otlp -Dotel.metrics.exporter=none -Dotel.logs.exporter=none\"",
-            "source": "fe/bin/start_fe.sh"
           }
         }
       ]
@@ -462,12 +453,12 @@
     },
     {
       "name": "mem_limit",
-      "description": "限制BE进程使用服务器最大内存百分比。用于防止BE内存挤占太多的机器内存，该参数必须大于0，当百分大于100%之后，该值会默认为100%。",
-      "label": "BE进程使用服务器最大内存百分比",
+      "description": "限制BE进程可使用的最大内存，支持容量值或百分比；当前五节点部署冻结为14G。",
+      "label": "BE进程最大内存",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "100%",
+      "defaultValue": "14G",
       "configurableInWizard": true,
       "register": false
     },

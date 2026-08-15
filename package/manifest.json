@@ -27,17 +27,17 @@
   {
     "service": "DORIS",
     "arch": "x86_64",
-    "packageName": "apache-doris-4.0.6-bin-x64.tar.gz",
-    "decompressPackageName": "apache-doris-4.0.6",
-    "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.6-bin-x64.tar.gz",
+    "packageName": "apache-doris-4.1.3-bin-x64.tar.gz",
+    "decompressPackageName": "apache-doris-4.1.3",
+    "downloadUrl": "https://download.selectdb.com/apache-doris-4.1.3-bin-x64.tar.gz",
     "status": "public"
   },
   {
     "service": "DORIS",
     "arch": "aarch64",
-    "packageName": "apache-doris-4.0.6-bin-arm64.tar.gz",
-    "decompressPackageName": "apache-doris-4.0.6",
-    "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.6-bin-arm64.tar.gz",
+    "packageName": "apache-doris-4.1.3-bin-arm64.tar.gz",
+    "decompressPackageName": "apache-doris-4.1.3",
+    "downloadUrl": "https://download.selectdb.com/apache-doris-4.1.3-bin-arm64.tar.gz",
     "status": "public"
   },
   {
