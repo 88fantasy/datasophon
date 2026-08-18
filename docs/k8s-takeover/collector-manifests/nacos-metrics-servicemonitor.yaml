@@ -1,0 +1,37 @@
+# T-C2 Nacos 采集补齐
+#
+# 交付去向：installation_manual 项目。datasophon 严格只读，不执行 apply。
+#
+# 实测依据（2026-08-17）：
+#   kubectl -n prod exec nacos-0 -- curl -s 127.0.0.1:8848/nacos/actuator/prometheus  → HTTP 200，558 行
+#   NacosMonitor 面板所需的 10 个指标**全部命中**（grpc_server_executor / http_server_requests_seconds /
+#   jvm_memory_used_bytes / nacos_monitor / process_cpu_usage 等），apply 后看板应直接出数。
+#
+# Service `nacos` 的 selector 与 labels 相同：{app: nacos, component: nacos, middleware: nacos}
+# 端口名 client:8848（另有 rpc:7848 / new-rpc:9848 / console:8080，均非 metrics 端点）
+#
+# ⚠️ 注意路径带 /nacos 前缀（context-path），不是裸 /actuator/prometheus。
+# 抓到的 job 名 = Service 名，即 `nacos`。
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nacos
+  namespace: prod
+  labels:
+    otel: enabled
+spec:
+  namespaceSelector:
+    matchNames:
+      - prod
+  selector:
+    matchLabels:
+      app: nacos
+      component: nacos
+      middleware: nacos
+  endpoints:
+    - port: client
+      path: /nacos/actuator/prometheus
+      scheme: http
+      interval: 30s

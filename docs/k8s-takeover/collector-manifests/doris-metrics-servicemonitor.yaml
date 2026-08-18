@@ -1,0 +1,79 @@
+# T-C1 Doris 采集补齐
+#
+# 交付去向：installation_manual 项目。datasophon 严格只读，不执行 apply。
+#
+# 全部名称/端口/路径均来自 2026-08-17 对目标集群的实测，非经验值：
+#   kubectl -n doris get svc -o jsonpath='{...}'
+#   kubectl -n doris exec doris-disaggregated-cluster-fe-0  -- curl -s 127.0.0.1:8030/metrics  → HTTP 200，955 行
+#   kubectl -n doris exec doris-disaggregated-cluster-cg1-0 -- curl -s 127.0.0.1:8040/metrics  → HTTP 200，1532 行
+#
+# ⚠️ 本集群是**存算分离（disaggregated）**架构，不是经典 FE/BE：
+#   - FE   → doris-disaggregated-cluster-fe        端口名 http-port:8030
+#   - 计算组 → doris-disaggregated-cluster-cg1 / cg2  端口名 webserver-port:8040（BE 等价物）
+#   - MS   → doris-disaggregated-cluster-ms        仅 brpc-port:5000，**无 metrics 端点，不采集**
+#
+# label `otel: enabled` 是 TargetAllocator 的抓取开关，必须有，否则不会被采集。
+# 抓到的 job 名 = 被抓取的 Service 名，即 doris-disaggregated-cluster-fe / -cg1 / -cg2。
+#
+# ───────────────────────────────────────────────────────────────
+# selector 的两个坑（实测踩到并已修正，改动前请勿"简化"）
+# ───────────────────────────────────────────────────────────────
+# 1) ServiceMonitor 的 selector 匹配的是 Service 的 **metadata.labels**，
+#    不是 Service 的 spec.selector（那是选 Pod 的）。两者在本集群并不相同：
+#      cg1/cg2 的 spec.selector 有 type=compute，但 **metadata.labels 里没有**，
+#      只有 cg-uniqueid。按 type=compute 写会一个都选不中。
+#    → 故 compute 侧改用 cg-uniqueid 的 **存在性** 匹配（Exists），实测精确命中 cg1+cg2。
+#
+# 2) doris-disaggregated-cluster-fe 与 -fe-outside 的 metadata.labels **完全相同**，
+#    无法用标签区分。但只有 -fe 暴露了 http-port，-fe-outside / -fe-internal 只有 query-port，
+#    Prometheus Operator 对没有该命名端口的 Service 不生成 target，
+#    因此 fe 侧多匹配两个 Service 是**无害的**，不会重复抓取。
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: doris-fe
+  namespace: doris
+  labels:
+    otel: enabled
+spec:
+  namespaceSelector:
+    matchNames:
+      - doris
+  selector:
+    matchLabels:
+      app.doris.disaggregated.cluster: doris-disaggregated-cluster
+      app.doris.disaggregated.type: fe
+  endpoints:
+    - port: http-port
+      path: /metrics
+      scheme: http
+      interval: 30s
+
+---
+# cg1 / cg2 用同一个 selector 一起抓：两者都带 type=compute，
+# 靠 cg-uniqueid 区分，抓取后体现在 job（Service 名）上，无需拆成两个 ServiceMonitor。
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: doris-compute
+  namespace: doris
+  labels:
+    otel: enabled
+spec:
+  namespaceSelector:
+    matchNames:
+      - doris
+  selector:
+    matchLabels:
+      app.doris.disaggregated.cluster: doris-disaggregated-cluster
+    matchExpressions:
+      # cg1/cg2 的 metadata.labels 里没有 type=compute，只能靠 cg-uniqueid 存在性区分
+      - key: app.doris.disaggregated.cg-uniqueid
+        operator: Exists
+  endpoints:
+    - port: webserver-port
+      path: /metrics
+      scheme: http
+      interval: 30s
