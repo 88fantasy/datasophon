@@ -3,9 +3,9 @@ package com.datasophon.common.k8s.vo.k8s;
 import java.util.List;
 import java.util.Map;
 
-import lombok.Data;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.Data;
 
 /**
  * K8s Service 资源
@@ -17,7 +17,7 @@ public class K8sService {
     private Metadata metadata;
     private ServiceSpec spec;
     private ServiceStatus status;
-    
+
     @Data
     public static class Metadata {
         private String name;
@@ -28,7 +28,7 @@ public class K8sService {
         private String resourceVersion;
         private String uid;
     }
-    
+
     @Data
     public static class ServiceSpec {
         private String type;
@@ -39,7 +39,8 @@ public class K8sService {
         private List<ServicePort> ports;
         private Map<String, String> selector;
         private String sessionAffinity;
-        private String sessionAffinityConfig;
+        /** K8s 返回的是对象（如 {clientIP:{timeoutSeconds:10800}}），不能声明为 String。 */
+        private Object sessionAffinityConfig;
         @JsonProperty("ipFamilies")
         private List<String> ipFamilies;
         @JsonProperty("ipFamilyPolicy")
@@ -50,11 +51,12 @@ public class K8sService {
         private String internalTrafficPolicy;
         private String loadBalancerClass;
         private String loadBalancerIP;
-        private String loadBalancerSourceRanges;
+        /** K8s 返回的是字符串数组，不能声明为 String。 */
+        private Object loadBalancerSourceRanges;
         private List<LoadBalancerSourceRange> loadBalancerSourceRangesList;
         private Boolean publishNotReadyAddresses;
     }
-    
+
     /**
      *  {
      *         "appProtocol": "http",
@@ -77,22 +79,22 @@ public class K8sService {
         @JsonProperty("appProtocol")
         private String appProtocol;
     }
-    
+
     @Data
     public static class LoadBalancerSourceRange {
         private String cidr;
     }
-    
+
     @Data
     public static class ServiceStatus {
         private LoadBalancerStatus loadBalancer;
     }
-    
+
     @Data
     public static class LoadBalancerStatus {
         private List<LoadBalancerIngress> ingress;
     }
-    
+
     @Data
     public static class LoadBalancerIngress {
         private String ip;

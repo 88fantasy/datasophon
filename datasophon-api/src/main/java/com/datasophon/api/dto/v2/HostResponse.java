@@ -23,6 +23,7 @@
 package com.datasophon.api.dto.v2;
 
 import com.datasophon.api.service.host.dto.QueryHostListPageDTO;
+import com.datasophon.api.service.k8s.K8sDashboardMetricsService;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.dao.entity.ClusterHostDO;
 
@@ -143,6 +144,8 @@ public class HostResponse {
         r.setCoreNum(parseCpu(status != null ? status.getCapacity() : null));
         r.setTotalMem(parseStorageGb(status != null ? status.getCapacity() : null, "memory"));
         r.setTotalDisk(parseStorageGb(status != null ? status.getCapacity() : null, "ephemeral-storage"));
+        // 用量不在 kubectl 的 node 对象里，需另行从 OTel 指标补齐，见 applyUsage(...)；
+        // 补不上时保持这里的降级值，主机列表不能因为指标查不到而失败
         r.setUsedMem(0);
         r.setUsedDisk(0);
         r.setAverageLoad("-");
@@ -150,6 +153,40 @@ public class HostResponse {
         r.setNodeLabel(extractNodeRole(metadata != null ? metadata.getLabels() : null));
         r.setServiceRoleNum(0);
         return r;
+    }
+
+    /**
+     * 用 OTel 节点指标补齐 K8s 主机的用量字段。
+     *
+     * <p>指标里节点的标识是节点名（本环境即节点 IP），两侧都可能对不上——
+     * 没有采集到的节点（如未配 toleration 的 control-plane）保持 {@code fromK8sNode} 的降级值。
+     *
+     * @param usage 节点标识 → 用量，来自 {@code K8sDashboardMetricsService#hostUsage}
+     */
+    public void applyUsage(java.util.Map<String, K8sDashboardMetricsService.HostUsage> usage) {
+        if (usage == null || usage.isEmpty()) {
+            return;
+        }
+        K8sDashboardMetricsService.HostUsage row = usage.get(hostname);
+        if (row == null) {
+            row = usage.get(ip);
+        }
+        if (row == null) {
+            return;
+        }
+        if (row.memoryBytes() != null) {
+            usedMem = bytesToGb(row.memoryBytes());
+        }
+        if (row.diskBytes() != null) {
+            usedDisk = bytesToGb(row.diskBytes());
+        }
+        if (row.load1m() != null) {
+            averageLoad = String.format("%.2f", row.load1m());
+        }
+    }
+
+    private static Integer bytesToGb(double bytes) {
+        return (int) Math.round(bytes / 1024 / 1024 / 1024);
     }
 
     private static Integer stableNodeId(String name) {

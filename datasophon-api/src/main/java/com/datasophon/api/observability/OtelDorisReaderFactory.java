@@ -24,8 +24,13 @@ package com.datasophon.api.observability;
 
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
+import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import com.datasophon.dao.enums.ManageMode;
 import com.datasophon.dao.enums.ServiceRoleState;
+import com.datasophon.dao.mapper.ClusterInfoMapper;
+import com.datasophon.dao.mapper.cluster.K8sClusterConfigMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +42,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zaxxer.hikari.HikariDataSource;
 
 import jakarta.annotation.PreDestroy;
@@ -47,9 +53,18 @@ public class OtelDorisReaderFactory {
 
     private static final Logger log = LoggerFactory.getLogger(OtelDorisReaderFactory.class);
 
+    /** 接管集群缺省的 Doris MySQL 协议端口。 */
+    private static final String DEFAULT_DORIS_PORT = "9030";
+
     private final ClusterServiceRoleInstanceService roleService;
     private final ClusterVariableService variableService;
     private final OtelCredentialService credentialService;
+    private final ClusterInfoMapper clusterInfoMapper;
+    /**
+     * 直接依赖 Mapper 而非 K8sClusterConfigService：后者依赖链很深且已含自循环，
+     * 本类是构造器注入（Spring 不容忍构造器循环依赖）。
+     */
+    private final K8sClusterConfigMapper k8sClusterConfigMapper;
     private final Map<PoolKey, HikariDataSource> pools = new ConcurrentHashMap<>();
 
     /** 开发/测试直连兜底：配置后跳过集群注册表查询，直连指定 Doris FE 主机。生产环境留空。 */
@@ -67,10 +82,14 @@ public class OtelDorisReaderFactory {
 
     public OtelDorisReaderFactory(ClusterServiceRoleInstanceService roleService,
                                   ClusterVariableService variableService,
-                                  OtelCredentialService credentialService) {
+                                  OtelCredentialService credentialService,
+                                  ClusterInfoMapper clusterInfoMapper,
+                                  K8sClusterConfigMapper k8sClusterConfigMapper) {
         this.roleService = roleService;
         this.variableService = variableService;
         this.credentialService = credentialService;
+        this.clusterInfoMapper = clusterInfoMapper;
+        this.k8sClusterConfigMapper = k8sClusterConfigMapper;
     }
 
     /** 用 otel_reader 账号（SELECT-only，满足 F1 凭据隔离）创建 JdbcClient。 */
@@ -79,6 +98,12 @@ public class OtelDorisReaderFactory {
         if (fallbackHost != null && !fallbackHost.isBlank()) {
             log.debug("Using Doris fallback connection {}:{}", fallbackHost, fallbackPort);
             return buildJdbcClient(fallbackHost, fallbackPort, fallbackReaderUser(), fallbackPassword);
+        }
+
+        // 接管集群：Doris 不由本平台安装，角色实例表里查不到，改用接管时登记的外部数据源
+        JdbcClient external = createExternal(clusterId);
+        if (external != null) {
+            return external;
         }
 
         List<ClusterServiceRoleInstanceEntity> fes = roleService
@@ -96,6 +121,31 @@ public class OtelDorisReaderFactory {
         String port = variableValue(clusterId, "query_port", "9030");
         String password = credentialService.getOrCreate(clusterId).readerPassword();
         return buildJdbcClient(fes.get(0).getHostname(), port, DEFAULT_READER_USER, password);
+    }
+
+    /**
+     * 接管集群的外部 Doris 数据源。未登记 {@code doris_host} 时返回 null，由调用方回落到角色实例查询。
+     *
+     * <p>密码同样走 {@link OtelCredentialService}：接管时用户录入的密码被存为
+     * {@code DORIS / otel_reader_password} 变量，该服务会优先返回它而不是随机生成。
+     */
+    private JdbcClient createExternal(Integer clusterId) {
+        ClusterInfoEntity cluster = clusterInfoMapper.selectById(clusterId);
+        if (cluster == null || cluster.getManageMode() != ManageMode.IMPORTED) {
+            return null;
+        }
+        K8sClusterConfig config = k8sClusterConfigMapper.selectOne(
+                new LambdaQueryWrapper<K8sClusterConfig>()
+                        .eq(K8sClusterConfig::getClusterId, clusterId)
+                        .last("limit 1"));
+        if (config == null || config.getDorisHost() == null || config.getDorisHost().isBlank()) {
+            return null;
+        }
+        String port = config.getDorisPort() == null ? DEFAULT_DORIS_PORT : String.valueOf(config.getDorisPort());
+        String password = credentialService.getOrCreate(clusterId).readerPassword();
+        log.debug("Using external Doris datasource {}:{} for imported cluster {}",
+                config.getDorisHost(), port, clusterId);
+        return buildJdbcClient(config.getDorisHost(), port, DEFAULT_READER_USER, password);
     }
 
     private String fallbackReaderUser() {

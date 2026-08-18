@@ -25,6 +25,7 @@ package com.datasophon.api.dto.v2;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
+import com.datasophon.dao.enums.ManageMode;
 
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +51,8 @@ public class ClusterResponse {
     private ClusterState clusterState;
     private Integer clusterStateCode;
     private ClusterArchType archType;
+    /** 管理模式：MANAGED=平台安装，IMPORTED=接管现有集群。 */
+    private ManageMode manageMode;
     /** 只含 id + username，不含 password 等敏感字段。 */
     private List<UserResponse> clusterManagerList;
 
@@ -64,6 +67,7 @@ public class ClusterResponse {
         r.setClusterState(entity.getClusterState());
         r.setClusterStateCode(entity.getClusterStateCode());
         r.setArchType(entity.getArchType());
+        r.setManageMode(entity.getManageMode());
         r.setClusterManagerList(
                 entity.getClusterManagerList() == null
                         ? Collections.emptyList()

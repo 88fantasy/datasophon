@@ -25,6 +25,7 @@ package com.datasophon.api.configuration;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.interceptor.BasicValidRequestInterceptor;
 import com.datasophon.api.interceptor.CsrfTokenInterceptor;
+import com.datasophon.api.interceptor.ImportedClusterGuardInterceptor;
 import com.datasophon.api.interceptor.LocaleChangeInterceptor;
 import com.datasophon.api.interceptor.LoginHandlerInterceptor;
 import com.datasophon.api.interceptor.UserPermissionHandler;
@@ -72,6 +73,8 @@ public class AppConfiguration implements WebMvcConfigurer {
 
     private final CsrfTokenInterceptor csrfTokenInterceptor;
 
+    private final ImportedClusterGuardInterceptor importedClusterGuardInterceptor;
+
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
@@ -87,12 +90,14 @@ public class AppConfiguration implements WebMvcConfigurer {
                             UserPermissionHandler userPermissionHandler,
                             LocaleChangeInterceptor localeChangeInterceptor,
                             BasicValidRequestInterceptor basicValidRequestInterceptor,
-                            CsrfTokenInterceptor csrfTokenInterceptor) {
+                            CsrfTokenInterceptor csrfTokenInterceptor,
+                            ImportedClusterGuardInterceptor importedClusterGuardInterceptor) {
         this.loginHandlerInterceptor = loginHandlerInterceptor;
         this.userPermissionHandler = userPermissionHandler;
         this.localeChangeInterceptor = localeChangeInterceptor;
         this.basicValidRequestInterceptor = basicValidRequestInterceptor;
         this.csrfTokenInterceptor = csrfTokenInterceptor;
+        this.importedClusterGuardInterceptor = importedClusterGuardInterceptor;
     }
 
     /**
@@ -116,6 +121,8 @@ public class AppConfiguration implements WebMvcConfigurer {
         // i18n
         registry.addInterceptor(localeChangeInterceptor);
         registry.addInterceptor(userPermissionHandler);
+        // 接管集群写操作门禁（只对带 @ImportedReadOnly 的接口生效）
+        registry.addInterceptor(importedClusterGuardInterceptor);
         // login
         InterceptorRegistration loginRegistration = registry.addInterceptor(loginHandlerInterceptor)
                 .addPathPatterns(getPathPrefix() + "/**")

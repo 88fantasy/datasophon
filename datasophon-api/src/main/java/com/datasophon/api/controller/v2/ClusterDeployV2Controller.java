@@ -30,6 +30,7 @@ import com.datasophon.api.dto.upload.BigFileDTO;
 import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.api.dto.v2.UploadedFileResponse;
+import com.datasophon.api.security.ImportedReadOnly;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
@@ -40,10 +41,6 @@ import com.datasophon.api.vo.tmpfile.MergeProgressVO;
 import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,6 +49,10 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 /**
  * v2 集群部署接口 — 上传文件 + 部署清单校验 + 执行部署 + 部署包分片上传。
  * 方法体全量委托现有 service，零业务改动。
@@ -59,11 +60,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/v2/cluster/{clusterId}/deploy")
 public class ClusterDeployV2Controller extends ApiController {
-    
+
     private final UploadTempFileService uploadTempFileService;
     private final ExtRepoInstallDelegateService extRepoInstallDelegateService;
     private final ExtRepoMetaService extRepoMetaService;
-    
+
     public ClusterDeployV2Controller(
                                      UploadTempFileService uploadTempFileService,
                                      ExtRepoInstallDelegateService extRepoInstallDelegateService,
@@ -72,9 +73,9 @@ public class ClusterDeployV2Controller extends ApiController {
         this.extRepoInstallDelegateService = extRepoInstallDelegateService;
         this.extRepoMetaService = extRepoMetaService;
     }
-    
+
     // ─── 切片 7a：部署清单 ──────────────────────────────────────────────────
-    
+
     /** 上传单个文件（清单 yaml），返回 UploadedFileResponse（含 id 字段）。 */
     @PostMapping("/upload")
     public ApiResponse<UploadedFileResponse> upload(
@@ -83,7 +84,7 @@ public class ClusterDeployV2Controller extends ApiController {
         UploadTempFile entity = uploadTempFileService.upload(file);
         return ApiResponse.ok(UploadedFileResponse.from(entity));
     }
-    
+
     /** 校验部署清单，返回制品/版本预览。 */
     @PostMapping("/validate-deployment-file")
     public ApiResponse<ValidateResultVO> validateDeploymentFile(
@@ -92,8 +93,9 @@ public class ClusterDeployV2Controller extends ApiController {
         ValidateResultVO result = extRepoInstallDelegateService.validDeploymentFile(buildDeployDto(clusterId, req));
         return ApiResponse.ok(result);
     }
-    
+
     /** 执行部署，返回 InstallResult（含 dagId），前端跳 DAG 图。 */
+    @ImportedReadOnly("部署服务")
     @PostMapping("/deploy")
     public ApiResponse<InstallResult> deploy(
                                              @PathVariable Integer clusterId,
@@ -101,9 +103,9 @@ public class ClusterDeployV2Controller extends ApiController {
         InstallResult result = extRepoInstallDelegateService.deploy(buildDeployDto(clusterId, req));
         return ApiResponse.ok(result);
     }
-    
+
     // ─── 切片 7b：部署包（元数据/包校验 + 导入） ───────────────────────────
-    
+
     /** 校验配置元数据文件（meta yaml）。 */
     @PostMapping("/valid-meta-file")
     public ApiResponse<ValidateResultVO> validMetaFile(
@@ -112,7 +114,7 @@ public class ClusterDeployV2Controller extends ApiController {
         ValidateResultVO result = extRepoMetaService.validMetaFile(buildInstallDto(req));
         return ApiResponse.ok(result);
     }
-    
+
     /** 校验部署包文件（安装包完整性）。 */
     @PostMapping("/validate-pkg-file")
     public ApiResponse<ValidateResultVO> validatePkgFile(
@@ -121,8 +123,9 @@ public class ClusterDeployV2Controller extends ApiController {
         ValidateResultVO result = extRepoMetaService.validatePkgFile(buildInstallDto(req));
         return ApiResponse.ok(result);
     }
-    
+
     /** 触发导入安装组件（异步），返回 ImportCompProgressVO（含 progressId）。 */
+    @ImportedReadOnly("导入安装组件")
     @PostMapping("/import-cmp")
     public ApiResponse<ImportCompProgressVO> importCmp(
                                                        @PathVariable Integer clusterId,
@@ -130,7 +133,7 @@ public class ClusterDeployV2Controller extends ApiController {
         ImportCompProgressVO result = extRepoMetaService.importCmp(buildInstallDto(req));
         return ApiResponse.ok(result);
     }
-    
+
     /** 查询导入进度。 */
     @PostMapping("/query-progress")
     public ApiResponse<ImportCompProgressVO> queryProgress(
@@ -139,9 +142,9 @@ public class ClusterDeployV2Controller extends ApiController {
         ImportCompProgressVO result = extRepoMetaService.queryProgress(req.getProgressId());
         return ApiResponse.ok(result);
     }
-    
+
     // ─── 切片 7b：部署包分片上传 ────────────────────────────────────────────
-    
+
     /** 创建分片上传任务（支持 MD5 秒传），返回 UploadedFileResponse（含 id/chunkSize/uploadType）。 */
     @PostMapping("/create-shard-task")
     public ApiResponse<UploadedFileResponse> createShardTask(
@@ -150,7 +153,7 @@ public class ClusterDeployV2Controller extends ApiController {
         UploadTempFile entity = uploadTempFileService.createShardUploadTask(info);
         return ApiResponse.ok(UploadedFileResponse.from(entity));
     }
-    
+
     /** 上传单个分片（multipart）。 */
     @PostMapping("/upload-chunk")
     public ApiResponse<Object> uploadChunk(
@@ -167,7 +170,7 @@ public class ClusterDeployV2Controller extends ApiController {
         UploadTempFileChunk result = uploadTempFileService.uploadChunk(info);
         return ApiResponse.ok(result);
     }
-    
+
     /** 检查分片是否已上传（断点续传去重）。 */
     @PostMapping("/is-chunk-uploaded")
     public ApiResponse<Boolean> isChunkUploaded(
@@ -176,7 +179,7 @@ public class ClusterDeployV2Controller extends ApiController {
         UploadTempFileChunk result = uploadTempFileService.isChunkUploaded(dto);
         return ApiResponse.ok(result != null);
     }
-    
+
     /** 触发合并分片（推荐 async=true，避免请求超时）。 */
     @PostMapping("/merge-chunk")
     public ApiResponse<Object> mergeChunk(
@@ -185,7 +188,7 @@ public class ClusterDeployV2Controller extends ApiController {
         MergeProgressVO result = uploadTempFileService.mergeChunk(vo);
         return ApiResponse.ok(result);
     }
-    
+
     /** 查询分片合并进度。 */
     @PostMapping("/query-merge-progress")
     public ApiResponse<MergeProgressVO> queryMergeProgress(
@@ -194,9 +197,9 @@ public class ClusterDeployV2Controller extends ApiController {
         MergeProgressVO result = uploadTempFileService.queryMergeProgress(req.getProgressId());
         return ApiResponse.ok(result);
     }
-    
+
     // ─── 内部 DTO / 工具 ────────────────────────────────────────────────────
-    
+
     private static DeploymentDTO buildDeployDto(Integer clusterId, DeployRequest req) {
         DeploymentDTO dto = new DeploymentDTO();
         dto.setClusterId(clusterId);
@@ -204,7 +207,7 @@ public class ClusterDeployV2Controller extends ApiController {
         dto.setContentDecodePasswd(req.getContentDecodePasswd() != null ? req.getContentDecodePasswd() : "");
         return dto;
     }
-    
+
     private static InstallComponentDTO buildInstallDto(InstallComponentRequest req) {
         InstallComponentDTO dto = new InstallComponentDTO();
         dto.setMeteFileId(req.getMeteFileId());
@@ -212,7 +215,7 @@ public class ClusterDeployV2Controller extends ApiController {
         dto.setContentDecodePasswd(req.getContentDecodePasswd() != null ? req.getContentDecodePasswd() : "");
         return dto;
     }
-    
+
     /** 部署清单操作请求体（clusterId 由路径变量提供）。 */
     @Data
     public static class DeployRequest {
@@ -221,7 +224,7 @@ public class ClusterDeployV2Controller extends ApiController {
         /** 配置文件密码，可为空。 */
         private String contentDecodePasswd;
     }
-    
+
     /** 安装组件操作请求体。 */
     @Data
     public static class InstallComponentRequest {
@@ -231,7 +234,7 @@ public class ClusterDeployV2Controller extends ApiController {
         private Integer pkgFileId;
         private String contentDecodePasswd;
     }
-    
+
     /** 进度查询请求体。 */
     @Data
     public static class ProgressIdRequest {

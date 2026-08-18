@@ -2,8 +2,8 @@ package com.datasophon.api.service.k8s;
 
 import com.datasophon.api.observability.OtelDorisReaderFactory;
 
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -65,6 +65,45 @@ public class K8sDashboardMetricsService {
         disk.forEach((name, value) -> result.merge(name, new NodeUsage(null, null, value),
                 (left, right) -> new NodeUsage(left.cpuCores(), left.memoryBytes(), right.diskBytes())));
         return result;
+    }
+
+    /**
+     * 按节点取「内存用量 / 磁盘用量 / 1 分钟平均负载」，供主机列表展示。
+     *
+     * <p>与 {@link #nodeUsage(Integer)} 的区别是多带一个平均负载，而负载来自 hostmetrics receiver、
+     * **没有 {@code k8s.node.name} 资源属性**（实测为 NULL），只能按 {@code service_instance_id} 取，
+     * 因此不能直接复用 {@link #namedMetric}。两边的键都是节点 IP，可以对齐。
+     *
+     * @param clusterId 集群 ID
+     * @return 节点标识（IP / 节点名）→ 用量；查询失败返回空 Map，由调用方降级
+     */
+    public Map<String, HostUsage> hostUsage(Integer clusterId) {
+        JdbcClient client = readerFactory.create(clusterId);
+        String marker = query(client, marker(clusterId)).hasData() ? marker(clusterId) : localMarker();
+        Map<String, Double> memory = namedMetric(client, "k8s.node.memory.working_set", marker, "k8s.node.name");
+        Map<String, Double> disk = namedMetric(client, "k8s.node.filesystem.usage", marker, "k8s.node.name");
+        Map<String, Double> load = instanceMetric(client, "system.cpu.load_average.1m", marker);
+
+        Map<String, HostUsage> result = new LinkedHashMap<>();
+        memory.forEach((name, value) -> result.put(name, new HostUsage(value, null, null)));
+        disk.forEach((name, value) -> result.merge(name, new HostUsage(null, value, null),
+                (left, right) -> new HostUsage(left.memoryBytes(), right.diskBytes(), left.load1m())));
+        load.forEach((name, value) -> result.merge(name, new HostUsage(null, null, value),
+                (left, right) -> new HostUsage(left.memoryBytes(), left.diskBytes(), right.load1m())));
+        return result;
+    }
+
+    /** 按 {@code service_instance_id} 取每个实例的最新值，用于没有 k8s 资源属性的主机级指标。 */
+    private Map<String, Double> instanceMetric(JdbcClient client, String metric, String marker) {
+        String sql = "SELECT instance, value FROM ("
+                + "SELECT service_instance_id AS instance, value, "
+                + "ROW_NUMBER() OVER (PARTITION BY service_instance_id ORDER BY timestamp DESC) AS rn "
+                + "FROM otel.otel_metrics_gauge WHERE metric_name = :metric "
+                + "AND CAST(resource_attributes AS STRING) LIKE :marker "
+                + "AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)) samples WHERE rn = 1";
+        return client.sql(sql).param("metric", metric).param("marker", marker).query().listOfRows().stream()
+                .collect(Collectors.toMap(row -> String.valueOf(row.get("instance")),
+                        row -> ((Number) row.get("value")).doubleValue(), (left, right) -> right, LinkedHashMap::new));
     }
 
     private Snapshot query(JdbcClient client, String marker) {
@@ -142,5 +181,9 @@ public class K8sDashboardMetricsService {
     }
 
     public record NodeUsage(Double cpuCores, Double memoryBytes, Double diskBytes) {
+    }
+
+    /** 主机列表用的单节点用量。 */
+    public record HostUsage(Double memoryBytes, Double diskBytes, Double load1m) {
     }
 }

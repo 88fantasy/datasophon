@@ -47,6 +47,7 @@ import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterArchType;
+import com.datasophon.dao.enums.ManageMode;
 
 import java.util.List;
 import java.util.Map;
@@ -123,9 +124,12 @@ public class ClusterDeleteService {
             }
             deletePhysicalClusterComponents(clusterId);
         } else {
-            boolean success = deleteK8sAgent(clusterId);
-            if (!success) {
-                return;
+            // 接管集群的 agent 不是平台装的，卸载它等于动了别人的集群，与只读接管的承诺相悖
+            if (!ManageMode.IMPORTED.equals(clusterInfo.getManageMode())) {
+                boolean success = deleteK8sAgent(clusterId);
+                if (!success) {
+                    return;
+                }
             }
             deleteK8sClusterComponents(clusterId);
         }

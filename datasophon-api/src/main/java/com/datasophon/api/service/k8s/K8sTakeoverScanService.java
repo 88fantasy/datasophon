@@ -1,0 +1,166 @@
+package com.datasophon.api.service.k8s;
+
+import com.datasophon.api.exceptions.BusinessHintException;
+import com.datasophon.api.service.cluster.K8sClusterConfigService;
+import com.datasophon.api.service.frame.FrameK8sServiceService;
+import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.api.vo.k8s.K8sTakeoverScanResult;
+import com.datasophon.common.k8s.vo.helm.HelmReleaseListItemVO;
+import com.datasophon.common.model.k8s.K8sArtifact;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
+import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson2.JSONObject;
+
+/**
+ * 扫描目标集群已存在的 Helm release，并与框架服务定义做匹配。
+ *
+ * <p>只读：本类不向目标集群写入任何内容。
+ */
+@Service
+public class K8sTakeoverScanService {
+
+    private final HelmReleaseReader helmReleaseReader;
+    private final FrameK8sServiceService frameK8sServiceService;
+    private final K8sClusterConfigService k8sClusterConfigService;
+    private final K8sServiceInstanceService k8sServiceInstanceService;
+    private final K8sTakeoverReconcileService reconcileService;
+
+    public K8sTakeoverScanService(HelmReleaseReader helmReleaseReader,
+                                  FrameK8sServiceService frameK8sServiceService,
+                                  K8sClusterConfigService k8sClusterConfigService,
+                                  K8sServiceInstanceService k8sServiceInstanceService,
+                                  K8sTakeoverReconcileService reconcileService) {
+        this.helmReleaseReader = helmReleaseReader;
+        this.frameK8sServiceService = frameK8sServiceService;
+        this.k8sClusterConfigService = k8sClusterConfigService;
+        this.k8sServiceInstanceService = k8sServiceInstanceService;
+        this.reconcileService = reconcileService;
+    }
+
+    /**
+     * 扫描集群内 deployed 状态的 release，按 chart 名匹配框架服务定义。
+     *
+     * @param clusterId 集群 ID
+     * @return 匹配结果，未匹配的进入 pending 待人工绑定
+     */
+    public K8sTakeoverScanResult scan(Integer clusterId) {
+        K8sClusterConfig config = k8sClusterConfigService.getByClusterId(clusterId);
+        if (config == null) {
+            throw new BusinessHintException("集群未配置 K8s 连接信息，无法扫描");
+        }
+        List<FrameK8sServiceEntity> definitions = frameK8sServiceService.listNewest(clusterId);
+        List<HelmReleaseListItemVO> releases = helmReleaseReader.listDeployed(config);
+
+        // 已登记的接管实例，用来判定「已接管」与「失联」两个方向
+        List<K8sServiceInstanceVO> imported = k8sServiceInstanceService.queryInstanceList(clusterId).stream()
+                .filter(instance -> InstanceSource.IMPORTED.name().equals(instance.getSource()))
+                .toList();
+        Set<String> registeredKeys = imported.stream()
+                .map(instance -> releaseKey(instance.getNamespace(), instance.getReleaseName()))
+                .collect(Collectors.toSet());
+        Set<String> deployedKeys = releases.stream()
+                .map(release -> releaseKey(release.getNamespace(), release.getName()))
+                .collect(Collectors.toSet());
+
+        List<K8sTakeoverScanResult.ScannedRelease> matched = new ArrayList<>();
+        List<K8sTakeoverScanResult.ScannedRelease> pending = new ArrayList<>();
+        for (HelmReleaseListItemVO release : releases) {
+            FrameK8sServiceEntity definition = match(release, definitions);
+            boolean registered = registeredKeys.contains(
+                    releaseKey(release.getNamespace(), release.getName()));
+            if (definition == null) {
+                pending.add(toScanned(release, null, registered));
+            } else {
+                matched.add(toScanned(release, definition, registered));
+            }
+        }
+
+        List<K8sTakeoverScanResult.MissingInstance> missing = imported.stream()
+                .filter(instance -> !deployedKeys.contains(
+                        releaseKey(instance.getNamespace(), instance.getReleaseName())))
+                .map(instance -> new K8sTakeoverScanResult.MissingInstance(
+                        instance.getId(), instance.getReleaseName(),
+                        instance.getNamespace(), instance.getServiceName()))
+                .toList();
+
+        // 刚拿到最新的集群状态，让轻对账缓存立刻跟上，避免重扫完侧边栏还挂着旧标记
+        reconcileService.evict(clusterId);
+        return new K8sTakeoverScanResult(matched, pending, missing);
+    }
+
+    /**
+     * 匹配规则，按优先级：
+     * <ol>
+     *   <li>框架服务名 == chart 名</li>
+     *   <li>{@code artifact.helm}（Nexus 上的 chart 包名，如 {@code apisix-2.12.5.tgz}）去掉版本与后缀后 == chart 名</li>
+     * </ol>
+     *
+     * <p>不用 release 名匹配：实测 release 名与 chart 名可以不同，
+     * 如 release {@code fdb-cluster} 对应 chart {@code fdb-operator}。
+     */
+    private FrameK8sServiceEntity match(HelmReleaseListItemVO release, List<FrameK8sServiceEntity> definitions) {
+        String chartName = release.chartName();
+        if (chartName == null) {
+            return null;
+        }
+        for (FrameK8sServiceEntity definition : definitions) {
+            if (chartName.equals(definition.getServiceName())) {
+                return definition;
+            }
+        }
+        for (FrameK8sServiceEntity definition : definitions) {
+            if (chartName.equals(chartNameOfArtifact(definition))) {
+                return definition;
+            }
+        }
+        return null;
+    }
+
+    /** 从 {@code artifact.helm} 的包名里截出 chart 名，如 {@code apisix-2.12.5.tgz} → {@code apisix}。 */
+    private String chartNameOfArtifact(FrameK8sServiceEntity definition) {
+        if (definition.getArtifact() == null || definition.getArtifact().isBlank()) {
+            return null;
+        }
+        K8sArtifact artifact = JSONObject.parseObject(definition.getArtifact(), K8sArtifact.class);
+        if (artifact == null || artifact.getHelm() == null || artifact.getHelm().isBlank()) {
+            return null;
+        }
+        String helm = artifact.getHelm();
+        int suffix = helm.lastIndexOf(".tgz");
+        if (suffix > 0) {
+            helm = helm.substring(0, suffix);
+        }
+        int separator = helm.lastIndexOf('-');
+        return separator < 0 ? helm : helm.substring(0, separator);
+    }
+
+    private String releaseKey(String namespace, String releaseName) {
+        return namespace + "/" + releaseName;
+    }
+
+    private K8sTakeoverScanResult.ScannedRelease toScanned(HelmReleaseListItemVO release,
+                                                           FrameK8sServiceEntity definition,
+                                                           boolean registered) {
+        return new K8sTakeoverScanResult.ScannedRelease(
+                release.getName(),
+                release.getNamespace(),
+                release.getChart(),
+                release.chartName(),
+                release.chartVersion(),
+                release.getAppVersion(),
+                definition == null ? null : definition.getId(),
+                definition == null ? null : definition.getServiceName(),
+                definition == null ? null : definition.getType(),
+                registered);
+    }
+}

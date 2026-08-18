@@ -35,14 +35,19 @@
             a.service_id AS service_id,
             c.service_name AS service_name,
             c.type as catalog,
-            a.state
+            a.state,
+            a.source AS source,
+            a.release_name AS release_name,
+            a.metrics_job AS metrics_job
         FROM
             t_ddh_k8s_service_instance a
             LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id
             LEFT JOIN t_ddh_frame_k8s_service c ON a.service_id = c.id
         WHERE
             a.cluster_id = #{clusterId}
-            AND b.namespace = #{namespace}
+            <if test="namespace != null and namespace != ''">
+                AND b.namespace = #{namespace}
+            </if>
     </select>
 
     <select id="selectByIds" resultType="com.datasophon.dao.vo.instance.K8sServiceInstanceVO">
@@ -54,7 +59,10 @@
             a.service_id AS service_id,
             c.service_name AS service_name,
             c.type as catalog,
-            a.state
+            a.state,
+            a.source AS source,
+            a.release_name AS release_name,
+            a.metrics_job AS metrics_job
         FROM
             t_ddh_k8s_service_instance a
             LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id

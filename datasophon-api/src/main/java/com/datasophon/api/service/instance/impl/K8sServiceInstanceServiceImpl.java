@@ -18,6 +18,7 @@ import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
+import com.datasophon.dao.enums.k8s.InstanceSource;
 import com.datasophon.dao.mapper.instance.K8sServiceInstanceMapper;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
@@ -38,19 +39,19 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 @Service("k8sServiceInstanceService")
 @Transactional(rollbackFor = BusinessHintException.class)
 public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanceMapper, K8sServiceInstance> implements K8sServiceInstanceService {
-    
+
     @Autowired
     private K8sClusterNamespaceService k8sClusterNamespaceService;
-    
+
     @Autowired
     private K8sService k8sService;
-    
+
     @Autowired
     private K8sClusterConfigService k8sClusterConfigService;
-    
+
     @Autowired
     private K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
-    
+
     @Override
     public List<K8sServiceInstanceVO> queryInstanceList(K8sNamespaceIdentityDTO query) {
         if (k8sClusterNamespaceService.getNamespace(query) == null) {
@@ -59,7 +60,13 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         // 2. 使用@K8sServiceInstanceMapper 查询 K8sServiceInstanceVO 对象
         return baseMapper.selectInstanceList(query.getClusterId(), query.getNamespace());
     }
-    
+
+    @Override
+    public List<K8sServiceInstanceVO> queryInstanceList(Integer clusterId) {
+        // namespace 传 null，SQL 侧动态省略 namespace 条件，返回集群下全部实例
+        return baseMapper.selectInstanceList(clusterId, null);
+    }
+
     @Override
     public List<K8sServiceInstanceVO> listByIds(List<Integer> instanceIds) {
         if (instanceIds == null || instanceIds.isEmpty()) {
@@ -68,27 +75,27 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         // 2. 使用@K8sServiceInstanceMapper#selectByIds 根据 IDs 查询 K8sServiceInstanceVO 对象
         return baseMapper.selectByIds(instanceIds);
     }
-    
+
     @Override
     public List<String> listResourceType(K8sServiceInstanceQueryDTO query) {
         K8sServiceInstance instance = getById(query.getInstanceId());
         Objects.requireNonNull(instance);
-        
+
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
-        
+
         List<String> types = k8sService.getResourceTypes(config, query);
         return types;
     }
-    
+
     @Override
     public Object listResource(K8sServiceInstanceQueryDTO query) {
         K8sServiceInstance instance = getById(query.getInstanceId());
         Objects.requireNonNull(instance);
-        
+
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
-        
+
         // 根据 resourceType 调用 K8sService 中的对应方法
         switch (query.getResourceType()) {
             case DEPLOYMENT_TYPE:
@@ -105,7 +112,7 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
                 throw new BusinessHintException("不支持的资源类型：" + query.getResourceType());
         }
     }
-    
+
     @Override
     public K8sServiceInstance createIfAbsent(Integer clusterId, Integer namespaceId, Integer serviceId) {
         // 2. 根据 serviceId 查询服务实例，如果不存在则创建
@@ -114,7 +121,7 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
                 .eq(K8sServiceInstance::getNamespaceId, namespaceId)
                 .eq(K8sServiceInstance::getServiceId, serviceId)
                 .one();
-        
+
         if (instance == null) {
             instance = new K8sServiceInstance();
             instance.setClusterId(clusterId);
@@ -125,33 +132,41 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         }
         return instance;
     }
-    
+
     @Override
     public boolean removeInstanceId(Integer instanceId) {
         // 1. 获取服务实例信息
         K8sServiceInstanceVO instance =
                 getVoById(instanceId).orElseThrow(() -> new BusinessHintException("实例不存在"));
-        
+
+        // 接管的实例不是平台装的，这里的 uninstallRelease 会真的把 release 从目标集群卸载掉。
+        // 该路径无 clusterId 路径变量，@ImportedReadOnly 拦截器覆盖不到，必须在此拦一道。
+        if (InstanceSource.IMPORTED.name().equals(instance.getSource())) {
+            throw new BusinessHintException(
+                    String.format("服务%s是接管登记的，不能从平台删除；如需解除登记请使用「取消接管」",
+                            instance.getServiceName()));
+        }
+
         // 2. 获取 K8s 配置
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
-        
+
         if (hasRunningPod(config, instance.getId())) {
             throw new BusinessHintException(String.format("服务%s存在正在运行的Pod，请先停止服务后再删除实例", instance.getServiceName()));
         }
-        
+
         k8sService.uninstallRelease(config, instanceId);
-        
+
         k8sServiceInstanceValuesService.removeByInstanceId(instanceId);
         // 5. 检查通过，删除服务实例
         return removeById(instanceId);
     }
-    
+
     private boolean hasRunningPod(K8sClusterConfig config, Integer instanceId) {
         // 3. 构建查询参数，用于检查 Pod 资源
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(instanceId);
-        
+
         // 4. 检查是否存在正在运行的 Pod
         List<K8sPodInfo> pods = k8sService.listPods(config, query);
         if (pods != null && !pods.isEmpty()) {
@@ -164,12 +179,12 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         }
         return false;
     }
-    
+
     @Override
     public void removeByClusterId(Integer clusterId) {
         lambdaUpdate().eq(K8sServiceInstance::getClusterId, clusterId).remove();
     }
-    
+
     @Override
     public boolean hasRunningInstance(Integer clusterId) {
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(clusterId);
@@ -181,5 +196,5 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         }
         return false;
     }
-    
+
 }

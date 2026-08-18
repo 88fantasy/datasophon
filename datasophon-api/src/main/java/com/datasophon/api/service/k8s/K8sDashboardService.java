@@ -96,11 +96,11 @@ public class K8sDashboardService {
         }
         List<K8sDashboardResponse.TrendPoint> trends = metrics == null ? List.of()
                 : metricsService.trends(clusterId, rangeSeconds(range)).stream()
-                .map(point -> K8sDashboardResponse.TrendPoint.builder()
-                        .timestamp(Instant.ofEpochSecond(point.timestamp()))
-                        .cpuPercent(cpuPercent(point.cpuCores(), resourceTotal("cpu", nodes)))
-                        .memoryPercent(percent(point.memoryBytes(), resourceTotal("memory", nodes))).build())
-                .toList();
+                        .map(point -> K8sDashboardResponse.TrendPoint.builder()
+                                .timestamp(Instant.ofEpochSecond(point.timestamp()))
+                                .cpuPercent(cpuPercent(point.cpuCores(), resourceTotal("cpu", nodes)))
+                                .memoryPercent(percent(point.memoryBytes(), resourceTotal("memory", nodes))).build())
+                        .toList();
         Map<String, K8sDashboardMetricsService.NamespaceUsage> namespaceUsage = metrics == null ? Map.of()
                 : metricsService.namespaceUsage(clusterId);
 
@@ -145,7 +145,12 @@ public class K8sDashboardService {
                 .observedAt(Instant.now())
                 .telemetry(K8sDashboardResponse.Telemetry.builder()
                         .status(metrics != null && metrics.hasData() ? "READY" : "UNAVAILABLE")
-                        .message(metrics == null || !metrics.hasData() ? "OTel 指标暂不可用，当前仅展示 K8s API 实时状态。" : null).build())
+                        .message(metrics == null || !metrics.hasData()
+                                ? "未采集到节点指标，当前仅展示 K8s API 实时状态。"
+                                        + "请确认集群内已部署节点指标采集器（OpenTelemetryCollector，DaemonSet 模式，"
+                                        + "含 hostmetrics + kubeletstats receiver），且其 datasophon.cluster.id 与本集群一致。"
+                                : null)
+                        .build())
                 .overview(K8sDashboardResponse.Overview.builder().health(health)
                         .readyNodes(readyNodes).totalNodes(nodes.size()).runningPods(runningPods)
                         .totalPods(pods.size()).critical(critical).warning(warning).build())
@@ -161,7 +166,7 @@ public class K8sDashboardService {
     private boolean isReady(K8sNode node) {
         return node.getStatus() != null && node.getStatus().getConditions() != null
                 && node.getStatus().getConditions().stream()
-                .anyMatch(condition -> "Ready".equals(condition.getType()) && "True".equals(condition.getStatus()));
+                        .anyMatch(condition -> "Ready".equals(condition.getType()) && "True".equals(condition.getStatus()));
     }
 
     private String eventObject(K8sEvent event) {
@@ -212,7 +217,8 @@ public class K8sDashboardService {
         if (metrics.diskBytes() != null) {
             capacities.get(2).setUsed(metrics.diskBytes());
             capacities.get(2).setPercent(metrics.diskCapacityBytes() == null || metrics.diskCapacityBytes() == 0
-                    ? null : metrics.diskBytes() * 100D / metrics.diskCapacityBytes());
+                    ? null
+                    : metrics.diskBytes() * 100D / metrics.diskCapacityBytes());
             if (metrics.diskCapacityBytes() != null) {
                 capacities.get(2).setTotal(metrics.diskCapacityBytes());
             }
@@ -246,7 +252,7 @@ public class K8sDashboardService {
 
     private long bytes(String value) {
         try {
-            String[] units = { "Ki", "Mi", "Gi", "Ti", "Pi" };
+            String[] units = {"Ki", "Mi", "Gi", "Ti", "Pi"};
             for (int index = 0; index < units.length; index++) {
                 if (value.endsWith(units[index])) {
                     return Math.round(Double.parseDouble(value.substring(0, value.length() - 2)) * (1L << (10 * (index + 1))));

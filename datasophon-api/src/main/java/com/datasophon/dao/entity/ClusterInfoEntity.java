@@ -24,25 +24,25 @@ package com.datasophon.dao.entity;
 
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.datasophon.dao.enums.ManageMode;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
-import lombok.Data;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
 @Data
 @TableName("t_ddh_cluster_info")
 public class ClusterInfoEntity implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
-    
+
     /**
      * 主键
      */
@@ -80,14 +80,17 @@ public class ClusterInfoEntity implements Serializable {
      * 集群框架id
      */
     private Integer frameId;
-    
+
     @Schema(description = "集群架构，物理机:physical K8S集群:k8s")
     private ClusterArchType archType;
-    
+
+    @Schema(description = "管理模式，平台安装:MANAGED 接管现有集群:IMPORTED")
+    private ManageMode manageMode;
+
     @TableField(exist = false)
     private List<UserInfoEntity> clusterManagerList;
-    
+
     @TableField(exist = false)
     private Integer clusterStateCode;
-    
+
 }

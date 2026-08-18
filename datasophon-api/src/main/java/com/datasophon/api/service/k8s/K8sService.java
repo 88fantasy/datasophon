@@ -103,6 +103,14 @@ public interface K8sService {
     List<K8sServiceInfo> listServices(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
 
     /**
+     * 列出集群内全部 Helm release 的 {@code namespace/name} 标识（只读，只取标签不取内容）。
+     *
+     * @param config K8s 集群配置
+     * @return release 标识列表
+     */
+    List<String> listHelmReleaseKeys(K8sClusterConfig config);
+
+    /**
      * 获取 Ingress 资源列表
      *
      * @param config K8s 集群配置

@@ -25,15 +25,11 @@ package com.datasophon.api.controller.v2;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.instance.K8sServiceInstanceValuesUpdateDTO;
+import com.datasophon.api.security.ImportedReadOnly;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.dao.entity.instance.K8sServiceInstanceValues;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
 import java.util.List;
-
-import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +38,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * v2 K8s Helm 配置接口：values 版本列表 / 读取单条 / 保存 deltaValues。
@@ -54,10 +54,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v2/cluster/{clusterId}/k8s/instance/{instanceId}/config")
 @Tag(name = "v2 K8s Helm 配置")
 public class ClusterK8sConfigV2Controller extends ApiController {
-    
+
     @Autowired
     private K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
-    
+
     /**
      * Helm values 历史版本列表（仅含 id / version，降序）。
      *
@@ -68,7 +68,7 @@ public class ClusterK8sConfigV2Controller extends ApiController {
     public ApiResponse<List<K8sServiceInstanceValues>> versions(@PathVariable Integer instanceId) {
         return ApiResponse.ok(k8sServiceInstanceValuesService.listSimpleByInstanceId(instanceId));
     }
-    
+
     /**
      * 按 valueId 读取完整 Helm values（含 values / deltaValues / metaFileType）。
      *
@@ -79,12 +79,13 @@ public class ClusterK8sConfigV2Controller extends ApiController {
     public ApiResponse<K8sServiceInstanceValues> info(@PathVariable Integer valueId) {
         return ApiResponse.ok(k8sServiceInstanceValuesService.getById(valueId));
     }
-    
+
     /**
      * 保存用户编辑的 deltaValues（仅更新当前版本，不升版、不打 needRestart）。
      *
      * @param req 包含 id + deltaValues
      */
+    @ImportedReadOnly("修改服务配置")
     @PostMapping
     @Operation(summary = "保存 Helm deltaValues")
     public ApiResponse<Void> save(@RequestBody K8sServiceInstanceValuesUpdateDTO req) {

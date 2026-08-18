@@ -26,6 +26,7 @@ import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.v2.DagCommandPageResponse;
+import com.datasophon.api.security.ImportedReadOnly;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG;
@@ -43,19 +44,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v2/cluster/{clusterId}")
 public class ClusterDagV2Controller extends ApiController {
-    
+
     private final DAGService dagService;
-    
+
     private final ExtRepoInstallDelegateService extRepoInstallDelegateService;
-    
+
     public ClusterDagV2Controller(DAGService dagService,
                                   ExtRepoInstallDelegateService extRepoInstallDelegateService) {
         this.dagService = dagService;
         this.extRepoInstallDelegateService = extRepoInstallDelegateService;
     }
-    
+
     // ── 命令历史列表（切片 6a）─────────────────────────────────────
-    
+
     /**
      * 分页查询集群命令历史列表。
      */
@@ -66,9 +67,9 @@ public class ClusterDagV2Controller extends ApiController {
                                                             @RequestParam(defaultValue = "20") Integer pageSize) {
         return ApiResponse.ok(DagCommandPageResponse.of(dagService.findDagByPage(clusterId, page, pageSize)));
     }
-    
+
     // ── DAG 图可视化（切片 6b）────────────────────────────────────
-    
+
     /**
      * 获取指定 DAG 的节点/边/状态数据（用于前端 x6 图渲染）。
      */
@@ -78,10 +79,11 @@ public class ClusterDagV2Controller extends ApiController {
                                                        @PathVariable String dagId) {
         return ApiResponse.ok(extRepoInstallDelegateService.getDeployProgressDAG2(dagId));
     }
-    
+
     /**
      * 重新运行指定 DAG（restart=true 跳过已成功节点）。
      */
+    @ImportedReadOnly("重新下发 DAG")
     @PostMapping("/dag/{dagId}/redeploy")
     public ApiResponse<Void> redeployDag(
                                          @PathVariable Integer clusterId,

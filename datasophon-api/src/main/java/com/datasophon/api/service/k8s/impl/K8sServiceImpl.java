@@ -148,6 +148,11 @@ public class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    public List<String> listHelmReleaseKeys(K8sClusterConfig config) {
+        return exec(newOptions(config), KubectlClient::getHelmReleaseKeys, "获取 Helm release 列表");
+    }
+
+    @Override
     public List<K8sPod> listAllPods(K8sClusterConfig config) {
         return exec(newOptions(config), client -> {
             K8sResourceList<K8sPod> pods = client.getPodsAllNamespaces();

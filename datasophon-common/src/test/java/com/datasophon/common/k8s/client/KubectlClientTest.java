@@ -42,121 +42,121 @@ import org.mockito.Mockito;
  */
 @DisplayName("KubectlClient 单元测试")
 class KubectlClientTest {
-    
+
     private static final String TEST_KUBECTL_PATH = "/usr/bin/kubectl";
     private static final String TEST_JSON_RESPONSE = "{\"apiVersion\":\"v1\",\"kind\":\"List\",\"items\":[]}";
-    
+
     @BeforeEach
     public void init() {
         PropertiesPathUtils.resetPropertyFile();
     }
-    
+
     /**
      * 构造方法和 kubectlPath 检测相关测试
      */
     @Nested
     @DisplayName("构造方法测试")
     class ConstructorTests {
-        
+
         @Test
         @DisplayName("Windows 系统下应使用默认 kubectl 路径")
         void testConstructor_Windows() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Windows 10");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ClientOptions options = new ClientOptions();
                     options.setServerName("https://k8s.example.com");
                     options.setToken("test-token");
-                    
+
                     KubectlClient client = new KubectlClient(options);
-                    
+
                     Assertions.assertEquals("kubectl", client.getKubectlPath());
                 }
             } finally {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("非 Windows 系统下 kubectl 命令存在时应使用检测到的路径")
         void testConstructor_NonWindows_KubectlExists() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(true);
                     when(mockResult.getExecOut()).thenReturn("/usr/bin/kubectl\n");
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setServerName("https://k8s.example.com");
                     options.setToken("test-token");
-                    
+
                     KubectlClient client = new KubectlClient(options);
-                    
+
                     Assertions.assertEquals("/usr/bin/kubectl", client.getKubectlPath());
                 }
             } finally {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("非 Windows 系统下 kubectl 命令不存在时应使用默认路径")
         void testConstructor_NonWindows_KubectlNotExists() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(false);
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setServerName("https://k8s.example.com");
                     options.setToken("test-token");
-                    
+
                     KubectlClient client = new KubectlClient(options);
-                    
+
                     Assertions.assertEquals("kubectl", client.getKubectlPath());
                 }
             } finally {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("使用 KubeConfig 配置构造")
         void testConstructor_WithKubeConfig() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(false);
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setKubeConfig("apiVersion: v1\nclusters: []");
-                    
+
                     KubectlClient client = new KubectlClient(options);
-                    
+
                     Assertions.assertNotNull(client.getKubeConfig());
                     Assertions.assertTrue(client.getKubeConfig().endsWith("kubeConfig.yaml"));
                 }
@@ -164,7 +164,7 @@ class KubectlClientTest {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("使用 Token 认证配置构造")
         void testConstructor_WithToken() {
@@ -172,14 +172,14 @@ class KubectlClientTest {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token-123");
                 options.setServerName("https://k8s.example.com");
-                
+
                 KubectlClient client = new KubectlClient(options);
-                
+
                 Assertions.assertEquals("test-token-123", client.getToken());
                 Assertions.assertEquals("https://k8s.example.com", client.getServerName());
             }
         }
-        
+
         @Test
         @DisplayName("使用用户名密码认证配置构造")
         void testConstructor_WithUsernamePassword() {
@@ -188,36 +188,36 @@ class KubectlClientTest {
                 options.setUsername("admin");
                 options.setPassword("password123");
                 options.setServerName("https://k8s.example.com");
-                
+
                 KubectlClient client = new KubectlClient(options);
-                
+
                 Assertions.assertEquals("admin", client.getUsername());
                 Assertions.assertEquals("password123", client.getPassword());
             }
         }
-        
+
         @Test
         @DisplayName("使用服务器证书配置构造")
         void testConstructor_WithServerCert() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(false);
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setServerName("https://k8s.example.com");
                     options.setToken("test-token");
                     options.setServerCert("SGVsbG8gV29ybGQ="); // Base64 encoded "Hello World"
-                    
+
                     KubectlClient client = new KubectlClient(options);
-                    
+
                     Assertions.assertNotNull(client.getServerCert());
                     Assertions.assertTrue(client.getServerCert().endsWith("ca.cert"));
                 }
@@ -226,14 +226,14 @@ class KubectlClientTest {
             }
         }
     }
-    
+
     /**
      * execute 方法相关测试（通过 executeToJson 间接测试）
      */
     @Nested
     @DisplayName("execute 方法测试")
     class ExecuteTests {
-        
+
         @Test
         @DisplayName("execute 使用 KubeConfig 认证 - 通过 executeToJson 间接测试")
         void testExecute_WithKubeConfig() {
@@ -241,7 +241,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -249,15 +249,15 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("kubeConfig.yaml")));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setKubeConfig("apiVersion: v1");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 client.executeToJson(new ArrayList<>(Arrays.asList("get pods")), 30);
             }
         }
-        
+
         @Test
         @DisplayName("execute 使用 Token 认证 - 通过 executeToJson 间接测试")
         void testExecute_WithToken() {
@@ -265,7 +265,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -274,16 +274,16 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.contains("--insecure-skip-tls-verify=true"));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 client.executeToJson(new ArrayList<>(Arrays.asList("get pods")), 30);
             }
         }
-        
+
         @Test
         @DisplayName("execute 使用用户名密码认证 - 通过 executeToJson 间接测试")
         void testExecute_WithUsernamePassword() {
@@ -291,7 +291,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -301,33 +301,33 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.contains("password123"));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setUsername("admin");
                 options.setPassword("password123");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 client.executeToJson(new ArrayList<>(Arrays.asList("get pods")), 30);
             }
         }
-        
+
         @Test
         @DisplayName("execute 使用证书认证 - 通过 executeToJson 间接测试")
         void testExecute_WithServerCert() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(true);
                     when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                             .thenAnswer(invocation -> {
                                 List<String> args = invocation.getArgument(1);
@@ -335,12 +335,12 @@ class KubectlClientTest {
                                 Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("ca.cert")));
                                 return mockResult;
                             });
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setToken("test-token");
                     options.setServerName("https://k8s.example.com");
                     options.setServerCert("SGVsbG8gV29ybGQ=");
-                    
+
                     KubectlClient client = new KubectlClient(options);
                     client.executeToJson(new ArrayList<>(Arrays.asList("get pods")), 30);
                 }
@@ -349,14 +349,14 @@ class KubectlClientTest {
             }
         }
     }
-    
+
     /**
      * executeToJson 方法相关测试
      */
     @Nested
     @DisplayName("executeToJson 方法测试")
     class ExecuteToJsonTests {
-        
+
         @Test
         @DisplayName("executeToJson 成功")
         void testExecuteToJson_Success() {
@@ -364,21 +364,21 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 String result = client.executeToJson(new ArrayList<>(Arrays.asList("get pods")), 30);
-                
+
                 Assertions.assertTrue(result.contains("items"));
             }
         }
-        
+
         @Test
         @DisplayName("executeToJson 失败应抛出 KubectlException")
         void testExecuteToJson_Failure() {
@@ -386,29 +386,29 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("connection refused");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.executeToJson(new ArrayList<>(Arrays.asList("get pods")), 30));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("connection refused"));
             }
         }
     }
-    
+
     /**
      * getVersion 方法相关测试
      */
     @Nested
     @DisplayName("getVersion 方法测试")
     class GetVersionTests {
-        
+
         @Test
         @DisplayName("getVersion 成功")
         void testGetVersion_Success() {
@@ -417,21 +417,21 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(versionOutput);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 String version = client.getVersion();
-                
+
                 Assertions.assertEquals("v1.28.2", version);
             }
         }
-        
+
         @Test
         @DisplayName("getVersion 失败 - 命令执行失败")
         void testGetVersion_Failure_CommandFailed() {
@@ -439,21 +439,21 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getExecOut()).thenReturn("connection refused");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.getVersion());
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("connection refused"));
             }
         }
-        
+
         @Test
         @DisplayName("getVersion 失败 - 无法解析版本信息")
         void testGetVersion_Failure_CannotParse() {
@@ -461,29 +461,29 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("invalid output format");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.getVersion());
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("无法解析 K8s 版本信息"));
             }
         }
     }
-    
+
     /**
      * getNodes 方法相关测试
      */
     @Nested
     @DisplayName("getNodes 方法测试")
     class GetNodesTests {
-        
+
         @Test
         @DisplayName("getNodes 成功")
         void testGetNodes_Success() {
@@ -492,30 +492,30 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sNode> result = client.getNodes();
-                
+
                 Assertions.assertNotNull(result);
                 Assertions.assertEquals("List", result.getKind());
             }
         }
     }
-    
+
     /**
      * getNamespaces 方法相关测试
      */
     @Nested
     @DisplayName("getNamespaces 方法测试")
     class GetNamespacesTests {
-        
+
         @Test
         @DisplayName("getNamespaces 成功")
         void testGetNamespaces_Success() {
@@ -524,29 +524,29 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sNamespace> result = client.getNamespaces();
-                
+
                 Assertions.assertNotNull(result);
             }
         }
     }
-    
+
     /**
      * getPods 方法相关测试
      */
     @Nested
     @DisplayName("getPods 方法测试")
     class GetPodsTests {
-        
+
         @Test
         @DisplayName("getPods 成功 - 无 labelSelector")
         void testGetPods_Success_NoLabelSelector() {
@@ -555,21 +555,21 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sPod> result = client.getPods("default", null);
-                
+
                 Assertions.assertNotNull(result);
             }
         }
-        
+
         @Test
         @DisplayName("getPods 成功 - 有 labelSelector")
         void testGetPods_Success_WithLabelSelector() {
@@ -578,7 +578,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -586,26 +586,26 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.contains("app=myapp"));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sPod> result = client.getPods("default", "app=myapp");
-                
+
                 Assertions.assertNotNull(result);
             }
         }
     }
-    
+
     /**
      * getDeployments 方法相关测试
      */
     @Nested
     @DisplayName("getDeployments 方法测试")
     class GetDeploymentsTests {
-        
+
         @Test
         @DisplayName("getDeployments 成功 - 有 labelSelector")
         void testGetDeployments_Success_WithLabelSelector() {
@@ -614,7 +614,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -623,26 +623,26 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.contains("kube-system"));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sDeployment> result = client.getDeployments("kube-system", "app=nginx");
-                
+
                 Assertions.assertNotNull(result);
             }
         }
     }
-    
+
     /**
      * getServices 方法相关测试
      */
     @Nested
     @DisplayName("getServices 方法测试")
     class GetServicesTests {
-        
+
         @Test
         @DisplayName("getServices 成功")
         void testGetServices_Success() {
@@ -651,29 +651,29 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sService> result = client.getServices("default", null);
-                
+
                 Assertions.assertNotNull(result);
             }
         }
     }
-    
+
     /**
      * getIngresses 方法相关测试
      */
     @Nested
     @DisplayName("getIngresses 方法测试")
     class GetIngressesTests {
-        
+
         @Test
         @DisplayName("getIngresses 成功")
         void testGetIngresses_Success() {
@@ -682,29 +682,29 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sIngress> result = client.getIngresses("default", null);
-                
+
                 Assertions.assertNotNull(result);
             }
         }
     }
-    
+
     /**
      * getConfigMaps 方法相关测试
      */
     @Nested
     @DisplayName("getConfigMaps 方法测试")
     class GetConfigMapsTests {
-        
+
         @Test
         @DisplayName("getConfigMaps 成功")
         void testGetConfigMaps_Success() {
@@ -713,36 +713,36 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 K8sResourceList<K8sConfigMap> result = client.getConfigMaps("default", null);
-                
+
                 Assertions.assertNotNull(result);
             }
         }
     }
-    
+
     /**
      * restartDeployment 方法相关测试
      */
     @Nested
     @DisplayName("restartDeployment 方法测试")
     class RestartDeploymentTests {
-        
+
         @Test
         @DisplayName("restartDeployment 成功")
         void testRestartDeployment_Success() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -753,16 +753,16 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.contains("default"));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 Assertions.assertDoesNotThrow(() -> client.restartDeployment("default", "my-deployment"));
             }
         }
-        
+
         @Test
         @DisplayName("restartDeployment 失败")
         void testRestartDeployment_Failure() {
@@ -770,36 +770,36 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("deployment not found");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.restartDeployment("default", "nonexistent-deployment"));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("deployment not found"));
             }
         }
     }
-    
+
     /**
      * updateDeploymentImage 方法相关测试
      */
     @Nested
     @DisplayName("updateDeploymentImage 方法测试")
     class UpdateDeploymentImageTests {
-        
+
         @Test
         @DisplayName("updateDeploymentImage 成功 - 单容器")
         void testUpdateDeploymentImage_Success_SingleContainer() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -808,12 +808,12 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.contains("deployment/my-deployment"));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 UpdateDeploymentDTO dto = new UpdateDeploymentDTO();
                 dto.setNamespace("default");
                 dto.setDeployment("my-deployment");
@@ -822,26 +822,26 @@ class KubectlClientTest {
                 image.setNewImage("nginx");
                 image.setTag("1.21");
                 dto.setImages(new ArrayList<>(Arrays.asList(image)));
-                
+
                 Assertions.assertDoesNotThrow(() -> client.updateDeploymentImage(dto));
             }
         }
-        
+
         @Test
         @DisplayName("updateDeploymentImage 成功 - 多容器")
         void testUpdateDeploymentImage_Success_MultipleContainers() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 UpdateDeploymentDTO dto = new UpdateDeploymentDTO();
                 dto.setNamespace("default");
                 dto.setDeployment("my-deployment");
@@ -854,11 +854,11 @@ class KubectlClientTest {
                 image2.setNewImage("sidecar");
                 image2.setTag("v1.0");
                 dto.setImages(Arrays.asList(image1, image2));
-                
+
                 Assertions.assertDoesNotThrow(() -> client.updateDeploymentImage(dto));
             }
         }
-        
+
         @Test
         @DisplayName("updateDeploymentImage 失败")
         void testUpdateDeploymentImage_Failure() {
@@ -866,15 +866,15 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("image not found");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 UpdateDeploymentDTO dto = new UpdateDeploymentDTO();
                 dto.setNamespace("default");
                 dto.setDeployment("my-deployment");
@@ -883,40 +883,40 @@ class KubectlClientTest {
                 image.setNewImage("nginx");
                 image.setTag("1.21");
                 dto.setImages(new ArrayList<>(Arrays.asList(image)));
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.updateDeploymentImage(dto));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("image not found"));
             }
         }
     }
-    
+
     /**
      * createNamespace 方法相关测试
      */
     @Nested
     @DisplayName("createNamespace 方法测试")
     class CreateNamespaceTests {
-        
+
         @Test
         @DisplayName("createNamespace 成功")
         void testCreateNamespace_Success() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 Assertions.assertDoesNotThrow(() -> client.createNamespace("my-namespace"));
             }
         }
-        
+
         @Test
         @DisplayName("createNamespace 命名空间已存在")
         void testCreateNamespace_AlreadyExists() {
@@ -924,20 +924,20 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getExecOut()).thenReturn("namespace already exists");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 // 命名空间已存在时不应抛出异常
                 Assertions.assertDoesNotThrow(() -> client.createNamespace("existing-namespace"));
             }
         }
-        
+
         @Test
         @DisplayName("createNamespace 失败")
         void testCreateNamespace_Failure() {
@@ -946,36 +946,36 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getExecOut()).thenReturn("permission denied");
                 when(mockResult.getErrorTraceMessage()).thenReturn("permission denied");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.createNamespace("my-namespace"));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("permission denied"));
             }
         }
     }
-    
+
     /**
      * scaleDeployment 方法相关测试
      */
     @Nested
     @DisplayName("scaleDeployment 方法测试")
     class ScaleDeploymentTests {
-        
+
         @Test
         @DisplayName("scaleDeployment 成功")
         void testScaleDeployment_Success() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
@@ -984,16 +984,16 @@ class KubectlClientTest {
                             Assertions.assertTrue(args.contains("--replicas=3"));
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 Assertions.assertDoesNotThrow(() -> client.scaleDeployment("default", "my-deployment", 3));
             }
         }
-        
+
         @Test
         @DisplayName("scaleDeployment 失败")
         void testScaleDeployment_Failure() {
@@ -1001,29 +1001,29 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("deployment not found");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.scaleDeployment("default", "nonexistent", 3));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("deployment not found"));
             }
         }
     }
-    
+
     /**
      * hasResources 方法相关测试
      */
     @Nested
     @DisplayName("hasResources 方法测试")
     class HasResourcesTests {
-        
+
         @Test
         @DisplayName("hasResources 资源存在")
         void testHasResources_Exists() {
@@ -1031,21 +1031,21 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("pod1 pod2 pod3");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 boolean result = client.hasResources("default", "pods", "app=myapp");
-                
+
                 Assertions.assertTrue(result);
             }
         }
-        
+
         @Test
         @DisplayName("hasResources 资源不存在")
         void testHasResources_NotExists() {
@@ -1053,50 +1053,50 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 boolean result = client.hasResources("default", "pods", "app=nonexistent");
-                
+
                 Assertions.assertFalse(result);
             }
         }
-        
+
         @Test
         @DisplayName("hasResources 命令执行失败返回 false")
         void testHasResources_CommandFailed() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 boolean result = client.hasResources("default", "pods", null);
-                
+
                 Assertions.assertFalse(result);
             }
         }
     }
-    
+
     /**
      * close 方法相关测试
      */
     @Nested
     @DisplayName("close 方法测试")
     class CloseTests {
-        
+
         @Test
         @DisplayName("close 方法调用成功")
         void testClose_Success() {
@@ -1104,21 +1104,23 @@ class KubectlClientTest {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
-                
+
                 KubectlClient client = new KubectlClient(options);
-                
+
+                Assertions.assertTrue(client.getTempDir().isDirectory());
                 Assertions.assertDoesNotThrow(() -> client.close());
+                Assertions.assertFalse(client.getTempDir().exists());
             }
         }
     }
-    
+
     /**
      * JSON 解析失败相关测试
      */
     @Nested
     @DisplayName("JSON 解析失败测试")
     class JsonParseFailureTests {
-        
+
         @Test
         @DisplayName("parseResourceList JSON 解析失败")
         void testParseResourceList_InvalidJson() {
@@ -1126,17 +1128,17 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("invalid json {");
-                
+
                 mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 KubectlClient client = new KubectlClient(options);
-                
+
                 KubectlException exception = Assertions.assertThrows(KubectlException.class, () -> client.getNodes());
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("解析结果错误失败"));
             }
         }
