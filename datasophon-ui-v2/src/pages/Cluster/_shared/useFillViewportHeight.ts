@@ -1,4 +1,10 @@
-import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 const INITIAL_HEIGHT = 560;
 
@@ -25,7 +31,11 @@ interface FillViewportHeightOptions {
 export function useFillViewportHeight(
   containerRef: RefObject<HTMLElement | null>,
   deps: unknown[],
-  { minHeight = 480, bottomGap = 24, onHeightChange }: FillViewportHeightOptions = {},
+  {
+    minHeight = 480,
+    bottomGap = 24,
+    onHeightChange,
+  }: FillViewportHeightOptions = {},
 ): number {
   const [height, setHeight] = useState(INITIAL_HEIGHT);
 

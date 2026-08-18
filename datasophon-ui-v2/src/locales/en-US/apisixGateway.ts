@@ -16,7 +16,8 @@ export default {
   'pages.apisixGateway.confirm.commentsLostTitle': 'Comments will be lost',
   'pages.apisixGateway.confirm.commentsLostContent':
     'The current code has comments. They cannot be preserved once you switch to the graphic view and back. Continue?',
-  'pages.apisixGateway.parseError': 'Failed to parse YAML, please fix the errors in the code view first',
+  'pages.apisixGateway.parseError':
+    'Failed to parse YAML, please fix the errors in the code view first',
   'pages.apisixGateway.unknownSegmentsHint':
     'The current config also has {count} section(s) editable only in the code view (e.g. consumers)',
 };

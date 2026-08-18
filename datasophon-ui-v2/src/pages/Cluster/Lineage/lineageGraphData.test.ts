@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { mergeExpansion, toG6Data } from './lineageGraphData';
 import type { GraphData, GraphJob, NodeMeta } from './service';
 
-function node(id: number, canonicalName: string, dwLayer: string | null = null): NodeMeta {
+function node(
+  id: number,
+  canonicalName: string,
+  dwLayer: string | null = null,
+): NodeMeta {
   return {
     id,
     clusterId: 7,
@@ -82,9 +86,39 @@ describe('toG6Data', () => {
         node(4, 'output_c'),
       ],
       edges: [
-        { src: 1, dst: 2, jobs: [job(10, 100, { lastRowCount: 10, lastBytes: 100, runningAppId: 'app-10' })] },
-        { src: 1, dst: 3, jobs: [job(10, 101, { lastRowCount: 20, lastBytes: 200, runningAppId: 'app-10' })] },
-        { src: 1, dst: 4, jobs: [job(10, 102, { lastRowCount: 30, lastBytes: 300, runningAppId: 'app-10' })] },
+        {
+          src: 1,
+          dst: 2,
+          jobs: [
+            job(10, 100, {
+              lastRowCount: 10,
+              lastBytes: 100,
+              runningAppId: 'app-10',
+            }),
+          ],
+        },
+        {
+          src: 1,
+          dst: 3,
+          jobs: [
+            job(10, 101, {
+              lastRowCount: 20,
+              lastBytes: 200,
+              runningAppId: 'app-10',
+            }),
+          ],
+        },
+        {
+          src: 1,
+          dst: 4,
+          jobs: [
+            job(10, 102, {
+              lastRowCount: 30,
+              lastBytes: 300,
+              runningAppId: 'app-10',
+            }),
+          ],
+        },
       ],
       collapsed: [],
       truncated: false,
@@ -111,7 +145,8 @@ describe('toG6Data', () => {
     });
     // P6：节点本身的统计置空后，Drawer 靠这份按目标表拆分的 outputs 显示真实数字，
     // 不能三个都是 null——否则点节点看到的和点某条出边看到的会互相矛盾。
-    const outputs = nodes.find((n) => n.id === 'job:10')?.data.outputs as Array<{
+    const outputs = nodes.find((n) => n.id === 'job:10')?.data
+      .outputs as Array<{
       dstNodeId: number;
       dstName: string;
       lastRowCount: number | null;
@@ -157,7 +192,9 @@ describe('toG6Data', () => {
     // 两条边指向同一张目标表，不应该在 outputs 里重复计一份——否则 hasMultipleDestinations
     // 会被误判为 true，节点自身的统计也会被错误地置空。
     expect(jobNodeData?.outputs).toHaveLength(1);
-    expect((jobNodeData?.outputs as Array<{ dstNodeId: number }>)[0].dstNodeId).toBe(2);
+    expect(
+      (jobNodeData?.outputs as Array<{ dstNodeId: number }>)[0].dstNodeId,
+    ).toBe(2);
   });
 
   it('adds a dashed placeholder node for each collapsed entry, oriented by direction', () => {
@@ -165,23 +202,53 @@ describe('toG6Data', () => {
       nodes: [node(1, 'a')],
       edges: [],
       collapsed: [
-        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 5, direction: 'downstream' },
-        { type: 'collapsed', nodeId: 1, token: 'n:1:up:g3', hiddenCount: 2, direction: 'upstream' },
+        {
+          type: 'collapsed',
+          nodeId: 1,
+          token: 'n:1:down:g3',
+          hiddenCount: 5,
+          direction: 'downstream',
+        },
+        {
+          type: 'collapsed',
+          nodeId: 1,
+          token: 'n:1:up:g3',
+          hiddenCount: 2,
+          direction: 'upstream',
+        },
       ],
       truncated: true,
     };
 
     const { nodes, edges } = toG6Data(graph, 1);
 
-    const downstreamPlaceholder = nodes.find((n) => n.id === 'collapsed:n:1:down:g3');
-    const upstreamPlaceholder = nodes.find((n) => n.id === 'collapsed:n:1:up:g3');
-    expect(downstreamPlaceholder?.data).toMatchObject({ isCollapsedPlaceholder: true, hiddenCount: 5 });
-    expect(upstreamPlaceholder?.data).toMatchObject({ isCollapsedPlaceholder: true, hiddenCount: 2 });
+    const downstreamPlaceholder = nodes.find(
+      (n) => n.id === 'collapsed:n:1:down:g3',
+    );
+    const upstreamPlaceholder = nodes.find(
+      (n) => n.id === 'collapsed:n:1:up:g3',
+    );
+    expect(downstreamPlaceholder?.data).toMatchObject({
+      isCollapsedPlaceholder: true,
+      hiddenCount: 5,
+    });
+    expect(upstreamPlaceholder?.data).toMatchObject({
+      isCollapsedPlaceholder: true,
+      hiddenCount: 2,
+    });
 
-    const downstreamEdge = edges.find((e) => e.id === 'collapsed-edge:n:1:down:g3');
-    expect(downstreamEdge).toMatchObject({ source: '1', target: 'collapsed:n:1:down:g3' });
+    const downstreamEdge = edges.find(
+      (e) => e.id === 'collapsed-edge:n:1:down:g3',
+    );
+    expect(downstreamEdge).toMatchObject({
+      source: '1',
+      target: 'collapsed:n:1:down:g3',
+    });
     const upstreamEdge = edges.find((e) => e.id === 'collapsed-edge:n:1:up:g3');
-    expect(upstreamEdge).toMatchObject({ source: 'collapsed:n:1:up:g3', target: '1' });
+    expect(upstreamEdge).toMatchObject({
+      source: 'collapsed:n:1:up:g3',
+      target: '1',
+    });
   });
 
   it('highlights nodes present in the impact set', () => {
@@ -205,7 +272,13 @@ describe('mergeExpansion', () => {
       nodes: [node(1, 'a')],
       edges: [],
       collapsed: [
-        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 5, direction: 'downstream' },
+        {
+          type: 'collapsed',
+          nodeId: 1,
+          token: 'n:1:down:g3',
+          hiddenCount: 5,
+          direction: 'downstream',
+        },
       ],
       truncated: true,
     };
@@ -232,8 +305,20 @@ describe('mergeExpansion', () => {
       nodes: [node(1, 'a'), node(5, 'e')],
       edges: [],
       collapsed: [
-        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 5, direction: 'downstream' },
-        { type: 'collapsed', nodeId: 5, token: 'n:5:down:g3', hiddenCount: 9, direction: 'downstream' },
+        {
+          type: 'collapsed',
+          nodeId: 1,
+          token: 'n:1:down:g3',
+          hiddenCount: 5,
+          direction: 'downstream',
+        },
+        {
+          type: 'collapsed',
+          nodeId: 5,
+          token: 'n:5:down:g3',
+          hiddenCount: 9,
+          direction: 'downstream',
+        },
       ],
       truncated: true,
     };
@@ -241,7 +326,13 @@ describe('mergeExpansion', () => {
       nodes: [node(1, 'a')],
       edges: [],
       collapsed: [
-        { type: 'collapsed', nodeId: 1, token: 'n:1:down:g4', hiddenCount: 400, direction: 'downstream' },
+        {
+          type: 'collapsed',
+          nodeId: 1,
+          token: 'n:1:down:g4',
+          hiddenCount: 400,
+          direction: 'downstream',
+        },
       ],
       truncated: true,
     };

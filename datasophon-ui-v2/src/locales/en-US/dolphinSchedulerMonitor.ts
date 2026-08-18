@@ -33,7 +33,8 @@ export default {
   'pages.dolphinSchedulerMonitor.panel.D-B05': 'Master Failover Checks / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B06': 'Task Dispatch / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B07': 'Task Dispatch Outcomes / min',
-  'pages.dolphinSchedulerMonitor.panel.D-B08': 'Workflow Command Query Duration',
+  'pages.dolphinSchedulerMonitor.panel.D-B08':
+    'Workflow Command Query Duration',
   'pages.dolphinSchedulerMonitor.panel.D-B09':
     'Workflow Instance Total & Success / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B10':

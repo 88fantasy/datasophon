@@ -21,7 +21,9 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
 
   Z07: {
     type: 'multi-range',
-    queries: [{ label: 'outstanding_requests', metric: 'outstanding_requests' }],
+    queries: [
+      { label: 'outstanding_requests', metric: 'outstanding_requests' },
+    ],
   },
   Z08: {
     type: 'multi-range',
@@ -47,7 +49,9 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   },
   Z11: {
     type: 'multi-range',
-    queries: [{ label: 'approximate_data_size', metric: 'approximate_data_size' }],
+    queries: [
+      { label: 'approximate_data_size', metric: 'approximate_data_size' },
+    ],
   },
   Z12: {
     type: 'multi-range',

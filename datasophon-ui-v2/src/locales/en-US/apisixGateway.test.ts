@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import messages from './apisixGateway';
 import zhMessages from '../zh-CN/apisixGateway';
+import messages from './apisixGateway';
 
 describe('en-US Apisix gateway locale', () => {
   it('all keys exist and are non-empty', () => {

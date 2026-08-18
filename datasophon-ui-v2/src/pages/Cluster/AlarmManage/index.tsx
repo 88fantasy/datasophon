@@ -1,6 +1,15 @@
 import { AlertOutlined, BellOutlined } from '@ant-design/icons';
 import { useSearchParams } from '@umijs/max';
-import { Alert, Button, Card, Col, Row, Statistic, Tabs, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Row,
+  Statistic,
+  Tabs,
+  Typography,
+} from 'antd';
 import React, { useContext, useEffect, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import { useClusterSummary } from '../Dashboard/hooks/useClusterSummary';

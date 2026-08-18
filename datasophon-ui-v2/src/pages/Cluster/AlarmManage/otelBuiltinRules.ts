@@ -11,5 +11,8 @@ const READONLY_OTEL_BUILTIN_RULE_NAMES = new Set([
 export function isReadonlyOtelBuiltinRule(
   record?: Pick<DATASOPHON.AlertQuotaResponse, 'alertQuotaName'> | null,
 ) {
-  return !!record?.alertQuotaName && READONLY_OTEL_BUILTIN_RULE_NAMES.has(record.alertQuotaName);
+  return (
+    !!record?.alertQuotaName &&
+    READONLY_OTEL_BUILTIN_RULE_NAMES.has(record.alertQuotaName)
+  );
 }

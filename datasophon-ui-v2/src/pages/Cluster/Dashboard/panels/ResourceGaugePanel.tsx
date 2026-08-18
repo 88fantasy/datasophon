@@ -72,7 +72,7 @@ const ResourceGaugePanel: FC<ResourceGaugePanelProps> = ({ title, items }) => {
                 percent={percent}
                 showInfo={false}
                 strokeColor={colorByThreshold(percent, [70, 90])}
-              railColor={token.colorFillSecondary}
+                railColor={token.colorFillSecondary}
                 size={['100%', 8]}
               />
             </div>

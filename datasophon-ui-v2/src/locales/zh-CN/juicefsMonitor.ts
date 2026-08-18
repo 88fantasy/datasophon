@@ -14,8 +14,7 @@ export default {
   'pages.juicefsMonitor.panel.transactionLatency': '事务延迟',
   'pages.juicefsMonitor.panel.objectsLatency': '对象请求延迟',
   'pages.juicefsMonitor.panel.objectsRequests': '对象请求速率',
-  'pages.juicefsMonitor.panel.objectErrorsAndTxRestarts':
-    '对象错误与事务重试',
+  'pages.juicefsMonitor.panel.objectErrorsAndTxRestarts': '对象错误与事务重试',
   'pages.juicefsMonitor.panel.blockCacheSize': '块缓存大小',
   'pages.juicefsMonitor.panel.blockCacheHitRatio': '块缓存命中率',
   'pages.juicefsMonitor.panel.objectsThroughput': '对象吞吐',

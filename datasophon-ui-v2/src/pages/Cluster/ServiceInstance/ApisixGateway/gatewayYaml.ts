@@ -102,7 +102,8 @@ export function findDanglingUpstreamRefs(doc: ApisixGatewayDoc): string[] {
   return (doc.routes ?? [])
     .filter(
       (route) =>
-        route.upstream_id != null && !upstreamIds.has(String(route.upstream_id)),
+        route.upstream_id != null &&
+        !upstreamIds.has(String(route.upstream_id)),
     )
     .map((route) => String(route.uri ?? route.id));
 }

@@ -118,10 +118,7 @@ describe('JuiceFSMonitor panel queries (Doris descriptors)', () => {
   it('filters object throughput by method', () => {
     expect(PANEL_QUERIES.J16).toMatchObject({
       type: 'multi-range',
-      queries: [
-        { filters: { method: 'PUT' } },
-        { filters: { method: 'GET' } },
-      ],
+      queries: [{ filters: { method: 'PUT' } }, { filters: { method: 'GET' } }],
     });
   });
 });

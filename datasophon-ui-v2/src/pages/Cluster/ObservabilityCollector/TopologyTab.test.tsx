@@ -102,9 +102,7 @@ describe('toGraphData', () => {
     expect(nodes[0].data.metricsText).toContain('p99 9.00 ms');
     expect(nodes[0].data.metricsText).toContain('avg 1.50 ms');
     expect(nodes[0].data.metricsText).toContain('err 5.0%');
-    expect(nodes[0].data.iconSrc).toBe(
-      serviceIconFor('datasophon-api').src,
-    );
+    expect(nodes[0].data.iconSrc).toBe(serviceIconFor('datasophon-api').src);
   });
 
   it('maps calls to directed edges and marks errors on the label', () => {

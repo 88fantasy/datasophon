@@ -88,7 +88,9 @@ const RecentAlertsPanel: FC<RecentAlertsPanelProps> = ({
   return (
     <MonitorPanelCard
       title={title}
-      extra={<Typography.Link onClick={onViewAll}>{viewAllLabel}</Typography.Link>}
+      extra={
+        <Typography.Link onClick={onViewAll}>{viewAllLabel}</Typography.Link>
+      }
     >
       <Table<DATASOPHON.ClusterAlertHistoryRecord>
         rowKey="id"

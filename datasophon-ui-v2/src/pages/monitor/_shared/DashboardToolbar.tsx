@@ -147,11 +147,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
       />
 
       <Tooltip title={t('pages.prometheusMonitor.toolbar.refreshNow')}>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-          size="small"
-        >
+        <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
           {countdown > 0 ? (
             <span className={styles.toolbarCountdown}>{countdown}s</span>
           ) : null}

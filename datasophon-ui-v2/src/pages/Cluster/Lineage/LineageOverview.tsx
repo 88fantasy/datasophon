@@ -1,8 +1,8 @@
 import { useIntl } from '@umijs/max';
 import { Empty, Space, Spin, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
-import { getOverview } from './service';
 import type { OverviewData } from './service';
+import { getOverview } from './service';
 
 interface LineageOverviewProps {
   clusterId: number;
@@ -39,7 +39,9 @@ const LineageOverview: React.FC<LineageOverviewProps> = ({
       .finally(() => setLoading(false));
   }, [clusterId, refreshKey]);
 
-  const layers = (overview?.layers ?? []).filter((layer) => layer.nodeCount > 0);
+  const layers = (overview?.layers ?? []).filter(
+    (layer) => layer.nodeCount > 0,
+  );
   const maxCount = Math.max(1, ...layers.map((layer) => layer.nodeCount));
   const edges = (overview?.edges ?? []).filter((edge) => edge.count > 0);
 
@@ -48,10 +50,7 @@ const LineageOverview: React.FC<LineageOverviewProps> = ({
       {layers.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t(
-            'pages.lineage.overview.empty',
-            '暂无分层数据',
-          )}
+          description={t('pages.lineage.overview.empty', '暂无分层数据')}
         />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

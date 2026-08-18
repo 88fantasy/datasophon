@@ -1,5 +1,14 @@
 import { ProFormText, ProFormTextArea } from '@ant-design/pro-components';
-import { Button, Form, Modal, Progress, Steps, Table, Tag, message } from 'antd';
+import {
+  Button,
+  Form,
+  Modal,
+  message,
+  Progress,
+  Steps,
+  Table,
+  Tag,
+} from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   analyzePhysicalHosts,
@@ -37,7 +46,12 @@ const CHECK_COLUMNS = [
   },
 ];
 
-const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSuccess }) => {
+const ConfigModalPhysical: React.FC<Props> = ({
+  cluster,
+  open,
+  onClose,
+  onSuccess,
+}) => {
   const [form] = Form.useForm<PhysicalHostConnection>();
   const [current, setCurrent] = useState(0);
   const [connection, setConnection] = useState<PhysicalHostConnection>();
@@ -45,7 +59,8 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
   const [workers, setWorkers] = useState<PhysicalHostInstallProgress[]>([]);
   const [loading, setLoading] = useState(false);
   const [dispatchStarted, setDispatchStarted] = useState(false);
-  const [initialization, setInitialization] = useState<PhysicalInitializationStatus>();
+  const [initialization, setInitialization] =
+    useState<PhysicalInitializationStatus>();
 
   const refreshHosts = useCallback(async () => {
     if (!connection) return;
@@ -66,7 +81,10 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
       setCurrent(4);
     } else if (status && status.phase !== 'READY') {
       setCurrent(3);
-    } else if (status?.nodes.length && status.nodes.every((node) => node.workerHealthy)) {
+    } else if (
+      status?.nodes.length &&
+      status.nodes.every((node) => node.workerHealthy)
+    ) {
       setWorkers(
         status.nodes.map((node, index) => ({
           id: index + 1,
@@ -206,21 +224,27 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
       title: 'Worker',
       dataIndex: 'workerHealthy',
       render: (healthy: boolean) => (
-        <Tag color={healthy ? 'success' : 'error'}>{healthy ? '正常' : '异常'}</Tag>
+        <Tag color={healthy ? 'success' : 'error'}>
+          {healthy ? '正常' : '异常'}
+        </Tag>
       ),
     },
     {
       title: 'Collector 安装',
       dataIndex: 'collectorInstalled',
       render: (installed: boolean) => (
-        <Tag color={installed ? 'success' : 'processing'}>{installed ? '已安装' : '处理中'}</Tag>
+        <Tag color={installed ? 'success' : 'processing'}>
+          {installed ? '已安装' : '处理中'}
+        </Tag>
       ),
     },
     {
       title: 'Collector 健康',
       dataIndex: 'collectorHealthy',
       render: (healthy: boolean) => (
-        <Tag color={healthy ? 'success' : 'default'}>{healthy ? '正常' : '待检查'}</Tag>
+        <Tag color={healthy ? 'success' : 'default'}>
+          {healthy ? '正常' : '待检查'}
+        </Tag>
       ),
     },
     { title: '状态信息', dataIndex: 'message' },
@@ -244,7 +268,9 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
       render: (_: unknown, record: PhysicalHostInstallProgress) => (
         <Progress
           percent={record.progress ?? 0}
-          status={record.installStateCode === INSTALL_FAILED ? 'exception' : 'active'}
+          status={
+            record.installStateCode === INSTALL_FAILED ? 'exception' : 'active'
+          }
         />
       ),
     },
@@ -263,30 +289,72 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
     switch (current) {
       case 0:
         return [
-          <Button key="cancel" onClick={close}>取消</Button>,
-          <Button key="next" type="primary" loading={loading} onClick={startHostCheck}>开始环境校验</Button>,
+          <Button key="cancel" onClick={close}>
+            取消
+          </Button>,
+          <Button
+            key="next"
+            type="primary"
+            loading={loading}
+            onClick={startHostCheck}
+          >
+            开始环境校验
+          </Button>,
         ];
       case 1:
         return [
-          <Button key="prev" onClick={() => setCurrent(0)}>上一步</Button>,
-          <Button key="next" type="primary" loading={loading} onClick={startWorkerDispatch}>分发 Worker</Button>,
+          <Button key="prev" onClick={() => setCurrent(0)}>
+            上一步
+          </Button>,
+          <Button
+            key="next"
+            type="primary"
+            loading={loading}
+            onClick={startWorkerDispatch}
+          >
+            分发 Worker
+          </Button>,
         ];
       case 2:
         return [
-          <Button key="close" onClick={close}>取消</Button>,
-          <Button key="collector" type="primary" loading={loading} onClick={startCollector}>安装 Collector</Button>,
+          <Button key="close" onClick={close}>
+            取消
+          </Button>,
+          <Button
+            key="collector"
+            type="primary"
+            loading={loading}
+            onClick={startCollector}
+          >
+            安装 Collector
+          </Button>,
         ];
       case 3: {
-        const buttons = [<Button key="close" onClick={close}>关闭</Button>];
+        const buttons = [
+          <Button key="close" onClick={close}>
+            关闭
+          </Button>,
+        ];
         if (initialization?.canRetry) {
           buttons.push(
-            <Button key="retry" type="primary" loading={loading} onClick={retryInitialization}>重试初始化</Button>,
+            <Button
+              key="retry"
+              type="primary"
+              loading={loading}
+              onClick={retryInitialization}
+            >
+              重试初始化
+            </Button>,
           );
         }
         return buttons;
       }
       default:
-        return [<Button key="finish" type="primary" onClick={finish}>完成初始化</Button>];
+        return [
+          <Button key="finish" type="primary" onClick={finish}>
+            完成初始化
+          </Button>,
+        ];
     }
   };
 
@@ -311,7 +379,11 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
         style={{ marginBottom: 24 }}
       />
       {current === 0 && (
-        <Form form={form} layout="vertical" initialValues={{ sshUser: 'root', sshPort: 22 }}>
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ sshUser: 'root', sshPort: 22 }}
+        >
           <ProFormTextArea
             name="hosts"
             label="主机列表"
@@ -319,7 +391,11 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
             placeholder="以逗号分隔，例如：192.168.10.131,192.168.10.132,192.168.10.133"
             rules={[{ required: true, message: '请输入主机列表' }]}
           />
-          <ProFormText name="sshUser" label="SSH 用户名" rules={[{ required: true, message: '请输入 SSH 用户名' }]} />
+          <ProFormText
+            name="sshUser"
+            label="SSH 用户名"
+            rules={[{ required: true, message: '请输入 SSH 用户名' }]}
+          />
           <ProFormText.Password name="sshPass" label="SSH 密码" />
           <ProFormText
             name="sshPort"
@@ -329,10 +405,20 @@ const ConfigModalPhysical: React.FC<Props> = ({ cluster, open, onClose, onSucces
         </Form>
       )}
       {current === 1 && (
-        <Table rowKey="hostname" columns={CHECK_COLUMNS} dataSource={hosts} pagination={false} />
+        <Table
+          rowKey="hostname"
+          columns={CHECK_COLUMNS}
+          dataSource={hosts}
+          pagination={false}
+        />
       )}
       {current === 2 && (
-        <Table rowKey="hostname" columns={workerColumns} dataSource={workers} pagination={false} />
+        <Table
+          rowKey="hostname"
+          columns={workerColumns}
+          dataSource={workers}
+          pagination={false}
+        />
       )}
       {(current === 3 || current === 4) && (
         <Table<PhysicalInitializationNode>

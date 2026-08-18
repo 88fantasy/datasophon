@@ -1,10 +1,10 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
+import { LOGO_URL } from '@root/config/publicPath';
 import { FormattedMessage, SelectLang, useIntl, useModel } from '@umijs/max';
 import { Alert } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { startTransition, useState } from 'react';
-import { LOGO_URL } from '@root/config/publicPath';
 import { login } from '@/services/auth';
 import Logo from './Logo';
 

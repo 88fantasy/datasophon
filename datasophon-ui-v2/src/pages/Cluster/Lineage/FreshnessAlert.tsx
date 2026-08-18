@@ -2,8 +2,8 @@ import { useIntl } from '@umijs/max';
 import { Alert, Button, message, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { rebuild } from './service';
 import type { SnapshotFreshness, SourceFreshness } from './service';
+import { rebuild } from './service';
 
 /** ageSeconds 由后端算好（服务器时钟为准），比前端再用 dayjs 相对当前时刻二次计算更可靠。 */
 function formatAge(ageSeconds: number) {

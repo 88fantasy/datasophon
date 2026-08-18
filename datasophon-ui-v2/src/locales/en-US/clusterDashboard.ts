@@ -1,13 +1,15 @@
 export default {
   'pages.clusterDashboard.title': 'Cluster Overview',
-  'pages.clusterDashboard.partialLoadError': 'Some dashboard data failed to load',
+  'pages.clusterDashboard.partialLoadError':
+    'Some dashboard data failed to load',
   'pages.clusterDashboard.stat.hostTotal': 'Hosts',
   'pages.clusterDashboard.stat.serviceTotal': 'Services',
   'pages.clusterDashboard.stat.alertTotal': 'Alerts',
   'pages.clusterDashboard.stat.criticalAlertTotal': 'Critical Alerts',
   'pages.clusterDashboard.stat.changeLabel': 'Day over day',
   'pages.clusterDashboard.panel.cpu': 'CPU Usage (per node)',
-  'pages.clusterDashboard.panel.network': 'Network Throughput (per node, rx/tx)',
+  'pages.clusterDashboard.panel.network':
+    'Network Throughput (per node, rx/tx)',
   'pages.clusterDashboard.panel.resourceUsage': 'Resource Usage',
   'pages.clusterDashboard.panel.alertTrend': 'Alert Trend (last 7 days)',
   'pages.clusterDashboard.panel.recentAlerts': 'Recent Alerts',

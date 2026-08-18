@@ -18,10 +18,7 @@ vi.mock('@antv/g6', () => ({
   register,
 }));
 
-import {
-  FLOWING_LINEAGE_EDGE,
-  FlowingLineageEdge,
-} from './flowingLineageEdge';
+import { FLOWING_LINEAGE_EDGE, FlowingLineageEdge } from './flowingLineageEdge';
 
 describe('FlowingLineageEdge', () => {
   beforeEach(() => {

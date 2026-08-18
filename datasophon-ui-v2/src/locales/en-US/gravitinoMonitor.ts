@@ -14,7 +14,8 @@ export default {
   'pages.gravitinoMonitor.panel.G07': 'HTTP Response Rate by Status',
   'pages.gravitinoMonitor.panel.G08': 'Top Operation Request Rate',
   'pages.gravitinoMonitor.panel.G09': 'Error Request Rate by Operation',
-  'pages.gravitinoMonitor.panel.G10': 'HTTP Request Latency p99 (Top 10 Operations)',
+  'pages.gravitinoMonitor.panel.G10':
+    'HTTP Request Latency p99 (Top 10 Operations)',
   'pages.gravitinoMonitor.panel.G11': 'Jetty Thread Pool',
   'pages.gravitinoMonitor.panel.G12': 'Health Probe Response Rate',
   'pages.gravitinoMonitor.panel.G13': 'JDBC Connection Pool',

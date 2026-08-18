@@ -45,7 +45,8 @@ export default {
   'pages.lineage.graph.impactMode': '影响分析',
   'pages.lineage.graph.searchPlaceholder': '搜索表名切换根节点',
   'pages.lineage.graph.searchNotFound': '未找到匹配的表',
-  'pages.lineage.graph.impactUnavailable': '快照陈旧，影响分析暂不可用，请先重建快照',
+  'pages.lineage.graph.impactUnavailable':
+    '快照陈旧，影响分析暂不可用，请先重建快照',
   'pages.lineage.graph.truncated':
     '部分邻居节点超出单次展示上限，已折叠为 "+N"，点击可继续展开',
   'pages.lineage.graph.loadFailed': '加载失败',

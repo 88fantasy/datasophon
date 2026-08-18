@@ -2,8 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
 import LineageTableList from './index';
-import { getOverview, listTables } from './service';
 import type { NodeMeta } from './service';
+import { getOverview, listTables } from './service';
 
 const { historyPush } = vi.hoisted(() => ({ historyPush: vi.fn() }));
 
@@ -52,9 +52,7 @@ vi.mock('./service', () => ({
 
 function renderPage() {
   return render(
-    <ClusterContext.Provider
-      value={{ clusterId: 7, clusterInfo: {} } as never}
-    >
+    <ClusterContext.Provider value={{ clusterId: 7, clusterInfo: {} } as never}>
       <LineageTableList />
     </ClusterContext.Provider>,
   );
@@ -148,7 +146,10 @@ describe('Lineage table list page', () => {
       canonicalName: 'hive.ods.orders',
       dwLayer: 'ODS',
     };
-    const rendered = nameColumn?.render?.(undefined, record) as React.ReactElement<{
+    const rendered = nameColumn?.render?.(
+      undefined,
+      record,
+    ) as React.ReactElement<{
       onClick: () => void;
     }>;
     rendered.props.onClick();

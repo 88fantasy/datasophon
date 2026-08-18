@@ -9,6 +9,7 @@
  * 必须在 ProForm 内使用，表单值由外层 ProForm 管理。
  */
 
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import {
   ProCard,
   ProFormGroup,
@@ -18,8 +19,7 @@ import {
   ProFormSwitch,
   ProFormText,
 } from '@ant-design/pro-components';
-import { QuestionCircleOutlined } from '@ant-design/icons';
-import { theme, Tooltip } from 'antd';
+import { Tooltip, theme } from 'antd';
 import React from 'react';
 
 import { invokeMapShowMultiply } from './configTransform';
@@ -51,13 +51,18 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
       <span className="inline-flex items-center gap-1 whitespace-nowrap">
         <span>{item.label}</span>
         {item.name && (
-          <span className="text-[12px]" style={{ color: token.colorTextTertiary }}>
+          <span
+            className="text-[12px]"
+            style={{ color: token.colorTextTertiary }}
+          >
             {item.name}
           </span>
         )}
         {item.description && (
           <Tooltip title={item.description}>
-            <QuestionCircleOutlined style={{ color: token.colorTextTertiary }} />
+            <QuestionCircleOutlined
+              style={{ color: token.colorTextTertiary }}
+            />
           </Tooltip>
         )}
       </span>

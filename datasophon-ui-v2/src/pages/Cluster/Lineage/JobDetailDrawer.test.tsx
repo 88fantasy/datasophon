@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import JobDetailDrawer from './JobDetailDrawer';
-import { getJob, getJobRateHistory } from './service';
 import type { GraphJob } from './service';
+import { getJob, getJobRateHistory } from './service';
 
 const { lineProps } = vi.hoisted(() => ({
   lineProps: [] as Array<Record<string, unknown>>,
@@ -55,9 +55,7 @@ describe('JobDetailDrawer', () => {
   });
 
   it('shows an empty state when the edge has no associated jobs', () => {
-    render(
-      <JobDetailDrawer clusterId={7} jobs={[]} open onClose={() => {}} />,
-    );
+    render(<JobDetailDrawer clusterId={7} jobs={[]} open onClose={() => {}} />);
     expect(screen.getByText('此边未关联任何作业')).toBeInTheDocument();
   });
 
@@ -76,12 +74,7 @@ describe('JobDetailDrawer', () => {
     });
 
     render(
-      <JobDetailDrawer
-        clusterId={7}
-        jobs={[job()]}
-        open
-        onClose={() => {}}
-      />,
+      <JobDetailDrawer clusterId={7} jobs={[job()]} open onClose={() => {}} />,
     );
 
     expect(await screen.findByText('sync_orders')).toBeInTheDocument();
@@ -171,10 +164,7 @@ describe('JobDetailDrawer', () => {
     render(
       <JobDetailDrawer
         clusterId={7}
-        jobs={[
-          job(),
-          job({ edgeId: 101, flowType: 'OUTPUT' }),
-        ]}
+        jobs={[job(), job({ edgeId: 101, flowType: 'OUTPUT' })]}
         open
         onClose={() => {}}
       />,
@@ -187,12 +177,7 @@ describe('JobDetailDrawer', () => {
     vi.mocked(getJob).mockRejectedValue(new Error('boom'));
 
     render(
-      <JobDetailDrawer
-        clusterId={7}
-        jobs={[job()]}
-        open
-        onClose={() => {}}
-      />,
+      <JobDetailDrawer clusterId={7} jobs={[job()]} open onClose={() => {}} />,
     );
 
     expect(await screen.findByText('作业详情加载失败')).toBeInTheDocument();

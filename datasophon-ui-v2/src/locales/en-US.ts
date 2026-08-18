@@ -1,3 +1,4 @@
+import additionalMonitor from './en-US/additionalMonitor';
 import apisixGateway from './en-US/apisixGateway';
 import apisixMonitor from './en-US/apisixMonitor';
 import clusterDashboard from './en-US/clusterDashboard';
@@ -7,7 +8,6 @@ import dorisMonitor from './en-US/dorisMonitor';
 import globalHeader from './en-US/globalHeader';
 import gravitinoMonitor from './en-US/gravitinoMonitor';
 import juicefsMonitor from './en-US/juicefsMonitor';
-import additionalMonitor from './en-US/additionalMonitor';
 import lineage from './en-US/lineage';
 import menu from './en-US/menu';
 import nacosMonitor from './en-US/nacosMonitor';
