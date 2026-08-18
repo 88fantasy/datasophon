@@ -1,0 +1,7 @@
+name: opentelemetry-operator
+version: "0.114.1"
+description: OpenTelemetry Operator，管理 Collector 与自动注入
+type: ENVIRONMENT
+dependencies: []
+artifact:
+  helm: opentelemetry-operator-0.114.1.tgz

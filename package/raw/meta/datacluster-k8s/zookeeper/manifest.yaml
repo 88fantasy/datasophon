@@ -1,0 +1,7 @@
+name: zookeeper
+version: "13.8.7"
+description: ZooKeeper 集群
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  helm: zookeeper-13.8.7.tgz

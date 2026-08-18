@@ -1,0 +1,7 @@
+name: redis-cluster
+version: "13.0.4"
+description: Redis Cluster 分片集群
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  helm: redis-cluster-13.0.4.tgz

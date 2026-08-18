@@ -1,0 +1,7 @@
+name: nacos
+version: "v3.0.3"
+description: Nacos 注册与配置中心（Nacos CR，由 nacos-operator 管理）
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  yaml: nacos-ext-mysql.yaml

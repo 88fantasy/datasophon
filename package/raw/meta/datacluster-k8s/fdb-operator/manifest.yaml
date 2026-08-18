@@ -1,0 +1,7 @@
+name: fdb-operator
+version: "0.3.0"
+description: FoundationDB Operator，Doris 存算分离底座
+type: ENVIRONMENT
+dependencies: []
+artifact:
+  helm: fdb-operator-0.3.0.tgz

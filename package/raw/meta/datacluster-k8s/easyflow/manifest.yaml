@@ -1,0 +1,7 @@
+name: easyflow
+version: "3.11.0"
+description: Easyflow 流程编排服务
+type: APPLICATION
+dependencies: []
+artifact:
+  yaml: easyflow.yaml

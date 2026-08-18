@@ -1,0 +1,7 @@
+name: cert-manager
+version: "v1.20.3"
+description: 集群证书管理，OTel Operator 等 webhook 组件的前置依赖
+type: ENVIRONMENT
+dependencies: []
+artifact:
+  helm: cert-manager-v1.20.3.tgz
