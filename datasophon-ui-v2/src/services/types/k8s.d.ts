@@ -26,6 +26,10 @@ declare namespace DATASOPHON {
     releaseName?: string;
     /** 指标 job（Doris service_name），多个以英文逗号分隔 */
     metricsJob?: string;
+    /** 来源类型 HELM=Helm release / CR=Operator 自定义资源，默认 HELM */
+    sourceKind?: string;
+    /** 看板画像 JSON（模式判定 + 角色→job 映射）原文，CR 来源专用，前端自行 JSON.parse */
+    monitorProfile?: string;
     /** 轻对账结果：对应的 Helm release 已不在目标集群中（仅接管实例会被赋值） */
     missing?: boolean;
   }
@@ -122,6 +126,10 @@ declare namespace DATASOPHON {
     catalog?: string;
     /** 该 release 是否已经登记过，重扫时用于默认不重复勾选 */
     registered?: boolean;
+    /** 来源类型 HELM=Helm release / CR=operator 自定义资源 */
+    sourceKind?: string;
+    /** CR 的 K8s Kind，如 DorisDisaggregatedCluster；HELM 来源为 undefined */
+    kind?: string;
   }
 
   /** 已登记但集群里已找不到对应 release 的接管实例 */
@@ -159,5 +167,7 @@ declare namespace DATASOPHON {
     namespace: string;
     metricsJob?: string;
     scraped: boolean;
+    /** 角色名到其 job 列表的映射（如 {"fe":[...],"compute":[...]}）；仅 CR 来源且探测到角色 job 时非空 */
+    roleJobs?: Record<string, string[]>;
   }
 }

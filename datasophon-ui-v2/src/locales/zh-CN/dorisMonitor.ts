@@ -6,6 +6,8 @@ export default {
   'pages.dorisMonitor.toolbar.rateInterval': 'Rate 窗口',
   'pages.dorisMonitor.toolbar.notice':
     '所有查询均通过 DataSophon Prometheus 代理，并依赖 Doris FE/BE group 标签',
+  'pages.dorisMonitor.toolbar.notice.disaggregated':
+    '存算分离集群（K8s Operator CR）：FE/计算组按 job 区分，不依赖 group 标签，节点数为最近 5 分钟有上报的实例数',
   'pages.dorisMonitor.section.cluster': '集群概览',
   'pages.dorisMonitor.section.cluster.subtitle':
     '集群级 FE/BE 汇总、容量与饱和度趋势',
@@ -15,6 +17,9 @@ export default {
   'pages.dorisMonitor.section.be': 'BE Backend',
   'pages.dorisMonitor.section.be.subtitle':
     '资源饱和度、磁盘、Compaction、读写吞吐、延迟与网络信号',
+  'pages.dorisMonitor.section.compute': '计算组 Compute',
+  'pages.dorisMonitor.section.compute.subtitle':
+    '资源饱和度、远程 IO/S3 吞吐、缓存命中率、Workload Group、溢写盘与网络信号',
 
   'pages.dorisMonitor.panel.DO-A01': 'FE 节点数',
   'pages.dorisMonitor.panel.DO-A02': 'FE 存活数',
@@ -48,4 +53,16 @@ export default {
   'pages.dorisMonitor.panel.DO-C09': 'BE 写入行速率',
   'pages.dorisMonitor.panel.DO-C10': 'BE 引擎请求延迟',
   'pages.dorisMonitor.panel.DO-C11': 'BE 网络字节吞吐',
+  'pages.dorisMonitor.panel.DO-D01': '计算组 CPU 空闲率',
+  'pages.dorisMonitor.panel.DO-D02': '计算组已分配内存',
+  'pages.dorisMonitor.panel.DO-D03': '溢写盘占用率',
+  'pages.dorisMonitor.panel.DO-D04': '磁盘 IO 繁忙度',
+  'pages.dorisMonitor.panel.DO-D05': 'Compaction 吞吐',
+  'pages.dorisMonitor.panel.DO-D06': '扫描字节速率',
+  'pages.dorisMonitor.panel.DO-D07': '扫描行速率',
+  'pages.dorisMonitor.panel.DO-D08': 'Workload Group CPU 耗时',
+  'pages.dorisMonitor.panel.DO-D09': '网络字节吞吐',
+  'pages.dorisMonitor.panel.DO-D10': '远程 IO 占比',
+  'pages.dorisMonitor.panel.DO-D11': 'S3 读写吞吐',
+  'pages.dorisMonitor.panel.DO-D12': '数据页缓存命中率',
 };

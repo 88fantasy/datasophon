@@ -110,9 +110,19 @@ vi.mock('@/pages/monitor/ApisixMonitor', () => ({
 }));
 
 vi.mock('@/pages/monitor/DorisMonitor', () => ({
-  default: (props: { clusterId: number; embedded?: boolean }) => {
+  default: (props: {
+    clusterId: number;
+    embedded?: boolean;
+    job?: string;
+    monitorProfile?: string;
+  }) => {
     dorisDashboardSpy(props);
-    return <div>Doris dashboard cluster {props.clusterId}</div>;
+    return (
+      <div>
+        Doris dashboard cluster {props.clusterId}
+        {props.monitorProfile ? ` profile ${props.monitorProfile}` : ''}
+      </div>
+    );
   },
 }));
 vi.mock('@/pages/monitor/NacosMonitor', () => ({
@@ -645,6 +655,32 @@ describe('K8s service instance monitoring tab', () => {
       clusterId: 7,
       embedded: true,
       job: 'zookeeper',
+    });
+  });
+
+  it('hands the registered monitorProfile through to a CR-backed Doris dashboard', async () => {
+    const monitorProfile = JSON.stringify({
+      profile: 'doris-disaggregated',
+      roles: { fe: ['doris-fe'], compute: ['doris-cg1', 'doris-cg2'] },
+    });
+    vi.mocked(getK8sInstance).mockResolvedValue({
+      data: {
+        id: 101,
+        serviceName: 'doris',
+        metricsJob: 'doris-fe,doris-cg1,doris-cg2',
+        sourceKind: 'CR',
+        monitorProfile,
+      },
+    } as never);
+
+    renderK8s();
+
+    await screen.findByText(`Doris dashboard cluster 7 profile ${monitorProfile}`);
+    expect(dorisDashboardSpy).toHaveBeenCalledWith({
+      clusterId: 7,
+      embedded: true,
+      job: 'doris-fe,doris-cg1,doris-cg2',
+      monitorProfile,
     });
   });
 

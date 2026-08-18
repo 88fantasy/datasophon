@@ -40,7 +40,12 @@ import ImportedValuesViewer from './Setting/ImportedValuesViewer';
  */
 const K8S_MONITOR_DASHBOARDS: Record<
   string,
-  React.FC<{ clusterId: number; embedded?: boolean; job?: string }>
+  React.FC<{
+    clusterId: number;
+    embedded?: boolean;
+    job?: string;
+    monitorProfile?: string;
+  }>
 > = {
   apisix: ApisixDashboard,
   doris: DorisDashboard,
@@ -202,6 +207,7 @@ const ServiceInstance: React.FC = () => {
                   clusterId={numericClusterId}
                   embedded
                   job={k8sInstance?.metricsJob}
+                  monitorProfile={k8sInstance?.monitorProfile}
                 />
               ),
             },

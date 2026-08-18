@@ -49,6 +49,11 @@ const networkColors = {
   recv: CHART_COLORS.success,
 };
 
+const s3Colors = {
+  read: CHART_COLORS.primary,
+  write: CHART_COLORS.success,
+};
+
 const integerFormatter = (value: number) => value.toFixed(0);
 const percentFormatter = (value: number) => `${value.toFixed(1)}%`;
 const percentPreciseFormatter = (value: number) => `${value.toFixed(2)}%`;
@@ -60,6 +65,7 @@ const millisecondFormatter = (value: number) => `${value.toFixed(1)}ms`;
 const millisecondPreciseFormatter = (value: number) => `${value.toFixed(2)}ms`;
 const bytesPerSecondFormatter = (value: number) => `${formatBytes(value)}/s`;
 const rowsPerSecondFormatter = (value: number) => `${value.toFixed(0)} rows/s`;
+const secondsPerSecondFormatter = (value: number) => `${value.toFixed(2)}s/s`;
 
 const SectionHeader: FC<{ title: string; subtitle: string }> = ({
   title,
@@ -80,11 +86,17 @@ const SectionHeader: FC<{ title: string; subtitle: string }> = ({
 interface DorisDashboardProps {
   clusterId?: number;
   embedded?: boolean;
+  /** 接管实例登记的 metricsJob（逗号分隔）；仅耦合模式下作为整个看板的 job 过滤 */
+  job?: string;
+  /** 接管登记的 monitor_profile JSON 原文；存在时驱动存算分离自适应看板 */
+  monitorProfile?: string;
 }
 
 const DorisDashboard: FC<DorisDashboardProps> = ({
   clusterId = 1,
   embedded = false,
+  job,
+  monitorProfile,
 }) => {
   const [selectedCluster, setSelectedCluster] = useState('');
   const [selectedFeInstances, setSelectedFeInstances] = useState<string[]>([]);
@@ -121,14 +133,17 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
     setRefreshKey((key) => key + 1);
   }, []);
 
-  const { instant, series, clusters, feInstances, beInstances, loading } =
+  const { mode, instant, series, clusters, feInstances, beInstances, loading } =
     useDorisMonitorDashboard({
       variables,
       activeSegment,
       timeRange,
       clusterId,
       refreshKey,
+      job,
+      monitorProfile,
     });
+  const isDisaggregated = mode === 'disaggregated';
 
   useEffect(() => {
     if (!selectedCluster && clusters.length > 0) {
@@ -169,7 +184,11 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
       }
       meta={
         <>
-          {t('pages.dorisMonitor.toolbar.notice')}
+          {t(
+            isDisaggregated
+              ? 'pages.dorisMonitor.toolbar.notice.disaggregated'
+              : 'pages.dorisMonitor.toolbar.notice',
+          )}
           {' · '}
           {`fe_instance=~"${variables.feInstance}" be_instance=~"${variables.beInstance}" interval=${variables.interval}`}
           {' · '}
@@ -193,14 +212,14 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
                   subtitle={t('pages.dorisMonitor.section.cluster.subtitle')}
                 />
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <PanelCol span={4}>
+                  <PanelCol span={isDisaggregated ? 6 : 4}>
                     <StatPanel
                       title={panelTitle('DO-A01')}
                       value={instant.feNodeCount}
                       color={dorisRoleColors.fe}
                     />
                   </PanelCol>
-                  <PanelCol span={4}>
+                  <PanelCol span={isDisaggregated ? 6 : 4}>
                     <StatPanel
                       title={panelTitle('DO-A02')}
                       value={instant.feAliveCount}
@@ -211,14 +230,14 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
                       }
                     />
                   </PanelCol>
-                  <PanelCol span={4}>
+                  <PanelCol span={isDisaggregated ? 6 : 4}>
                     <StatPanel
                       title={panelTitle('DO-A03')}
                       value={instant.beNodeCount}
                       color={dorisRoleColors.be}
                     />
                   </PanelCol>
-                  <PanelCol span={4}>
+                  <PanelCol span={isDisaggregated ? 6 : 4}>
                     <StatPanel
                       title={panelTitle('DO-A04')}
                       value={instant.beAliveCount}
@@ -229,22 +248,27 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
                       }
                     />
                   </PanelCol>
-                  <PanelCol span={4}>
-                    <StatPanel
-                      title={panelTitle('DO-A05')}
-                      value={instant.usedCapacityBytes}
-                      color="#5c6b77"
-                      formatter={formatBytes}
-                    />
-                  </PanelCol>
-                  <PanelCol span={4}>
-                    <StatPanel
-                      title={panelTitle('DO-A06')}
-                      value={instant.totalCapacityBytes}
-                      color={dorisRoleColors.reference}
-                      formatter={formatBytes}
-                    />
-                  </PanelCol>
+                  {/* 存算分离下无本地磁盘，DO-A05/DO-A06 不适用（见 useDorisMonitorDashboard 说明） */}
+                  {!isDisaggregated && (
+                    <>
+                      <PanelCol span={4}>
+                        <StatPanel
+                          title={panelTitle('DO-A05')}
+                          value={instant.usedCapacityBytes}
+                          color="#5c6b77"
+                          formatter={formatBytes}
+                        />
+                      </PanelCol>
+                      <PanelCol span={4}>
+                        <StatPanel
+                          title={panelTitle('DO-A06')}
+                          value={instant.totalCapacityBytes}
+                          color={dorisRoleColors.reference}
+                          formatter={formatBytes}
+                        />
+                      </PanelCol>
+                    </>
+                  )}
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
                   <PanelCol span={8}>
@@ -409,117 +433,253 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
               </>
             ),
           },
-          {
-            key: 'be',
-            label: t('pages.dorisMonitor.section.be'),
-            children: (
-              <>
-                <SectionHeader
-                  title={t('pages.dorisMonitor.section.be')}
-                  subtitle={t('pages.dorisMonitor.section.be.subtitle')}
-                />
-                <Row gutter={MONITOR_ROW_GUTTER}>
-                  <PanelCol span={8}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C01')}
-                      data={series['DO-C01']}
-                      yFormatter={(v) => v.toFixed(0)}
-                    />
-                  </PanelCol>
-                  <PanelCol span={8}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C02')}
-                      data={series['DO-C02']}
-                      yFormatter={formatBytes}
-                    />
-                  </PanelCol>
-                  <PanelCol span={8}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C03')}
-                      data={series['DO-C03']}
-                      yFormatter={percentUnitFormatter}
-                      thresholdLines={[
-                        { value: 0.8, label: '80%', color: CHART_COLORS.error },
-                      ]}
-                      colorMap={{
-                        local_used_pct: CHART_COLORS.error,
-                        avail_pct: CHART_COLORS.success,
-                      }}
-                    />
-                  </PanelCol>
-                </Row>
-                <Row gutter={MONITOR_ROW_GUTTER}>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C04')}
-                      data={series['DO-C04']}
-                      yFormatter={percentFormatter}
-                      thresholdLines={[
-                        { value: 80, label: '80%', color: CHART_COLORS.error },
-                      ]}
-                    />
-                  </PanelCol>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C05')}
-                      data={series['DO-C05']}
-                      yFormatter={bytesPerSecondFormatter}
-                      colorMap={compactionColors}
-                    />
-                  </PanelCol>
-                </Row>
-                <Row gutter={MONITOR_ROW_GUTTER}>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C06')}
-                      data={series['DO-C06']}
-                      yFormatter={bytesPerSecondFormatter}
-                    />
-                  </PanelCol>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C07')}
-                      data={series['DO-C07']}
-                      yFormatter={rowsPerSecondFormatter}
-                    />
-                  </PanelCol>
-                </Row>
-                <Row gutter={MONITOR_ROW_GUTTER}>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C08')}
-                      data={series['DO-C08']}
-                      yFormatter={bytesPerSecondFormatter}
-                    />
-                  </PanelCol>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C09')}
-                      data={series['DO-C09']}
-                      yFormatter={rowsPerSecondFormatter}
-                    />
-                  </PanelCol>
-                </Row>
-                <Row gutter={MONITOR_ROW_GUTTER}>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C10')}
-                      data={series['DO-C10']}
-                      yFormatter={millisecondPreciseFormatter}
-                    />
-                  </PanelCol>
-                  <PanelCol span={12}>
-                    <TimeSeriesPanel
-                      title={panelTitle('DO-C11')}
-                      data={series['DO-C11']}
-                      yFormatter={bytesPerSecondFormatter}
-                      colorMap={networkColors}
-                    />
-                  </PanelCol>
-                </Row>
-              </>
-            ),
-          },
+          ...(isDisaggregated
+            ? [
+                {
+                  key: 'compute',
+                  label: t('pages.dorisMonitor.section.compute'),
+                  children: (
+                    <>
+                      <SectionHeader
+                        title={t('pages.dorisMonitor.section.compute')}
+                        subtitle={t(
+                          'pages.dorisMonitor.section.compute.subtitle',
+                        )}
+                      />
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D01')}
+                            data={series['DO-D01']}
+                            yFormatter={(v) => v.toFixed(0)}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D02')}
+                            data={series['DO-D02']}
+                            yFormatter={formatBytes}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D03')}
+                            data={series['DO-D03']}
+                            yFormatter={percentFormatter}
+                            thresholdLines={[
+                              {
+                                value: 80,
+                                label: '80%',
+                                color: CHART_COLORS.error,
+                              },
+                            ]}
+                          />
+                        </PanelCol>
+                      </Row>
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D04')}
+                            data={series['DO-D04']}
+                            yFormatter={percentFormatter}
+                            thresholdLines={[
+                              {
+                                value: 80,
+                                label: '80%',
+                                color: CHART_COLORS.error,
+                              },
+                            ]}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D05')}
+                            data={series['DO-D05']}
+                            yFormatter={bytesPerSecondFormatter}
+                            colorMap={compactionColors}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D06')}
+                            data={series['DO-D06']}
+                            yFormatter={bytesPerSecondFormatter}
+                          />
+                        </PanelCol>
+                      </Row>
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D07')}
+                            data={series['DO-D07']}
+                            yFormatter={rowsPerSecondFormatter}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D08')}
+                            data={series['DO-D08']}
+                            yFormatter={secondsPerSecondFormatter}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D09')}
+                            data={series['DO-D09']}
+                            yFormatter={bytesPerSecondFormatter}
+                            colorMap={networkColors}
+                          />
+                        </PanelCol>
+                      </Row>
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D10')}
+                            data={series['DO-D10']}
+                            yFormatter={percentPreciseFormatter}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D11')}
+                            data={series['DO-D11']}
+                            yFormatter={bytesPerSecondFormatter}
+                            colorMap={s3Colors}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-D12')}
+                            data={series['DO-D12']}
+                            yFormatter={percentPreciseFormatter}
+                          />
+                        </PanelCol>
+                      </Row>
+                    </>
+                  ),
+                },
+              ]
+            : [
+                {
+                  key: 'be',
+                  label: t('pages.dorisMonitor.section.be'),
+                  children: (
+                    <>
+                      <SectionHeader
+                        title={t('pages.dorisMonitor.section.be')}
+                        subtitle={t('pages.dorisMonitor.section.be.subtitle')}
+                      />
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C01')}
+                            data={series['DO-C01']}
+                            yFormatter={(v) => v.toFixed(0)}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C02')}
+                            data={series['DO-C02']}
+                            yFormatter={formatBytes}
+                          />
+                        </PanelCol>
+                        <PanelCol span={8}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C03')}
+                            data={series['DO-C03']}
+                            yFormatter={percentUnitFormatter}
+                            thresholdLines={[
+                              {
+                                value: 0.8,
+                                label: '80%',
+                                color: CHART_COLORS.error,
+                              },
+                            ]}
+                            colorMap={{
+                              local_used_pct: CHART_COLORS.error,
+                              avail_pct: CHART_COLORS.success,
+                            }}
+                          />
+                        </PanelCol>
+                      </Row>
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C04')}
+                            data={series['DO-C04']}
+                            yFormatter={percentFormatter}
+                            thresholdLines={[
+                              {
+                                value: 80,
+                                label: '80%',
+                                color: CHART_COLORS.error,
+                              },
+                            ]}
+                          />
+                        </PanelCol>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C05')}
+                            data={series['DO-C05']}
+                            yFormatter={bytesPerSecondFormatter}
+                            colorMap={compactionColors}
+                          />
+                        </PanelCol>
+                      </Row>
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C06')}
+                            data={series['DO-C06']}
+                            yFormatter={bytesPerSecondFormatter}
+                          />
+                        </PanelCol>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C07')}
+                            data={series['DO-C07']}
+                            yFormatter={rowsPerSecondFormatter}
+                          />
+                        </PanelCol>
+                      </Row>
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C08')}
+                            data={series['DO-C08']}
+                            yFormatter={bytesPerSecondFormatter}
+                          />
+                        </PanelCol>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C09')}
+                            data={series['DO-C09']}
+                            yFormatter={rowsPerSecondFormatter}
+                          />
+                        </PanelCol>
+                      </Row>
+                      <Row gutter={MONITOR_ROW_GUTTER}>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C10')}
+                            data={series['DO-C10']}
+                            yFormatter={millisecondPreciseFormatter}
+                          />
+                        </PanelCol>
+                        <PanelCol span={12}>
+                          <TimeSeriesPanel
+                            title={panelTitle('DO-C11')}
+                            data={series['DO-C11']}
+                            yFormatter={bytesPerSecondFormatter}
+                            colorMap={networkColors}
+                          />
+                        </PanelCol>
+                      </Row>
+                    </>
+                  ),
+                },
+              ]),
         ]}
       />
     </MonitorDashboardLayout>
