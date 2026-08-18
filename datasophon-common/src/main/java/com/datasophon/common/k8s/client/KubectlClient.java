@@ -10,6 +10,7 @@ import com.datasophon.common.k8s.vo.k8s.K8sIngress;
 import com.datasophon.common.k8s.vo.k8s.K8sNamespace;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.common.k8s.vo.k8s.K8sPod;
+import com.datasophon.common.k8s.vo.k8s.K8sResource;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.common.k8s.vo.k8s.K8sSecret;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
@@ -274,6 +275,20 @@ public class KubectlClient implements AutoCloseable {
         } catch (JsonProcessingException e) {
             throw new KubectlException("解析工作负载列表失败，" + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 只读枚举所有命名空间下指定 CRD 的自定义资源（CR）实例，供接管扫描识别 operator 管理的组件用
+     * （见 {@link com.datasophon.common.model.k8s.K8sOperatorArtifact}）。
+     *
+     * @param plural CRD 的复数资源名，如 {@code dorisdisaggregatedclusters}
+     * @param group  CRD 的 apiGroup，如 {@code disaggregated.cluster.doris.com}
+     * @return CR 实例列表；CRD 未安装（`kubectl get` 非零退出）时抛出 {@link KubectlException}，
+     *     由调用方按 CRD 粒度捕获跳过，不阻断其他 CRD 的扫描
+     */
+    public K8sResourceList<K8sResource> getCustomResourcesAllNamespaces(String plural, String group) throws KubectlException {
+        String jsonNode = executeToJson(Arrays.asList("get", plural + "." + group, "-A"), 30);
+        return parseResourceList(jsonNode, K8sResource.class);
     }
 
     /**

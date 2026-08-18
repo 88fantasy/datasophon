@@ -2,6 +2,8 @@ package com.datasophon.api.service.k8s;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.datasophon.common.model.k8s.K8sArtifact;
+import com.datasophon.common.model.k8s.K8sOperatorArtifact;
 import com.datasophon.common.model.k8s.K8sServiceInfo;
 import com.datasophon.common.utils.YamlUtils;
 
@@ -55,14 +57,80 @@ class K8sManifestContractTest {
             for (ConstraintViolation<K8sServiceInfo> violation : violations) {
                 failures.add(manifest + " " + violation.getMessage());
             }
-            // 与 loadServiceK8sDdl 一致：artifact 至少支持一种部署方式
+            // 与 loadServiceK8sDdl 一致：artifact 至少支持 helm/yaml/operator 三种部署方式之一
             boolean hasArtifact = info.getArtifact() != null
-                    && (isNotBlank(info.getArtifact().getHelm()) || isNotBlank(info.getArtifact().getYaml()));
+                    && (isNotBlank(info.getArtifact().getHelm()) || isNotBlank(info.getArtifact().getYaml())
+                            || info.getArtifact().getOperator() != null);
             if (!hasArtifact) {
-                failures.add(manifest + " artifact 未声明 helm 或 yaml");
+                failures.add(manifest + " artifact 未声明 helm、yaml 或 operator");
             }
         }
         assertThat(failures).isEmpty();
+    }
+
+    @Test
+    @DisplayName("只声明 kind=operator、无 helm/yaml 的 manifest 通过 artifact 校验")
+    void operatorOnlyArtifact_passesValidation() {
+        // 覆盖"下一个 operator 服务完全不由 datasophon 安装，只做接管扫描"的场景
+        // （本次 Doris 因保留原有 yaml 字段不会触发这个分支，此处单独构造校验通用性）。
+        K8sArtifact artifact = new K8sArtifact();
+        artifact.setKind(K8sArtifact.KIND_OPERATOR);
+        K8sOperatorArtifact operator = new K8sOperatorArtifact();
+        operator.setGroup("example.io");
+        operator.setVersion("v1");
+        operator.setPlural("examples");
+        artifact.setOperator(operator);
+
+        K8sServiceInfo info = new K8sServiceInfo();
+        info.setName("example-operator-service");
+        info.setVersion("1.0.0");
+        info.setType("MIDDLEWARE");
+        info.setArtifact(artifact);
+
+        Set<ConstraintViolation<K8sServiceInfo>> violations = validator.validate(info);
+        assertThat(violations).isEmpty();
+
+        boolean hasArtifact = info.getArtifact() != null
+                && (isNotBlank(info.getArtifact().getHelm()) || isNotBlank(info.getArtifact().getYaml())
+                        || info.getArtifact().getOperator() != null);
+        assertThat(hasArtifact).as("只有 operator 也应视为已声明部署方式，不应报错").isTrue();
+    }
+
+    @Test
+    @DisplayName("Doris manifest 的 operator 块解析出正确的 GVK 与角色探测正则")
+    void dorisManifest_operatorBlockParsesCorrectly() throws IOException {
+        Path dorisManifest = MANIFEST_DIR.resolve("doris").resolve("manifest.yaml");
+        K8sServiceInfo info = YamlUtils.parseYaml(
+                Files.readString(dorisManifest, StandardCharsets.UTF_8), K8sServiceInfo.class);
+
+        K8sArtifact artifact = info.getArtifact();
+        assertThat(artifact.getKind()).isEqualTo(K8sArtifact.KIND_OPERATOR);
+        // 安装路径不变：kind=operator 与原有 yaml 字段共存
+        assertThat(artifact.getYaml()).isEqualTo("ddc-cluster.yaml");
+
+        K8sOperatorArtifact operator = artifact.getOperator();
+        assertThat(operator.getGroup()).isEqualTo("disaggregated.cluster.doris.com");
+        assertThat(operator.getVersion()).isEqualTo("v1");
+        assertThat(operator.getKind()).isEqualTo("DorisDisaggregatedCluster");
+        assertThat(operator.getPlural()).isEqualTo("dorisdisaggregatedclusters");
+        assertThat(operator.getMonitorProfile()).isEqualTo("doris-disaggregated");
+
+        assertThat(operator.getRoles()).hasSize(2);
+        assertThat(operator.getRoles().get(0).getName()).isEqualTo("fe");
+        assertThat(operator.getRoles().get(0).getJobPattern()).isEqualTo("-fe$");
+        assertThat(operator.getRoles().get(1).getName()).isEqualTo("compute");
+        // YAML 单引号字符串不转义，\d 应原样保留（不是被吞成 d）
+        assertThat(operator.getRoles().get(1).getJobPattern()).isEqualTo("-cg\\d+$");
+
+        // 正则本身要能正确编译并按预期匹配 job 名，而不仅仅是字符串相等
+        assertThat("doris-disaggregated-cluster-fe".matches(".*" + operator.getRoles().get(0).getJobPattern()))
+                .isTrue();
+        assertThat("doris-disaggregated-cluster-cg1".matches(".*" + operator.getRoles().get(1).getJobPattern()))
+                .isTrue();
+        assertThat("doris-disaggregated-cluster-cg12".matches(".*" + operator.getRoles().get(1).getJobPattern()))
+                .isTrue();
+        assertThat("doris-disaggregated-cluster-ms".matches(".*" + operator.getRoles().get(1).getJobPattern()))
+                .isFalse();
     }
 
     @Test
