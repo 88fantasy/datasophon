@@ -24,7 +24,7 @@ import { useIntl } from '@umijs/max';
 import { Badge, Row, Statistic } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import { CHART_COLORS, colorByThreshold } from '../_shared/charts/formatters';
-import { selectionsToRegex } from '../_shared/charts/promql';
+import { metricsJobToRegex, selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
@@ -91,7 +91,11 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
           <Badge
             status={noData ? 'default' : hasError ? 'warning' : 'success'}
             text={
-              noData ? '暂无数据' : hasError ? `${value} 个采集错误` : '采集正常'
+              noData
+                ? '暂无数据'
+                : hasError
+                  ? `${value} 个采集错误`
+                  : '采集正常'
             }
           />
         )}
@@ -107,11 +111,14 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
 export interface ApisixDashboardProps {
   clusterId: number;
   embedded?: boolean;
+  /** 接管实例登记的 metricsJob（逗号分隔）；不传时沿用「全部 job」的原行为 */
+  job?: string;
 }
 
 const ApisixDashboard: FC<ApisixDashboardProps> = ({
   clusterId,
   embedded = false,
+  job,
 }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
@@ -130,9 +137,12 @@ const ApisixDashboard: FC<ApisixDashboardProps> = ({
         selectedInstances.length > 0
           ? selectionsToRegex(selectedInstances)
           : '.+',
-      job: selectedJobs.length > 0 ? selectionsToRegex(selectedJobs) : '.+',
+      job:
+        selectedJobs.length > 0
+          ? selectionsToRegex(selectedJobs)
+          : (metricsJobToRegex(job) ?? '.+'),
     }),
-    [selectedInstances, selectedJobs],
+    [selectedInstances, selectedJobs, job],
   );
 
   const handleRefresh = useCallback(() => {

@@ -18,11 +18,15 @@ declare namespace DATASOPHON {
   // ── v2 DTO Request / Response（cluster 试点）────────────────────────────────
 
   /** POST /v2/cluster 请求体 */
+  /** 集群管理模式：MANAGED=平台安装，IMPORTED=接管现有集群 */
+  type ClusterManageMode = 'MANAGED' | 'IMPORTED';
+
   interface CreateClusterRequest {
     clusterName: string;
     clusterCode: string;
     frameId: number;
     archType: ClusterArchType;
+    manageMode?: ClusterManageMode;
   }
 
   /** PUT /v2/cluster/{id} 请求体（只修改名称和代号） */
@@ -42,6 +46,7 @@ declare namespace DATASOPHON {
     clusterState?: ClusterState;
     clusterStateCode?: number;
     archType?: ClusterArchType;
+    manageMode?: ClusterManageMode;
     clusterManagerList?: ClusterManager[];
   }
 
@@ -75,6 +80,7 @@ declare namespace DATASOPHON {
     clusterState?: ClusterState;
     clusterStateCode?: number;
     archType?: ClusterArchType;
+    manageMode?: ClusterManageMode;
     clusterManagerList?: ClusterManager[];
   }
 }

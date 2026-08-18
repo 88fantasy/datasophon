@@ -16,6 +16,22 @@ export async function listK8sInstances(clusterId: number, namespace: string) {
   );
 }
 
+/** 集群下全部服务实例（不分 namespace，同时触发与 K8s 集群对账更新） */
+export async function listAllK8sInstances(clusterId: number) {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.K8sServiceInstanceVO[]>>(
+    `/cluster/${clusterId}/k8s/instance/list`,
+    { method: 'GET' },
+  );
+}
+
+/** 单个服务实例详情（比列表接口多带 metricsJob，监控 Tab 靠它限定 job 过滤） */
+export async function getK8sInstance(clusterId: number, instanceId: number) {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.K8sServiceInstanceVO>>(
+    `/cluster/${clusterId}/k8s/instance/${instanceId}`,
+    { method: 'GET' },
+  );
+}
+
 /** 服务实例支持的资源类型列表（Pod / Service / Deployment / Ingress / ConfigMap 等） */
 export async function listK8sResourceTypes(clusterId: number, instanceId: number) {
   return request<DATASOPHON.ApiResponse<string[]>>(
@@ -68,5 +84,91 @@ export async function saveK8sConfig(
   return request<DATASOPHON.ApiResponse<void>>(
     `/cluster/${clusterId}/k8s/instance/${instanceId}/config`,
     { method: 'POST', data: body },
+  );
+}
+
+// ── 集群接管（takeover）────────────────────────────────────────────
+
+/** 扫描目标集群已存在的服务，按 chart 名匹配框架服务定义 */
+export async function scanTakeover(clusterId: number) {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.K8sTakeoverScanResult>>(
+    `/cluster/${clusterId}/k8s/takeover/scan`,
+    { method: 'GET' },
+  );
+}
+
+/** 发现 Doris 数据源候选地址 */
+export async function listDorisCandidates(clusterId: number) {
+  return request<
+    DATASOPHON.ApiResponse<DATASOPHON.DorisDatasourceCandidate[]>
+  >(`/cluster/${clusterId}/k8s/takeover/doris/candidates`, { method: 'GET' });
+}
+
+/** 测试 Doris 连通性，不落库 */
+export async function testDorisDatasource(
+  clusterId: number,
+  body: {
+    host: string;
+    port?: number;
+    username?: string;
+    password: string;
+  },
+) {
+  return request<DATASOPHON.ApiResponse<string>>(
+    `/cluster/${clusterId}/k8s/takeover/doris/test`,
+    { method: 'POST', data: body },
+  );
+}
+
+/** 保存 Doris 数据源，连通性测试不通过则拒绝保存 */
+export async function saveDorisDatasource(
+  clusterId: number,
+  body: {
+    host: string;
+    port?: number;
+    database?: string;
+    username?: string;
+    password: string;
+  },
+) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/k8s/takeover/doris`,
+    { method: 'POST', data: body },
+  );
+}
+
+/** 提交接管登记，并探测各服务的 OTel job */
+export async function registerTakeover(
+  clusterId: number,
+  bindings: Array<{
+    releaseName: string;
+    namespace: string;
+    frameServiceId: number;
+  }>,
+) {
+  return request<
+    DATASOPHON.ApiResponse<DATASOPHON.K8sTakeoverRegisterResult[]>
+  >(`/cluster/${clusterId}/k8s/takeover/register`, {
+    method: 'POST',
+    data: { bindings },
+  });
+}
+
+/** 取消接管：只移除平台登记记录，不影响目标集群 */
+export async function cancelTakeover(clusterId: number, instanceId: number) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/k8s/takeover/instance/${instanceId}`,
+    { method: 'DELETE' },
+  );
+}
+
+/** 只读反查接管实例的 helm values（helm get values 的原文） */
+export async function readTakeoverValues(
+  clusterId: number,
+  instanceId: number,
+) {
+  return request<DATASOPHON.ApiResponse<string>>(
+    `/cluster/${clusterId}/k8s/takeover/instance/${instanceId}/values`,
+    { method: 'GET' },
   );
 }

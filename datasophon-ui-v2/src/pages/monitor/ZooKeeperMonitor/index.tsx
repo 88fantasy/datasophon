@@ -6,7 +6,7 @@ import {
   colorByThreshold,
   formatBytes,
 } from '../_shared/charts/formatters';
-import { selectionsToRegex } from '../_shared/charts/promql';
+import { metricsJobToRegex, selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
@@ -70,7 +70,18 @@ function formatDuration(ms: number): string {
   return `${seconds}s`;
 }
 
-const ZooKeeperDashboard: FC = () => {
+export interface ZooKeeperDashboardProps {
+  clusterId?: number;
+  embedded?: boolean;
+  /** 接管实例登记的 metricsJob（逗号分隔）；不传时沿用「全部 job」的独立看板行为 */
+  job?: string;
+}
+
+const ZooKeeperDashboard: FC<ZooKeeperDashboardProps> = ({
+  clusterId = 1,
+  embedded = false,
+  job,
+}) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -91,9 +102,12 @@ const ZooKeeperDashboard: FC = () => {
         selectedInstances.length > 0
           ? selectionsToRegex(selectedInstances)
           : '.+',
-      job: selectedJobs.length > 0 ? selectionsToRegex(selectedJobs) : '.+',
+      job:
+        selectedJobs.length > 0
+          ? selectionsToRegex(selectedJobs)
+          : (metricsJobToRegex(job) ?? '.+'),
     }),
-    [selectedInstances, selectedJobs],
+    [selectedInstances, selectedJobs, job],
   );
 
   const handleRefresh = useCallback(() => {
@@ -103,14 +117,15 @@ const ZooKeeperDashboard: FC = () => {
   const { instant, series, instances, jobs, loading } = useZKDashboard({
     variables,
     timeRange,
-    clusterId: 1,
+    clusterId,
     refreshKey,
   });
 
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={title}
+      title={embedded ? undefined : title}
+      embedded={embedded}
       toolbar={
         <ZKDashboardToolbar
           timeRange={timeRange}

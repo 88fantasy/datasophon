@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { CSSProperties, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { listClusters } from '@/services/cluster';
-import { listK8sInstances, listK8sNamespaces } from '@/services/k8s';
+import { listAllK8sInstances } from '@/services/k8s';
 import { listClusterServices } from '@/services/service';
 import ClusterLayout from './index';
 
@@ -69,17 +69,33 @@ vi.mock('antd', async () => {
   );
 
   return {
-    Badge: () => null,
+    Badge: ({ status }: { status?: string }) => (
+      <i data-testid="badge" data-status={status} />
+    ),
     Button: ({ children }: { children: ReactNode }) => (
       <button type="button">{children}</button>
     ),
     Dropdown: ({ children }: { children: ReactNode }) => <>{children}</>,
     Layout,
-    Menu: ({ items }: { items: Array<{ key?: string }> }) => (
+    Menu: ({
+      items,
+    }: {
+      items: Array<{
+        key?: string;
+        children?: Array<{ key?: string; label?: ReactNode }>;
+      }>;
+    }) => (
       <nav data-testid="cluster-menu">
         {items.map((item, index) => (
-          <div key={item.key ?? `divider-${index}`} data-testid="menu-item">
-            {item.key ?? ''}
+          // key 与 children 分开渲染：菜单项的 textContent 必须只含 key，
+          // 否则按 key 断言分组的用例会被子项文本污染
+          <div key={item.key ?? `divider-${index}`}>
+            <div data-testid="menu-item">{item.key ?? ''}</div>
+            {item.children?.map((child) => (
+              <div key={child.key} data-testid="menu-child-label">
+                {child.label}
+              </div>
+            ))}
           </div>
         ))}
       </nav>
@@ -91,8 +107,7 @@ vi.mock('antd', async () => {
 
 vi.mock('@/services/cluster', () => ({ listClusters: vi.fn() }));
 vi.mock('@/services/k8s', () => ({
-  listK8sInstances: vi.fn(),
-  listK8sNamespaces: vi.fn(),
+  listAllK8sInstances: vi.fn(),
 }));
 vi.mock('@/services/service', () => ({ listClusterServices: vi.fn() }));
 vi.mock('../AddService/AddServiceModal', () => ({ default: () => null }));
@@ -147,8 +162,7 @@ describe('ClusterLayout', () => {
     vi.mocked(listClusters).mockResolvedValue({
       data: [{ id: 7, clusterName: 'test', archType: 'k8s' }],
     } as never);
-    vi.mocked(listK8sNamespaces).mockResolvedValue({ data: [] } as never);
-    vi.mocked(listK8sInstances).mockResolvedValue({ data: [] } as never);
+    vi.mocked(listAllK8sInstances).mockResolvedValue({ data: [] } as never);
 
     render(<ClusterLayout />);
 
@@ -157,5 +171,103 @@ describe('ClusterLayout', () => {
     );
     expect(menuItemKeys).not.toContain('/cluster/7/overview');
     expect(menuItemKeys[0]).toBe('/cluster/7/host');
+  });
+
+  it('groups K8s instances by catalog instead of namespace, with a single request', async () => {
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [{ id: 7, clusterName: 'test', archType: 'k8s' }],
+    } as never);
+    vi.mocked(listAllK8sInstances).mockClear();
+    vi.mocked(listAllK8sInstances).mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          serviceName: 'zookeeper',
+          catalog: 'MIDDLEWARE',
+          namespace: 'prod',
+        },
+        {
+          id: 2,
+          serviceName: 'cert-manager',
+          catalog: 'ENVIRONMENT',
+          namespace: 'cert-manager',
+        },
+        {
+          id: 3,
+          serviceName: 'redis-cluster',
+          catalog: 'MIDDLEWARE',
+          namespace: 'prod',
+        },
+      ],
+    } as never);
+
+    render(<ClusterLayout />);
+
+    // 实例列表是异步加载的，等分组项渲染出来再断言
+    await waitFor(() => {
+      const keys = screen
+        .getAllByTestId('menu-item')
+        .map((el) => el.textContent);
+      expect(keys).toContain('cat-MIDDLEWARE');
+    });
+
+    const menuItemKeys = screen
+      .getAllByTestId('menu-item')
+      .map((el) => el.textContent);
+    // 分组键是 catalog 而非 namespace
+    expect(menuItemKeys).toContain('cat-ENVIRONMENT');
+    expect(menuItemKeys).not.toContain('ns-prod');
+    // 没有实例的分类不出现
+    expect(menuItemKeys).not.toContain('cat-APPLICATION');
+
+    // 不再逐 namespace 拉取，一个集群只发一次实例请求
+    expect(vi.mocked(listAllK8sInstances)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(listAllK8sInstances)).toHaveBeenCalledWith(7);
+  });
+});
+
+describe('ClusterLayout takeover reconciliation', () => {
+  beforeEach(() => {
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [{ id: 7, clusterName: 'test', archType: 'k8s' }],
+    } as never);
+    vi.mocked(listClusterServices).mockResolvedValue({ data: [] } as never);
+  });
+
+  it('flags imported instances whose helm release disappeared', async () => {
+    vi.mocked(listAllK8sInstances).mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          serviceName: 'zookeeper',
+          catalog: 'MIDDLEWARE',
+          namespace: 'prod',
+          state: 1,
+          source: 'IMPORTED',
+          missing: true,
+        },
+        {
+          id: 2,
+          serviceName: 'apisix',
+          catalog: 'MIDDLEWARE',
+          namespace: 'apisix',
+          state: 1,
+          source: 'IMPORTED',
+          missing: false,
+        },
+      ],
+    } as never);
+
+    render(<ClusterLayout />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/zookeeper（已失联）/)).toBeInTheDocument();
+    });
+    // 正常实例不加后缀
+    expect(screen.getByText('apisix')).toBeInTheDocument();
+    const statuses = screen
+      .getAllByTestId('badge')
+      .map((el) => el.getAttribute('data-status'));
+    expect(statuses).toContain('error');
   });
 });

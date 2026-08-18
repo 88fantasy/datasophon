@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { runWithConcurrencyLimit } from '../../_shared/useDashboardData';
 import {
   DS_APPLICATION_SERVICE_KEYWORDS,
+  narrowToRegisteredJobs,
   resolveDSServiceName,
 } from './useDSMonitorDashboard';
 
@@ -46,5 +47,31 @@ describe('runWithConcurrencyLimit', () => {
       'dolphinscheduler-api',
     );
     expect(resolveDSServiceName('alert-server', services)).toBe('^$');
+  });
+});
+
+describe('narrowToRegisteredJobs', () => {
+  const clusterJobs = ['ds-master-svc', 'ds-worker-svc', 'other-master-svc'];
+
+  it('keeps the full cluster job list when no job is registered', () => {
+    expect(narrowToRegisteredJobs(clusterJobs)).toEqual(clusterJobs);
+    expect(narrowToRegisteredJobs(clusterJobs, '')).toEqual(clusterJobs);
+  });
+
+  it('drops jobs the takeover instance did not register', () => {
+    const narrowed = narrowToRegisteredJobs(
+      clusterJobs,
+      'ds-master-svc,ds-worker-svc',
+    );
+    expect(narrowed).toEqual(['ds-master-svc', 'ds-worker-svc']);
+    // 收窄后 master 角色不会再匹配到同集群其它服务的 master job
+    expect(resolveDSServiceName('master-server', narrowed)).toBe(
+      'ds-master-svc',
+    );
+  });
+
+  it('resolves to no-match when the registered jobs cover no such role', () => {
+    const narrowed = narrowToRegisteredJobs(clusterJobs, 'ds-worker-svc');
+    expect(resolveDSServiceName('master-server', narrowed)).toBe('^$');
   });
 });

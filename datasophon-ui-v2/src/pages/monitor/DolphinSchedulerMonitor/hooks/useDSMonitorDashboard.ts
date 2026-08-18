@@ -18,6 +18,21 @@ export const DS_APPLICATION_SERVICE_KEYWORDS: Record<DSApplication, string> = {
 
 const NO_MATCHING_SERVICE = '^$';
 
+/**
+ * 把集群全量 job 收窄到接管实例登记的 job 内；未登记 job 时原样返回。
+ */
+export function narrowToRegisteredJobs(
+  serviceNames: string[],
+  registeredJobs?: string,
+): string[] {
+  const registered = (registeredJobs ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (registered.length === 0) return serviceNames;
+  return serviceNames.filter((serviceName) => registered.includes(serviceName));
+}
+
 export function resolveDSServiceName(
   application: DSApplication,
   serviceNames: string[],
@@ -44,6 +59,13 @@ interface UseDSMonitorDashboardParams {
   activeSegment: DSApplication;
   timeRange: string;
   clusterId?: number;
+  /**
+   * 接管实例登记的 metricsJob（逗号分隔）。
+   *
+   * DS 按 master/worker/api/alert 四个角色各自对应一个 job，所以这里不是「替换 job」，
+   * 而是把角色关键字匹配的候选集收窄到本实例登记的 job 内，避免匹配到同集群其它服务。
+   */
+  job?: string;
   refreshKey: number;
 }
 
@@ -52,6 +74,7 @@ export function useDSMonitorDashboard({
   activeSegment,
   timeRange,
   clusterId = 1,
+  job,
   refreshKey,
 }: UseDSMonitorDashboardParams): DSDashboardData {
   const panelIds = useMemo(
@@ -66,7 +89,10 @@ export function useDSMonitorDashboard({
     setRoleJob(NO_MATCHING_SERVICE);
     fetchDorisLabels('process_uptime_seconds', clusterId)
       .then(async (res) => {
-        const serviceName = resolveDSServiceName(activeSegment, res?.data?.jobs ?? []);
+        const serviceName = resolveDSServiceName(
+          activeSegment,
+          narrowToRegisteredJobs(res?.data?.jobs ?? [], job),
+        );
         setRoleJob(serviceName);
         if (serviceName === NO_MATCHING_SERVICE) return;
         const labels = await fetchDorisLabels(
@@ -80,7 +106,7 @@ export function useDSMonitorDashboard({
         setInstances([]);
         setRoleJob(NO_MATCHING_SERVICE);
       });
-  }, [activeSegment, clusterId, refreshKey]);
+  }, [activeSegment, clusterId, job, refreshKey]);
 
   const data = useDorisDashboardData({
     panelDescriptors: PANEL_QUERIES,

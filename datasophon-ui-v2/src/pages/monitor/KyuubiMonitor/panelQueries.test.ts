@@ -22,6 +22,12 @@ describe('KyuubiMonitor panel queries', () => {
       metric: 'kyuubi_jvm_uptime',
       agg: 'count',
     });
+    expect(PANEL_QUERIES.KY02).toMatchObject({
+      type: 'instant',
+      metric: 'kyuubi_jvm_uptime',
+      agg: 'max',
+      scale: 0.001,
+    });
     expect(PANEL_QUERIES.KY06).toMatchObject({
       type: 'range-stat',
       table: 'sum',

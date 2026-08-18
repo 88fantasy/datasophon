@@ -6,7 +6,7 @@ import {
   colorByThreshold,
   formatBytes,
 } from '../_shared/charts/formatters';
-import { selectionsToRegex } from '../_shared/charts/promql';
+import { metricsJobToRegex, selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
@@ -71,13 +71,26 @@ function maxSeriesValue(data: TimeSeriesPoint[], series: string): number {
   return values.length > 0 ? Math.max(...values) : 0;
 }
 
-const KyuubiDashboard: FC = () => {
+export interface KyuubiDashboardProps {
+  clusterId?: number;
+  embedded?: boolean;
+  /** 接管实例登记的 metricsJob（逗号分隔）；不传时沿用「自动选第一个 job」的原行为 */
+  job?: string;
+}
+
+const KyuubiDashboard: FC<KyuubiDashboardProps> = ({
+  clusterId = 1,
+  embedded = false,
+  job,
+}) => {
   const intl = useIntl();
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
   const [selectedInstances, setSelectedInstances] = useState<string[]>([]);
-  const [selectedJob, setSelectedJob] = useState('');
+  const [selectedJob, setSelectedJob] = useState(
+    () => metricsJobToRegex(job) ?? '',
+  );
   const [selectedConnType, setSelectedConnType] = useState(
     'thrift_binary_connection',
   );
@@ -113,24 +126,31 @@ const KyuubiDashboard: FC = () => {
   } = useKyuubiDashboard({
     variables,
     timeRange,
-    clusterId: 1,
+    clusterId,
     refreshKey,
   });
 
   useEffect(() => {
+    // 外部指定 job 时不再按集群全量 job 自动纠偏，否则会跳到别的服务上
+    if (job) return;
     if (jobs.length === 0 || jobs.includes(selectedJob)) return;
     setSelectedJob(jobs[0]);
-  }, [jobs, selectedJob]);
+  }, [job, jobs, selectedJob]);
 
   const permitLimit = maxSeriesValue(series.KY10, 'Startup Permit Limit');
 
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={intl.formatMessage({
-        id: 'pages.kyuubiMonitor.title',
-        defaultMessage: 'Kyuubi Monitor',
-      })}
+      title={
+        embedded
+          ? undefined
+          : intl.formatMessage({
+              id: 'pages.kyuubiMonitor.title',
+              defaultMessage: 'Kyuubi Monitor',
+            })
+      }
+      embedded={embedded}
       toolbar={
         <KyuubiDashboardToolbar
           timeRange={timeRange}

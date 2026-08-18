@@ -75,6 +75,19 @@ export function selectionsToRegex(values: string[]): string {
     .join('|');
 }
 
+/**
+ * 把接管实例登记的 metricsJob（后端以英文逗号连接多个 job）转成 PromQL 正则。
+ *
+ * 空值返回 undefined，让看板走各自原有的 job 过滤逻辑——物理集群不传即零影响。
+ */
+export function metricsJobToRegex(job?: string | null): string | undefined {
+  const parts = (job ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return parts.length > 0 ? selectionsToRegex(parts) : undefined;
+}
+
 /** Prometheus 保留 label 集合，确定 series 名时跳过这些 key。 */
 const RESERVED_LABELS = new Set(['__name__', 'job', 'instance']);
 
@@ -127,9 +140,7 @@ export function mergeNamedSeries(
     const duplicateExtraLabels = new Set(
       extraLabelValues
         .map((values) => values.join(','))
-        .filter(
-          (key, index, keys) => keys.indexOf(key) !== index,
-        ),
+        .filter((key, index, keys) => keys.indexOf(key) !== index),
     );
 
     for (const [index, item] of matrix.result.entries()) {

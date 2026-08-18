@@ -9,9 +9,16 @@ import ApisixDashboard from '@/pages/monitor/ApisixMonitor';
 import DSDashboard from '@/pages/monitor/DolphinSchedulerMonitor';
 import DorisDashboard from '@/pages/monitor/DorisMonitor';
 import GravitinoDashboard from '@/pages/monitor/GravitinoMonitor';
+import JuiceFSDashboard from '@/pages/monitor/JuiceFSMonitor';
+import KyuubiDashboard from '@/pages/monitor/KyuubiMonitor';
 import NacosDashboard from '@/pages/monitor/NacosMonitor';
 import ValkeyDashboard from '@/pages/monitor/ValkeyMonitor';
-import { listK8sResourceTypes } from '@/services/k8s';
+import ZooKeeperDashboard from '@/pages/monitor/ZooKeeperMonitor';
+import {
+  cancelTakeover,
+  getK8sInstance,
+  listK8sResourceTypes,
+} from '@/services/k8s';
 import {
   deleteServiceInstance,
   getServiceInstance,
@@ -22,6 +29,27 @@ import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';
 import SettingTab from './Setting';
+import ImportedValuesViewer from './Setting/ImportedValuesViewer';
+
+/**
+ * K8s 服务名 → 监控看板。
+ *
+ * key 取框架清单包里的服务名（= chart 名，见 package/raw/meta/datacluster-k8s/），
+ * 与物理侧的大写服务名（APISIX / DORIS…）是两套命名，不能混用。
+ * 未在此表中的服务不出监控 Tab——宁可没有，也不要给一个空看板。
+ */
+const K8S_MONITOR_DASHBOARDS: Record<
+  string,
+  React.FC<{ clusterId: number; embedded?: boolean; job?: string }>
+> = {
+  apisix: ApisixDashboard,
+  doris: DorisDashboard,
+  'dolphinscheduler-helm': DSDashboard,
+  'juicefs-csi-driver': JuiceFSDashboard,
+  kyuubi: KyuubiDashboard,
+  nacos: NacosDashboard,
+  zookeeper: ZooKeeperDashboard,
+};
 
 const ServiceInstance: React.FC = () => {
   const { clusterId, instanceId } = useParams<{
@@ -41,6 +69,8 @@ const ServiceInstance: React.FC = () => {
 
   // ── K8s 状态 ──────────────────────────────────────────
   const [k8sResourceTypes, setK8sResourceTypes] = useState<string[]>([]);
+  const [k8sInstance, setK8sInstance] =
+    useState<DATASOPHON.K8sServiceInstanceVO | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -50,14 +80,17 @@ const ServiceInstance: React.FC = () => {
     const fetchData = async () => {
       try {
         if (isK8s) {
-          const res = await listK8sResourceTypes(
-            numericClusterId,
-            numericInstanceId,
-          );
+          const [typesRes, instanceRes] = await Promise.all([
+            listK8sResourceTypes(numericClusterId, numericInstanceId),
+            getK8sInstance(numericClusterId, numericInstanceId),
+          ]);
           if (!cancelled) {
             setK8sResourceTypes(
-              Array.isArray(res) ? res : ((res as any).data ?? []),
+              Array.isArray(typesRes)
+                ? typesRes
+                : ((typesRes as any).data ?? []),
             );
+            setK8sInstance((instanceRes as any).data ?? null);
           }
         } else {
           const [infoRes, webuiRes] = await Promise.all([
@@ -85,6 +118,20 @@ const ServiceInstance: React.FC = () => {
       cancelled = true;
     };
   }, [numericClusterId, numericInstanceId, isK8s]);
+
+  // 接管的实例只能「取消接管」——删除会走到 helm uninstall，后端也已拦截
+  const isImported = k8sInstance?.source === 'IMPORTED';
+
+  const handleCancelTakeover = async () => {
+    setDeleting(true);
+    try {
+      await cancelTakeover(numericClusterId, numericInstanceId);
+      message.success('已取消接管，目标集群未做任何改动');
+      history.replace(`/cluster/${numericClusterId}/service`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -141,7 +188,25 @@ const ServiceInstance: React.FC = () => {
 
   // ── K8s 实例页：资源 Tab（动态）+ 配置 Tab ─────────────────────────
   if (isK8s) {
+    const K8sMonitorDashboard = k8sInstance?.serviceName
+      ? K8S_MONITOR_DASHBOARDS[k8sInstance.serviceName.toLowerCase()]
+      : undefined;
     const k8sItems: TabsProps['items'] = [
+      ...(K8sMonitorDashboard
+        ? [
+            {
+              key: 'monitor',
+              label: '监控',
+              children: (
+                <K8sMonitorDashboard
+                  clusterId={numericClusterId}
+                  embedded
+                  job={k8sInstance?.metricsJob}
+                />
+              ),
+            },
+          ]
+        : []),
       ...k8sResourceTypes.map((rt) => ({
         key: rt,
         label: RESOURCE_TYPE_LABELS[rt] ?? rt,
@@ -156,7 +221,13 @@ const ServiceInstance: React.FC = () => {
       {
         key: 'setting',
         label: '配置',
-        children: (
+        children: isImported ? (
+          <ImportedValuesViewer
+            clusterId={numericClusterId}
+            instanceId={numericInstanceId}
+            releaseName={k8sInstance?.releaseName}
+          />
+        ) : (
           <SettingTab
             clusterId={numericClusterId}
             instanceId={numericInstanceId}
@@ -166,7 +237,26 @@ const ServiceInstance: React.FC = () => {
     ];
     return (
       <Tabs
-        defaultActiveKey={k8sResourceTypes[0] ?? 'setting'}
+        defaultActiveKey={
+          K8sMonitorDashboard ? 'monitor' : (k8sResourceTypes[0] ?? 'setting')
+        }
+        tabBarExtraContent={
+          isImported
+            ? {
+                right: (
+                  <Popconfirm
+                    title="确认取消接管？"
+                    description="仅移除平台的登记记录，目标集群里的服务不受任何影响"
+                    onConfirm={handleCancelTakeover}
+                  >
+                    <Button danger loading={deleting}>
+                      取消接管
+                    </Button>
+                  </Popconfirm>
+                ),
+              }
+            : undefined
+        }
         items={k8sItems}
       />
     );

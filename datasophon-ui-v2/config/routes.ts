@@ -141,6 +141,10 @@ export default [
             component: './Cluster/K8sDashboard',
           },
           {
+            path: '/cluster/:clusterId/takeover',
+            component: './Cluster/Takeover',
+          },
+          {
             path: '/cluster/:clusterId/service',
             component: './Cluster/ServiceManage',
           },

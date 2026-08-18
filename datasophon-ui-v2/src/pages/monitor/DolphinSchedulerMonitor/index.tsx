@@ -443,11 +443,14 @@ const WorkerSection: FC<WorkerSectionProps> = ({ series, panelTitle, t }) => (
 export interface DSDashboardProps {
   clusterId: number;
   embedded?: boolean;
+  /** 接管实例登记的 metricsJob（逗号分隔）；不传时按集群全量 job 做角色匹配 */
+  job?: string;
 }
 
 const DolphinSchedulerDashboard: FC<DSDashboardProps> = ({
   clusterId,
   embedded = false,
+  job,
 }) => {
   const [activeSegment, setActiveSegment] =
     useState<DSApplication>('master-server');
@@ -482,6 +485,7 @@ const DolphinSchedulerDashboard: FC<DSDashboardProps> = ({
     activeSegment,
     timeRange,
     clusterId,
+    job,
     refreshKey,
   });
 
