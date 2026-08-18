@@ -286,6 +286,14 @@ class OtelMetricsQueryControllerTest {
         }
 
         @Test
+        void parseFilters_emptyValue_preservedAsEmptyString() {
+            // Doris 存算分离口径修复依赖此行为：前端 "user:,cluster_name:" 要解析成
+            // {user:"", cluster_name:""}，后端才能翻译成 attributes['k'] IS NULL。
+            Map<String, String> result = OtelMetricsQueryController.parseFilters("user:,cluster_name:");
+            assertThat(result).containsEntry("user", "").containsEntry("cluster_name", "");
+        }
+
+        @Test
         void parseGroupBy_nullInput_returnsEmptyList() {
             assertThat(OtelMetricsQueryController.parseGroupBy(null)).isEmpty();
         }
