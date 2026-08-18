@@ -137,6 +137,69 @@ class K8sTakeoverScanServiceTest {
         assertThat(result.missing().get(0).namespace()).isEqualTo("staging");
     }
 
+    @Test
+    @DisplayName("operator CR 扫描结果标 sourceKind=CR 并携带 K8s Kind，进入 matched 不落 pending")
+    void crResultEntersMatchedWithSourceKindCr() {
+        FrameK8sServiceEntity dorisDefinition = definition(5, "doris", "MIDDLEWARE", null);
+        K8sCrScanner.ScannedCr cr = new K8sCrScanner.ScannedCr(
+                dorisDefinition, "doris-disaggregated-cluster", "doris", "DorisDisaggregatedCluster");
+
+        K8sTakeoverScanResult result = scan(List.of(), List.of(dorisDefinition), List.of(), List.of(cr));
+
+        assertThat(result.pending()).isEmpty();
+        assertThat(result.matched()).hasSize(1);
+        K8sTakeoverScanResult.ScannedRelease scanned = result.matched().get(0);
+        assertThat(scanned.releaseName()).isEqualTo("doris-disaggregated-cluster");
+        assertThat(scanned.namespace()).isEqualTo("doris");
+        assertThat(scanned.sourceKind()).isEqualTo("CR");
+        assertThat(scanned.kind()).isEqualTo("DorisDisaggregatedCluster");
+        assertThat(scanned.frameServiceId()).isEqualTo(5);
+        assertThat(scanned.chart()).isNull();
+    }
+
+    @Test
+    @DisplayName("Helm release 结果标 sourceKind=HELM，kind 为 null")
+    void helmResultHasSourceKindHelmAndNullKind() {
+        List<HelmReleaseListItemVO> releases = List.of(release("zookeeper", "prod", "zookeeper-13.8.7"));
+        List<FrameK8sServiceEntity> definitions = List.of(definition(2, "zookeeper", "MIDDLEWARE", null));
+
+        K8sTakeoverScanResult result = scan(releases, definitions);
+
+        assertThat(result.matched().get(0).sourceKind()).isEqualTo("HELM");
+        assertThat(result.matched().get(0).kind()).isNull();
+    }
+
+    @Test
+    @DisplayName("已登记的 CR 实例不会被误报进 missing")
+    void registeredCrInstanceNotReportedMissing() {
+        FrameK8sServiceEntity dorisDefinition = definition(5, "doris", "MIDDLEWARE", null);
+        K8sCrScanner.ScannedCr cr = new K8sCrScanner.ScannedCr(
+                dorisDefinition, "doris-disaggregated-cluster", "doris", "DorisDisaggregatedCluster");
+        List<K8sServiceInstanceVO> registered =
+                List.of(imported(201, "doris", "doris-disaggregated-cluster", "doris"));
+
+        K8sTakeoverScanResult result = scan(List.of(), List.of(dorisDefinition), registered, List.of(cr));
+
+        assertThat(result.missing()).isEmpty();
+        assertThat(result.matched().get(0).registered()).isTrue();
+    }
+
+    @Test
+    @DisplayName("CR 与某个 Helm release 撞名（同 namespace+name）时不重复登记")
+    void crDoesNotDuplicateHelmMatchOnKeyCollision() {
+        // 极端边界：operator 自身恰好用 helm 装且与 CR 实例撞了 namespace/name
+        List<HelmReleaseListItemVO> releases = List.of(release("doris", "doris", "doris-something-1.0.0"));
+        FrameK8sServiceEntity dorisHelmDefinition = definition(4, "doris-something", "ENVIRONMENT", null);
+        FrameK8sServiceEntity dorisCrDefinition = definition(5, "doris", "MIDDLEWARE", null);
+        K8sCrScanner.ScannedCr cr = new K8sCrScanner.ScannedCr(dorisCrDefinition, "doris", "doris", "Doris");
+
+        K8sTakeoverScanResult result = scan(releases, List.of(dorisHelmDefinition, dorisCrDefinition),
+                List.of(), List.of(cr));
+
+        assertThat(result.matched()).hasSize(1);
+        assertThat(result.matched().get(0).sourceKind()).isEqualTo("HELM");
+    }
+
     private K8sTakeoverScanResult scan(List<HelmReleaseListItemVO> releases,
                                        List<FrameK8sServiceEntity> definitions) {
         return scan(releases, definitions, List.of());
@@ -145,7 +208,15 @@ class K8sTakeoverScanServiceTest {
     private K8sTakeoverScanResult scan(List<HelmReleaseListItemVO> releases,
                                        List<FrameK8sServiceEntity> definitions,
                                        List<K8sServiceInstanceVO> registered) {
+        return scan(releases, definitions, registered, List.of());
+    }
+
+    private K8sTakeoverScanResult scan(List<HelmReleaseListItemVO> releases,
+                                       List<FrameK8sServiceEntity> definitions,
+                                       List<K8sServiceInstanceVO> registered,
+                                       List<K8sCrScanner.ScannedCr> crs) {
         HelmReleaseReader reader = mock(HelmReleaseReader.class);
+        K8sCrScanner crScanner = mock(K8sCrScanner.class);
         FrameK8sServiceService frameService = mock(FrameK8sServiceService.class);
         K8sClusterConfigService configService = mock(K8sClusterConfigService.class);
         K8sServiceInstanceService instanceService = mock(K8sServiceInstanceService.class);
@@ -153,10 +224,11 @@ class K8sTakeoverScanServiceTest {
         when(configService.getByClusterId(7)).thenReturn(new K8sClusterConfig());
         when(frameService.listNewest(7)).thenReturn(definitions);
         when(reader.listDeployed(any())).thenReturn(releases);
+        when(crScanner.scan(any(), any())).thenReturn(crs);
         when(instanceService.queryInstanceList(7)).thenReturn(registered);
 
         return new K8sTakeoverScanService(
-                reader, frameService, configService, instanceService, reconcileService).scan(7);
+                reader, crScanner, frameService, configService, instanceService, reconcileService).scan(7);
     }
 
     /** 构造一条已登记的接管实例。 */

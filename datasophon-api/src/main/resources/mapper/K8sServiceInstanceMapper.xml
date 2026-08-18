@@ -38,7 +38,9 @@
             a.state,
             a.source AS source,
             a.release_name AS release_name,
-            a.metrics_job AS metrics_job
+            a.metrics_job AS metrics_job,
+            a.source_kind AS source_kind,
+            a.monitor_profile AS monitor_profile
         FROM
             t_ddh_k8s_service_instance a
             LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id
@@ -62,7 +64,9 @@
             a.state,
             a.source AS source,
             a.release_name AS release_name,
-            a.metrics_job AS metrics_job
+            a.metrics_job AS metrics_job,
+            a.source_kind AS source_kind,
+            a.monitor_profile AS monitor_profile
         FROM
             t_ddh_k8s_service_instance a
             LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id

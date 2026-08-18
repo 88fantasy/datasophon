@@ -41,6 +41,12 @@ public class K8sServiceInstanceVO {
     @Schema(description = "指标 job（对应 Doris service_name），多个以英文逗号分隔")
     private String metricsJob;
 
+    @Schema(description = "来源类型 HELM=Helm release CR=Operator 自定义资源，默认 HELM")
+    private String sourceKind;
+
+    @Schema(description = "看板画像 JSON（模式判定 + 角色→job 映射）原文，CR 来源专用，前端自行 JSON.parse")
+    private String monitorProfile;
+
     /** 非数据库列：轻对账发现 release 已从目标集群消失时为 true，仅接管实例会被赋值。 */
     @Schema(description = "接管实例失联标记：对应的 Helm release 已不在目标集群中")
     private Boolean missing;

@@ -56,5 +56,8 @@ public class K8sTakeoverDTO {
         @Schema(description = "绑定到的框架服务定义 ID")
         @NotNull(message = "未指定框架服务")
         private Integer frameServiceId;
+
+        @Schema(description = "来源类型 HELM=Helm release CR=Operator 自定义资源；缺省 HELM，兼容旧前端")
+        private String sourceKind;
     }
 }

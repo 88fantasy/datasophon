@@ -87,7 +87,7 @@ public class ClusterK8sTakeoverV2Controller extends ApiController {
                                                                  @Valid @RequestBody K8sTakeoverDTO.Register req) {
         List<K8sTakeoverRegisterService.Binding> bindings = req.getBindings().stream()
                 .map(b -> new K8sTakeoverRegisterService.Binding(
-                        b.getReleaseName(), b.getNamespace(), b.getFrameServiceId()))
+                        b.getReleaseName(), b.getNamespace(), b.getFrameServiceId(), b.getSourceKind()))
                 .toList();
         return ApiResponse.ok(registerService.register(clusterId, bindings));
     }

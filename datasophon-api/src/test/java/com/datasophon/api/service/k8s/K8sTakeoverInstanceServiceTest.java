@@ -85,6 +85,20 @@ class K8sTakeoverInstanceServiceTest {
         verifyNoInteractions(fixture.helmReader);
     }
 
+    @Test
+    @DisplayName("CR 来源实例反查配置被明确拒绝，不会拿 CR 实例名去调 helm get values")
+    void rejectsReadValuesForCrSourcedInstance() {
+        K8sServiceInstanceVO crInstance = importedInstance();
+        crInstance.setSourceKind("CR");
+        crInstance.setReleaseName("doris-disaggregated-cluster");
+        Fixture fixture = new Fixture(crInstance);
+
+        assertThatThrownBy(() -> fixture.service.readValues(7, 42))
+                .isInstanceOf(BusinessHintException.class)
+                .hasMessageContaining("Operator CR");
+        verifyNoInteractions(fixture.helmReader);
+    }
+
     private static K8sServiceInstanceVO importedInstance() {
         K8sServiceInstanceVO instance = new K8sServiceInstanceVO();
         instance.setId(42);

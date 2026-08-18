@@ -13,6 +13,7 @@ import com.datasophon.dao.enums.k8s.InstanceSource;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,17 +31,20 @@ import com.alibaba.fastjson2.JSONObject;
 public class K8sTakeoverScanService {
 
     private final HelmReleaseReader helmReleaseReader;
+    private final K8sCrScanner k8sCrScanner;
     private final FrameK8sServiceService frameK8sServiceService;
     private final K8sClusterConfigService k8sClusterConfigService;
     private final K8sServiceInstanceService k8sServiceInstanceService;
     private final K8sTakeoverReconcileService reconcileService;
 
     public K8sTakeoverScanService(HelmReleaseReader helmReleaseReader,
+                                  K8sCrScanner k8sCrScanner,
                                   FrameK8sServiceService frameK8sServiceService,
                                   K8sClusterConfigService k8sClusterConfigService,
                                   K8sServiceInstanceService k8sServiceInstanceService,
                                   K8sTakeoverReconcileService reconcileService) {
         this.helmReleaseReader = helmReleaseReader;
+        this.k8sCrScanner = k8sCrScanner;
         this.frameK8sServiceService = frameK8sServiceService;
         this.k8sClusterConfigService = k8sClusterConfigService;
         this.k8sServiceInstanceService = k8sServiceInstanceService;
@@ -60,6 +64,7 @@ public class K8sTakeoverScanService {
         }
         List<FrameK8sServiceEntity> definitions = frameK8sServiceService.listNewest(clusterId);
         List<HelmReleaseListItemVO> releases = helmReleaseReader.listDeployed(config);
+        List<K8sCrScanner.ScannedCr> crs = k8sCrScanner.scan(config, definitions);
 
         // 已登记的接管实例，用来判定「已接管」与「失联」两个方向
         List<K8sServiceInstanceVO> imported = k8sServiceInstanceService.queryInstanceList(clusterId).stream()
@@ -68,9 +73,9 @@ public class K8sTakeoverScanService {
         Set<String> registeredKeys = imported.stream()
                 .map(instance -> releaseKey(instance.getNamespace(), instance.getReleaseName()))
                 .collect(Collectors.toSet());
-        Set<String> deployedKeys = releases.stream()
-                .map(release -> releaseKey(release.getNamespace(), release.getName()))
-                .collect(Collectors.toSet());
+        Set<String> deployedKeys = new HashSet<>();
+        releases.forEach(release -> deployedKeys.add(releaseKey(release.getNamespace(), release.getName())));
+        crs.forEach(cr -> deployedKeys.add(releaseKey(cr.namespace(), cr.name())));
 
         List<K8sTakeoverScanResult.ScannedRelease> matched = new ArrayList<>();
         List<K8sTakeoverScanResult.ScannedRelease> pending = new ArrayList<>();
@@ -83,6 +88,19 @@ public class K8sTakeoverScanService {
             } else {
                 matched.add(toScanned(release, definition, registered));
             }
+        }
+        Set<String> helmMatchedKeys = matched.stream()
+                .map(m -> releaseKey(m.namespace(), m.releaseName()))
+                .collect(Collectors.toSet());
+        for (K8sCrScanner.ScannedCr cr : crs) {
+            String key = releaseKey(cr.namespace(), cr.name());
+            // key 已被 helm 分支占用（operator 自身恰好也用 helm 装且与 CR 撞名）时跳过，
+            // 避免同一实例在扫描结果里出现两次
+            if (helmMatchedKeys.contains(key)) {
+                continue;
+            }
+            boolean registered = registeredKeys.contains(key);
+            matched.add(toScanned(cr, registered));
         }
 
         List<K8sTakeoverScanResult.MissingInstance> missing = imported.stream()
@@ -161,6 +179,26 @@ public class K8sTakeoverScanService {
                 definition == null ? null : definition.getId(),
                 definition == null ? null : definition.getServiceName(),
                 definition == null ? null : definition.getType(),
-                registered);
+                registered,
+                "HELM",
+                null);
+    }
+
+    /** CR 结果全部来自按已知 definition 主动扫描（见 {@link K8sCrScanner}），不存在"未匹配"的情况。 */
+    private K8sTakeoverScanResult.ScannedRelease toScanned(K8sCrScanner.ScannedCr cr, boolean registered) {
+        FrameK8sServiceEntity definition = cr.definition();
+        return new K8sTakeoverScanResult.ScannedRelease(
+                cr.name(),
+                cr.namespace(),
+                null,
+                null,
+                null,
+                null,
+                definition.getId(),
+                definition.getServiceName(),
+                definition.getType(),
+                registered,
+                "CR",
+                cr.kind());
     }
 }

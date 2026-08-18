@@ -25,6 +25,7 @@ package com.datasophon.api.service.k8s;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.time.Duration;
@@ -75,6 +76,11 @@ public class K8sTakeoverReconcileService {
      *
      * <p>查询失败时**不标记任何实例**：把「查不到集群」误报成「服务没了」比不报更糟。
      *
+     * <p>{@code sourceKind=CR} 的实例本就不跳过——但 {@link #deployedReleaseKeys} 只查 Helm release
+     * 的 Secret 标签（性能优化，见类注释），CR 实例的 key 永远不在这个集合里，跳过它们的判定，
+     * 避免侧边栏对 CR 来源实例持续误报「失联」。CR 的失联判定交给「重新扫描」（{@code
+     * K8sTakeoverScanService}）负责。
+     *
      * @param clusterId 集群 ID
      * @param instances 待标记的实例列表（就地修改）
      */
@@ -83,7 +89,8 @@ public class K8sTakeoverReconcileService {
             return;
         }
         boolean hasImported = instances.stream()
-                .anyMatch(instance -> InstanceSource.IMPORTED.name().equals(instance.getSource()));
+                .anyMatch(instance -> InstanceSource.IMPORTED.name().equals(instance.getSource())
+                        && !InstanceSourceKind.CR.name().equals(instance.getSourceKind()));
         if (!hasImported) {
             return;
         }
@@ -92,7 +99,8 @@ public class K8sTakeoverReconcileService {
             return;
         }
         for (K8sServiceInstanceVO instance : instances) {
-            if (!InstanceSource.IMPORTED.name().equals(instance.getSource())) {
+            if (!InstanceSource.IMPORTED.name().equals(instance.getSource())
+                    || InstanceSourceKind.CR.name().equals(instance.getSourceKind())) {
                 continue;
             }
             instance.setMissing(!deployed.contains(releaseKey(instance)));

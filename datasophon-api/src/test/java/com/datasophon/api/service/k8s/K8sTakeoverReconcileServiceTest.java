@@ -89,6 +89,39 @@ class K8sTakeoverReconcileServiceTest {
         verify(fixture.k8sService, times(2)).listHelmReleaseKeys(any());
     }
 
+    @Test
+    @DisplayName("sourceKind=CR 的实例不参与 Helm release 对账，不被误标失联")
+    void doesNotMarkCrSourcedInstanceAsMissing() {
+        Fixture fixture = new Fixture();
+        // listHelmReleaseKeys 只查 Helm Secret 标签，CR 实例的 release_name 永远不会出现在这里，
+        // 若不跳过就会被误判为 missing
+        when(fixture.k8sService.listHelmReleaseKeys(any()))
+                .thenReturn(List.of("apisix/apisix"));
+
+        K8sServiceInstanceVO crInstance = imported(1, "doris", "doris-disaggregated-cluster");
+        crInstance.setSourceKind("CR");
+        fixture.service.markMissing(7, List.of(crInstance));
+
+        assertThat(crInstance.getMissing()).isNull();
+        verifyNoInteractions(fixture.k8sService);
+    }
+
+    @Test
+    @DisplayName("CR 与普通 Helm 实例混合时，只对 Helm 实例做对账查询与标记")
+    void onlyReconcilesHelmInstancesWhenMixedWithCr() {
+        Fixture fixture = new Fixture();
+        when(fixture.k8sService.listHelmReleaseKeys(any())).thenReturn(List.of("prod/zookeeper"));
+
+        K8sServiceInstanceVO crInstance = imported(1, "doris", "doris-disaggregated-cluster");
+        crInstance.setSourceKind("CR");
+        K8sServiceInstanceVO helmInstance = imported(2, "spark", "kyuubi");
+
+        fixture.service.markMissing(7, List.of(crInstance, helmInstance));
+
+        assertThat(crInstance.getMissing()).isNull();
+        assertThat(helmInstance.getMissing()).isTrue();
+    }
+
     private static K8sServiceInstanceVO imported(int id, String namespace, String releaseName) {
         K8sServiceInstanceVO instance = new K8sServiceInstanceVO();
         instance.setId(id);

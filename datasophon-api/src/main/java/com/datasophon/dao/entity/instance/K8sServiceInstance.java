@@ -1,6 +1,7 @@
 package com.datasophon.dao.entity.instance;
 
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 
 import java.io.Serializable;
 
@@ -48,5 +49,15 @@ public class K8sServiceInstance implements Serializable {
      */
     @Schema(description = "OTel service_name(job) 列表，逗号分隔")
     private String metricsJob;
+
+    @Schema(description = "来源类型 HELM=Helm release CR=Operator 自定义资源，默认 HELM")
+    private InstanceSourceKind sourceKind;
+
+    /**
+     * 看板画像 JSON，如 {@code {"profile":"doris-disaggregated","roles":{"fe":[...],"compute":[...]}}}。
+     * 仅 {@link #sourceKind} 为 CR 且探测到角色 job 时非空；登记时的快照，新增计算组等需要重新扫描/登记。
+     */
+    @Schema(description = "看板画像 JSON（模式判定 + 角色→job 映射），CR 来源专用")
+    private String monitorProfile;
 
 }

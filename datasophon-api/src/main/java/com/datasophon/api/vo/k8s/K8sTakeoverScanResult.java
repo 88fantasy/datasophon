@@ -26,6 +26,8 @@ public record K8sTakeoverScanResult(List<ScannedRelease> matched,
      * @param frameServiceName 匹配到的框架服务名；pending 中为 null
      * @param catalog          服务分类 ENVIRONMENT / MIDDLEWARE / APPLICATION；pending 中为 null
      * @param registered       该 release 是否已经登记过，供前端默认不重复勾选
+     * @param sourceKind       来源类型 HELM=Helm release CR=operator 自定义资源
+     * @param kind             CR 的 K8s Kind，如 {@code DorisDisaggregatedCluster}；HELM 来源为 null
      */
     public record ScannedRelease(String releaseName,
                                  String namespace,
@@ -36,7 +38,9 @@ public record K8sTakeoverScanResult(List<ScannedRelease> matched,
                                  Integer frameServiceId,
                                  String frameServiceName,
                                  String catalog,
-                                 boolean registered) {
+                                 boolean registered,
+                                 String sourceKind,
+                                 String kind) {
     }
 
     /**

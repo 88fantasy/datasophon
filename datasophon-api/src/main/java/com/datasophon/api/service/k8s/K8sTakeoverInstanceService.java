@@ -28,6 +28,7 @@ import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.Objects;
@@ -84,6 +85,9 @@ public class K8sTakeoverInstanceService {
      */
     public String readValues(Integer clusterId, Integer instanceId) {
         K8sServiceInstanceVO instance = requireImportedInstance(clusterId, instanceId);
+        if (InstanceSourceKind.CR.name().equals(instance.getSourceKind())) {
+            throw new BusinessHintException("该实例由 Operator CR 管理，无 Helm values 可反查");
+        }
         if (instance.getReleaseName() == null || instance.getReleaseName().isBlank()) {
             throw new BusinessHintException("该接管实例未登记 release 名，无法反查配置");
         }

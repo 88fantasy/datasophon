@@ -11,6 +11,7 @@ import com.datasophon.api.observability.OtelDorisReaderFactory;
 import com.datasophon.common.function.ThrowableMapper;
 import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
+import com.datasophon.common.model.k8s.K8sOperatorArtifact;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
 import java.util.Arrays;
@@ -80,6 +81,105 @@ class K8sMetricsJobProbeServiceTest {
     @DisplayName("release 查不到任何 Service 时返回 null，不抛异常")
     void returnsNullWhenNoServiceFound() {
         assertThat(probe("ustream", "prod")).isNull();
+    }
+
+    @Test
+    @DisplayName("operatorArtifact 非空时按 name-prefix 定位 Service，并按角色分桶")
+    void probesByNamePrefixAndBucketsByRole() {
+        // 沙箱实测样例：Doris CR 名 doris-disaggregated-cluster，Service 前缀命中 -fe/-cg1/-cg2，
+        // -ms 因不产指标不在 ACTIVE_JOBS 里被交集自然排除
+        Set<String> activeJobs = Set.of(
+                "doris-disaggregated-cluster-fe",
+                "doris-disaggregated-cluster-cg1",
+                "doris-disaggregated-cluster-cg2");
+        K8sOperatorArtifact operator = new K8sOperatorArtifact();
+        K8sOperatorArtifact.Role fe = new K8sOperatorArtifact.Role();
+        fe.setName("fe");
+        fe.setJobPattern("-fe$");
+        K8sOperatorArtifact.Role compute = new K8sOperatorArtifact.Role();
+        compute.setName("compute");
+        compute.setJobPattern("-cg\\d+$");
+        operator.setRoles(java.util.List.of(fe, compute));
+
+        K8sMetricsJobProbeService.ProbeResult result = probeByPrefix(
+                "doris-disaggregated-cluster", "doris", activeJobs, operator,
+                "doris-disaggregated-cluster-fe", "doris-disaggregated-cluster-cg1",
+                "doris-disaggregated-cluster-cg2", "doris-disaggregated-cluster-ms");
+
+        // metricsJob 按 kubectl 返回的 Service 遍历顺序拼接（LinkedHashSet，与既有 Helm 分支一致）
+        assertThat(result.metricsJob()).isEqualTo(
+                "doris-disaggregated-cluster-fe,doris-disaggregated-cluster-cg1,doris-disaggregated-cluster-cg2");
+        assertThat(result.roleJobs()).containsEntry("fe", java.util.List.of("doris-disaggregated-cluster-fe"));
+        assertThat(result.roleJobs()).containsEntry("compute", java.util.List.of(
+                "doris-disaggregated-cluster-cg1", "doris-disaggregated-cluster-cg2"));
+    }
+
+    @Test
+    @DisplayName("name-prefix 用前缀+连字符匹配，不会误吃同前缀不同实体的 Service（nacos 不吃 nacosxyz）")
+    void namePrefixDoesNotMatchUnrelatedServiceWithSamePrefix() {
+        Set<String> activeJobs = Set.of("nacos", "nacosxyz");
+        K8sMetricsJobProbeService.ProbeResult result = probeByPrefix(
+                "nacos", "prod", activeJobs, new K8sOperatorArtifact(), "nacos", "nacosxyz");
+
+        assertThat(result.metricsJob()).isEqualTo("nacos");
+        assertThat(result.metricsJob()).doesNotContain("nacosxyz");
+    }
+
+    @Test
+    @DisplayName("operatorArtifact 为 null 时回退走原 Helm 标签分支")
+    void fallsBackToHelmLabelBranchWhenOperatorArtifactIsNull() {
+        KubectlClient client = mock(KubectlClient.class);
+        try {
+            K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sService> list = new K8sResourceList<>();
+            list.setItems(Arrays.stream(new String[]{"zookeeper-metrics"})
+                    .map(K8sMetricsJobProbeServiceTest::service).toList());
+            when(client.getServices(eq("prod"), anyString())).thenReturn(list);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        com.datasophon.api.service.k8s.K8sService k8sService =
+                mock(com.datasophon.api.service.k8s.K8sService.class);
+        when(k8sService.batchExec(any(), any(), anyString())).thenAnswer(invocation -> {
+            ThrowableMapper<KubectlClient, Object> mapper = invocation.getArgument(1);
+            return mapper.accept(client);
+        });
+
+        K8sMetricsJobProbeService.ProbeResult result = new K8sMetricsJobProbeService(
+                k8sService, mock(OtelDorisReaderFactory.class))
+                .probe(new K8sClusterConfig(), "zookeeper", "prod", ACTIVE_JOBS, null);
+
+        assertThat(result.metricsJob()).isEqualTo("zookeeper-metrics");
+        assertThat(result.roleJobs()).isEmpty();
+        // 走的是 -l 标签查询分支，而不是 name-prefix 的 null selector 分支
+        try {
+            org.mockito.Mockito.verify(client).getServices(eq("prod"), anyString());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private K8sMetricsJobProbeService.ProbeResult probeByPrefix(String releaseName, String namespace,
+                                                                Set<String> activeJobs,
+                                                                K8sOperatorArtifact operator,
+                                                                String... serviceNames) {
+        KubectlClient client = mock(KubectlClient.class);
+        try {
+            K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sService> list = new K8sResourceList<>();
+            list.setItems(Arrays.stream(serviceNames).map(K8sMetricsJobProbeServiceTest::service).toList());
+            when(client.getServices(eq(namespace), org.mockito.ArgumentMatchers.isNull())).thenReturn(list);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        com.datasophon.api.service.k8s.K8sService k8sService =
+                mock(com.datasophon.api.service.k8s.K8sService.class);
+        when(k8sService.batchExec(any(), any(), anyString())).thenAnswer(invocation -> {
+            ThrowableMapper<KubectlClient, Object> mapper = invocation.getArgument(1);
+            return mapper.accept(client);
+        });
+
+        K8sMetricsJobProbeService probeService =
+                new K8sMetricsJobProbeService(k8sService, mock(OtelDorisReaderFactory.class));
+        return probeService.probe(new K8sClusterConfig(), releaseName, namespace, activeJobs, operator);
     }
 
     private String probe(String releaseName, String namespace, String... serviceNames) {
