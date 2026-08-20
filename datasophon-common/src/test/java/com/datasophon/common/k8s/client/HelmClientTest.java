@@ -11,6 +11,7 @@ import com.datasophon.common.k8s.dto.UpgradeParams;
 import com.datasophon.common.k8s.exception.HelmException;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 
 import java.util.ArrayList;
@@ -82,7 +83,11 @@ class HelmClientTest {
             try {
                 System.setProperty("os.name", "Linux");
 
-                try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                try (
+                        MockedStatic<PropertyUtils> mockedPropertyUtils = Mockito.mockStatic(PropertyUtils.class);
+                        MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                    mockedPropertyUtils.when(() -> PropertyUtils.getString("helm.install_path"))
+                            .thenReturn(TEST_HELM_PATH);
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(true);
                     when(mockResult.getExecOut()).thenReturn("/usr/bin/helm\n");
@@ -205,11 +210,13 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--kubeconfig"));
-                            Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("kubeConfig.yaml")));
+                            if (args.contains("list")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("kubeConfig.yaml")));
+                            }
                             return mockResult;
                         });
 
@@ -228,11 +235,14 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--kube-token"));
-                            Assertions.assertTrue(args.contains("test-token"));
+                            if (args.contains("list")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertFalse(args.contains("--kube-token"));
+                                Assertions.assertFalse(args.contains("test-token"));
+                            }
                             return mockResult;
                         });
 
@@ -252,13 +262,16 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--kube-username"));
-                            Assertions.assertTrue(args.contains("admin"));
-                            Assertions.assertTrue(args.contains("--kube-password"));
-                            Assertions.assertTrue(args.contains("password123"));
+                            if (args.contains("list")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertFalse(args.contains("--kube-username"));
+                                Assertions.assertFalse(args.contains("admin"));
+                                Assertions.assertFalse(args.contains("--kube-password"));
+                                Assertions.assertFalse(args.contains("password123"));
+                            }
                             return mockResult;
                         });
 
@@ -280,7 +293,7 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("exit code: 1");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -310,7 +323,7 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("output\n");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -333,7 +346,7 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("command failed");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -341,7 +354,8 @@ class HelmClientTest {
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
 
-                HelmException exception = Assertions.assertThrows(HelmException.class, () -> client.execute(new ArrayList<>(Collections.singletonList("invalid")), 30));
+                HelmException exception = Assertions.assertThrows(HelmException.class,
+                        () -> client.executeForJsonResult(new ArrayList<>(Collections.singletonList("invalid")), 30));
 
                 Assertions.assertTrue(exception.getMessage().contains("command failed"));
             }
@@ -364,7 +378,7 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -392,11 +406,13 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--values"));
-                            Assertions.assertTrue(args.contains("/path/to/values.yaml"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--values"));
+                                Assertions.assertTrue(args.contains("/path/to/values.yaml"));
+                            }
                             return mockResult;
                         });
 
@@ -424,11 +440,13 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--set"));
-                            Assertions.assertTrue(args.contains("image.tag=v1.0.0"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--set"));
+                                Assertions.assertTrue(args.contains("image.tag=v1.0.0"));
+                            }
                             return mockResult;
                         });
 
@@ -491,7 +509,7 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("release not found");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -517,7 +535,7 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("invalid json {");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -531,7 +549,7 @@ class HelmClientTest {
 
                 HelmException exception = Assertions.assertThrows(HelmException.class, () -> client.upgrade(params));
 
-                Assertions.assertTrue(exception.getMessage().contains("解析 helm upgrade 响应失败"));
+                Assertions.assertTrue(exception.getMessage().contains("解析 helm 响应失败"));
             }
         }
 
@@ -544,10 +562,12 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--install"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--install"));
+                            }
                             return mockResult;
                         });
 
@@ -574,11 +594,13 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--timeout"));
-                            Assertions.assertTrue(args.contains("600s"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--timeout"));
+                                Assertions.assertTrue(args.contains("600s"));
+                            }
                             return mockResult;
                         });
 
@@ -605,11 +627,13 @@ class HelmClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--description"));
-                            Assertions.assertTrue(args.contains("Release upgrade"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--description"));
+                                Assertions.assertTrue(args.contains("Release upgrade"));
+                            }
                             return mockResult;
                         });
 

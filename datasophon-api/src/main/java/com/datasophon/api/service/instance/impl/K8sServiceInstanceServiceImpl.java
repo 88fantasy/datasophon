@@ -19,6 +19,7 @@ import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.mapper.instance.K8sServiceInstanceMapper;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -74,6 +76,11 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         }
         // 2. 使用@K8sServiceInstanceMapper#selectByIds 根据 IDs 查询 K8sServiceInstanceVO 对象
         return baseMapper.selectByIds(instanceIds);
+    }
+
+    @Override
+    public Optional<K8sServiceInstanceVO> getVoByClusterAndId(Integer clusterId, Integer instanceId) {
+        return Optional.ofNullable(baseMapper.selectByClusterAndId(clusterId, instanceId));
     }
 
     @Override
@@ -129,6 +136,33 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
             instance.setServiceId(serviceId);
             instance.setState(0); // 初始化状态
             save(instance);
+        }
+        return instance;
+    }
+
+    @Override
+    public K8sServiceInstance createImportedIfAbsent(Integer clusterId, Integer namespaceId,
+                                                     Integer serviceId, InstanceSourceKind sourceKind,
+                                                     String releaseName) {
+        K8sServiceInstance instance = lambdaQuery()
+                .eq(K8sServiceInstance::getClusterId, clusterId)
+                .eq(K8sServiceInstance::getNamespaceId, namespaceId)
+                .eq(K8sServiceInstance::getSourceKind, sourceKind)
+                .eq(K8sServiceInstance::getReleaseName, releaseName)
+                .one();
+        if (instance == null) {
+            instance = new K8sServiceInstance();
+            instance.setClusterId(clusterId);
+            instance.setNamespaceId(namespaceId);
+            instance.setServiceId(serviceId);
+            instance.setSource(InstanceSource.IMPORTED);
+            instance.setSourceKind(sourceKind);
+            instance.setReleaseName(releaseName);
+            instance.setState(0);
+            save(instance);
+        } else if (!Objects.equals(instance.getServiceId(), serviceId)) {
+            throw new BusinessHintException(String.format(
+                    "部署单元%s已绑定其他框架服务，请先取消原接管登记", releaseName));
         }
         return instance;
     }

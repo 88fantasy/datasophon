@@ -20,24 +20,27 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.service;
+package com.datasophon.api.service.impl;
 
-import com.datasophon.dao.entity.ClusterVariable;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.List;
+import com.datasophon.api.exceptions.BusinessHintException;
+import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.enums.ClusterArchType;
+import com.datasophon.dao.enums.ManageMode;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import org.junit.jupiter.api.Test;
 
-/**
- *
- *
- * @author gaodayu
- */
-public interface ClusterVariableService extends IService<ClusterVariable> {
+class ClusterInfoServiceImplValidationTest {
 
-    ClusterVariable getVariableByVariableName(Integer clusterId, String serviceName, String variableName);
+    @Test
+    void serviceRejectsImportedPhysicalCluster() {
+        ClusterInfoEntity cluster = new ClusterInfoEntity();
+        cluster.setArchType(ClusterArchType.physical);
+        cluster.setManageMode(ManageMode.IMPORTED);
 
-    List<ClusterVariable> getVariables(Integer clusterId, String serviceName);
-
-    void removeByClusterId(Integer clusterId);
+        assertThatThrownBy(() -> new ClusterInfoServiceImpl().saveCluster(cluster))
+                .isInstanceOf(BusinessHintException.class)
+                .hasMessageContaining("仅支持 K8s");
+    }
 }

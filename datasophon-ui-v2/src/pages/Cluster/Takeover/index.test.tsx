@@ -24,10 +24,12 @@ vi.mock('@ant-design/pro-components', () => ({
   ProTable: ({
     dataSource,
     headerTitle,
+    rowKey,
     rowSelection,
   }: {
     dataSource?: Array<Record<string, unknown>>;
     headerTitle?: ReactNode;
+    rowKey?: string | ((row: Record<string, unknown>) => string);
     rowSelection?: {
       onChange: (keys: string[]) => void;
       getCheckboxProps?: (row: Record<string, unknown>) => {
@@ -37,17 +39,33 @@ vi.mock('@ant-design/pro-components', () => ({
   }) => (
     <div data-testid="pro-table">
       {headerTitle ? <div data-testid="table-title">{headerTitle}</div> : null}
-      {(dataSource ?? []).map((row) => (
-        <div
-          key={String(row.releaseName ?? row.serviceName)}
-          data-testid="row"
-          data-checkbox-disabled={String(
-            rowSelection?.getCheckboxProps?.(row)?.disabled ?? false,
-          )}
-        >
-          {String(row.releaseName ?? row.serviceName)}
-        </div>
-      ))}
+      {(dataSource ?? []).map((row) => {
+        const key =
+          typeof rowKey === 'function'
+            ? rowKey(row)
+            : String(row[rowKey ?? 'releaseName'] ?? row.serviceName);
+        return (
+          <div
+            key={key}
+            data-testid="row"
+            data-row-key={key}
+            data-checkbox-disabled={String(
+              rowSelection?.getCheckboxProps?.(row)?.disabled ?? false,
+            )}
+          >
+            {String(row.releaseName ?? row.serviceName)}
+            {rowSelection ? (
+              <button
+                type="button"
+                data-testid={`select-${key}`}
+                onClick={() => rowSelection.onChange([key])}
+              >
+                select
+              </button>
+            ) : null}
+          </div>
+        );
+      })}
       {rowSelection ? (
         <button
           type="button"
@@ -200,6 +218,77 @@ describe('Takeover', () => {
       expect(btn).toBeDisabled();
     });
     expect(registerTakeover).not.toHaveBeenCalled();
+  });
+
+  it('keeps namespace and source kind in deployment identity and register payload', async () => {
+    vi.mocked(saveDorisDatasource).mockResolvedValue({} as never);
+    vi.mocked(registerTakeover).mockResolvedValue({ data: [] } as never);
+    vi.mocked(scanTakeover).mockResolvedValue({
+      data: {
+        matched: [
+          {
+            releaseName: 'shared-name',
+            namespace: 'helm-ns',
+            sourceKind: 'HELM',
+            chart: 'shared-1.0.0',
+            chartName: 'shared',
+            frameServiceId: 1,
+            frameServiceName: 'helm-service',
+          },
+          {
+            releaseName: 'shared-name',
+            namespace: 'operator-ns',
+            sourceKind: 'CR',
+            chart: 'doriscluster',
+            chartName: 'doriscluster',
+            frameServiceId: 2,
+            frameServiceName: 'doris',
+          },
+        ],
+        pending: [],
+      },
+    } as never);
+
+    renderPage();
+    fireEvent.change(
+      screen.getByPlaceholderText('平台可直连的地址，如 10.0.0.9'),
+      { target: { value: '10.0.0.9' } },
+    );
+    fireEvent.change(screen.getByLabelText('密码'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByText('保存并下一步'));
+    await waitFor(() =>
+      expect(screen.getByText('扫描集群现有服务')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByText('扫描集群现有服务'));
+    await waitFor(() =>
+      expect(screen.getByText('接管选中的 2 个服务')).toBeInTheDocument(),
+    );
+
+    const rows = screen.getAllByTestId('row');
+    expect(rows[0]).toHaveAttribute(
+      'data-row-key',
+      'HELM:helm-ns/shared-name',
+    );
+    expect(rows[1]).toHaveAttribute(
+      'data-row-key',
+      'CR:operator-ns/shared-name',
+    );
+    fireEvent.click(screen.getAllByTestId('clear-selection')[0]);
+    fireEvent.click(screen.getByTestId('select-CR:operator-ns/shared-name'));
+    fireEvent.click(screen.getByText('接管选中的 1 个服务'));
+
+    await waitFor(() => {
+      expect(registerTakeover).toHaveBeenCalledWith(8, [
+        {
+          releaseName: 'shared-name',
+          namespace: 'operator-ns',
+          frameServiceId: 2,
+          sourceKind: 'CR',
+        },
+      ]);
+    });
   });
 });
 

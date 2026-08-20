@@ -30,23 +30,25 @@ import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.UserInfoEntity;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 @Component
 public class UserPermissionHandler implements HandlerInterceptor {
-    
-    @Autowired
-    private ClusterRoleUserService clusterUserService;
-    
+
+    private final ClusterRoleUserService clusterUserService;
+
+    public UserPermissionHandler(ClusterRoleUserService clusterUserService) {
+        this.clusterUserService = clusterUserService;
+    }
+
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         boolean requireCheckAdminIdentity = false;
@@ -54,23 +56,24 @@ public class UserPermissionHandler implements HandlerInterceptor {
             UserPermission annotation = handlerMethod.getMethod().getAnnotation(UserPermission.class);
             requireCheckAdminIdentity = annotation != null;
         }
-        
+
         if (requireCheckAdminIdentity) {
-            boolean hasRight = false;
-            UserInfoEntity authUser = (UserInfoEntity) request.getSession().getAttribute(Constants.SESSION_USER);
-            if (authUser != null && SecurityUtils.isAdmin(authUser)) {
-                Map<String, String[]> parameterMap = request.getParameterMap();
-                if (parameterMap.containsKey("clusterId")) {
-                    String[] clusterIds = parameterMap.get("clusterId");
-                    hasRight = clusterUserService.isClusterManager(authUser.getId(), clusterIds[0]);
-                }
+            UserInfoEntity authUser = (UserInfoEntity) request.getAttribute(Constants.SESSION_USER);
+            if (authUser == null) {
+                throw new ServiceException(Status.USER_NO_OPERATION_PERM);
             }
-            if (!hasRight) {
+            if (SecurityUtils.isAdmin(authUser)) {
+                return true;
+            }
+            Map<String, String[]> parameterMap = request.getParameterMap();
+            String[] clusterIds = parameterMap.get("clusterId");
+            if (clusterIds != null && clusterIds.length > 0
+                    && clusterUserService.isClusterManager(authUser.getId(), clusterIds[0])) {
                 return true;
             }
             throw new ServiceException(Status.USER_NO_OPERATION_PERM);
         }
-        
+
         return true;
     }
 }

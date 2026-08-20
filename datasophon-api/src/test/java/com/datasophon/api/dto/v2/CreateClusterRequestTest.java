@@ -20,24 +20,26 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.service;
+package com.datasophon.api.dto.v2;
 
-import com.datasophon.dao.entity.ClusterVariable;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
+import com.datasophon.dao.enums.ClusterArchType;
+import com.datasophon.dao.enums.ManageMode;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import org.junit.jupiter.api.Test;
 
-/**
- *
- *
- * @author gaodayu
- */
-public interface ClusterVariableService extends IService<ClusterVariable> {
+class CreateClusterRequestTest {
 
-    ClusterVariable getVariableByVariableName(Integer clusterId, String serviceName, String variableName);
+    @Test
+    void importedModeOnlyAcceptsK8sArchitecture() {
+        CreateClusterRequest request = new CreateClusterRequest();
+        request.setManageMode(ManageMode.IMPORTED);
+        request.setArchType(ClusterArchType.physical);
 
-    List<ClusterVariable> getVariables(Integer clusterId, String serviceName);
+        assertThat(request.isManageModeCompatible()).isFalse();
 
-    void removeByClusterId(Integer clusterId);
+        request.setArchType(ClusterArchType.k8s);
+        assertThat(request.isManageModeCompatible()).isTrue();
+    }
 }

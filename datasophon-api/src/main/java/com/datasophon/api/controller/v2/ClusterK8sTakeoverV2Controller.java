@@ -3,6 +3,7 @@ package com.datasophon.api.controller.v2;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.instance.K8sTakeoverDTO;
+import com.datasophon.api.security.K8sTakeoverAccessGuard;
 import com.datasophon.api.service.k8s.DorisDatasourceDiscoveryService;
 import com.datasophon.api.service.k8s.K8sTakeoverInstanceService;
 import com.datasophon.api.service.k8s.K8sTakeoverRegisterService;
@@ -40,26 +41,31 @@ public class ClusterK8sTakeoverV2Controller extends ApiController {
     private final DorisDatasourceDiscoveryService datasourceService;
     private final K8sTakeoverRegisterService registerService;
     private final K8sTakeoverInstanceService instanceService;
+    private final K8sTakeoverAccessGuard accessGuard;
 
     public ClusterK8sTakeoverV2Controller(K8sTakeoverScanService scanService,
                                           DorisDatasourceDiscoveryService datasourceService,
                                           K8sTakeoverRegisterService registerService,
-                                          K8sTakeoverInstanceService instanceService) {
+                                          K8sTakeoverInstanceService instanceService,
+                                          K8sTakeoverAccessGuard accessGuard) {
         this.scanService = scanService;
         this.datasourceService = datasourceService;
         this.registerService = registerService;
         this.instanceService = instanceService;
+        this.accessGuard = accessGuard;
     }
 
     @GetMapping("/scan")
     @Operation(summary = "扫描目标集群已存在的服务，按 chart 名匹配框架服务定义")
     public ApiResponse<K8sTakeoverScanResult> scan(@PathVariable Integer clusterId) {
+        accessGuard.requireAccess(clusterId);
         return ApiResponse.ok(scanService.scan(clusterId));
     }
 
     @GetMapping("/doris/candidates")
     @Operation(summary = "发现 Doris 数据源候选地址")
     public ApiResponse<List<DorisDatasourceCandidate>> dorisCandidates(@PathVariable Integer clusterId) {
+        accessGuard.requireAccess(clusterId);
         return ApiResponse.ok(datasourceService.discover(clusterId));
     }
 
@@ -67,8 +73,9 @@ public class ClusterK8sTakeoverV2Controller extends ApiController {
     @Operation(summary = "测试 Doris 连通性，不落库")
     public ApiResponse<String> testDoris(@PathVariable Integer clusterId,
                                          @Valid @RequestBody K8sTakeoverDTO.DatasourceSave req) {
+        accessGuard.requireAccess(clusterId);
         String failure = datasourceService.testConnection(
-                req.getHost(), req.getPort(), req.getUsername(), req.getPassword());
+                req.getHost(), req.getPort(), req.getPassword());
         return failure == null ? ApiResponse.ok("连接成功") : ApiResponse.fail(400, failure);
     }
 
@@ -76,8 +83,8 @@ public class ClusterK8sTakeoverV2Controller extends ApiController {
     @Operation(summary = "保存 Doris 数据源，连通性测试不通过则拒绝保存")
     public ApiResponse<Void> saveDoris(@PathVariable Integer clusterId,
                                        @Valid @RequestBody K8sTakeoverDTO.DatasourceSave req) {
-        datasourceService.saveDatasource(clusterId, req.getHost(), req.getPort(),
-                req.getDatabase(), req.getUsername(), req.getPassword());
+        accessGuard.requireAccess(clusterId);
+        datasourceService.saveDatasource(clusterId, req.getHost(), req.getPort(), req.getPassword());
         return ApiResponse.ok(null);
     }
 
@@ -85,6 +92,7 @@ public class ClusterK8sTakeoverV2Controller extends ApiController {
     @Operation(summary = "提交接管登记，并探测各服务的 OTel job")
     public ApiResponse<List<K8sTakeoverRegisterResult>> register(@PathVariable Integer clusterId,
                                                                  @Valid @RequestBody K8sTakeoverDTO.Register req) {
+        accessGuard.requireAccess(clusterId);
         List<K8sTakeoverRegisterService.Binding> bindings = req.getBindings().stream()
                 .map(b -> new K8sTakeoverRegisterService.Binding(
                         b.getReleaseName(), b.getNamespace(), b.getFrameServiceId(), b.getSourceKind()))
@@ -96,6 +104,7 @@ public class ClusterK8sTakeoverV2Controller extends ApiController {
     @Operation(summary = "取消接管：只移除平台登记记录，不影响目标集群")
     public ApiResponse<Void> cancelTakeover(@PathVariable Integer clusterId,
                                             @PathVariable Integer instanceId) {
+        accessGuard.requireAccess(clusterId);
         instanceService.cancelTakeover(clusterId, instanceId);
         return ApiResponse.ok(null);
     }
@@ -104,6 +113,7 @@ public class ClusterK8sTakeoverV2Controller extends ApiController {
     @Operation(summary = "只读反查接管实例的 helm values")
     public ApiResponse<String> readValues(@PathVariable Integer clusterId,
                                           @PathVariable Integer instanceId) {
+        accessGuard.requireAccess(clusterId);
         return ApiResponse.ok(instanceService.readValues(clusterId, instanceId));
     }
 }

@@ -22,11 +22,8 @@
 
 package com.datasophon.api.interceptor;
 
-import com.datasophon.api.exceptions.BusinessHintException;
+import com.datasophon.api.security.ImportedClusterWriteGuard;
 import com.datasophon.api.security.ImportedReadOnly;
-import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.enums.ManageMode;
 
 import java.util.Map;
 
@@ -50,10 +47,10 @@ public class ImportedClusterGuardInterceptor implements HandlerInterceptor {
 
     private static final String CLUSTER_ID = "clusterId";
 
-    private final ClusterInfoService clusterInfoService;
+    private final ImportedClusterWriteGuard writeGuard;
 
-    public ImportedClusterGuardInterceptor(ClusterInfoService clusterInfoService) {
-        this.clusterInfoService = clusterInfoService;
+    public ImportedClusterGuardInterceptor(ImportedClusterWriteGuard writeGuard) {
+        this.writeGuard = writeGuard;
     }
 
     @Override
@@ -75,14 +72,8 @@ public class ImportedClusterGuardInterceptor implements HandlerInterceptor {
         if (clusterId == null) {
             return true;
         }
-        ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
-        if (cluster == null || !ManageMode.IMPORTED.equals(cluster.getManageMode())) {
-            return true;
-        }
-        throw new BusinessHintException(
-                String.format("集群「%s」是接管模式，只提供只读监控，不能%s。"
-                        + "如需变更请在目标集群自行操作。",
-                        cluster.getClusterName(), annotation.value()));
+        writeGuard.requireWritable(clusterId, annotation.value());
+        return true;
     }
 
     private Integer resolveClusterId(HttpServletRequest request) {

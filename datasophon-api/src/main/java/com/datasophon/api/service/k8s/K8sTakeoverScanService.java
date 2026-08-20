@@ -71,41 +71,36 @@ public class K8sTakeoverScanService {
                 .filter(instance -> InstanceSource.IMPORTED.name().equals(instance.getSource()))
                 .toList();
         Set<String> registeredKeys = imported.stream()
-                .map(instance -> releaseKey(instance.getNamespace(), instance.getReleaseName()))
+                .map(instance -> releaseKey(instance.getSourceKind(),
+                        instance.getNamespace(), instance.getReleaseName()))
                 .collect(Collectors.toSet());
         Set<String> deployedKeys = new HashSet<>();
-        releases.forEach(release -> deployedKeys.add(releaseKey(release.getNamespace(), release.getName())));
-        crs.forEach(cr -> deployedKeys.add(releaseKey(cr.namespace(), cr.name())));
+        releases.forEach(release -> deployedKeys.add(
+                releaseKey("HELM", release.getNamespace(), release.getName())));
+        crs.forEach(cr -> deployedKeys.add(releaseKey("CR", cr.namespace(), cr.name())));
 
         List<K8sTakeoverScanResult.ScannedRelease> matched = new ArrayList<>();
         List<K8sTakeoverScanResult.ScannedRelease> pending = new ArrayList<>();
         for (HelmReleaseListItemVO release : releases) {
             FrameK8sServiceEntity definition = match(release, definitions);
             boolean registered = registeredKeys.contains(
-                    releaseKey(release.getNamespace(), release.getName()));
+                    releaseKey("HELM", release.getNamespace(), release.getName()));
             if (definition == null) {
                 pending.add(toScanned(release, null, registered));
             } else {
                 matched.add(toScanned(release, definition, registered));
             }
         }
-        Set<String> helmMatchedKeys = matched.stream()
-                .map(m -> releaseKey(m.namespace(), m.releaseName()))
-                .collect(Collectors.toSet());
         for (K8sCrScanner.ScannedCr cr : crs) {
-            String key = releaseKey(cr.namespace(), cr.name());
-            // key 已被 helm 分支占用（operator 自身恰好也用 helm 装且与 CR 撞名）时跳过，
-            // 避免同一实例在扫描结果里出现两次
-            if (helmMatchedKeys.contains(key)) {
-                continue;
-            }
+            String key = releaseKey("CR", cr.namespace(), cr.name());
             boolean registered = registeredKeys.contains(key);
             matched.add(toScanned(cr, registered));
         }
 
         List<K8sTakeoverScanResult.MissingInstance> missing = imported.stream()
                 .filter(instance -> !deployedKeys.contains(
-                        releaseKey(instance.getNamespace(), instance.getReleaseName())))
+                        releaseKey(instance.getSourceKind(),
+                                instance.getNamespace(), instance.getReleaseName())))
                 .map(instance -> new K8sTakeoverScanResult.MissingInstance(
                         instance.getId(), instance.getReleaseName(),
                         instance.getNamespace(), instance.getServiceName()))
@@ -162,8 +157,9 @@ public class K8sTakeoverScanService {
         return separator < 0 ? helm : helm.substring(0, separator);
     }
 
-    private String releaseKey(String namespace, String releaseName) {
-        return namespace + "/" + releaseName;
+    private String releaseKey(String sourceKind, String namespace, String releaseName) {
+        String normalizedKind = "CR".equals(sourceKind) ? "CR" : "HELM";
+        return normalizedKind + ":" + namespace + "/" + releaseName;
     }
 
     private K8sTakeoverScanResult.ScannedRelease toScanned(HelmReleaseListItemVO release,

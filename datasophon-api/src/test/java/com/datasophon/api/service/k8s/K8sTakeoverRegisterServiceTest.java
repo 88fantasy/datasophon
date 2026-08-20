@@ -12,11 +12,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.exceptions.BusinessHintException;
+import com.datasophon.api.security.K8sTakeoverAccessGuard;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.vo.k8s.K8sTakeoverRegisterResult;
+import com.datasophon.api.vo.k8s.K8sTakeoverScanResult;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
@@ -137,6 +139,19 @@ class K8sTakeoverRegisterServiceTest {
     }
 
     @Test
+    @DisplayName("请求中的 release 不在最新扫描结果时拒绝登记")
+    void rejectsBindingNotPresentInLatestScan() {
+        Fixture fixture = new Fixture();
+
+        assertThatThrownBy(() -> fixture.service.register(7, List.of(
+                new K8sTakeoverRegisterService.Binding("forged-release", "prod", 3, "HELM"))))
+                .isInstanceOf(BusinessHintException.class)
+                .hasMessageContaining("不在最新扫描结果");
+        verify(fixture.instanceService, org.mockito.Mockito.never())
+                .createImportedIfAbsent(anyInt(), anyInt(), anyInt(), any(), anyString());
+    }
+
+    @Test
     @DisplayName("sourceKind=CR 但探测不到任何 job 时不写 monitor_profile")
     void crBindingWithoutRoleJobsLeavesMonitorProfileNull() {
         Fixture fixture = new Fixture();
@@ -163,6 +178,8 @@ class K8sTakeoverRegisterServiceTest {
         final K8sServiceInstanceService instanceService = mock(K8sServiceInstanceService.class);
         final K8sMetricsJobProbeService jobProbe = mock(K8sMetricsJobProbeService.class);
         final FrameK8sServiceService frameService = mock(FrameK8sServiceService.class);
+        final K8sTakeoverScanService scanService = mock(K8sTakeoverScanService.class);
+        final K8sTakeoverAccessGuard accessGuard = mock(K8sTakeoverAccessGuard.class);
         final K8sTakeoverRegisterService service;
 
         Fixture() {
@@ -170,13 +187,31 @@ class K8sTakeoverRegisterServiceTest {
             K8sClusterNamespace namespace = new K8sClusterNamespace();
             namespace.setId(11);
             when(namespaceService.createIfAbsent(any(), anyInt())).thenReturn(namespace);
-            when(instanceService.createIfAbsent(anyInt(), anyInt(), anyInt()))
+            when(instanceService.createImportedIfAbsent(anyInt(), anyInt(), anyInt(), any(), anyString()))
                     .thenAnswer(invocation -> new K8sServiceInstance());
             when(jobProbe.activeJobs(anyInt())).thenReturn(Set.of("apisix-prometheus-metrics"));
             when(jobProbe.probe(any(), anyString(), anyString(), any(), any()))
                     .thenReturn(new K8sMetricsJobProbeService.ProbeResult(null, Map.of()));
+            when(scanService.scan(7)).thenReturn(new K8sTakeoverScanResult(
+                    List.of(
+                            scanned("dolphinscheduler", "prod", 3, "HELM"),
+                            scanned("redis-cluster", "prod", 5, "HELM"),
+                            scanned("apisix", "apisix", 1, "HELM"),
+                            scanned("zookeeper", "prod", 2, "HELM"),
+                            scanned("kyuubi", "spark", 3, "HELM"),
+                            scanned("doris-disaggregated-cluster", "doris", 5, "CR")),
+                    List.of(), List.of()));
             service = new K8sTakeoverRegisterService(
-                    configService, namespaceService, instanceService, jobProbe, frameService);
+                    configService, namespaceService, instanceService, jobProbe, frameService, scanService, accessGuard);
+        }
+
+        private static K8sTakeoverScanResult.ScannedRelease scanned(
+                                                                    String releaseName, String namespace,
+                                                                    int frameServiceId, String sourceKind) {
+            return new K8sTakeoverScanResult.ScannedRelease(
+                    releaseName, namespace, null, null, null, null,
+                    frameServiceId, "service-" + frameServiceId, "MIDDLEWARE",
+                    false, sourceKind, "CR".equals(sourceKind) ? "CustomResource" : null);
         }
     }
 }

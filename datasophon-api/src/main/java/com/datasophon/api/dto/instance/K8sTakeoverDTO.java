@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /** 接管流程的请求体。 */
@@ -21,12 +23,6 @@ public class K8sTakeoverDTO {
 
         @Schema(description = "MySQL 协议端口，缺省 9030")
         private Integer port;
-
-        @Schema(description = "OTel 数据库名，缺省 otel")
-        private String database;
-
-        @Schema(description = "只读账号，缺省 otel_reader")
-        private String username;
 
         @Schema(description = "只读账号密码")
         @NotBlank(message = "密码不能为空")
@@ -47,10 +43,14 @@ public class K8sTakeoverDTO {
 
         @Schema(description = "Helm release 名")
         @NotBlank(message = "release 名不能为空")
+        @Size(max = 253, message = "release 名长度不能超过 253")
+        @Pattern(regexp = "[a-z0-9]([-a-z0-9.]*[a-z0-9])?", message = "release 名必须是合法的 Kubernetes DNS 名称")
         private String releaseName;
 
         @Schema(description = "所在命名空间")
         @NotBlank(message = "命名空间不能为空")
+        @Size(max = 63, message = "命名空间长度不能超过 63")
+        @Pattern(regexp = "[a-z0-9]([-a-z0-9]*[a-z0-9])?", message = "命名空间必须是合法的 Kubernetes DNS label")
         private String namespace;
 
         @Schema(description = "绑定到的框架服务定义 ID")
@@ -58,6 +58,7 @@ public class K8sTakeoverDTO {
         private Integer frameServiceId;
 
         @Schema(description = "来源类型 HELM=Helm release CR=Operator 自定义资源；缺省 HELM，兼容旧前端")
+        @Pattern(regexp = "HELM|CR", message = "来源类型只支持 HELM 或 CR")
         private String sourceKind;
     }
 }

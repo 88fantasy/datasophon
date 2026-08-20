@@ -133,8 +133,9 @@ public class ClusterK8sV2Controller extends ApiController {
      */
     @GetMapping("/instance/{instanceId}")
     @Operation(summary = "获取服务实例详情")
-    public ApiResponse<K8sServiceInstanceVO> getInstance(@PathVariable Integer instanceId) {
-        return k8sServiceInstanceService.getVoById(instanceId)
+    public ApiResponse<K8sServiceInstanceVO> getInstance(@PathVariable Integer clusterId,
+                                                         @PathVariable Integer instanceId) {
+        return k8sServiceInstanceService.getVoByClusterAndId(clusterId, instanceId)
                 .map(ApiResponse::ok)
                 .orElseGet(() -> ApiResponse.fail(404, "服务实例不存在"));
     }
@@ -146,7 +147,11 @@ public class ClusterK8sV2Controller extends ApiController {
      */
     @GetMapping("/instance/{instanceId}/resource-types")
     @Operation(summary = "获取实例的资源类型列表")
-    public ApiResponse<List<String>> listResourceTypes(@PathVariable Integer instanceId) {
+    public ApiResponse<List<String>> listResourceTypes(@PathVariable Integer clusterId,
+                                                       @PathVariable Integer instanceId) {
+        if (k8sServiceInstanceService.getVoByClusterAndId(clusterId, instanceId).isEmpty()) {
+            return ApiResponse.fail(404, "服务实例不存在");
+        }
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(instanceId);
         return ApiResponse.ok(k8sServiceInstanceService.listResourceType(query));
@@ -160,8 +165,12 @@ public class ClusterK8sV2Controller extends ApiController {
      */
     @GetMapping("/instance/{instanceId}/resource")
     @Operation(summary = "获取实例指定类型的资源列表")
-    public ApiResponse<List<?>> listResources(@PathVariable Integer instanceId,
+    public ApiResponse<List<?>> listResources(@PathVariable Integer clusterId,
+                                              @PathVariable Integer instanceId,
                                               @RequestParam String resourceType) {
+        if (k8sServiceInstanceService.getVoByClusterAndId(clusterId, instanceId).isEmpty()) {
+            return ApiResponse.fail(404, "服务实例不存在");
+        }
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(instanceId);
         query.setResourceType(resourceType);

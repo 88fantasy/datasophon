@@ -3,6 +3,7 @@ package com.datasophon.api.service.instance;
 import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.Collections;
@@ -34,11 +35,17 @@ public interface K8sServiceInstanceService extends IService<K8sServiceInstance> 
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
+    Optional<K8sServiceInstanceVO> getVoByClusterAndId(Integer clusterId, Integer instanceId);
+
     List<String> listResourceType(K8sServiceInstanceQueryDTO query);
 
     Object listResource(K8sServiceInstanceQueryDTO query);
 
     K8sServiceInstance createIfAbsent(Integer clusterId, Integer namespaceId, Integer serviceId);
+
+    K8sServiceInstance createImportedIfAbsent(Integer clusterId, Integer namespaceId,
+                                              Integer serviceId, InstanceSourceKind sourceKind,
+                                              String releaseName);
 
     boolean removeInstanceId(Integer instanceId);
 

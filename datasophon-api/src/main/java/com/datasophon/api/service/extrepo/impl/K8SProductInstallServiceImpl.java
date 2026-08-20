@@ -49,6 +49,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -312,6 +314,11 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
     public String generateAndExecSrvInstCmd(Integer clusterId, CommandType commandType, List<Integer> serviceInstanceIds) {
         Map<Integer, K8sCommandNode> execContext = new HashMap<>();
         List<K8sServiceInstanceVO> instances = k8sServiceInstanceService.listByIds(serviceInstanceIds);
+        Set<Integer> requestedIds = Set.copyOf(serviceInstanceIds);
+        if (instances.size() != requestedIds.size()
+                || instances.stream().anyMatch(instance -> !Objects.equals(clusterId, instance.getClusterId()))) {
+            throw new BusinessHintException("服务实例不存在或不属于当前集群");
+        }
 
         List<FrameK8sServiceEntity> serviceList = frameK8sServiceService.listByIds(
                 instances.stream().map(K8sServiceInstanceVO::getServiceId).toList());

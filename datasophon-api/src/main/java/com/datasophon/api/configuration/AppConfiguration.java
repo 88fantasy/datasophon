@@ -120,9 +120,6 @@ public class AppConfiguration implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // i18n
         registry.addInterceptor(localeChangeInterceptor);
-        registry.addInterceptor(userPermissionHandler);
-        // 接管集群写操作门禁（只对带 @ImportedReadOnly 的接口生效）
-        registry.addInterceptor(importedClusterGuardInterceptor);
         // login
         InterceptorRegistration loginRegistration = registry.addInterceptor(loginHandlerInterceptor)
                 .addPathPatterns(getPathPrefix() + "/**")
@@ -143,6 +140,11 @@ public class AppConfiguration implements WebMvcConfigurer {
                     "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
                     "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
         }
+
+        // 权限判断依赖 login interceptor 写入的当前用户。
+        registry.addInterceptor(userPermissionHandler);
+        // 接管集群写操作门禁（只对带 @ImportedReadOnly 的接口生效）
+        registry.addInterceptor(importedClusterGuardInterceptor);
 
         // CSRF token verification — placed after login interceptor
         InterceptorRegistration csrfRegistration = registry

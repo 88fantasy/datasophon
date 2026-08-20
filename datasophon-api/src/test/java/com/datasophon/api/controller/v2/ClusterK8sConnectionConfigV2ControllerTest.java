@@ -23,12 +23,16 @@
 package com.datasophon.api.controller.v2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.security.ClusterAccessGuard;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
-import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.api.vo.k8s.K8sClusterConfigVO;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import com.datasophon.dao.enums.k8s.K8sAuthType;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -37,36 +41,47 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 class ClusterK8sConnectionConfigV2ControllerTest {
 
-    private K8sService k8sService;
     private K8sClusterConfigService k8sClusterConfigService;
+    private ClusterAccessGuard clusterAccessGuard;
     private ClusterK8sConnectionConfigV2Controller controller;
 
     @BeforeEach
     void setUp() {
-        k8sService = proxy(K8sService.class, (p, method, args) -> null);
         k8sClusterConfigService = proxy(K8sClusterConfigService.class, (p, method, args) -> null);
-        controller = new ClusterK8sConnectionConfigV2Controller(k8sService, k8sClusterConfigService);
+        clusterAccessGuard = mock(ClusterAccessGuard.class);
+        controller = new ClusterK8sConnectionConfigV2Controller(k8sClusterConfigService, clusterAccessGuard);
     }
 
     @Test
-    void getConfigByClusterId_returnsExistingConfig() {
+    void getConfigByClusterId_returnsExistingConfigWithoutSecrets() throws Exception {
         K8sClusterConfig config = new K8sClusterConfig();
         config.setClusterId(1);
+        config.setType(K8sAuthType.token);
         config.setServerHost("https://k8s.example:6443");
+        config.setToken("secret-token");
         k8sClusterConfigService = proxy(K8sClusterConfigService.class, (p, method, args) -> {
             if ("getByClusterId".equals(method.getName())) {
                 return config;
             }
             return null;
         });
-        controller = new ClusterK8sConnectionConfigV2Controller(k8sService, k8sClusterConfigService);
+        controller = new ClusterK8sConnectionConfigV2Controller(k8sClusterConfigService, clusterAccessGuard);
 
-        ApiResponse<K8sClusterConfig> response = controller.getConfigByClusterId(1);
+        ApiResponse<K8sClusterConfigVO> response = controller.getConfigByClusterId(1);
 
         assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getData()).isSameAs(config);
+        assertThat(response.getData().getServerHost()).isEqualTo("https://k8s.example:6443");
+        assertThat(response.getData().isCredentialConfigured()).isTrue();
+        JsonNode json = new ObjectMapper().valueToTree(response.getData());
+        assertThat(json.has("token")).isFalse();
+        assertThat(json.has("password")).isFalse();
+        assertThat(json.has("kubeConfig")).isFalse();
+        verify(clusterAccessGuard).requireAccess(1);
     }
 
     @Test
@@ -74,19 +89,20 @@ class ClusterK8sConnectionConfigV2ControllerTest {
         K8sClusterConfig config = new K8sClusterConfig();
         K8sConnectionResult result = new K8sConnectionResult();
         result.setSuccess(true);
-        k8sService = proxy(K8sService.class, (p, method, args) -> {
+        k8sClusterConfigService = proxy(K8sClusterConfigService.class, (p, method, args) -> {
             if ("testConnection".equals(method.getName())) {
                 assertThat(args[0]).isSameAs(config);
                 return result;
             }
             return null;
         });
-        controller = new ClusterK8sConnectionConfigV2Controller(k8sService, k8sClusterConfigService);
+        controller = new ClusterK8sConnectionConfigV2Controller(k8sClusterConfigService, clusterAccessGuard);
 
         ApiResponse<K8sConnectionResult> response = controller.testConnection(config);
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isSameAs(result);
+        verify(clusterAccessGuard).requireAccess(config.getClusterId());
     }
 
     @Test
@@ -101,13 +117,14 @@ class ClusterK8sConnectionConfigV2ControllerTest {
             }
             return null;
         });
-        controller = new ClusterK8sConnectionConfigV2Controller(k8sService, k8sClusterConfigService);
+        controller = new ClusterK8sConnectionConfigV2Controller(k8sClusterConfigService, clusterAccessGuard);
 
-        ApiResponse<K8sClusterConfig> response = controller.saveOrUpdateConfig(config);
+        ApiResponse<K8sClusterConfigVO> response = controller.saveOrUpdateConfig(config);
 
         assertThat(response.isSuccess()).isTrue();
-        assertThat(response.getData()).isSameAs(config);
+        assertThat(response.getData().getClusterId()).isEqualTo(1);
         assertThat(saved.get()).isSameAs(config);
+        verify(clusterAccessGuard).requireAccess(1);
     }
 
     private static <T> T proxy(Class<T> type, InvocationHandler handler) {

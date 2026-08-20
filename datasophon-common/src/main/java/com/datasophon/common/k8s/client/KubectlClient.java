@@ -79,13 +79,6 @@ public class KubectlClient implements AutoCloseable {
             ShellUtils.exec(null, Arrays.asList("chmod", "-R", "0700", tempDir.getAbsolutePath()), -1);
         }
 
-        if (StrUtil.isNotBlank(options.getKubeConfig())) {
-            File config = new File(tempDir, "kubeConfig.yaml");
-            FileUtil.writeString(options.getKubeConfig(), config, StandardCharsets.UTF_8);
-            this.kubeConfig = config.getAbsolutePath();
-        } else {
-            this.kubeConfig = null;
-        }
         if (StrUtil.isNotBlank(options.getServerCert())) {
             File cert = new File(tempDir, "ca.cert");
             Base64.decodeToFile(options.getServerCert(), cert);
@@ -97,6 +90,7 @@ public class KubectlClient implements AutoCloseable {
         this.username = options.getUsername();
         this.password = options.getPassword();
         this.serverName = options.getServerName();
+        this.kubeConfig = SecureKubeConfigWriter.write(options, tempDir, serverCert);
 
         JsonMapper.Builder builder = JsonMapper.builder();
         builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
@@ -120,34 +114,14 @@ public class KubectlClient implements AutoCloseable {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(kubectlPath);
 
-        // 认证优先级：kubeConfig > token > username/password
-        if (StrUtil.isNotBlank(kubeConfig)) {
-            commandParts.add("--kubeconfig");
-            // 路径可能存在空格
-            commandParts.add(String.format("%s", kubeConfig));
-        } else {
-            if (StrUtil.isNotBlank(token)) {
-                commandParts.add("--token");
-                commandParts.add(token);
-            } else {
-                commandParts.add("--username");
-                commandParts.add(username);
-                commandParts.add("--password");
-                commandParts.add(password);
-            }
-            // 如果有证书，添加证书支持
-            if (StrUtil.isNotBlank(serverCert)) {
-                commandParts.add("--certificate-authority");
-                commandParts.add(String.format("%s", serverCert));
-            } else {
-                commandParts.add("--insecure-skip-tls-verify=true");
-            }
-            commandParts.add("--server");
-            commandParts.add(serverName);
-        }
+        // SecureKubeConfigWriter 始终生成受限临时配置；认证信息不得回退到 argv。
+        commandParts.add("--kubeconfig");
+        commandParts.add(kubeConfig);
         commandParts.addAll(subCommandParts);
 
-        return ShellUtils.execWithBash(null, commandParts, timeoutSeconds);
+        // 参数必须直接交给 ProcessBuilder，不能再经 bash -c 拼接；namespace、selector 等值
+        // 可能来自 HTTP 请求，shell 拼接会把分号、命令替换等内容解释成额外命令。
+        return ShellUtils.exec(null, commandParts, timeoutSeconds);
     }
 
     /**

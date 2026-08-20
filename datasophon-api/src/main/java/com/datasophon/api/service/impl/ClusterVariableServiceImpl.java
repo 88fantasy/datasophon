@@ -36,7 +36,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 public class ClusterVariableServiceImpl extends ServiceImpl<ClusterVariableMapper, ClusterVariable>
         implements
             ClusterVariableService {
-    
+
     @Override
     public ClusterVariable getVariableByVariableName(Integer clusterId, String serviceName, String variableName) {
         return lambdaQuery()
@@ -45,12 +45,17 @@ public class ClusterVariableServiceImpl extends ServiceImpl<ClusterVariableMappe
                 .eq(ClusterVariable::getClusterId, clusterId)
                 .one();
     }
-    
+
     @Override
     public List<ClusterVariable> getVariables(Integer clusterId, String serviceName) {
         return lambdaQuery()
                 .eq(ClusterVariable::getServiceName, serviceName)
                 .eq(ClusterVariable::getClusterId, clusterId)
                 .list();
+    }
+
+    @Override
+    public void removeByClusterId(Integer clusterId) {
+        lambdaUpdate().eq(ClusterVariable::getClusterId, clusterId).remove();
     }
 }

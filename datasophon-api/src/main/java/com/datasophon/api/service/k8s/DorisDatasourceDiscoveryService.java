@@ -1,12 +1,12 @@
 package com.datasophon.api.service.k8s;
 
 import com.datasophon.api.exceptions.BusinessHintException;
-import com.datasophon.api.service.ClusterVariableService;
+import com.datasophon.api.observability.OtelDorisReaderFactory;
+import com.datasophon.api.security.K8sTakeoverAccessGuard;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.vo.k8s.DorisDatasourceCandidate;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
-import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
 import java.sql.Connection;
@@ -33,25 +33,26 @@ public class DorisDatasourceDiscoveryService {
     private static final int CONNECT_TIMEOUT_SECONDS = 10;
 
     /** 与 OtelDorisReaderFactory 的 DEFAULT_READER_USER 保持一致。 */
-    private static final String DEFAULT_READER_USER = "otel_reader";
+    static final String DEFAULT_READER_USER = "otel_reader";
 
-    private static final String DEFAULT_DATABASE = "otel";
-
-    /** 与 OtelCredentialService 的变量约定保持一致，使其能读到用户录入的密码。 */
-    private static final String DORIS_SERVICE_NAME = "DORIS";
-
-    private static final String DORIS_READER_PASSWORD = "otel_reader_password";
+    static final String DEFAULT_DATABASE = "otel";
 
     private final com.datasophon.api.service.k8s.K8sService k8sService;
     private final K8sClusterConfigService k8sClusterConfigService;
-    private final ClusterVariableService clusterVariableService;
+    private final DorisDatasourcePersistenceService persistenceService;
+    private final OtelDorisReaderFactory readerFactory;
+    private final K8sTakeoverAccessGuard accessGuard;
 
     public DorisDatasourceDiscoveryService(com.datasophon.api.service.k8s.K8sService k8sService,
                                            K8sClusterConfigService k8sClusterConfigService,
-                                           ClusterVariableService clusterVariableService) {
+                                           DorisDatasourcePersistenceService persistenceService,
+                                           OtelDorisReaderFactory readerFactory,
+                                           K8sTakeoverAccessGuard accessGuard) {
         this.k8sService = k8sService;
         this.k8sClusterConfigService = k8sClusterConfigService;
-        this.clusterVariableService = clusterVariableService;
+        this.persistenceService = persistenceService;
+        this.readerFactory = readerFactory;
+        this.accessGuard = accessGuard;
     }
 
     /**
@@ -81,13 +82,10 @@ public class DorisDatasourceDiscoveryService {
      *
      * @return 成功返回 null，失败返回可展示给用户的原因（不含密码）
      */
-    public String testConnection(String host, Integer port, String user, String password) {
-        String url = String.format("jdbc:mysql://%s:%d/?useUnicode=true&characterEncoding=utf8&useSSL=false"
-                + "&connectTimeout=%d&socketTimeout=%d",
-                host, port == null ? MYSQL_PROTOCOL_PORT : port,
-                CONNECT_TIMEOUT_SECONDS * 1000, CONNECT_TIMEOUT_SECONDS * 1000);
+    public String testConnection(String host, Integer port, String password) {
+        String url = jdbcUrl(host, port == null ? MYSQL_PROTOCOL_PORT : port);
         Properties properties = new Properties();
-        properties.setProperty("user", user);
+        properties.setProperty("user", DEFAULT_READER_USER);
         properties.setProperty("password", password == null ? "" : password);
         try (
                 Connection connection = DriverManager.getConnection(url, properties);
@@ -107,41 +105,30 @@ public class DorisDatasourceDiscoveryService {
      * 变量 —— {@link com.datasophon.api.observability.OtelCredentialService} 会优先读它，
      * 从而让 {@code OtelDorisReaderFactory} 用上用户录入的密码而非随机生成。
      */
-    public void saveDatasource(Integer clusterId, String host, Integer port, String database,
-                               String username, String password) {
-        String reader = username == null || username.isBlank() ? DEFAULT_READER_USER : username;
-        int actualPort = port == null ? MYSQL_PROTOCOL_PORT : port;
-        String failure = testConnection(host, actualPort, reader, password);
-        if (failure != null) {
-            throw new BusinessHintException("Doris 连通性测试失败，未保存：" + failure);
-        }
-
+    public void saveDatasource(Integer clusterId, String host, Integer port, String password) {
+        accessGuard.requireImportedCluster(clusterId);
         K8sClusterConfig config = k8sClusterConfigService.getByClusterId(clusterId);
         if (config == null) {
             throw new BusinessHintException("集群未配置 K8s 连接信息");
         }
+        int actualPort = port == null ? MYSQL_PROTOCOL_PORT : port;
+        String failure = testConnection(host, actualPort, password);
+        if (failure != null) {
+            throw new BusinessHintException("Doris 连通性测试失败，未保存：" + failure);
+        }
+
         config.setDorisHost(host);
         config.setDorisPort(actualPort);
-        config.setDorisDatabase(database == null || database.isBlank() ? DEFAULT_DATABASE : database);
-        k8sClusterConfigService.updateById(config);
-
-        saveReaderPassword(clusterId, password);
+        config.setDorisDatabase(DEFAULT_DATABASE);
+        persistenceService.save(config, password);
+        readerFactory.invalidate(clusterId);
     }
 
-    private void saveReaderPassword(Integer clusterId, String password) {
-        ClusterVariable existing = clusterVariableService
-                .getVariableByVariableName(clusterId, DORIS_SERVICE_NAME, DORIS_READER_PASSWORD);
-        if (existing != null) {
-            existing.setVariableValue(password);
-            clusterVariableService.updateById(existing);
-            return;
-        }
-        ClusterVariable variable = new ClusterVariable();
-        variable.setClusterId(clusterId);
-        variable.setServiceName(DORIS_SERVICE_NAME);
-        variable.setVariableName(DORIS_READER_PASSWORD);
-        variable.setVariableValue(password);
-        clusterVariableService.save(variable);
+    static String jdbcUrl(String host, int port) {
+        return String.format("jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=utf8&useSSL=false"
+                + "&connectTimeout=%d&socketTimeout=%d",
+                host, port, DEFAULT_DATABASE,
+                CONNECT_TIMEOUT_SECONDS * 1000, CONNECT_TIMEOUT_SECONDS * 1000);
     }
 
     private void collect(K8sService service, String nodeIp, List<DorisDatasourceCandidate> candidates) {

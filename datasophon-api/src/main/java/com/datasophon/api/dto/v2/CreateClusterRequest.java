@@ -26,6 +26,7 @@ import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ManageMode;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -49,6 +50,11 @@ public class CreateClusterRequest {
 
     /** 管理模式；缺省 MANAGED（平台安装），IMPORTED 表示接管已存在的集群。 */
     private ManageMode manageMode;
+
+    @AssertTrue(message = "IMPORTED 管理模式仅支持 K8s 集群")
+    public boolean isManageModeCompatible() {
+        return !ManageMode.IMPORTED.equals(manageMode) || ClusterArchType.k8s.equals(archType);
+    }
 
     /** 转为 {@link ClusterInfoEntity}；clusterFrame / frameVersion 由 {@code ClusterInfoService.saveCluster} 解析 frameId 后回填。 */
     public ClusterInfoEntity toEntity() {

@@ -24,9 +24,9 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
-import com.datasophon.api.security.UserPermission;
+import com.datasophon.api.security.ClusterAccessGuard;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
-import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.api.vo.k8s.K8sClusterConfigVO;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
@@ -56,33 +56,34 @@ import jakarta.validation.Valid;
 @Tag(name = "v2 K8s 集群连接配置")
 public class ClusterK8sConnectionConfigV2Controller extends ApiController {
 
-    private final K8sService k8sService;
-
     private final K8sClusterConfigService k8sClusterConfigService;
 
-    public ClusterK8sConnectionConfigV2Controller(K8sService k8sService,
-                                                  K8sClusterConfigService k8sClusterConfigService) {
-        this.k8sService = k8sService;
+    private final ClusterAccessGuard clusterAccessGuard;
+
+    public ClusterK8sConnectionConfigV2Controller(K8sClusterConfigService k8sClusterConfigService,
+                                                  ClusterAccessGuard clusterAccessGuard) {
         this.k8sClusterConfigService = k8sClusterConfigService;
+        this.clusterAccessGuard = clusterAccessGuard;
     }
 
     @GetMapping("/getConfigByClusterId/{clusterId}")
     @Operation(summary = "根据集群 id 获取 K8s 连接配置")
-    @UserPermission
-    public ApiResponse<K8sClusterConfig> getConfigByClusterId(@PathVariable Integer clusterId) {
-        return ApiResponse.ok(k8sClusterConfigService.getByClusterId(clusterId));
+    public ApiResponse<K8sClusterConfigVO> getConfigByClusterId(@PathVariable Integer clusterId) {
+        clusterAccessGuard.requireAccess(clusterId);
+        return ApiResponse.ok(K8sClusterConfigVO.from(k8sClusterConfigService.getByClusterId(clusterId)));
     }
 
     @PostMapping("/testConnection")
     @Operation(summary = "测试 K8s 集群连通性")
     public ApiResponse<K8sConnectionResult> testConnection(@RequestBody @Valid K8sClusterConfig config) {
-        return ApiResponse.ok(k8sService.testConnection(config));
+        clusterAccessGuard.requireAccess(config.getClusterId());
+        return ApiResponse.ok(k8sClusterConfigService.testConnection(config));
     }
 
     @PostMapping("/saveOrUpdateConfig")
     @Operation(summary = "新增或修改 K8s 集群连接配置")
-    @UserPermission
-    public ApiResponse<K8sClusterConfig> saveOrUpdateConfig(@RequestBody @Valid K8sClusterConfig config) {
-        return ApiResponse.ok(k8sClusterConfigService.saveOrUpdateConfig(config));
+    public ApiResponse<K8sClusterConfigVO> saveOrUpdateConfig(@RequestBody @Valid K8sClusterConfig config) {
+        clusterAccessGuard.requireAccess(config.getClusterId());
+        return ApiResponse.ok(K8sClusterConfigVO.from(k8sClusterConfigService.saveOrUpdateConfig(config)));
     }
 }

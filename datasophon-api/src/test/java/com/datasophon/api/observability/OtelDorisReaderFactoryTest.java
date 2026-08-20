@@ -44,7 +44,6 @@ import com.datasophon.dao.mapper.cluster.K8sClusterConfigMapper;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -127,9 +126,8 @@ class OtelDorisReaderFactoryTest {
 
         factory.create(7);
 
-        Map<?, HikariDataSource> pools = (Map<?, HikariDataSource>) ReflectionTestUtils.getField(factory, "pools");
-        assertThat(pools).hasSize(1);
-        assertThat(pools.values().iterator().next().getUsername()).isEqualTo("custom_reader");
+        assertThat(factory.poolSizeForTest()).isEqualTo(1);
+        assertThat(factory.dataSourceForTest(7).getUsername()).isEqualTo("custom_reader");
     }
 
     @Test
@@ -144,9 +142,8 @@ class OtelDorisReaderFactoryTest {
 
         factory.create(7);
 
-        Map<?, HikariDataSource> pools = (Map<?, HikariDataSource>) ReflectionTestUtils.getField(factory, "pools");
-        assertThat(pools).hasSize(1);
-        assertThat(pools.values().iterator().next().getJdbcUrl()).contains("10.0.0.9:9030");
+        assertThat(factory.poolSizeForTest()).isEqualTo(1);
+        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("10.0.0.9:9030");
         // 走了外部数据源就不该再查角色实例表
         verify(roleService, never()).getServiceRoleInstanceListByClusterIdAndRoleName(anyInt(), anyString());
     }
@@ -166,8 +163,7 @@ class OtelDorisReaderFactoryTest {
 
         factory.create(7);
 
-        Map<?, HikariDataSource> pools = (Map<?, HikariDataSource>) ReflectionTestUtils.getField(factory, "pools");
-        assertThat(pools.values().iterator().next().getJdbcUrl()).contains("ddh-01:9030");
+        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("ddh-01:9030");
     }
 
     @Test
@@ -184,8 +180,7 @@ class OtelDorisReaderFactoryTest {
 
         factory.create(7);
 
-        Map<?, HikariDataSource> pools = (Map<?, HikariDataSource>) ReflectionTestUtils.getField(factory, "pools");
-        assertThat(pools.values().iterator().next().getJdbcUrl()).contains("ddh-01:9030");
+        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("ddh-01:9030");
         verify(mapper, never()).selectOne(any());
     }
 
@@ -204,8 +199,48 @@ class OtelDorisReaderFactoryTest {
 
         factory.create(7);
 
-        Map<?, HikariDataSource> pools = (Map<?, HikariDataSource>) ReflectionTestUtils.getField(factory, "pools");
-        assertThat(pools.values().iterator().next().getJdbcUrl()).contains("127.0.0.1:9030");
+        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("127.0.0.1:9030");
+    }
+
+    @Test
+    void replacesAndClosesPoolWhenConnectionSettingsChange() {
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                proxy(ClusterServiceRoleInstanceService.class),
+                proxy(ClusterVariableService.class),
+                new OtelCredentialService(null),
+                managedClusterMapper(),
+                mock(K8sClusterConfigMapper.class));
+        ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
+        ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret-1");
+        factory.create(7);
+        HikariDataSource old = factory.dataSourceForTest(7);
+
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret-2");
+        factory.create(7);
+
+        assertThat(factory.poolSizeForTest()).isEqualTo(1);
+        assertThat(old.isClosed()).isTrue();
+        assertThat(factory.dataSourceForTest(7)).isNotSameAs(old);
+    }
+
+    @Test
+    void invalidationClosesAndRemovesClusterPool() {
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                proxy(ClusterServiceRoleInstanceService.class),
+                proxy(ClusterVariableService.class),
+                new OtelCredentialService(null),
+                managedClusterMapper(),
+                mock(K8sClusterConfigMapper.class));
+        ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
+        factory.create(7);
+        HikariDataSource old = factory.dataSourceForTest(7);
+
+        factory.invalidate(7);
+
+        assertThat(factory.poolSizeForTest()).isZero();
+        assertThat(old.isClosed()).isTrue();
     }
 
     private static K8sClusterConfig importedConfig(String host, Integer port) {

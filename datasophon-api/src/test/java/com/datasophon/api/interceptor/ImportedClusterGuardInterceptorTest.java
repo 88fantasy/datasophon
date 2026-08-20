@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.exceptions.BusinessHintException;
+import com.datasophon.api.security.ImportedClusterWriteGuard;
 import com.datasophon.api.security.ImportedReadOnly;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -24,7 +25,7 @@ class ImportedClusterGuardInterceptorTest {
 
     private final ClusterInfoService clusterInfoService = mock(ClusterInfoService.class);
     private final ImportedClusterGuardInterceptor interceptor =
-            new ImportedClusterGuardInterceptor(clusterInfoService);
+            new ImportedClusterGuardInterceptor(new ImportedClusterWriteGuard(clusterInfoService));
 
     @Test
     @DisplayName("接管集群上的写接口被拒，错误信息带集群名与动作")

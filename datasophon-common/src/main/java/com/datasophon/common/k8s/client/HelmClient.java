@@ -15,7 +15,6 @@ import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,13 +72,6 @@ public class HelmClient implements AutoCloseable {
             ShellUtils.exec(null, Arrays.asList("chmod", "-R", "0700", tempDir.getAbsolutePath()), -1);
         }
 
-        if (StrUtil.isNotBlank(options.getKubeConfig())) {
-            File config = new File(tempDir, "kubeConfig.yaml");
-            FileUtil.writeString(options.getKubeConfig(), config, StandardCharsets.UTF_8);
-            this.kubeConfig = config.getAbsolutePath();
-        } else {
-            this.kubeConfig = null;
-        }
         if (StrUtil.isNotBlank(options.getServerCert())) {
             File cert = new File(tempDir, "ca.cert");
             Base64.decodeToFile(options.getServerCert(), cert);
@@ -91,6 +83,7 @@ public class HelmClient implements AutoCloseable {
         this.username = options.getUsername();
         this.password = options.getPassword();
         this.serverName = options.getServerName();
+        this.kubeConfig = SecureKubeConfigWriter.write(options, tempDir, serverCert);
 
         JsonMapper.Builder builder = JsonMapper.builder();
         builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
@@ -115,32 +108,14 @@ public class HelmClient implements AutoCloseable {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(helmPath);
 
-        // 添加认证参数
-        if (StrUtil.isNotBlank(kubeConfig)) {
-            commandParts.add("--kubeconfig");
-            commandParts.add(kubeConfig);
-        } else {
-            if (StrUtil.isNotBlank(token)) {
-                commandParts.add("--kube-token");
-                commandParts.add(token);
-            } else if (StrUtil.isNotBlank(username) && StrUtil.isNotBlank(password)) {
-                commandParts.add("--kube-username");
-                commandParts.add(username);
-                commandParts.add("--kube-password");
-                commandParts.add(password);
-            }
-            if (StrUtil.isNotBlank(serverCert)) {
-                commandParts.add("--kube-ca-file");
-                commandParts.add(serverCert);
-            }
-            if (StrUtil.isNotBlank(serverName)) {
-                commandParts.add("--kube-apiserver");
-                commandParts.add(serverName);
-            }
-        }
+        // SecureKubeConfigWriter 始终生成受限临时配置；认证信息不得回退到 argv。
+        commandParts.add("--kubeconfig");
+        commandParts.add(kubeConfig);
         commandParts.addAll(subCommandParts);
 
-        return ShellUtils.execWithBash(null, commandParts, timeoutSeconds);
+        // 参数必须直接交给 ProcessBuilder，不能再经 bash -c 拼接；release、namespace 等值
+        // 可能来自 HTTP 请求，shell 拼接会把分号、命令替换等内容解释成额外命令。
+        return ShellUtils.exec(null, commandParts, timeoutSeconds);
     }
 
     /**

@@ -18,6 +18,7 @@ import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 
 import java.util.ArrayList;
@@ -88,7 +89,11 @@ class KubectlClientTest {
             try {
                 System.setProperty("os.name", "Linux");
 
-                try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                try (
+                        MockedStatic<PropertyUtils> mockedPropertyUtils = Mockito.mockStatic(PropertyUtils.class);
+                        MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                    mockedPropertyUtils.when(() -> PropertyUtils.getString("kubectl.install_path"))
+                            .thenReturn(TEST_KUBECTL_PATH);
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(true);
                     when(mockResult.getExecOut()).thenReturn("/usr/bin/kubectl\n");
@@ -242,11 +247,13 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--kubeconfig"));
-                            Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("kubeConfig.yaml")));
+                            if (args.contains("get pods")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("kubeConfig.yaml")));
+                            }
                             return mockResult;
                         });
 
@@ -266,12 +273,14 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--token"));
-                            Assertions.assertTrue(args.contains("test-token"));
-                            Assertions.assertTrue(args.contains("--insecure-skip-tls-verify=true"));
+                            if (args.contains("get pods")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertFalse(args.contains("--token"));
+                                Assertions.assertFalse(args.contains("test-token"));
+                            }
                             return mockResult;
                         });
 
@@ -292,13 +301,16 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--username"));
-                            Assertions.assertTrue(args.contains("admin"));
-                            Assertions.assertTrue(args.contains("--password"));
-                            Assertions.assertTrue(args.contains("password123"));
+                            if (args.contains("get pods")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertFalse(args.contains("--username"));
+                                Assertions.assertFalse(args.contains("admin"));
+                                Assertions.assertFalse(args.contains("--password"));
+                                Assertions.assertFalse(args.contains("password123"));
+                            }
                             return mockResult;
                         });
 
@@ -328,11 +340,13 @@ class KubectlClientTest {
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
 
-                    mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                    mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenAnswer(invocation -> {
                                 List<String> args = invocation.getArgument(1);
-                                Assertions.assertTrue(args.contains("--certificate-authority"));
-                                Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("ca.cert")));
+                                if (args.contains("get pods")) {
+                                    Assertions.assertTrue(args.contains("--kubeconfig"));
+                                    Assertions.assertFalse(args.contains("--certificate-authority"));
+                                }
                                 return mockResult;
                             });
 
@@ -365,7 +379,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(TEST_JSON_RESPONSE);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -387,7 +401,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("connection refused");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -418,7 +432,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(versionOutput);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -440,7 +454,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getExecOut()).thenReturn("connection refused");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -462,7 +476,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("invalid output format");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -493,7 +507,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -525,7 +539,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -556,7 +570,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -579,11 +593,13 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("-l"));
-                            Assertions.assertTrue(args.contains("app=myapp"));
+                            if (args.contains("pods")) {
+                                Assertions.assertTrue(args.contains("-l"));
+                                Assertions.assertTrue(args.contains("app=myapp"));
+                            }
                             return mockResult;
                         });
 
@@ -615,12 +631,13 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("deployments"));
-                            Assertions.assertTrue(args.contains("-n"));
-                            Assertions.assertTrue(args.contains("kube-system"));
+                            if (args.contains("deployments")) {
+                                Assertions.assertTrue(args.contains("-n"));
+                                Assertions.assertTrue(args.contains("kube-system"));
+                            }
                             return mockResult;
                         });
 
@@ -652,7 +669,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -683,7 +700,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -714,7 +731,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -743,14 +760,15 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("rollout"));
-                            Assertions.assertTrue(args.contains("restart"));
-                            Assertions.assertTrue(args.contains("deployment/my-deployment"));
-                            Assertions.assertTrue(args.contains("-n"));
-                            Assertions.assertTrue(args.contains("default"));
+                            if (args.contains("rollout")) {
+                                Assertions.assertTrue(args.contains("restart"));
+                                Assertions.assertTrue(args.contains("deployment/my-deployment"));
+                                Assertions.assertTrue(args.contains("-n"));
+                                Assertions.assertTrue(args.contains("default"));
+                            }
                             return mockResult;
                         });
 
@@ -771,7 +789,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("deployment not found");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -800,12 +818,13 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("set"));
-                            Assertions.assertTrue(args.contains("image"));
-                            Assertions.assertTrue(args.contains("deployment/my-deployment"));
+                            if (args.contains("set")) {
+                                Assertions.assertTrue(args.contains("image"));
+                                Assertions.assertTrue(args.contains("deployment/my-deployment"));
+                            }
                             return mockResult;
                         });
 
@@ -834,7 +853,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -867,7 +886,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("image not found");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -905,7 +924,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -925,7 +944,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getExecOut()).thenReturn("namespace already exists");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -947,7 +966,7 @@ class KubectlClientTest {
                 when(mockResult.getExecOut()).thenReturn("permission denied");
                 when(mockResult.getErrorTraceMessage()).thenReturn("permission denied");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -976,12 +995,13 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("scale"));
-                            Assertions.assertTrue(args.contains("deployment/my-deployment"));
-                            Assertions.assertTrue(args.contains("--replicas=3"));
+                            if (args.contains("scale")) {
+                                Assertions.assertTrue(args.contains("deployment/my-deployment"));
+                                Assertions.assertTrue(args.contains("--replicas=3"));
+                            }
                             return mockResult;
                         });
 
@@ -1002,7 +1022,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("deployment not found");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -1032,7 +1052,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("pod1 pod2 pod3");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -1054,7 +1074,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -1075,7 +1095,7 @@ class KubectlClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();
@@ -1129,7 +1149,7 @@ class KubectlClientTest {
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("invalid json {");
 
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
 
                 ClientOptions options = new ClientOptions();

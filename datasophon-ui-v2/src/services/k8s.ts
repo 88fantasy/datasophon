@@ -110,7 +110,6 @@ export async function testDorisDatasource(
   body: {
     host: string;
     port?: number;
-    username?: string;
     password: string;
   },
 ) {
@@ -126,8 +125,6 @@ export async function saveDorisDatasource(
   body: {
     host: string;
     port?: number;
-    database?: string;
-    username?: string;
     password: string;
   },
 ) {
@@ -144,6 +141,7 @@ export async function registerTakeover(
     releaseName: string;
     namespace: string;
     frameServiceId: number;
+    sourceKind?: 'HELM' | 'CR';
   }>,
 ) {
   return request<

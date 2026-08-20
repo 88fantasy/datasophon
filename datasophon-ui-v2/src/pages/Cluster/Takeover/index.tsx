@@ -34,6 +34,9 @@ const SOURCE_LABEL: Record<string, string> = {
 const unwrap = <T,>(res: unknown): T | undefined =>
   (res as { data?: T })?.data ?? (res as T);
 
+const deploymentUnitKey = (release: DATASOPHON.ScannedRelease) =>
+  `${release.sourceKind === 'CR' ? 'CR' : 'HELM'}:${release.namespace}/${release.releaseName}`;
+
 /**
  * K8s 集群接管向导。
  *
@@ -121,7 +124,7 @@ const Takeover: React.FC = () => {
       setSelectedKeys(
         (result?.matched ?? [])
           .filter((r) => !r.registered)
-          .map((r) => r.releaseName),
+          .map(deploymentUnitKey),
       );
     } finally {
       setScanning(false);
@@ -130,7 +133,7 @@ const Takeover: React.FC = () => {
 
   const handleRegister = async () => {
     const chosen = (scanResult?.matched ?? []).filter((r) =>
-      selectedKeys.includes(r.releaseName),
+      selectedKeys.includes(deploymentUnitKey(r)),
     );
     if (!chosen.length) {
       message.warning('请至少选择一个服务');
@@ -144,6 +147,7 @@ const Takeover: React.FC = () => {
           releaseName: r.releaseName,
           namespace: r.namespace,
           frameServiceId: r.frameServiceId as number,
+          sourceKind: r.sourceKind === 'CR' ? 'CR' : 'HELM',
         })),
       );
       setRegisterResult(
@@ -269,8 +273,6 @@ const Takeover: React.FC = () => {
             layout="vertical"
             initialValues={{
               port: 9030,
-              database: 'otel',
-              username: 'otel_reader',
             }}
             style={{ maxWidth: 520 }}
           >
@@ -285,12 +287,6 @@ const Takeover: React.FC = () => {
             </Form.Item>
             <Form.Item name="port" label="MySQL 协议端口">
               <InputNumber min={1} max={65535} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item name="database" label="OTel 数据库名">
-              <Input />
-            </Form.Item>
-            <Form.Item name="username" label="只读账号">
-              <Input />
             </Form.Item>
             <Form.Item
               name="password"
@@ -312,7 +308,7 @@ const Takeover: React.FC = () => {
               </Button>
             </Space>
             <Paragraph type="secondary" style={{ marginTop: 12 }}>
-              保存前会强制做一次连通性测试，不通过不会写入。
+              固定使用 otel_reader 账号访问 otel 数据库；保存前会强制做一次连通性测试，不通过不会写入。
             </Paragraph>
           </Form>
         </>
@@ -352,7 +348,7 @@ const Takeover: React.FC = () => {
               )}
               <ProTable<DATASOPHON.ScannedRelease>
                 headerTitle="已匹配的服务"
-                rowKey="releaseName"
+                rowKey={deploymentUnitKey}
                 columns={scanColumns}
                 dataSource={scanResult.matched}
                 search={false}
@@ -371,7 +367,7 @@ const Takeover: React.FC = () => {
               {scanResult.pending.length > 0 && (
                 <ProTable<DATASOPHON.ScannedRelease>
                   headerTitle="未匹配到框架服务定义"
-                  rowKey="releaseName"
+                  rowKey={deploymentUnitKey}
                   columns={scanColumns}
                   dataSource={scanResult.pending}
                   search={false}

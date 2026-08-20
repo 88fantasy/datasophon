@@ -176,7 +176,7 @@ class K8sTakeoverScanServiceTest {
         K8sCrScanner.ScannedCr cr = new K8sCrScanner.ScannedCr(
                 dorisDefinition, "doris-disaggregated-cluster", "doris", "DorisDisaggregatedCluster");
         List<K8sServiceInstanceVO> registered =
-                List.of(imported(201, "doris", "doris-disaggregated-cluster", "doris"));
+                List.of(imported(201, "doris", "doris-disaggregated-cluster", "doris", "CR"));
 
         K8sTakeoverScanResult result = scan(List.of(), List.of(dorisDefinition), registered, List.of(cr));
 
@@ -185,8 +185,8 @@ class K8sTakeoverScanServiceTest {
     }
 
     @Test
-    @DisplayName("CR 与某个 Helm release 撞名（同 namespace+name）时不重复登记")
-    void crDoesNotDuplicateHelmMatchOnKeyCollision() {
+    @DisplayName("CR 与 Helm release 同 namespace+name 时仍作为两个部署单元返回")
+    void distinguishesCrFromHelmOnNameCollision() {
         // 极端边界：operator 自身恰好用 helm 装且与 CR 实例撞了 namespace/name
         List<HelmReleaseListItemVO> releases = List.of(release("doris", "doris", "doris-something-1.0.0"));
         FrameK8sServiceEntity dorisHelmDefinition = definition(4, "doris-something", "ENVIRONMENT", null);
@@ -196,8 +196,9 @@ class K8sTakeoverScanServiceTest {
         K8sTakeoverScanResult result = scan(releases, List.of(dorisHelmDefinition, dorisCrDefinition),
                 List.of(), List.of(cr));
 
-        assertThat(result.matched()).hasSize(1);
-        assertThat(result.matched().get(0).sourceKind()).isEqualTo("HELM");
+        assertThat(result.matched()).hasSize(2);
+        assertThat(result.matched()).extracting(K8sTakeoverScanResult.ScannedRelease::sourceKind)
+                .containsExactly("HELM", "CR");
     }
 
     private K8sTakeoverScanResult scan(List<HelmReleaseListItemVO> releases,
@@ -234,12 +235,18 @@ class K8sTakeoverScanServiceTest {
     /** 构造一条已登记的接管实例。 */
     private static K8sServiceInstanceVO imported(int id, String namespace, String releaseName,
                                                  String serviceName) {
+        return imported(id, namespace, releaseName, serviceName, "HELM");
+    }
+
+    private static K8sServiceInstanceVO imported(int id, String namespace, String releaseName,
+                                                 String serviceName, String sourceKind) {
         K8sServiceInstanceVO instance = new K8sServiceInstanceVO();
         instance.setId(id);
         instance.setNamespace(namespace);
         instance.setReleaseName(releaseName);
         instance.setServiceName(serviceName);
         instance.setSource(InstanceSource.IMPORTED.name());
+        instance.setSourceKind(sourceKind);
         return instance;
     }
 

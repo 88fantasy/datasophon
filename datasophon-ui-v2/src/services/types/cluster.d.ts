@@ -62,6 +62,7 @@ declare namespace DATASOPHON {
     username?: string;
     password?: string;
     kubeConfig?: string;
+    credentialConfigured?: boolean;
   }
 
   interface K8sTestResult {
