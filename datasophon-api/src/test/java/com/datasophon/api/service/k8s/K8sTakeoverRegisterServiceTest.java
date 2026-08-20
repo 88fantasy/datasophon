@@ -33,6 +33,7 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 class K8sTakeoverRegisterServiceTest {
 
@@ -152,6 +153,26 @@ class K8sTakeoverRegisterServiceTest {
     }
 
     @Test
+    @DisplayName("对目标集群/Doris 的只读远程调用全部先于 DB 事务开启，事务只圈住写库")
+    void remoteProbingHappensBeforeTransactionStarts() {
+        Fixture fixture = new Fixture();
+        when(fixture.jobProbe.probe(any(), eq("dolphinscheduler"), eq("prod"), any(), isNull()))
+                .thenReturn(new K8sMetricsJobProbeService.ProbeResult("dolphinscheduler-api", Map.of()));
+
+        fixture.service.register(7, List.of(
+                new K8sTakeoverRegisterService.Binding("dolphinscheduler", "prod", 3, null)));
+
+        org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(
+                fixture.scanService, fixture.jobProbe, fixture.transactionManager, fixture.instanceService);
+        inOrder.verify(fixture.scanService).scan(7);
+        inOrder.verify(fixture.jobProbe).activeJobs(7);
+        inOrder.verify(fixture.jobProbe).probe(any(), eq("dolphinscheduler"), eq("prod"), any(), isNull());
+        inOrder.verify(fixture.transactionManager).getTransaction(any());
+        inOrder.verify(fixture.instanceService).updateById(any());
+        inOrder.verify(fixture.transactionManager).commit(any());
+    }
+
+    @Test
     @DisplayName("sourceKind=CR 但探测不到任何 job 时不写 monitor_profile")
     void crBindingWithoutRoleJobsLeavesMonitorProfileNull() {
         Fixture fixture = new Fixture();
@@ -180,6 +201,7 @@ class K8sTakeoverRegisterServiceTest {
         final FrameK8sServiceService frameService = mock(FrameK8sServiceService.class);
         final K8sTakeoverScanService scanService = mock(K8sTakeoverScanService.class);
         final K8sTakeoverAccessGuard accessGuard = mock(K8sTakeoverAccessGuard.class);
+        final PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
         final K8sTakeoverRegisterService service;
 
         Fixture() {
@@ -202,7 +224,8 @@ class K8sTakeoverRegisterServiceTest {
                             scanned("doris-disaggregated-cluster", "doris", 5, "CR")),
                     List.of(), List.of()));
             service = new K8sTakeoverRegisterService(
-                    configService, namespaceService, instanceService, jobProbe, frameService, scanService, accessGuard);
+                    configService, namespaceService, instanceService, jobProbe, frameService, scanService,
+                    accessGuard, transactionManager);
         }
 
         private static K8sTakeoverScanResult.ScannedRelease scanned(

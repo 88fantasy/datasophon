@@ -1,6 +1,7 @@
 package com.datasophon.api.service.k8s;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.observability.OtelDorisReaderFactory;
 import com.datasophon.api.security.K8sTakeoverAccessGuard;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
@@ -93,6 +95,27 @@ class DorisDatasourceDiscoveryServiceTest {
     void jdbcUrlUsesOtelDatabase() {
         assertThat(DorisDatasourceDiscoveryService.jdbcUrl("doris.example", 9030))
                 .startsWith("jdbc:mysql://doris.example:9030/otel?");
+    }
+
+    @Test
+    @DisplayName("host 带 JDBC 连接串分隔符时拒绝拼接，防止注入 allowLoadLocalInfile 等危险参数")
+    void jdbcUrlRejectsInjectionPayload() {
+        assertThatThrownBy(() -> DorisDatasourceDiscoveryService.jdbcUrl(
+                "h?allowLoadLocalInfile=true&allowUrlInLocalInfile=true#", 9030))
+                .isInstanceOf(BusinessHintException.class);
+        assertThatThrownBy(() -> DorisDatasourceDiscoveryService.jdbcUrl("evil.com/../../etc", 9030))
+                .isInstanceOf(BusinessHintException.class);
+    }
+
+    @Test
+    @DisplayName("合法 hostname / IPv4 / IPv6 均放行")
+    void jdbcUrlAllowsLegitimateHosts() {
+        assertThat(DorisDatasourceDiscoveryService.jdbcUrl("doris-fe.doris.svc.cluster.local", 9030))
+                .contains("doris-fe.doris.svc.cluster.local");
+        assertThat(DorisDatasourceDiscoveryService.jdbcUrl("192.168.1.10", 9030))
+                .contains("192.168.1.10");
+        assertThat(DorisDatasourceDiscoveryService.jdbcUrl("[::1]", 9030))
+                .contains("[::1]");
     }
 
     @Test

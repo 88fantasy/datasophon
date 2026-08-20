@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,21 +50,6 @@ public class K8sMetricsJobProbeService {
         this.readerFactory = readerFactory;
     }
 
-    /**
-     * 探测指定 release 对应的 job 列表。
-     *
-     * @return 逗号分隔的 job 名；该服务未接入采集时返回 null
-     */
-    public String probe(K8sClusterConfig config, Integer clusterId, String releaseName, String namespace) {
-        Set<String> serviceNames = serviceNamesOf(config, releaseName, namespace);
-        if (serviceNames.isEmpty()) {
-            return null;
-        }
-        Set<String> activeJobs = activeJobs(clusterId);
-        serviceNames.retainAll(activeJobs);
-        return serviceNames.isEmpty() ? null : String.join(",", serviceNames);
-    }
-
     /** 查询 Doris 中近期有数据的全部 job，供批量探测复用，避免每个服务查一次。 */
     public Set<String> activeJobs(Integer clusterId) {
         String sql = "SELECT DISTINCT service_name FROM otel.otel_metrics_gauge "
@@ -77,13 +63,6 @@ public class K8sMetricsJobProbeService {
             log.warn("探测集群 {} 的 OTel job 失败：{}", clusterId, e.getMessage());
             return Set.of();
         }
-    }
-
-    /** 用已取到的 activeJobs 做探测，批量登记时用这个重载。 */
-    public String probe(K8sClusterConfig config, String releaseName, String namespace, Set<String> activeJobs) {
-        Set<String> serviceNames = serviceNamesOf(config, releaseName, namespace);
-        serviceNames.retainAll(activeJobs);
-        return serviceNames.isEmpty() ? null : String.join(",", serviceNames);
     }
 
     /** 探测结果：{@code metricsJob} 沿用既有逗号分隔格式；{@code roleJobs} 是角色名到其 job 列表的映射。 */
@@ -111,7 +90,15 @@ public class K8sMetricsJobProbeService {
                 if (role.getName() == null || role.getJobPattern() == null) {
                     continue;
                 }
-                Pattern pattern = Pattern.compile(role.getJobPattern());
+                Pattern pattern;
+                try {
+                    pattern = Pattern.compile(role.getJobPattern());
+                } catch (PatternSyntaxException e) {
+                    // manifest.yaml 里的 jobPattern 写错正则不应该拖垮整个接管登记事务，
+                    // 只跳过这一个角色，其它角色照常探测。
+                    log.warn("角色 {} 的 jobPattern 不是合法正则：{}，跳过该角色", role.getName(), role.getJobPattern());
+                    continue;
+                }
                 List<String> jobs = serviceNames.stream()
                         .filter(job -> pattern.matcher(job).find())
                         .sorted()

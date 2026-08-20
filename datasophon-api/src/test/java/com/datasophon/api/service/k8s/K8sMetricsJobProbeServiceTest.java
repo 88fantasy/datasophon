@@ -126,6 +126,31 @@ class K8sMetricsJobProbeServiceTest {
     }
 
     @Test
+    @DisplayName("jobPattern 不是合法正则时跳过该角色，不影响其它角色与 metricsJob")
+    void skipsRoleWithInvalidJobPattern() {
+        Set<String> activeJobs = Set.of(
+                "doris-disaggregated-cluster-fe",
+                "doris-disaggregated-cluster-cg1");
+        K8sOperatorArtifact operator = new K8sOperatorArtifact();
+        K8sOperatorArtifact.Role broken = new K8sOperatorArtifact.Role();
+        broken.setName("broken");
+        broken.setJobPattern("(unclosed");
+        K8sOperatorArtifact.Role fe = new K8sOperatorArtifact.Role();
+        fe.setName("fe");
+        fe.setJobPattern("-fe$");
+        operator.setRoles(java.util.List.of(broken, fe));
+
+        K8sMetricsJobProbeService.ProbeResult result = probeByPrefix(
+                "doris-disaggregated-cluster", "doris", activeJobs, operator,
+                "doris-disaggregated-cluster-fe", "doris-disaggregated-cluster-cg1");
+
+        assertThat(result.metricsJob()).isEqualTo(
+                "doris-disaggregated-cluster-fe,doris-disaggregated-cluster-cg1");
+        assertThat(result.roleJobs()).doesNotContainKey("broken");
+        assertThat(result.roleJobs()).containsEntry("fe", java.util.List.of("doris-disaggregated-cluster-fe"));
+    }
+
+    @Test
     @DisplayName("operatorArtifact 为 null 时回退走原 Helm 标签分支")
     void fallsBackToHelmLabelBranchWhenOperatorArtifactIsNull() {
         KubectlClient client = mock(KubectlClient.class);
@@ -201,7 +226,11 @@ class K8sMetricsJobProbeServiceTest {
 
         K8sMetricsJobProbeService probeService =
                 new K8sMetricsJobProbeService(k8sService, mock(OtelDorisReaderFactory.class));
-        return probeService.probe(new K8sClusterConfig(), releaseName, namespace, ACTIVE_JOBS);
+        // 4 参无 operatorArtifact 的 probe 重载在生产代码里已无调用方（K8sTakeoverRegisterService
+        // 只走 5 参版本），已删除；这里改走 5 参版本传 null，行为与被删版本完全一致
+        // （见 fallsBackToHelmLabelBranchWhenOperatorArtifactIsNull：operatorArtifact=null 就是走
+        // 这条 Helm 标签分支），继续覆盖下面 5 个用例。
+        return probeService.probe(new K8sClusterConfig(), releaseName, namespace, ACTIVE_JOBS, null).metricsJob();
     }
 
     private static com.datasophon.common.k8s.vo.k8s.K8sService service(String name) {

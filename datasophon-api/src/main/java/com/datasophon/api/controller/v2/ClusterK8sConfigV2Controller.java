@@ -30,6 +30,7 @@ import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.dao.entity.instance.K8sServiceInstanceValues;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -83,12 +84,23 @@ public class ClusterK8sConfigV2Controller extends ApiController {
     /**
      * 保存用户编辑的 deltaValues（仅更新当前版本，不升版、不打 needRestart）。
      *
-     * @param req 包含 id + deltaValues
+     * <p>{@code @ImportedReadOnly} 门禁只按路径里的 {@code clusterId} 判定，而 {@code req} 里的
+     * values id 可以指向任意集群的记录——只换 URL 里的 clusterId 就能绕过门禁去改别的集群数据。
+     * 这里先确认 {@code req.getId()} 对应的记录确实属于路径声明的集群，不属于直接拒绝；
+     * Service 层的接管只读门禁（按记录自身 clusterId 判定）仍然保留，两层互不替代。
+     *
+     * @param clusterId 路径中的集群 ID
+     * @param req       包含 id + deltaValues
      */
     @ImportedReadOnly("修改服务配置")
     @PostMapping
     @Operation(summary = "保存 Helm deltaValues")
-    public ApiResponse<Void> save(@RequestBody K8sServiceInstanceValuesUpdateDTO req) {
+    public ApiResponse<Void> save(@PathVariable Integer clusterId,
+                                  @RequestBody K8sServiceInstanceValuesUpdateDTO req) {
+        K8sServiceInstanceValues db = k8sServiceInstanceValuesService.getById(req.getId());
+        if (db == null || !Objects.equals(db.getClusterId(), clusterId)) {
+            return ApiResponse.fail(404, "配置记录不存在");
+        }
         k8sServiceInstanceValuesService.update(req);
         return ApiResponse.ok();
     }

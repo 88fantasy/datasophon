@@ -35,6 +35,7 @@ import com.datasophon.dao.mapper.cluster.K8sClusterConfigMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,24 +155,35 @@ public class OtelDorisReaderFactory {
 
     private JdbcClient buildJdbcClient(Integer clusterId, String host, String port, String user, String password) {
         PoolKey key = new PoolKey(host, port, user, password);
+        // HikariDataSource.close() 会阻塞等待活跃连接归还，可能长达 connectionTimeout。
+        // ConcurrentHashMap.compute() 的重映射函数执行期间持有该 key 所在桶的锁，在里面调用
+        // close() 等于让这把锁的持有时长绑定到远程连接归还耗时——同桶的其它 clusterId 的
+        // get/compute 都会被卡住。这里只在 compute() 内换引用，把旧连接池带出来，锁释放之后再关。
+        AtomicReference<HikariDataSource> toClose = new AtomicReference<>();
         PoolEntry entry = pools.compute(clusterId, (id, current) -> {
             if (current != null && current.key().equals(key)) {
                 return current;
             }
-            HikariDataSource replacement = newDataSource(key);
             if (current != null) {
-                current.dataSource().close();
+                toClose.set(current.dataSource());
             }
-            return new PoolEntry(key, replacement);
+            return new PoolEntry(key, newDataSource(key));
         });
+        HikariDataSource obsolete = toClose.get();
+        if (obsolete != null) {
+            obsolete.close();
+        }
         return JdbcClient.create(entry.dataSource());
     }
 
     private static HikariDataSource newDataSource(PoolKey key) {
         HikariDataSource ds = new HikariDataSource();
         ds.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        // 不指定默认库：全部查询都用 otel.otel_metrics_gauge 等全限定表名（见 observability/ 与
+        // K8sMetricsJobProbeService），指定 /otel 没有收益，反而在 otel_reader 对该库暂无权限或
+        // 库尚未建好时让连接直接失败——本类曾因类似改动引发全平台 OTel 查询 500。
         ds.setJdbcUrl("jdbc:mysql://" + key.host() + ":" + key.port()
-                + "/otel?useUnicode=true&characterEncoding=utf8&useSSL=false");
+                + "/?useUnicode=true&characterEncoding=utf8&useSSL=false");
         ds.setUsername(key.user());
         ds.setPassword(key.password());
         ds.setPoolName("otel-doris-reader-" + key.host() + "-" + key.port() + "-" + key.user());

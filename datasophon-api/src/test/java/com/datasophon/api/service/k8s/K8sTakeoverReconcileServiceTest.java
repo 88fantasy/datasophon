@@ -15,6 +15,10 @@ import com.datasophon.dao.enums.k8s.InstanceSource;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,6 +75,42 @@ class K8sTakeoverReconcileServiceTest {
 
         for (int i = 0; i < 10; i++) {
             fixture.service.markMissing(7, List.of(imported(1, "prod", "zookeeper")));
+        }
+
+        verify(fixture.k8sService, times(1)).listHelmReleaseKeys(any());
+    }
+
+    @Test
+    @DisplayName("缓存过期瞬间的并发请求只触发一次 kubectl 查询，不发生穿透风暴")
+    void deduplicatesConcurrentQueriesOnCacheMiss() throws InterruptedException {
+        Fixture fixture = new Fixture();
+        int concurrency = 16;
+        CountDownLatch releaseAll = new CountDownLatch(1);
+        when(fixture.k8sService.listHelmReleaseKeys(any())).thenAnswer(invocation -> {
+            // 故意拉长这一次调用的耗时，扩大并发窗口，逼真模拟"多个 Tab 同时撞上 TTL 到期"
+            releaseAll.await(2, TimeUnit.SECONDS);
+            return List.of("prod/zookeeper");
+        });
+
+        ExecutorService pool = Executors.newFixedThreadPool(concurrency);
+        try {
+            CountDownLatch allStarted = new CountDownLatch(concurrency);
+            List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+            for (int i = 0; i < concurrency; i++) {
+                futures.add(pool.submit(() -> {
+                    allStarted.countDown();
+                    fixture.service.markMissing(7, List.of(imported(1, "prod", "zookeeper")));
+                }));
+            }
+            allStarted.await(2, TimeUnit.SECONDS);
+            releaseAll.countDown();
+            for (java.util.concurrent.Future<?> future : futures) {
+                future.get(5, TimeUnit.SECONDS);
+            }
+        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
+            throw new IllegalStateException(e);
+        } finally {
+            pool.shutdown();
         }
 
         verify(fixture.k8sService, times(1)).listHelmReleaseKeys(any());

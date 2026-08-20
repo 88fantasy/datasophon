@@ -30,10 +30,10 @@ import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.time.Duration;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,23 +118,32 @@ public class K8sTakeoverReconcileService {
      * @return 集群内全部 release 的 {@code namespace/name}；查询失败返回 null（区别于「一个都没有」）
      */
     Set<String> deployedReleaseKeys(Integer clusterId) {
-        CachedKeys cached = cache.get(clusterId);
-        if (cached != null && !cached.isExpired()) {
-            return cached.keys();
-        }
         K8sClusterConfig config = k8sClusterConfigService.getByClusterId(clusterId);
         if (config == null) {
             return null;
         }
-        try {
-            List<String> keys = k8sService.listHelmReleaseKeys(config);
-            Set<String> result = Set.copyOf(keys);
-            cache.put(clusterId, new CachedKeys(result, System.nanoTime()));
-            return result;
-        } catch (Exception e) {
-            log.warn("集群 {} 的 Helm release 对账查询失败，本次不标记失联：{}", clusterId, e.getMessage());
-            return null;
-        }
+        // 用 compute() 而不是 get()+put() 两步：TTL 到期瞬间多个请求（同一集群的多个浏览器
+        // Tab 都在 3 秒轮询）会同时判定缓存过期，各自发一次 kubectl，造成穿透风暴。compute()
+        // 对同一 clusterId 的并发调用天然排队——只有第一个真正跑 kubectl（30s 超时封顶，不会
+        // 无界阻塞），后来者拿到它算出来的新值直接返回，不重复发请求。
+        AtomicReference<Set<String>> fresh = new AtomicReference<>();
+        cache.compute(clusterId, (id, current) -> {
+            if (current != null && !current.isExpired()) {
+                fresh.set(current.keys());
+                return current;
+            }
+            try {
+                Set<String> keys = Set.copyOf(k8sService.listHelmReleaseKeys(config));
+                fresh.set(keys);
+                return new CachedKeys(keys, System.nanoTime());
+            } catch (Exception e) {
+                log.warn("集群 {} 的 Helm release 对账查询失败，本次不标记失联：{}", clusterId, e.getMessage());
+                // 保持原状（可能是 null，也可能是已过期但还没被覆盖的旧值），不缓存失败结果，
+                // 下一次调用会再次尝试；fresh 留空，方法整体返回 null。
+                return current;
+            }
+        });
+        return fresh.get();
     }
 
     private String releaseKey(K8sServiceInstanceVO instance) {

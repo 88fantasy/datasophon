@@ -3,6 +3,8 @@ package com.datasophon.api.dto.instance;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -17,11 +19,19 @@ public class K8sTakeoverDTO {
     @Data
     public static class DatasourceSave {
 
+        // host 会被 DorisDatasourceDiscoveryService.jdbcUrl 直接拼进 JDBC URL；
+        // 不限字符集会让 ? & # / 之类的连接串分隔符可控，等价于 JDBC 注入
+        // （如塞入 allowLoadLocalInfile 读取平台本地文件、autoDeserialize 反序列化）。
+        // 这里只放行 hostname / IPv4 / IPv6 会出现的字符。
         @Schema(description = "Doris FE 主机，需平台可直连")
         @NotBlank(message = "Doris 主机不能为空")
+        @Size(max = 253, message = "主机长度不能超过 253")
+        @Pattern(regexp = "[A-Za-z0-9.:\\[\\]-]+", message = "主机必须是合法的主机名或 IP 地址")
         private String host;
 
         @Schema(description = "MySQL 协议端口，缺省 9030")
+        @Min(value = 1, message = "端口范围为 1-65535")
+        @Max(value = 65535, message = "端口范围为 1-65535")
         private Integer port;
 
         @Schema(description = "只读账号密码")

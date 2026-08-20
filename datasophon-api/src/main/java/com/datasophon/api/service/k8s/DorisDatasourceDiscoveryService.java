@@ -16,6 +16,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 
@@ -36,6 +37,12 @@ public class DorisDatasourceDiscoveryService {
     static final String DEFAULT_READER_USER = "otel_reader";
 
     static final String DEFAULT_DATABASE = "otel";
+
+    /**
+     * host 会被直接拼进 JDBC URL；与 {@code K8sTakeoverDTO.DatasourceSave.host} 的 Bean Validation
+     * 校验规则保持一致，这里是第二道防线——防止未来有内部调用绕过 Controller 层校验直接调这两个方法。
+     */
+    private static final Pattern HOST_PATTERN = Pattern.compile("[A-Za-z0-9.:\\[\\]-]+");
 
     private final com.datasophon.api.service.k8s.K8sService k8sService;
     private final K8sClusterConfigService k8sClusterConfigService;
@@ -125,6 +132,11 @@ public class DorisDatasourceDiscoveryService {
     }
 
     static String jdbcUrl(String host, int port) {
+        if (host == null || !HOST_PATTERN.matcher(host).matches()) {
+            // Bean Validation 已在 Controller 层拦过一次；这里再拒绝一次，防止内部调用绕过校验
+            // 把 ? & # 之类的字符带进 JDBC 连接串（可注入 allowLoadLocalInfile 等危险参数）。
+            throw new BusinessHintException("Doris 主机格式不合法");
+        }
         return String.format("jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=utf8&useSSL=false"
                 + "&connectTimeout=%d&socketTimeout=%d",
                 host, port, DEFAULT_DATABASE,
