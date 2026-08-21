@@ -41,7 +41,7 @@ class K8sTakeoverRegisterServiceTest {
     @DisplayName("登记时标记来源为 IMPORTED 并写入 release 名与探测到的 job")
     void marksInstanceAsImportedWithProbedJobs() {
         Fixture fixture = new Fixture();
-        when(fixture.jobProbe.probe(any(), eq("dolphinscheduler"), eq("prod"), any(), isNull()))
+        when(fixture.jobProbe.probe(eq("dolphinscheduler"), eq("prod"), any(), isNull(), any()))
                 .thenReturn(new K8sMetricsJobProbeService.ProbeResult(
                         "dolphinscheduler-api,dolphinscheduler-master-headless", Map.of()));
 
@@ -65,7 +65,7 @@ class K8sTakeoverRegisterServiceTest {
     @DisplayName("未接入采集的服务照常登记，但标记 scraped=false 供前端提示")
     void registersUnscrapedServiceWithDiagnostic() {
         Fixture fixture = new Fixture();
-        when(fixture.jobProbe.probe(any(), eq("redis-cluster"), eq("prod"), any(), isNull()))
+        when(fixture.jobProbe.probe(eq("redis-cluster"), eq("prod"), any(), isNull(), any()))
                 .thenReturn(new K8sMetricsJobProbeService.ProbeResult(null, Map.of()));
 
         List<K8sTakeoverRegisterResult> results = fixture.service.register(7, List.of(
@@ -112,16 +112,16 @@ class K8sTakeoverRegisterServiceTest {
         FrameK8sServiceEntity dorisDefinition = new FrameK8sServiceEntity();
         dorisDefinition.setId(5);
         dorisDefinition.setArtifact("{\"yaml\":\"ddc-cluster.yaml\",\"kind\":\"operator\",\"operator\":{"
-                + "\"group\":\"disaggregated.cluster.doris.com\",\"version\":\"v1\","
+                + "\"group\":\"disaggregated.cluster.doris.com\","
                 + "\"kind\":\"DorisDisaggregatedCluster\",\"plural\":\"dorisdisaggregatedclusters\","
                 + "\"monitorProfile\":\"doris-disaggregated\","
                 + "\"roles\":[{\"name\":\"fe\",\"jobPattern\":\"-fe$\"},"
                 + "{\"name\":\"compute\",\"jobPattern\":\"-cg\\\\d+$\"}]}}");
-        when(fixture.frameService.getById(5)).thenReturn(dorisDefinition);
+        when(fixture.frameService.listByIds(any())).thenReturn(List.of(dorisDefinition));
         Map<String, List<String>> roleJobs = Map.of(
                 "fe", List.of("doris-disaggregated-cluster-fe"),
                 "compute", List.of("doris-disaggregated-cluster-cg1", "doris-disaggregated-cluster-cg2"));
-        when(fixture.jobProbe.probe(any(), eq("doris-disaggregated-cluster"), eq("doris"), any(), any()))
+        when(fixture.jobProbe.probe(eq("doris-disaggregated-cluster"), eq("doris"), any(), any(), any()))
                 .thenReturn(new K8sMetricsJobProbeService.ProbeResult(
                         "doris-disaggregated-cluster-fe,doris-disaggregated-cluster-cg1,"
                                 + "doris-disaggregated-cluster-cg2",
@@ -150,16 +150,16 @@ class K8sTakeoverRegisterServiceTest {
         FrameK8sServiceEntity dorisCoupledDefinition = new FrameK8sServiceEntity();
         dorisCoupledDefinition.setId(6);
         dorisCoupledDefinition.setArtifact("{\"kind\":\"operator\",\"operator\":{"
-                + "\"group\":\"doris.selectdb.com\",\"version\":\"v1\","
+                + "\"group\":\"doris.selectdb.com\","
                 + "\"kind\":\"DorisCluster\",\"plural\":\"dorisclusters\","
                 + "\"monitorProfile\":\"doris-coupled\","
                 + "\"roles\":[{\"name\":\"fe\",\"jobPattern\":\"-fe$\"},"
                 + "{\"name\":\"be\",\"jobPattern\":\"-be$\"}]}}");
-        when(fixture.frameService.getById(6)).thenReturn(dorisCoupledDefinition);
+        when(fixture.frameService.listByIds(any())).thenReturn(List.of(dorisCoupledDefinition));
         Map<String, List<String>> roleJobs = Map.of(
                 "fe", List.of("mycluster-fe"),
                 "be", List.of("mycluster-be"));
-        when(fixture.jobProbe.probe(any(), eq("mycluster"), eq("doris"), any(), any()))
+        when(fixture.jobProbe.probe(eq("mycluster"), eq("doris"), any(), any(), any()))
                 .thenReturn(new K8sMetricsJobProbeService.ProbeResult(
                         "mycluster-fe,mycluster-be", roleJobs));
 
@@ -193,7 +193,7 @@ class K8sTakeoverRegisterServiceTest {
     @DisplayName("对目标集群/Doris 的只读远程调用全部先于 DB 事务开启，事务只圈住写库")
     void remoteProbingHappensBeforeTransactionStarts() {
         Fixture fixture = new Fixture();
-        when(fixture.jobProbe.probe(any(), eq("dolphinscheduler"), eq("prod"), any(), isNull()))
+        when(fixture.jobProbe.probe(eq("dolphinscheduler"), eq("prod"), any(), isNull(), any()))
                 .thenReturn(new K8sMetricsJobProbeService.ProbeResult("dolphinscheduler-api", Map.of()));
 
         fixture.service.register(7, List.of(
@@ -203,7 +203,8 @@ class K8sTakeoverRegisterServiceTest {
                 fixture.scanService, fixture.jobProbe, fixture.transactionManager, fixture.instanceService);
         inOrder.verify(fixture.scanService).scan(7);
         inOrder.verify(fixture.jobProbe).activeJobs(7);
-        inOrder.verify(fixture.jobProbe).probe(any(), eq("dolphinscheduler"), eq("prod"), any(), isNull());
+        inOrder.verify(fixture.jobProbe).allServices(any());
+        inOrder.verify(fixture.jobProbe).probe(eq("dolphinscheduler"), eq("prod"), any(), isNull(), any());
         inOrder.verify(fixture.transactionManager).getTransaction(any());
         inOrder.verify(fixture.instanceService).updateById(any());
         inOrder.verify(fixture.transactionManager).commit(any());
@@ -216,8 +217,8 @@ class K8sTakeoverRegisterServiceTest {
         FrameK8sServiceEntity definition = new FrameK8sServiceEntity();
         definition.setId(5);
         definition.setArtifact("{\"kind\":\"operator\",\"operator\":{\"group\":\"g\",\"plural\":\"p\"}}");
-        when(fixture.frameService.getById(5)).thenReturn(definition);
-        when(fixture.jobProbe.probe(any(), anyString(), anyString(), any(), any()))
+        when(fixture.frameService.listByIds(any())).thenReturn(List.of(definition));
+        when(fixture.jobProbe.probe(anyString(), anyString(), any(), any(), any()))
                 .thenReturn(new K8sMetricsJobProbeService.ProbeResult(null, Map.of()));
 
         fixture.service.register(7, List.of(
@@ -247,9 +248,15 @@ class K8sTakeoverRegisterServiceTest {
             namespace.setId(11);
             when(namespaceService.createIfAbsent(any(), anyInt())).thenReturn(namespace);
             when(instanceService.createImportedIfAbsent(anyInt(), anyInt(), anyInt(), any(), anyString()))
-                    .thenAnswer(invocation -> new K8sServiceInstance());
+                    .thenAnswer(invocation -> {
+                        K8sServiceInstance instance = new K8sServiceInstance();
+                        instance.setSource(InstanceSource.IMPORTED);
+                        instance.setSourceKind(invocation.getArgument(3));
+                        instance.setReleaseName(invocation.getArgument(4));
+                        return instance;
+                    });
             when(jobProbe.activeJobs(anyInt())).thenReturn(Set.of("apisix-prometheus-metrics"));
-            when(jobProbe.probe(any(), anyString(), anyString(), any(), any()))
+            when(jobProbe.probe(anyString(), anyString(), any(), any(), any()))
                     .thenReturn(new K8sMetricsJobProbeService.ProbeResult(null, Map.of()));
             when(scanService.scan(7)).thenReturn(new K8sTakeoverScanResult(
                     List.of(
@@ -269,9 +276,9 @@ class K8sTakeoverRegisterServiceTest {
                                                                     String releaseName, String namespace,
                                                                     int frameServiceId, String sourceKind) {
             return new K8sTakeoverScanResult.ScannedRelease(
-                    releaseName, namespace, null, null, null, null,
+                    releaseName, namespace, null, null, null,
                     frameServiceId, "service-" + frameServiceId, "MIDDLEWARE",
-                    false, sourceKind, "CR".equals(sourceKind) ? "CustomResource" : null);
+                    false, InstanceSourceKind.valueOf(sourceKind));
         }
     }
 }

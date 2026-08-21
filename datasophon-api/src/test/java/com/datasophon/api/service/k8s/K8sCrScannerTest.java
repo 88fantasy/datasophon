@@ -8,6 +8,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.datasophon.common.function.ThrowableMapper;
+import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.common.k8s.vo.k8s.K8sResource;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
@@ -29,7 +31,14 @@ class K8sCrScannerTest {
     @DisplayName("kind=operator 的定义会触发 CR 扫描，产出 name/namespace/kind")
     void scansOperatorKindDefinition() {
         K8sService k8sService = mock(K8sService.class);
-        when(k8sService.batchExec(any(), any(), any())).thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
+        KubectlClient client = mock(KubectlClient.class);
+        try {
+            when(client.getCustomResourcesAllNamespaces(any(), any()))
+                    .thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        stubBatchExec(k8sService, client);
 
         FrameK8sServiceEntity doris = definition("doris-disaggregated", dorisArtifact());
         K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(doris));
@@ -46,10 +55,17 @@ class K8sCrScannerTest {
     @DisplayName("两个独立框架服务（各自一个 operator）互不干扰，各自的 CR 都能扫到")
     void scansMultipleDefinitionsEachWithOwnOperator_bothCrdsIndependentlyFound() {
         K8sService k8sService = mock(K8sService.class);
-        when(k8sService.batchExec(any(), any(), eq("扫描 CRD dorisdisaggregatedclusters.disaggregated.cluster.doris.com")))
-                .thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
-        when(k8sService.batchExec(any(), any(), eq("扫描 CRD dorisclusters.doris.selectdb.com")))
-                .thenReturn(crList(cr("mycluster", "doris")));
+        KubectlClient client = mock(KubectlClient.class);
+        try {
+            when(client.getCustomResourcesAllNamespaces(eq("dorisdisaggregatedclusters"),
+                    eq("disaggregated.cluster.doris.com")))
+                    .thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
+            when(client.getCustomResourcesAllNamespaces(eq("dorisclusters"), eq("doris.selectdb.com")))
+                    .thenReturn(crList(cr("mycluster", "doris")));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        stubBatchExec(k8sService, client);
 
         FrameK8sServiceEntity dorisDisaggregated = definition("doris-disaggregated", dorisArtifact());
         FrameK8sServiceEntity dorisCoupled = definition("doris-coupled", dorisCoupledArtifact());
@@ -74,7 +90,14 @@ class K8sCrScannerTest {
     @DisplayName("多个定义指向同一 CRD（同 group+plural）只发一次 kubectl 请求")
     void dedupesRequestsForSameCrd() {
         K8sService k8sService = mock(K8sService.class);
-        when(k8sService.batchExec(any(), any(), any())).thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
+        KubectlClient client = mock(KubectlClient.class);
+        try {
+            when(client.getCustomResourcesAllNamespaces(any(), any()))
+                    .thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        stubBatchExec(k8sService, client);
 
         // 构造两个 artifact 完全相同（同 group+plural）的定义，模拟"同一 CRD 被多个框架服务引用"
         FrameK8sServiceEntity a = definition("doris-disaggregated", dorisArtifact());
@@ -84,16 +107,27 @@ class K8sCrScannerTest {
 
         assertThat(result.crs()).hasSize(1);
         verify(k8sService, times(1)).batchExec(any(), any(), any());
+        try {
+            verify(client, times(1)).getCustomResourcesAllNamespaces(any(), any());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Test
     @DisplayName("单个 CRD 扫描失败（如 CRD 未安装）不阻断其他 CRD 的扫描")
     void isolatesFailureOfOneCrd() {
         K8sService k8sService = mock(K8sService.class);
-        when(k8sService.batchExec(any(), any(), eq("扫描 CRD dorisdisaggregatedclusters.disaggregated.cluster.doris.com")))
-                .thenThrow(new RuntimeException("CRD 未安装"));
-        when(k8sService.batchExec(any(), any(), eq("扫描 CRD nacos.nacos.io")))
-                .thenReturn(crList(cr("nacos", "prod")));
+        KubectlClient client = mock(KubectlClient.class);
+        try {
+            when(client.getCustomResourcesAllNamespaces(eq("dorisdisaggregatedclusters"),
+                    eq("disaggregated.cluster.doris.com"))).thenThrow(new RuntimeException("CRD 未安装"));
+            when(client.getCustomResourcesAllNamespaces(eq("nacos"), eq("nacos.io")))
+                    .thenReturn(crList(cr("nacos", "prod")));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        stubBatchExec(k8sService, client);
 
         FrameK8sServiceEntity doris = definition("doris-disaggregated", dorisArtifact());
         FrameK8sServiceEntity nacos = definition("nacos", nacosArtifact());
@@ -125,7 +159,7 @@ class K8sCrScannerTest {
 
     private static String dorisArtifact() {
         return "{\"yaml\":\"ddc-cluster.yaml\",\"kind\":\"operator\",\"operator\":{"
-                + "\"group\":\"disaggregated.cluster.doris.com\",\"version\":\"v1\","
+                + "\"group\":\"disaggregated.cluster.doris.com\","
                 + "\"kind\":\"DorisDisaggregatedCluster\",\"plural\":\"dorisdisaggregatedclusters\","
                 + "\"monitorProfile\":\"doris-disaggregated\","
                 + "\"roles\":[{\"name\":\"fe\",\"jobPattern\":\"-fe$\"},{\"name\":\"compute\",\"jobPattern\":\"-cg\\\\d+$\"}]}}";
@@ -133,14 +167,14 @@ class K8sCrScannerTest {
 
     private static String dorisCoupledArtifact() {
         return "{\"kind\":\"operator\",\"operator\":{"
-                + "\"group\":\"doris.selectdb.com\",\"version\":\"v1\","
+                + "\"group\":\"doris.selectdb.com\","
                 + "\"kind\":\"DorisCluster\",\"plural\":\"dorisclusters\","
                 + "\"monitorProfile\":\"doris-coupled\","
                 + "\"roles\":[{\"name\":\"fe\",\"jobPattern\":\"-fe$\"},{\"name\":\"be\",\"jobPattern\":\"-be$\"}]}}";
     }
 
     private static String nacosArtifact() {
-        return "{\"kind\":\"operator\",\"operator\":{\"group\":\"nacos.io\",\"version\":\"v1alpha1\","
+        return "{\"kind\":\"operator\",\"operator\":{\"group\":\"nacos.io\","
                 + "\"kind\":\"Nacos\",\"plural\":\"nacos\"}}";
     }
 
@@ -166,5 +200,13 @@ class K8sCrScannerTest {
         metadata.setNamespace(namespace);
         resource.setMetadata(metadata);
         return resource;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void stubBatchExec(K8sService k8sService, KubectlClient client) {
+        when(k8sService.batchExec(any(), any(), any())).thenAnswer(invocation -> {
+            ThrowableMapper<KubectlClient, Object> mapper = invocation.getArgument(1);
+            return mapper.accept(client);
+        });
     }
 }

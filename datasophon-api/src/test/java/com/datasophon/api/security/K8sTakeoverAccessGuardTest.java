@@ -105,7 +105,7 @@ class K8sTakeoverAccessGuardTest {
         final HttpServletRequest request = mock(HttpServletRequest.class);
         final UserInfoEntity user = new UserInfoEntity();
         final K8sTakeoverAccessGuard guard = new K8sTakeoverAccessGuard(
-                clusterInfoService, roleUserService, request);
+                clusterInfoService, new ClusterAccessGuard(roleUserService, request));
 
         Fixture(ClusterInfoEntity cluster) {
             when(clusterInfoService.getById(CLUSTER_ID)).thenReturn(cluster);

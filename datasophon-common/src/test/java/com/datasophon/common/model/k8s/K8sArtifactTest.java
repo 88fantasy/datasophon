@@ -40,7 +40,6 @@ class K8sArtifactTest {
                 + "\"kind\":\"operator\","
                 + "\"operator\":{"
                 + "  \"group\":\"disaggregated.cluster.doris.com\","
-                + "  \"version\":\"v1\","
                 + "  \"kind\":\"DorisDisaggregatedCluster\","
                 + "  \"plural\":\"dorisdisaggregatedclusters\","
                 + "  \"monitorProfile\":\"doris-disaggregated\","
@@ -55,7 +54,6 @@ class K8sArtifactTest {
 
         K8sOperatorArtifact operator = artifact.getOperator();
         assertEquals("disaggregated.cluster.doris.com", operator.getGroup());
-        assertEquals("v1", operator.getVersion());
         assertEquals("DorisDisaggregatedCluster", operator.getKind());
         assertEquals("dorisdisaggregatedclusters", operator.getPlural());
         assertEquals("doris-disaggregated", operator.getMonitorProfile());
@@ -73,5 +71,14 @@ class K8sArtifactTest {
         assertEquals(artifact.getKind(), roundTripped.getKind());
         assertEquals(artifact.getOperator().getPlural(), roundTripped.getOperator().getPlural());
         assertEquals(artifact.getOperator().getRoles().size(), roundTripped.getOperator().getRoles().size());
+    }
+
+    @Test
+    void operatorOf_returnsOperatorOnlyForOperatorArtifacts() {
+        String operatorJson = "{\"kind\":\"operator\",\"operator\":{\"group\":\"nacos.io\",\"plural\":\"nacos\"}}";
+
+        assertEquals("nacos.io", K8sArtifact.operatorOf(operatorJson).getGroup());
+        assertNull(K8sArtifact.operatorOf("{\"helm\":\"nacos.tgz\"}"));
+        assertNull(K8sArtifact.operatorOf(null));
     }
 }

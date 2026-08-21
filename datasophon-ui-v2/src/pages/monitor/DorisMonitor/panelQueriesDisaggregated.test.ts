@@ -25,7 +25,6 @@ import {
   DISAGG_PANEL_QUERIES,
   DISAGG_PANEL_ROLE,
   DISAGG_SEGMENT_PANEL_IDS,
-  getDisaggSegmentPanelIds,
 } from './panelQueriesDisaggregated';
 
 describe('DorisMonitor disaggregated panel queries', () => {
@@ -97,15 +96,4 @@ describe('DorisMonitor disaggregated panel queries', () => {
     expect(DISAGG_PANEL_ROLE['DO-A07']).toBe('fe');
   });
 
-  it('returns only the active segment panel ids', () => {
-    expect(getDisaggSegmentPanelIds('cluster')).toEqual(
-      DISAGG_SEGMENT_PANEL_IDS.cluster,
-    );
-    expect(getDisaggSegmentPanelIds('fe')).toEqual(
-      DISAGG_SEGMENT_PANEL_IDS.fe,
-    );
-    expect(getDisaggSegmentPanelIds('compute')).toEqual(
-      DISAGG_SEGMENT_PANEL_IDS.compute,
-    );
-  });
 });

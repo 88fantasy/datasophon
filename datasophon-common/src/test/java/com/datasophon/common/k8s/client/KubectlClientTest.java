@@ -21,6 +21,8 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -172,7 +174,7 @@ class KubectlClientTest {
 
         @Test
         @DisplayName("使用 Token 认证配置构造")
-        void testConstructor_WithToken() {
+        void testConstructor_WithToken() throws Exception {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token-123");
@@ -180,14 +182,16 @@ class KubectlClientTest {
 
                 KubectlClient client = new KubectlClient(options);
 
-                Assertions.assertEquals("test-token-123", client.getToken());
-                Assertions.assertEquals("https://k8s.example.com", client.getServerName());
+                String kubeConfig = Files.readString(Path.of(client.getKubeConfig()));
+                Assertions.assertTrue(kubeConfig.contains("test-token-123"));
+                Assertions.assertTrue(kubeConfig.contains("https://k8s.example.com"));
+                client.close();
             }
         }
 
         @Test
         @DisplayName("使用用户名密码认证配置构造")
-        void testConstructor_WithUsernamePassword() {
+        void testConstructor_WithUsernamePassword() throws Exception {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ClientOptions options = new ClientOptions();
                 options.setUsername("admin");
@@ -196,8 +200,10 @@ class KubectlClientTest {
 
                 KubectlClient client = new KubectlClient(options);
 
-                Assertions.assertEquals("admin", client.getUsername());
-                Assertions.assertEquals("password123", client.getPassword());
+                String kubeConfig = Files.readString(Path.of(client.getKubeConfig()));
+                Assertions.assertTrue(kubeConfig.contains("username: admin"));
+                Assertions.assertTrue(kubeConfig.contains("password: password123"));
+                client.close();
             }
         }
 
@@ -228,6 +234,31 @@ class KubectlClientTest {
                 }
             } finally {
                 System.setProperty("os.name", originalOsName);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("接管集群只读保护")
+    class ReadOnlyTests {
+
+        @Test
+        void allWriteMethodsAreBlockedBeforeExecutingKubectl() {
+            try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                ClientOptions options = new ClientOptions();
+                options.setReadOnly(true);
+                try (KubectlClient client = new KubectlClient(options)) {
+                    Assertions.assertThrows(KubectlException.class, () -> client.applyYaml("apiVersion: v1"));
+                    Assertions.assertThrows(KubectlException.class, () -> client.restartDeployment("default", "app"));
+                    Assertions.assertThrows(KubectlException.class, () -> client.updateDeploymentImage(new UpdateDeploymentDTO()));
+                    Assertions.assertThrows(KubectlException.class, () -> client.createNamespace("default"));
+                    Assertions.assertThrows(KubectlException.class,
+                            () -> client.createDockerRegistrySecret("default", "secret", "registry", "user", "password"));
+                    Assertions.assertThrows(KubectlException.class,
+                            () -> client.attachSecretToServiceAccount("default", "secret", "default"));
+                    Assertions.assertThrows(KubectlException.class, () -> client.scaleDeployment("default", "app", 1));
+                    Assertions.assertThrows(KubectlException.class, () -> client.deleteSecrets("default", List.of("secret")));
+                }
             }
         }
     }

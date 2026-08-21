@@ -8,6 +8,7 @@ import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -35,7 +36,9 @@ public interface K8sServiceInstanceService extends IService<K8sServiceInstance> 
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
-    Optional<K8sServiceInstanceVO> getVoByClusterAndId(Integer clusterId, Integer instanceId);
+    default Optional<K8sServiceInstanceVO> getVoByClusterAndId(Integer clusterId, Integer instanceId) {
+        return getVoById(instanceId).filter(vo -> Objects.equals(clusterId, vo.getClusterId()));
+    }
 
     List<String> listResourceType(K8sServiceInstanceQueryDTO query);
 

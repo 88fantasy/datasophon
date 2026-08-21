@@ -1,5 +1,7 @@
 package com.datasophon.common.model.k8s;
 
+import com.alibaba.fastjson2.JSONObject;
+
 import lombok.Data;
 
 /**
@@ -40,5 +42,19 @@ public class K8sArtifact {
             return KIND_HELM;
         }
         return KIND_YAML;
+    }
+
+    /**
+     * 从框架服务的 artifact JSON 中取 operator 描述；非 operator 或空值返回 {@code null}。
+     */
+    public static K8sOperatorArtifact operatorOf(String artifactJson) {
+        if (artifactJson == null || artifactJson.isBlank()) {
+            return null;
+        }
+        K8sArtifact artifact = JSONObject.parseObject(artifactJson, K8sArtifact.class);
+        if (artifact == null || !KIND_OPERATOR.equals(artifact.effectiveKind())) {
+            return null;
+        }
+        return artifact.getOperator();
     }
 }

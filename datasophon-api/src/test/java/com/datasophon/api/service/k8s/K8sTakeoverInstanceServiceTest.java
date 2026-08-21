@@ -17,6 +17,7 @@ import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.Optional;
@@ -44,7 +45,7 @@ class K8sTakeoverInstanceServiceTest {
     @DisplayName("平台安装的实例不能走取消接管")
     void rejectsInstalledInstance() {
         K8sServiceInstanceVO installed = importedInstance();
-        installed.setSource(InstanceSource.INSTALLED.name());
+        installed.setSource(InstanceSource.INSTALLED);
         Fixture fixture = new Fixture(installed);
 
         assertThatThrownBy(() -> fixture.service.cancelTakeover(7, 42))
@@ -89,7 +90,7 @@ class K8sTakeoverInstanceServiceTest {
     @DisplayName("CR 来源实例反查配置被明确拒绝，不会拿 CR 实例名去调 helm get values")
     void rejectsReadValuesForCrSourcedInstance() {
         K8sServiceInstanceVO crInstance = importedInstance();
-        crInstance.setSourceKind("CR");
+        crInstance.setSourceKind(InstanceSourceKind.CR);
         crInstance.setReleaseName("doris-disaggregated-cluster");
         Fixture fixture = new Fixture(crInstance);
 
@@ -105,7 +106,7 @@ class K8sTakeoverInstanceServiceTest {
         instance.setClusterId(7);
         instance.setNamespace("prod");
         instance.setServiceName("zookeeper");
-        instance.setSource(InstanceSource.IMPORTED.name());
+        instance.setSource(InstanceSource.IMPORTED);
         instance.setReleaseName("zookeeper");
         return instance;
     }

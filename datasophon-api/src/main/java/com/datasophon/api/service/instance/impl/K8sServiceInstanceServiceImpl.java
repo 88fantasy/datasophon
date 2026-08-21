@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,11 +75,6 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         }
         // 2. 使用@K8sServiceInstanceMapper#selectByIds 根据 IDs 查询 K8sServiceInstanceVO 对象
         return baseMapper.selectByIds(instanceIds);
-    }
-
-    @Override
-    public Optional<K8sServiceInstanceVO> getVoByClusterAndId(Integer clusterId, Integer instanceId) {
-        return Optional.ofNullable(baseMapper.selectByClusterAndId(clusterId, instanceId));
     }
 
     @Override
@@ -175,7 +169,7 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
 
         // 接管的实例不是平台装的，这里的 uninstallRelease 会真的把 release 从目标集群卸载掉。
         // 该路径无 clusterId 路径变量，@ImportedReadOnly 拦截器覆盖不到，必须在此拦一道。
-        if (InstanceSource.IMPORTED.name().equals(instance.getSource())) {
+        if (InstanceSource.IMPORTED.equals(instance.getSource())) {
             throw new BusinessHintException(
                     String.format("服务%s是接管登记的，不能从平台删除；如需解除登记请使用「取消接管」",
                             instance.getServiceName()));

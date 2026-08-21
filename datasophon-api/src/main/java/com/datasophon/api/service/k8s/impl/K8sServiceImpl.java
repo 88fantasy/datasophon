@@ -5,6 +5,7 @@ import com.datasophon.api.dto.log.K8sRuntimeEventQueryDTO;
 import com.datasophon.api.dto.log.K8sRuntimeLogQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.api.service.k8s.K8sClientOptionsFactory;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.api.vo.k8s.K8sConfigMapInfo;
@@ -46,7 +47,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,6 +59,9 @@ public class K8sServiceImpl implements K8sService {
 
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
+
+    @Autowired
+    private K8sClientOptionsFactory clientOptionsFactory;
 
     /** 拉取私有镜像仓库镜像所用的 docker-registry Secret 名称（与 K8s 集群内约定一致）。 */
     private static final String NEXUS_REGISTRY_SECRET_NAME = "nexus-registry-secret";
@@ -295,7 +298,7 @@ public class K8sServiceImpl implements K8sService {
      * </ul>
      */
     private String buildLabelSelector(K8sServiceInstanceVO instance) {
-        if (InstanceSourceKind.CR.name().equals(instance.getSourceKind())) {
+        if (InstanceSourceKind.CR.equals(instance.getSourceKind())) {
             return null;
         }
         String releaseName = StrUtil.isNotBlank(instance.getReleaseName())
@@ -592,9 +595,7 @@ public class K8sServiceImpl implements K8sService {
     }
 
     private ClientOptions newOptions(K8sClusterConfig config) {
-        ClientOptions options = BeanUtil.toBean(config, ClientOptions.class);
-        options.setServerName(config.getServerHost());
-        return options;
+        return clientOptionsFactory.from(config);
     }
 
     @Override

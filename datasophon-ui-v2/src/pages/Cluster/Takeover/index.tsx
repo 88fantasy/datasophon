@@ -31,9 +31,6 @@ const SOURCE_LABEL: Record<string, string> = {
   CLUSTER_IP: 'ClusterIP',
 };
 
-const unwrap = <T,>(res: unknown): T | undefined =>
-  (res as { data?: T })?.data ?? (res as T);
-
 const deploymentUnitKey = (release: DATASOPHON.ScannedRelease) =>
   `${release.sourceKind === 'CR' ? 'CR' : 'HELM'}:${release.namespace}/${release.releaseName}`;
 
@@ -70,8 +67,7 @@ const Takeover: React.FC = () => {
   const handleDiscover = async () => {
     setDiscovering(true);
     try {
-      const res = await listDorisCandidates(clusterId);
-      const items = unwrap<DATASOPHON.DorisDatasourceCandidate[]>(res) ?? [];
+      const { data: items } = await listDorisCandidates(clusterId);
       setCandidates(items);
       // 自动填入第一个可达候选；不可达的只展示不填，避免用户误提交
       const reachable = items.find((c) => c.reachable);
@@ -117,8 +113,7 @@ const Takeover: React.FC = () => {
   const handleScan = async () => {
     setScanning(true);
     try {
-      const res = await scanTakeover(clusterId);
-      const result = unwrap<DATASOPHON.K8sTakeoverScanResult>(res);
+      const { data: result } = await scanTakeover(clusterId);
       setScanResult(result);
       // 已自动匹配且尚未接管的默认全选；重扫时已接管的不再重复勾选
       setSelectedKeys(
@@ -141,7 +136,7 @@ const Takeover: React.FC = () => {
     }
     setRegistering(true);
     try {
-      const res = await registerTakeover(
+      const { data } = await registerTakeover(
         clusterId,
         chosen.map((r) => ({
           releaseName: r.releaseName,
@@ -150,9 +145,7 @@ const Takeover: React.FC = () => {
           sourceKind: r.sourceKind === 'CR' ? 'CR' : 'HELM',
         })),
       );
-      setRegisterResult(
-        unwrap<DATASOPHON.K8sTakeoverRegisterResult[]>(res) ?? [],
-      );
+      setRegisterResult(data);
       message.success(`已接管 ${chosen.length} 个服务`);
       setStep(2);
     } finally {
@@ -330,6 +323,22 @@ const Takeover: React.FC = () => {
 
           {scanResult && (
             <>
+              {(scanResult.failedCrds?.length ?? 0) > 0 && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message="部分 CR 类型未能扫描完整，本次结果可能不全"
+                  description={
+                    <>
+                      失败的 CRD：{scanResult.failedCrds?.join('、')}
+                      。这些类型的已接管实例本次<b>未做失联判定</b>（避免一次 API
+                      Server 抖动或 RBAC 变更就把它们误判为已消失）。
+                      请检查目标集群的 CRD 状态与访问权限后重新扫描。
+                    </>
+                  }
+                />
+              )}
               {(scanResult.missing?.length ?? 0) > 0 && (
                 <Alert
                   type="warning"

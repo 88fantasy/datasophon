@@ -81,11 +81,16 @@ export function selectionsToRegex(values: string[]): string {
  * 空值返回 undefined，让看板走各自原有的 job 过滤逻辑——物理集群不传即零影响。
  */
 export function metricsJobToRegex(job?: string | null): string | undefined {
-  const parts = (job ?? '')
+  const parts = parseMetricsJobs(job);
+  return parts.length > 0 ? selectionsToRegex(parts) : undefined;
+}
+
+/** 解析后端以英文逗号连接的接管实例 metricsJob。 */
+export function parseMetricsJobs(job?: string | null): string[] {
+  return (job ?? '')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
-  return parts.length > 0 ? selectionsToRegex(parts) : undefined;
 }
 
 /** Prometheus 保留 label 集合，确定 series 名时跳过这些 key。 */

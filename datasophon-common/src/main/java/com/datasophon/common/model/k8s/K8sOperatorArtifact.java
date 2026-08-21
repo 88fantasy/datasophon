@@ -5,7 +5,7 @@ import java.util.List;
 import lombok.Data;
 
 /**
- * {@link K8sArtifact#getKind()} 为 {@link K8sArtifact#KIND_OPERATOR} 时的配套描述：组件的 GVK
+ * {@link K8sArtifact#getKind()} 为 {@link K8sArtifact#KIND_OPERATOR} 时的配套描述：组件的 CRD 标识
  * （用于接管扫描按 CRD 只读枚举 CR 实例）+ 看板画像 + 角色探测规则（用于把该 CR 关联的 K8s Service
  * 按角色分类，进而分流看板查询的 job 过滤）。
  *
@@ -17,9 +17,6 @@ public class K8sOperatorArtifact {
 
     /** CRD 的 apiGroup，如 {@code disaggregated.cluster.doris.com}。 */
     private String group;
-
-    /** CRD 的 apiVersion，如 {@code v1}。 */
-    private String version;
 
     /** CR 的 K8s Kind，如 {@code DorisDisaggregatedCluster}（展示用，非扫描必需）。 */
     private String kind;

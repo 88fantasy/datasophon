@@ -1,5 +1,8 @@
 package com.datasophon.dao.vo.instance;
 
+import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -33,7 +36,7 @@ public class K8sServiceInstanceVO {
     private Integer state;
 
     @Schema(description = "来源：INSTALLED=平台安装, IMPORTED=接管登记")
-    private String source;
+    private InstanceSource source;
 
     @Schema(description = "接管实例对应的 helm release 名，平台安装的为空")
     private String releaseName;
@@ -42,7 +45,7 @@ public class K8sServiceInstanceVO {
     private String metricsJob;
 
     @Schema(description = "来源类型 HELM=Helm release CR=Operator 自定义资源，默认 HELM")
-    private String sourceKind;
+    private InstanceSourceKind sourceKind;
 
     @Schema(description = "看板画像 JSON（模式判定 + 角色→job 映射）原文，CR 来源专用，前端自行 JSON.parse")
     private String monitorProfile;

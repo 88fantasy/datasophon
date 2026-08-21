@@ -27,7 +27,7 @@ declare namespace DATASOPHON {
     /** 指标 job（Doris service_name），多个以英文逗号分隔 */
     metricsJob?: string;
     /** 来源类型 HELM=Helm release / CR=Operator 自定义资源，默认 HELM */
-    sourceKind?: string;
+    sourceKind?: 'HELM' | 'CR';
     /** 看板画像 JSON（模式判定 + 角色→job 映射）原文，CR 来源专用，前端自行 JSON.parse */
     monitorProfile?: string;
     /** 轻对账结果：对应的 Helm release 已不在目标集群中（仅接管实例会被赋值） */
@@ -119,7 +119,6 @@ declare namespace DATASOPHON {
     chart: string;
     chartName: string;
     chartVersion?: string;
-    appVersion?: string;
     /** 已匹配到框架服务定义时非空 */
     frameServiceId?: number;
     frameServiceName?: string;
@@ -127,9 +126,7 @@ declare namespace DATASOPHON {
     /** 该 release 是否已经登记过，重扫时用于默认不重复勾选 */
     registered?: boolean;
     /** 来源类型 HELM=Helm release / CR=operator 自定义资源 */
-    sourceKind?: string;
-    /** CR 的 K8s Kind，如 DorisDisaggregatedCluster；HELM 来源为 undefined */
-    kind?: string;
+    sourceKind?: 'HELM' | 'CR';
   }
 
   /** 已登记但集群里已找不到对应 release 的接管实例 */
@@ -146,6 +143,8 @@ declare namespace DATASOPHON {
     pending: ScannedRelease[];
     /** 重扫对账结果：登记还在、release 已不在 */
     missing?: MissingTakeoverInstance[];
+    /** 本次扫描失败的 CRD（plural.group）；非空代表 CR 结果不完整，已跳过 CR 类目的失联判定 */
+    failedCrds?: string[];
   }
 
   /** Doris 数据源候选地址 */

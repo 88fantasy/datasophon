@@ -109,15 +109,14 @@ public class ClusterK8sV2Controller extends ApiController {
     /**
      * 获取集群下全部服务实例（不分 namespace），供侧边栏按服务分类分组展示。
      *
-     * <p>侧边栏改为按 catalog 分组后不再逐 namespace 拉取，此处沿用
-     * {@code /namespace/list} 原有的 namespace 对账副作用，避免撤销分组后对账入口丢失。
+     * <p>namespace 对账仅由 {@code /namespace/list} 承担；该接口由侧边栏高频轮询，
+     * 不能在列表读取路径执行 kubectl 和全量库写入。
      *
      * @param clusterId 集群 ID
      */
     @GetMapping("/instance/list")
     @Operation(summary = "获取集群下全部服务实例列表")
     public ApiResponse<List<K8sServiceInstanceVO>> listAllInstances(@PathVariable Integer clusterId) {
-        k8sClusterNamespaceService.listAndUpdateNamespaceByClusterId(clusterId);
         List<K8sServiceInstanceVO> instances = k8sServiceInstanceService.queryInstanceList(clusterId);
         k8sTakeoverReconcileService.markMissing(clusterId, instances);
         return ApiResponse.ok(instances);

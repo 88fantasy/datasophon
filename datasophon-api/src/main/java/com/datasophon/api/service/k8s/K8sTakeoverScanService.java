@@ -10,11 +10,14 @@ import com.datasophon.common.model.k8s.K8sArtifact;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -69,7 +72,7 @@ public class K8sTakeoverScanService {
 
         // 已登记的接管实例，用来判定「已接管」与「失联」两个方向
         List<K8sServiceInstanceVO> imported = k8sServiceInstanceService.queryInstanceList(clusterId).stream()
-                .filter(instance -> InstanceSource.IMPORTED.name().equals(instance.getSource()))
+                .filter(instance -> InstanceSource.IMPORTED.equals(instance.getSource()))
                 .toList();
         Set<String> registeredKeys = imported.stream()
                 .map(instance -> releaseKey(instance.getSourceKind(),
@@ -77,15 +80,16 @@ public class K8sTakeoverScanService {
                 .collect(Collectors.toSet());
         Set<String> deployedKeys = new HashSet<>();
         releases.forEach(release -> deployedKeys.add(
-                releaseKey("HELM", release.getNamespace(), release.getName())));
-        crs.forEach(cr -> deployedKeys.add(releaseKey("CR", cr.namespace(), cr.name())));
+                releaseKey(InstanceSourceKind.HELM, release.getNamespace(), release.getName())));
+        crs.forEach(cr -> deployedKeys.add(releaseKey(InstanceSourceKind.CR, cr.namespace(), cr.name())));
 
         List<K8sTakeoverScanResult.ScannedRelease> matched = new ArrayList<>();
         List<K8sTakeoverScanResult.ScannedRelease> pending = new ArrayList<>();
+        ChartIndex chartIndex = ChartIndex.of(definitions);
         for (HelmReleaseListItemVO release : releases) {
-            FrameK8sServiceEntity definition = match(release, definitions);
+            FrameK8sServiceEntity definition = chartIndex.match(release);
             boolean registered = registeredKeys.contains(
-                    releaseKey("HELM", release.getNamespace(), release.getName()));
+                    releaseKey(InstanceSourceKind.HELM, release.getNamespace(), release.getName()));
             if (definition == null) {
                 pending.add(toScanned(release, null, registered));
             } else {
@@ -93,7 +97,7 @@ public class K8sTakeoverScanService {
             }
         }
         for (K8sCrScanner.ScannedCr cr : crs) {
-            String key = releaseKey("CR", cr.namespace(), cr.name());
+            String key = releaseKey(InstanceSourceKind.CR, cr.namespace(), cr.name());
             boolean registered = registeredKeys.contains(key);
             matched.add(toScanned(cr, registered));
         }
@@ -103,7 +107,7 @@ public class K8sTakeoverScanService {
         // deployedKeys 来源（helm list 失败直接抛异常向上传播，不会静默产出空结果），不受影响。
         boolean skipCrMissing = !crScanResult.complete();
         List<K8sTakeoverScanResult.MissingInstance> missing = imported.stream()
-                .filter(instance -> !(skipCrMissing && "CR".equals(instance.getSourceKind())))
+                .filter(instance -> !(skipCrMissing && InstanceSourceKind.CR.equals(instance.getSourceKind())))
                 .filter(instance -> !deployedKeys.contains(
                         releaseKey(instance.getSourceKind(),
                                 instance.getNamespace(), instance.getReleaseName())))
@@ -118,35 +122,56 @@ public class K8sTakeoverScanService {
     }
 
     /**
-     * 匹配规则，按优先级：
-     * <ol>
-     *   <li>框架服务名 == chart 名</li>
-     *   <li>{@code artifact.helm}（Nexus 上的 chart 包名，如 {@code apisix-2.12.5.tgz}）去掉版本与后缀后 == chart 名</li>
-     * </ol>
+     * chart 名 → 框架服务定义的预建索引。
      *
-     * <p>不用 release 名匹配：实测 release 名与 chart 名可以不同，
-     * 如 release {@code fdb-cluster} 对应 chart {@code fdb-operator}。
+     * <p>按 release 逐个线性扫 definitions 时，每次比对都要重新 {@code parseObject} 一遍
+     * 同一份 artifact JSON（release 数 × 定义数 次解析）。这里改为进循环前一次性建索引，
+     * 每份 artifact 只解析一次，匹配退化为两次 O(1) 查表。
+     *
+     * <p>两张表分开存而不是合并成一张，是为了保持 {@link #match} 原有的优先级语义：
+     * 服务名匹配整体优先于 artifact chart 名匹配。同名冲突时用 {@code putIfAbsent}
+     * 保留先出现的定义，与原先「返回第一个命中」一致。
      */
-    private FrameK8sServiceEntity match(HelmReleaseListItemVO release, List<FrameK8sServiceEntity> definitions) {
-        String chartName = release.chartName();
-        if (chartName == null) {
-            return null;
-        }
-        for (FrameK8sServiceEntity definition : definitions) {
-            if (chartName.equals(definition.getServiceName())) {
-                return definition;
+    private record ChartIndex(Map<String, FrameK8sServiceEntity> byServiceName,
+                             Map<String, FrameK8sServiceEntity> byArtifactChartName) {
+
+        static ChartIndex of(List<FrameK8sServiceEntity> definitions) {
+            Map<String, FrameK8sServiceEntity> byServiceName = new HashMap<>();
+            Map<String, FrameK8sServiceEntity> byArtifactChartName = new HashMap<>();
+            for (FrameK8sServiceEntity definition : definitions) {
+                if (definition.getServiceName() != null) {
+                    byServiceName.putIfAbsent(definition.getServiceName(), definition);
+                }
+                String fromArtifact = chartNameOfArtifact(definition);
+                if (fromArtifact != null) {
+                    byArtifactChartName.putIfAbsent(fromArtifact, definition);
+                }
             }
+            return new ChartIndex(byServiceName, byArtifactChartName);
         }
-        for (FrameK8sServiceEntity definition : definitions) {
-            if (chartName.equals(chartNameOfArtifact(definition))) {
-                return definition;
+
+        /**
+         * 匹配规则，按优先级：
+         * <ol>
+         *   <li>框架服务名 == chart 名</li>
+         *   <li>{@code artifact.helm}（Nexus 上的 chart 包名，如 {@code apisix-2.12.5.tgz}）去掉版本与后缀后 == chart 名</li>
+         * </ol>
+         *
+         * <p>不用 release 名匹配：实测 release 名与 chart 名可以不同，
+         * 如 release {@code fdb-cluster} 对应 chart {@code fdb-operator}。
+         */
+        FrameK8sServiceEntity match(HelmReleaseListItemVO release) {
+            String chartName = release.chartName();
+            if (chartName == null) {
+                return null;
             }
+            FrameK8sServiceEntity byName = byServiceName.get(chartName);
+            return byName != null ? byName : byArtifactChartName.get(chartName);
         }
-        return null;
     }
 
     /** 从 {@code artifact.helm} 的包名里截出 chart 名，如 {@code apisix-2.12.5.tgz} → {@code apisix}。 */
-    private String chartNameOfArtifact(FrameK8sServiceEntity definition) {
+    private static String chartNameOfArtifact(FrameK8sServiceEntity definition) {
         if (definition.getArtifact() == null || definition.getArtifact().isBlank()) {
             return null;
         }
@@ -163,9 +188,11 @@ public class K8sTakeoverScanService {
         return separator < 0 ? helm : helm.substring(0, separator);
     }
 
-    private String releaseKey(String sourceKind, String namespace, String releaseName) {
-        String normalizedKind = "CR".equals(sourceKind) ? "CR" : "HELM";
-        return normalizedKind + ":" + namespace + "/" + releaseName;
+    private String releaseKey(InstanceSourceKind sourceKind, String namespace, String releaseName) {
+        if (sourceKind == null) {
+            throw new BusinessHintException("接管实例缺少来源类型");
+        }
+        return sourceKind.name() + ":" + namespace + "/" + releaseName;
     }
 
     private K8sTakeoverScanResult.ScannedRelease toScanned(HelmReleaseListItemVO release,
@@ -177,13 +204,11 @@ public class K8sTakeoverScanService {
                 release.getChart(),
                 release.chartName(),
                 release.chartVersion(),
-                release.getAppVersion(),
                 definition == null ? null : definition.getId(),
                 definition == null ? null : definition.getServiceName(),
                 definition == null ? null : definition.getType(),
                 registered,
-                "HELM",
-                null);
+                InstanceSourceKind.HELM);
     }
 
     /** CR 结果全部来自按已知 definition 主动扫描（见 {@link K8sCrScanner}），不存在"未匹配"的情况。 */
@@ -195,12 +220,10 @@ public class K8sTakeoverScanService {
                 null,
                 null,
                 null,
-                null,
                 definition.getId(),
                 definition.getServiceName(),
                 definition.getType(),
                 registered,
-                "CR",
-                cr.kind());
+                InstanceSourceKind.CR);
     }
 }

@@ -45,8 +45,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -59,19 +57,20 @@ import org.springframework.util.ResourceUtils;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class DatabaseMigration {
-    
+
     public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    
+
     private static final String MIGRATION_HOME = "conf/db/migration";
-    
+
     private static final String MIGRATION_TABLE_NAME = "migration_history";
-    
+
     public static final String SPLIT = "__";
-    
+
     private static final String TABLE_CREATE_SQL = "CREATE TABLE `migration_history`  (" +
             "  `version` varchar(128) NOT NULL," +
             "  `execute_user` varchar(128) NOT NULL," +
@@ -79,22 +78,22 @@ public class DatabaseMigration {
             "  `success` tinyint(1) NOT NULL," +
             "  PRIMARY KEY (`version`)" +
             ");";
-    
+
     @Value("${spring.datasource.url}")
     private String url;
-    
+
     @Value("${spring.datasource.username}")
     private String username;
-    
+
     @Value("${spring.datasource.password}")
     private String password;
-    
+
     private final JdbcTemplate jdbcTemplate;
-    
+
     public DatabaseMigration(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
-    
+
     public void migration() {
         prepareMigrationTable();
         Set<Migration> migrations = getMigrations();
@@ -106,7 +105,7 @@ public class DatabaseMigration {
             } else {
                 log.info("No migration required , current database version is " + allMigrations.last().getVersion());
             }
-            
+
             return;
         }
         RuntimeException exception = doMigrations((TreeSet<Migration>) migrations);
@@ -115,7 +114,7 @@ public class DatabaseMigration {
             throw exception;
         }
     }
-    
+
     private Set<Migration> getMigrations() {
         TreeSet<Migration> migrations = getAllMigrations();
         if (migrations.isEmpty()) {
@@ -135,7 +134,7 @@ public class DatabaseMigration {
         }
         return migrationsToDo;
     }
-    
+
     private RuntimeException doMigrations(TreeSet<Migration> migrations) {
         for (Migration migration : migrations) {
             log.info("start migration, version: " + migration.getVersion());
@@ -152,9 +151,9 @@ public class DatabaseMigration {
         log.info("The migration is complete , The latest database version is {}", migrations.last().getVersion());
         return null;
     }
-    
+
     private boolean doMigration(Migration migration) {
-        
+
         Resource ddlFile = migration.getUpgradeDDLFile(), dmlFile = migration.getUpgradeDMLFile();
         if (runScript(ddlFile, true) && runScript(dmlFile, true)) {
             return true;
@@ -169,14 +168,14 @@ public class DatabaseMigration {
         }
         return false;
     }
-    
+
     private void prepareMigrationTable() {
         List<String> tables = jdbcTemplate.queryForList("SHOW TABLES", String.class);
         if (!tables.contains(MIGRATION_TABLE_NAME)) {
             jdbcTemplate.execute(TABLE_CREATE_SQL);
         }
     }
-    
+
     private synchronized TreeSet<Migration> getAllMigrations() {
         TreeSet<Migration> allMigrations = new TreeSet<>();
         // load migration files
@@ -199,7 +198,7 @@ public class DatabaseMigration {
                 .filter(Migration::isMigrationFile)
                 .collect(Collectors.groupingBy(
                         r -> Objects.requireNonNull(r.getFilename()).substring(1, r.getFilename().indexOf(SPLIT))));
-        
+
         for (Map.Entry<String, List<Resource>> entries : resourceMap.entrySet()) {
             Resource ddl = null, dml = null, rollback = null;
             for (Resource resource : entries.getValue()) {
@@ -224,7 +223,7 @@ public class DatabaseMigration {
         }
         return allMigrations;
     }
-    
+
     private void upsertMigration(Migration migration) {
         SQL query = new SQL();
         query.SELECT("*").FROM(MIGRATION_TABLE_NAME)
@@ -247,9 +246,9 @@ public class DatabaseMigration {
         }
         jdbcTemplate.execute(sql.toString());
     }
-    
+
     private boolean runScript(Resource resource, boolean stopOnError) {
-        if (!resource.exists()) {
+        if (resource == null || !resource.exists()) {
             return true;
         }
         try (Connection connection = DriverManager.getConnection(url, username, password)) {
@@ -269,7 +268,7 @@ public class DatabaseMigration {
             return false;
         }
     }
-    
+
     private void printCurrentVersion() {
         String currentVersion = null, lastVersion = null;
         TreeSet<Migration> migrations = queryMigrationHistory();
@@ -282,7 +281,7 @@ public class DatabaseMigration {
                 currentVersion = last.getVersion();
             }
         }
-        
+
         TreeSet<Migration> allMigrations = getAllMigrations();
         if (CollUtil.isEmpty(allMigrations)) {
             return;
@@ -290,22 +289,22 @@ public class DatabaseMigration {
         lastVersion = allMigrations.last().getVersion();
         log.info("Last Script Version {}, Current Database Version {}", lastVersion, currentVersion);
     }
-    
+
     private TreeSet<Migration> queryMigrationHistory() {
         return new TreeSet<>(
                 jdbcTemplate.query("select * from migration_history", new BeanPropertyRowMapper<>(Migration.class)));
     }
-    
+
     static class LogWriter extends PrintWriter {
-        
+
         public LogWriter(OutputStream out) {
             super(out);
         }
-        
+
         @Override
         public void write(String s) {
             log.info(s);
         }
     }
-    
+
 }

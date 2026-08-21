@@ -20,6 +20,4 @@ public interface K8sServiceInstanceMapper extends BaseMapper<K8sServiceInstance>
 
     List<K8sServiceInstanceVO> selectByIds(@Param("instanceIds") List<Integer> instanceIds);
 
-    K8sServiceInstanceVO selectByClusterAndId(@Param("clusterId") Integer clusterId,
-                                              @Param("instanceId") Integer instanceId);
 }

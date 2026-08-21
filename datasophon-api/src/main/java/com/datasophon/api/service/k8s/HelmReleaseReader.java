@@ -11,8 +11,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import cn.hutool.core.bean.BeanUtil;
-
 /**
  * 只读读取目标集群的 Helm release 信息。
  *
@@ -24,6 +22,12 @@ public class HelmReleaseReader {
 
     /** helm list 的状态过滤值，接管只关心已成功部署的 release。 */
     private static final String STATUS_DEPLOYED = "deployed";
+
+    private final K8sClientOptionsFactory clientOptionsFactory;
+
+    public HelmReleaseReader(K8sClientOptionsFactory clientOptionsFactory) {
+        this.clientOptionsFactory = clientOptionsFactory;
+    }
 
     /**
      * 列出集群内全部 namespace 下处于 deployed 状态的 release。
@@ -57,8 +61,6 @@ public class HelmReleaseReader {
     }
 
     private ClientOptions newOptions(K8sClusterConfig config) {
-        ClientOptions options = BeanUtil.toBean(config, ClientOptions.class);
-        options.setServerName(config.getServerHost());
-        return options;
+        return clientOptionsFactory.from(config);
     }
 }

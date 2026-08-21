@@ -5,6 +5,7 @@ import com.datasophon.api.observability.OtelDorisReaderFactory;
 import com.datasophon.api.security.K8sTakeoverAccessGuard;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.vo.k8s.DorisDatasourceCandidate;
+import com.datasophon.common.k8s.util.K8sNodeUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
@@ -15,6 +16,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -32,9 +34,6 @@ public class DorisDatasourceDiscoveryService {
     private static final int MYSQL_PROTOCOL_PORT = 9030;
 
     private static final int CONNECT_TIMEOUT_SECONDS = 10;
-
-    /** 与 OtelDorisReaderFactory 的 DEFAULT_READER_USER 保持一致。 */
-    static final String DEFAULT_READER_USER = "otel_reader";
 
     static final String DEFAULT_DATABASE = "otel";
 
@@ -92,7 +91,7 @@ public class DorisDatasourceDiscoveryService {
     public String testConnection(String host, Integer port, String password) {
         String url = jdbcUrl(host, port == null ? MYSQL_PROTOCOL_PORT : port);
         Properties properties = new Properties();
-        properties.setProperty("user", DEFAULT_READER_USER);
+        properties.setProperty("user", OtelDorisReaderFactory.DEFAULT_READER_USER);
         properties.setProperty("password", password == null ? "" : password);
         try (
                 Connection connection = DriverManager.getConnection(url, properties);
@@ -126,7 +125,6 @@ public class DorisDatasourceDiscoveryService {
 
         config.setDorisHost(host);
         config.setDorisPort(actualPort);
-        config.setDorisDatabase(DEFAULT_DATABASE);
         persistenceService.save(config, password);
         readerFactory.invalidate(clusterId);
     }
@@ -195,19 +193,12 @@ public class DorisDatasourceDiscoveryService {
     }
 
     private String firstNodeIp(List<K8sNode> nodes) {
-        if (nodes == null) {
-            return null;
-        }
-        for (K8sNode node : nodes) {
-            if (node.getStatus() == null || node.getStatus().getAddresses() == null) {
-                continue;
-            }
-            for (K8sNode.NodeAddress address : node.getStatus().getAddresses()) {
-                if ("InternalIP".equals(address.getType())) {
-                    return address.getAddress();
-                }
-            }
-        }
-        return null;
+        return nodes == null ? null
+                : nodes.stream()
+                        .map(K8sNode::getStatus)
+                        .map(status -> K8sNodeUtils.findAddress(status, "InternalIP"))
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse(null);
     }
 }

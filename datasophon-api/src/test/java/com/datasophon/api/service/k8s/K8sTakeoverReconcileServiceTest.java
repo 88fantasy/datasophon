@@ -12,6 +12,7 @@ import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.List;
@@ -46,7 +47,7 @@ class K8sTakeoverReconcileServiceTest {
     void skipsWhenNoImportedInstance() {
         Fixture fixture = new Fixture();
         K8sServiceInstanceVO installed = imported(1, "prod", "zookeeper");
-        installed.setSource(InstanceSource.INSTALLED.name());
+        installed.setSource(InstanceSource.INSTALLED);
 
         fixture.service.markMissing(7, List.of(installed));
 
@@ -139,7 +140,7 @@ class K8sTakeoverReconcileServiceTest {
                 .thenReturn(List.of("apisix/apisix"));
 
         K8sServiceInstanceVO crInstance = imported(1, "doris", "doris-disaggregated-cluster");
-        crInstance.setSourceKind("CR");
+        crInstance.setSourceKind(InstanceSourceKind.CR);
         fixture.service.markMissing(7, List.of(crInstance));
 
         assertThat(crInstance.getMissing()).isNull();
@@ -153,7 +154,7 @@ class K8sTakeoverReconcileServiceTest {
         when(fixture.k8sService.listHelmReleaseKeys(any())).thenReturn(List.of("prod/zookeeper"));
 
         K8sServiceInstanceVO crInstance = imported(1, "doris", "doris-disaggregated-cluster");
-        crInstance.setSourceKind("CR");
+        crInstance.setSourceKind(InstanceSourceKind.CR);
         K8sServiceInstanceVO helmInstance = imported(2, "spark", "kyuubi");
 
         fixture.service.markMissing(7, List.of(crInstance, helmInstance));
@@ -167,7 +168,7 @@ class K8sTakeoverReconcileServiceTest {
         instance.setId(id);
         instance.setNamespace(namespace);
         instance.setReleaseName(releaseName);
-        instance.setSource(InstanceSource.IMPORTED.name());
+        instance.setSource(InstanceSource.IMPORTED);
         return instance;
     }
 

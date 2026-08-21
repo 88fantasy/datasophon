@@ -24,6 +24,7 @@ package com.datasophon.api.dto.v2;
 
 import com.datasophon.api.service.host.dto.QueryHostListPageDTO;
 import com.datasophon.api.service.k8s.K8sDashboardMetricsService;
+import com.datasophon.common.k8s.util.K8sNodeUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.dao.entity.ClusterHostDO;
 
@@ -32,6 +33,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import lombok.Data;
@@ -137,7 +139,7 @@ public class HostResponse {
         r.setId(stableNodeId(name));
         r.setHostname(name);
         r.setClusterId(clusterId);
-        r.setIp(findAddress(status, "InternalIP"));
+        r.setIp(K8sNodeUtils.findAddress(status, "InternalIP"));
         r.setHostState(isReady(status) ? 1 : 2);
         r.setCreateTime(parseDate(metadata != null ? metadata.getCreationTimestamp() : null));
         r.setCheckTime(findReadyHeartbeatTime(status));
@@ -177,15 +179,9 @@ public class HostResponse {
         if (byHostname == null && byIp == null) {
             return;
         }
-        Double memoryBytes = byHostname != null && byHostname.memoryBytes() != null
-                ? byHostname.memoryBytes()
-                : (byIp != null ? byIp.memoryBytes() : null);
-        Double diskBytes = byHostname != null && byHostname.diskBytes() != null
-                ? byHostname.diskBytes()
-                : (byIp != null ? byIp.diskBytes() : null);
-        Double load1m = byHostname != null && byHostname.load1m() != null
-                ? byHostname.load1m()
-                : (byIp != null ? byIp.load1m() : null);
+        Double memoryBytes = pick(byHostname, byIp, K8sDashboardMetricsService.HostUsage::memoryBytes);
+        Double diskBytes = pick(byHostname, byIp, K8sDashboardMetricsService.HostUsage::diskBytes);
+        Double load1m = pick(byHostname, byIp, K8sDashboardMetricsService.HostUsage::load1m);
         if (memoryBytes != null) {
             usedMem = bytesToGb(memoryBytes);
         }
@@ -209,15 +205,11 @@ public class HostResponse {
         return hash == Integer.MIN_VALUE ? 0 : Math.abs(hash);
     }
 
-    private static String findAddress(K8sNode.NodeStatus status, String type) {
-        if (status == null || status.getAddresses() == null) {
-            return null;
-        }
-        return status.getAddresses().stream()
-                .filter(address -> type.equals(address.getType()))
-                .map(K8sNode.NodeAddress::getAddress)
-                .findFirst()
-                .orElse(null);
+    private static Double pick(K8sDashboardMetricsService.HostUsage byHostname,
+                               K8sDashboardMetricsService.HostUsage byIp,
+                               Function<K8sDashboardMetricsService.HostUsage, Double> extractor) {
+        Double hostnameValue = byHostname == null ? null : extractor.apply(byHostname);
+        return hostnameValue != null || byIp == null ? hostnameValue : extractor.apply(byIp);
     }
 
     private static boolean isReady(K8sNode.NodeStatus status) {

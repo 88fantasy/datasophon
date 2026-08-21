@@ -15,7 +15,6 @@ import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
-import com.datasophon.dao.enums.k8s.InstanceSource;
 import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -93,6 +93,10 @@ public class K8sTakeoverRegisterService {
         Map<DeploymentUnitKey, K8sTakeoverScanResult.ScannedRelease> scanned = scannedUnits(clusterId);
         // 一次查出集群内全部活跃 job，避免逐个服务查 Doris
         Set<String> activeJobs = jobProbeService.activeJobs(clusterId);
+        // 一次读取全集 Service，避免每个 binding 都重建 kubectl 客户端。
+        List<com.datasophon.common.k8s.vo.k8s.K8sService> services = jobProbeService.allServices(config);
+        // 一次批量查出用到的框架服务定义，避免 CR binding 逐个 getById 打 N 条单行 SELECT。
+        Map<Integer, FrameK8sServiceEntity> definitions = definitionsOf(bindings);
 
         List<PreparedBinding> prepared = new ArrayList<>();
         for (Binding binding : bindings) {
@@ -111,12 +115,13 @@ public class K8sTakeoverRegisterService {
                         binding.namespace(), binding.releaseName()));
             }
             boolean isCr = InstanceSourceKind.CR.equals(sourceKind);
-            K8sOperatorArtifact operatorArtifact = isCr ? operatorArtifactOf(binding.frameServiceId()) : null;
+            K8sOperatorArtifact operatorArtifact =
+                    isCr ? operatorArtifactOf(definitions.get(binding.frameServiceId())) : null;
             if (isCr && operatorArtifact == null) {
                 throw new BusinessHintException("CR 来源只能绑定 kind=operator 的框架服务定义");
             }
             K8sMetricsJobProbeService.ProbeResult probeResult = jobProbeService.probe(
-                    config, binding.releaseName(), binding.namespace(), activeJobs, operatorArtifact);
+                    binding.releaseName(), binding.namespace(), activeJobs, operatorArtifact, services);
             prepared.add(new PreparedBinding(binding, sourceKind, operatorArtifact, probeResult));
         }
 
@@ -138,9 +143,6 @@ public class K8sTakeoverRegisterService {
                         clusterId, namespace.getId(), binding.frameServiceId(), p.sourceKind(),
                         binding.releaseName());
 
-                instance.setSource(InstanceSource.IMPORTED);
-                instance.setSourceKind(p.sourceKind());
-                instance.setReleaseName(binding.releaseName());
                 instance.setMetricsJob(probeResult.metricsJob());
                 instance.setMonitorProfile(null);
                 if (operatorArtifact != null && !probeResult.roleJobs().isEmpty()) {
@@ -166,7 +168,7 @@ public class K8sTakeoverRegisterService {
         Map<DeploymentUnitKey, K8sTakeoverScanResult.ScannedRelease> units = new HashMap<>();
         for (K8sTakeoverScanResult.ScannedRelease release : scanService.scan(clusterId).matched()) {
             units.put(new DeploymentUnitKey(
-                    sourceKindOf(release.sourceKind()), release.namespace(), release.releaseName()), release);
+                    release.sourceKind(), release.namespace(), release.releaseName()), release);
         }
         return units;
     }
@@ -175,23 +177,34 @@ public class K8sTakeoverRegisterService {
         if (sourceKind == null || sourceKind.isBlank() || InstanceSourceKind.HELM.name().equals(sourceKind)) {
             return InstanceSourceKind.HELM;
         }
-        if (InstanceSourceKind.CR.name().equals(sourceKind)) {
-            return InstanceSourceKind.CR;
+        try {
+            return InstanceSourceKind.valueOf(sourceKind);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessHintException("不支持的 sourceKind：" + sourceKind);
         }
-        throw new BusinessHintException("sourceKind 仅支持 HELM 或 CR");
     }
 
-    /** 按框架服务定义 ID 解析 {@code artifact.operator}；非 operator 类型或未找到定义时返回 null。 */
-    private K8sOperatorArtifact operatorArtifactOf(Integer frameServiceId) {
-        FrameK8sServiceEntity definition = frameK8sServiceService.getById(frameServiceId);
-        if (definition == null || definition.getArtifact() == null || definition.getArtifact().isBlank()) {
-            return null;
+    /**
+     * 一次性载入本批 binding 用到的框架服务定义。
+     *
+     * <p>逐个 {@code getById} 会按 binding 数打出 N 条单行 SELECT；而 {@link #scannedUnits} 在同一个
+     * 请求里刚通过 {@code listNewest} 查过全量定义，这里至少收敛成一次 IN 查询。
+     */
+    private Map<Integer, FrameK8sServiceEntity> definitionsOf(List<Binding> bindings) {
+        Set<Integer> ids = bindings.stream()
+                .map(Binding::frameServiceId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Map.of();
         }
-        K8sArtifact artifact = JSONObject.parseObject(definition.getArtifact(), K8sArtifact.class);
-        if (artifact == null || !K8sArtifact.KIND_OPERATOR.equals(artifact.effectiveKind())) {
-            return null;
-        }
-        return artifact.getOperator();
+        return frameK8sServiceService.listByIds(ids).stream()
+                .collect(Collectors.toMap(FrameK8sServiceEntity::getId, definition -> definition));
+    }
+
+    /** 解析 {@code artifact.operator}；非 operator 类型或定义缺失时返回 null。 */
+    private K8sOperatorArtifact operatorArtifactOf(FrameK8sServiceEntity definition) {
+        return definition == null ? null : K8sArtifact.operatorOf(definition.getArtifact());
     }
 
     /**

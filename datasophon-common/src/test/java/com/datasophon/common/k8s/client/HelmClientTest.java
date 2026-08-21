@@ -14,6 +14,8 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -166,7 +168,7 @@ class HelmClientTest {
 
         @Test
         @DisplayName("使用 Token 认证配置构造")
-        void testConstructor_WithToken() {
+        void testConstructor_WithToken() throws Exception {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token-123");
@@ -174,14 +176,16 @@ class HelmClientTest {
 
                 HelmClient client = new HelmClient(options);
 
-                Assertions.assertEquals("test-token-123", client.getToken());
-                Assertions.assertEquals("https://k8s.example.com", client.getServerName());
+                String kubeConfig = Files.readString(Path.of(client.getKubeConfig()));
+                Assertions.assertTrue(kubeConfig.contains("test-token-123"));
+                Assertions.assertTrue(kubeConfig.contains("https://k8s.example.com"));
+                client.close();
             }
         }
 
         @Test
         @DisplayName("使用用户名密码认证配置构造")
-        void testConstructor_WithUsernamePassword() {
+        void testConstructor_WithUsernamePassword() throws Exception {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ClientOptions options = new ClientOptions();
                 options.setUsername("admin");
@@ -190,8 +194,27 @@ class HelmClientTest {
 
                 HelmClient client = new HelmClient(options);
 
-                Assertions.assertEquals("admin", client.getUsername());
-                Assertions.assertEquals("password123", client.getPassword());
+                String kubeConfig = Files.readString(Path.of(client.getKubeConfig()));
+                Assertions.assertTrue(kubeConfig.contains("username: admin"));
+                Assertions.assertTrue(kubeConfig.contains("password: password123"));
+                client.close();
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("接管集群只读保护")
+    class ReadOnlyTests {
+
+        @Test
+        void upgradeAndUninstallAreBlockedBeforeExecutingHelm() {
+            try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                ClientOptions options = new ClientOptions();
+                options.setReadOnly(true);
+                try (HelmClient client = new HelmClient(options)) {
+                    Assertions.assertThrows(HelmException.class, () -> client.upgrade(new UpgradeParams()));
+                    Assertions.assertThrows(HelmException.class, () -> client.uninstall("default", "release"));
+                }
             }
         }
     }

@@ -22,45 +22,30 @@
 
 package com.datasophon.api.security;
 
-import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.BusinessHintException;
-import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterRoleUserService;
-import com.datasophon.api.utils.SecurityUtils;
-import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ManageMode;
 
 import org.springframework.stereotype.Component;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 /** 接管 API 的集群模式和用户权限门禁。 */
 @Component
 public class K8sTakeoverAccessGuard {
 
     private final ClusterInfoService clusterInfoService;
-    private final ClusterRoleUserService clusterRoleUserService;
-    private final HttpServletRequest request;
+    private final ClusterAccessGuard clusterAccessGuard;
 
     public K8sTakeoverAccessGuard(ClusterInfoService clusterInfoService,
-                                  ClusterRoleUserService clusterRoleUserService,
-                                  HttpServletRequest request) {
+                                  ClusterAccessGuard clusterAccessGuard) {
         this.clusterInfoService = clusterInfoService;
-        this.clusterRoleUserService = clusterRoleUserService;
-        this.request = request;
+        this.clusterAccessGuard = clusterAccessGuard;
     }
 
     /** Controller 入口使用：同时校验当前用户和接管集群身份。 */
     public void requireAccess(Integer clusterId) {
-        UserInfoEntity user = (UserInfoEntity) request.getAttribute(Constants.SESSION_USER);
-        if (user == null || (!SecurityUtils.isAdmin(user)
-                && !clusterRoleUserService.isClusterManager(user.getId(), String.valueOf(clusterId)))) {
-            throw new ServiceException(Status.USER_NO_OPERATION_PERM);
-        }
+        clusterAccessGuard.requireAccess(clusterId);
         requireImportedCluster(clusterId);
     }
 

@@ -1,5 +1,6 @@
 package com.datasophon.api.service.k8s;
 
+import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.common.k8s.vo.k8s.K8sResource;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.common.model.k8s.K8sArtifact;
@@ -15,8 +16,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import com.alibaba.fastjson2.JSONObject;
 
 /**
  * 只读枚举「operator CR」类型框架服务的 CR 实例，供接管扫描把它们当 pseudo-release 登记
@@ -63,27 +62,35 @@ public class K8sCrScanner {
      * 不阻断其他 CRD 的扫描，但会计入返回结果的 {@code failedCrds}，供调用方判断本次结果是否完整。
      */
     public CrScanResult scan(K8sClusterConfig config, List<FrameK8sServiceEntity> definitions) {
-        Map<String, FrameK8sServiceEntity> crdToDefinition = new LinkedHashMap<>();
-        Map<String, K8sOperatorArtifact> crdToOperator = new LinkedHashMap<>();
+        Map<String, CrdTarget> targets = new LinkedHashMap<>();
         for (FrameK8sServiceEntity definition : definitions) {
-            K8sOperatorArtifact operator = operatorOf(definition);
+            K8sOperatorArtifact operator = K8sArtifact.operatorOf(definition.getArtifact());
             if (operator == null || isBlank(operator.getGroup()) || isBlank(operator.getPlural())) {
                 continue;
             }
             String key = crdKey(operator);
-            crdToDefinition.put(key, definition);
-            crdToOperator.put(key, operator);
+            targets.put(key, new CrdTarget(definition, operator));
         }
 
+        if (targets.isEmpty()) {
+            return new CrScanResult(List.of(), List.of());
+        }
+        try {
+            return k8sService.batchExec(config, client -> scanTargets(client, targets), "批量扫描 operator CRD");
+        } catch (Exception e) {
+            log.warn("初始化 CR 扫描客户端失败：{}", e.getMessage());
+            return new CrScanResult(List.of(), new ArrayList<>(targets.keySet()));
+        }
+    }
+
+    private CrScanResult scanTargets(KubectlClient client, Map<String, CrdTarget> targets) {
         List<ScannedCr> results = new ArrayList<>();
         List<String> failedCrds = new ArrayList<>();
-        for (Map.Entry<String, K8sOperatorArtifact> entry : crdToOperator.entrySet()) {
-            K8sOperatorArtifact operator = entry.getValue();
-            FrameK8sServiceEntity definition = crdToDefinition.get(entry.getKey());
+        for (Map.Entry<String, CrdTarget> entry : targets.entrySet()) {
+            CrdTarget target = entry.getValue();
             try {
-                K8sResourceList<K8sResource> crs = k8sService.batchExec(config,
-                        client -> client.getCustomResourcesAllNamespaces(operator.getPlural(), operator.getGroup()),
-                        "扫描 CRD " + entry.getKey());
+                K8sResourceList<K8sResource> crs = client.getCustomResourcesAllNamespaces(
+                        target.operator().getPlural(), target.operator().getGroup());
                 if (crs == null || crs.getItems() == null) {
                     continue;
                 }
@@ -91,8 +98,8 @@ public class K8sCrScanner {
                     if (cr.getMetadata() == null || cr.getMetadata().getName() == null) {
                         continue;
                     }
-                    results.add(new ScannedCr(definition, cr.getMetadata().getName(),
-                            cr.getMetadata().getNamespace(), operator.getKind()));
+                    results.add(new ScannedCr(target.definition(), cr.getMetadata().getName(),
+                            cr.getMetadata().getNamespace(), target.operator().getKind()));
                 }
             } catch (Exception e) {
                 log.warn("扫描 CRD {} 失败：{}", entry.getKey(), e.getMessage());
@@ -102,15 +109,7 @@ public class K8sCrScanner {
         return new CrScanResult(results, failedCrds);
     }
 
-    private K8sOperatorArtifact operatorOf(FrameK8sServiceEntity definition) {
-        if (definition.getArtifact() == null || definition.getArtifact().isBlank()) {
-            return null;
-        }
-        K8sArtifact artifact = JSONObject.parseObject(definition.getArtifact(), K8sArtifact.class);
-        if (artifact == null || !K8sArtifact.KIND_OPERATOR.equals(artifact.effectiveKind())) {
-            return null;
-        }
-        return artifact.getOperator();
+    private record CrdTarget(FrameK8sServiceEntity definition, K8sOperatorArtifact operator) {
     }
 
     private static String crdKey(K8sOperatorArtifact operator) {

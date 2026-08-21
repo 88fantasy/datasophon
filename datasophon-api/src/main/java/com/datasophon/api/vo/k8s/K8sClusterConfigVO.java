@@ -41,7 +41,6 @@ public class K8sClusterConfigVO {
     private String username;
     private String dorisHost;
     private Integer dorisPort;
-    private String dorisDatabase;
     private boolean credentialConfigured;
 
     public static K8sClusterConfigVO from(K8sClusterConfig config) {
@@ -57,7 +56,6 @@ public class K8sClusterConfigVO {
         vo.setUsername(config.getUsername());
         vo.setDorisHost(config.getDorisHost());
         vo.setDorisPort(config.getDorisPort());
-        vo.setDorisDatabase(config.getDorisDatabase());
         vo.setCredentialConfigured(hasCredential(config));
         return vo;
     }

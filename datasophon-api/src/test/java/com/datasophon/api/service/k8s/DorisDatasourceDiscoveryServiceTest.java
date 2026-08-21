@@ -136,7 +136,6 @@ class DorisDatasourceDiscoveryServiceTest {
 
         assertThat(config.getDorisHost()).isEqualTo("doris.example");
         assertThat(config.getDorisPort()).isEqualTo(9030);
-        assertThat(config.getDorisDatabase()).isEqualTo("otel");
         verify(persistenceService).save(config, "reader-secret");
         verify(readerFactory).invalidate(7);
     }

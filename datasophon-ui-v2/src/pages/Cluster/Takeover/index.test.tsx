@@ -380,4 +380,26 @@ describe('Takeover rescan reconciliation', () => {
     });
     expect(screen.getByText(/spark\/kyuubi/)).toBeInTheDocument();
   });
+
+  it('warns when CR scanning was incomplete', async () => {
+    vi.mocked(scanTakeover).mockResolvedValue({
+      data: {
+        matched: [],
+        pending: [],
+        missing: [],
+        failedCrds: ['dorisclusters.doris.selectdb.com'],
+      },
+    } as never);
+
+    await gotoScanStep();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('部分 CR 类型未能扫描完整，本次结果可能不全'),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(/dorisclusters\.doris\.selectdb\.com/),
+    ).toBeInTheDocument();
+  });
 });

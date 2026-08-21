@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   mergeNamedSeries,
   metricsJobToRegex,
+  parseMetricsJobs,
   type PrometheusMatrix,
   type PrometheusVector,
   vectorToScalar,
@@ -166,5 +167,14 @@ describe('metricsJobToRegex', () => {
   it('escapes regex metacharacters in service names', () => {
     // Service 名里出现 . 时，未转义会退化成任意字符匹配
     expect(metricsJobToRegex('redis.cluster')).toBe('redis\\.cluster');
+  });
+});
+
+describe('parseMetricsJobs', () => {
+  it('splits comma-delimited jobs and drops blank entries', () => {
+    expect(parseMetricsJobs(' ds-master, ,ds-worker ')).toEqual([
+      'ds-master',
+      'ds-worker',
+    ]);
   });
 });

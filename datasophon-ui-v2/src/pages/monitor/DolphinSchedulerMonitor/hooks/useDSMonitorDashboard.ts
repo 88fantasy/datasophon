@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { parseMetricsJobs } from '../../_shared/charts/promql';
 import { fetchDorisLabels } from '../../_shared/dorisService';
 import type { TimeSeriesPoint } from '../../_shared/types';
 import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
@@ -25,10 +26,7 @@ export function narrowToRegisteredJobs(
   serviceNames: string[],
   registeredJobs?: string,
 ): string[] {
-  const registered = (registeredJobs ?? '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const registered = parseMetricsJobs(registeredJobs);
   if (registered.length === 0) return serviceNames;
   return serviceNames.filter((serviceName) => registered.includes(serviceName));
 }

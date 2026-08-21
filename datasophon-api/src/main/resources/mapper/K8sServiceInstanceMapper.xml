@@ -26,25 +26,31 @@
 
 <mapper namespace="com.datasophon.dao.mapper.instance.K8sServiceInstanceMapper">
 
+    <sql id="instanceColumns">
+        a.id,
+        a.cluster_id AS cluster_id,
+        a.namespace_id AS namespace_id,
+        b.namespace AS namespace,
+        a.service_id AS service_id,
+        c.service_name AS service_name,
+        c.type AS catalog,
+        a.state,
+        a.source AS source,
+        a.release_name AS release_name,
+        a.metrics_job AS metrics_job,
+        a.source_kind AS source_kind,
+        a.monitor_profile AS monitor_profile
+    </sql>
+
+    <sql id="instanceJoins">
+        t_ddh_k8s_service_instance a
+        LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id
+        LEFT JOIN t_ddh_frame_k8s_service c ON a.service_id = c.id
+    </sql>
+
     <select id="selectInstanceList" resultType="com.datasophon.dao.vo.instance.K8sServiceInstanceVO">
-        SELECT
-            a.id,
-            a.cluster_id AS cluster_id,
-            a.namespace_id AS namespace_id,
-            b.namespace AS namespace,
-            a.service_id AS service_id,
-            c.service_name AS service_name,
-            c.type as catalog,
-            a.state,
-            a.source AS source,
-            a.release_name AS release_name,
-            a.metrics_job AS metrics_job,
-            a.source_kind AS source_kind,
-            a.monitor_profile AS monitor_profile
-        FROM
-            t_ddh_k8s_service_instance a
-            LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id
-            LEFT JOIN t_ddh_frame_k8s_service c ON a.service_id = c.id
+        SELECT <include refid="instanceColumns"/>
+        FROM <include refid="instanceJoins"/>
         WHERE
             a.cluster_id = #{clusterId}
             <if test="namespace != null and namespace != ''">
@@ -53,24 +59,8 @@
     </select>
 
     <select id="selectByIds" resultType="com.datasophon.dao.vo.instance.K8sServiceInstanceVO">
-        SELECT
-            a.id,
-            a.cluster_id AS cluster_id,
-            a.namespace_id AS namespace_id,
-            b.namespace AS namespace,
-            a.service_id AS service_id,
-            c.service_name AS service_name,
-            c.type as catalog,
-            a.state,
-            a.source AS source,
-            a.release_name AS release_name,
-            a.metrics_job AS metrics_job,
-            a.source_kind AS source_kind,
-            a.monitor_profile AS monitor_profile
-        FROM
-            t_ddh_k8s_service_instance a
-            LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id
-            LEFT JOIN t_ddh_frame_k8s_service c ON a.service_id = c.id
+        SELECT <include refid="instanceColumns"/>
+        FROM <include refid="instanceJoins"/>
         WHERE
             a.id IN
             <foreach collection="instanceIds" item="id" open="(" separator="," close=")">
@@ -78,26 +68,4 @@
             </foreach>
     </select>
 
-    <select id="selectByClusterAndId" resultType="com.datasophon.dao.vo.instance.K8sServiceInstanceVO">
-        SELECT
-            a.id,
-            a.cluster_id AS cluster_id,
-            a.namespace_id AS namespace_id,
-            b.namespace AS namespace,
-            a.service_id AS service_id,
-            c.service_name AS service_name,
-            c.type AS catalog,
-            a.state,
-            a.source AS source,
-            a.release_name AS release_name,
-            a.metrics_job AS metrics_job,
-            a.source_kind AS source_kind,
-            a.monitor_profile AS monitor_profile
-        FROM t_ddh_k8s_service_instance a
-        LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id
-        LEFT JOIN t_ddh_frame_k8s_service c ON a.service_id = c.id
-        WHERE a.cluster_id = #{clusterId}
-          AND a.id = #{instanceId}
-        LIMIT 1
-    </select>
 </mapper>

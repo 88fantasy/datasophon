@@ -55,11 +55,8 @@ public class KubectlClient implements AutoCloseable {
 
     private final String kubectlPath;
     private final String kubeConfig;
-    private final String token;
-    private final String username;
-    private final String password;
     private final String serverCert;
-    private final String serverName;
+    private final boolean readOnly;
 
     private final File tempDir;
 
@@ -86,10 +83,7 @@ public class KubectlClient implements AutoCloseable {
         } else {
             this.serverCert = null;
         }
-        this.token = options.getToken();
-        this.username = options.getUsername();
-        this.password = options.getPassword();
-        this.serverName = options.getServerName();
+        this.readOnly = options.isReadOnly();
         this.kubeConfig = SecureKubeConfigWriter.write(options, tempDir, serverCert);
 
         JsonMapper.Builder builder = JsonMapper.builder();
@@ -131,7 +125,7 @@ public class KubectlClient implements AutoCloseable {
      * @return JSON 根节点
      * @throws KubectlException JSON 解析失败
      */
-    public String executeToJson(List<String> subCommandParts, int timeoutSeconds) throws KubectlException {
+    String executeToJson(List<String> subCommandParts, int timeoutSeconds) throws KubectlException {
         List<String> args = new ArrayList<>(subCommandParts);
         args.add("-o");
         args.add("json");
@@ -216,6 +210,7 @@ public class KubectlClient implements AutoCloseable {
 
     /** 应用由服务端生成的 Kubernetes YAML。 */
     public void applyYaml(String yaml) throws KubectlException {
+        requireWritable();
         File file = new File(tempDir, "manifest.yaml");
         FileUtil.writeString(yaml, file, StandardCharsets.UTF_8);
         ExecResult result = execute(Arrays.asList("apply", "-f", file.getAbsolutePath()), 60);
@@ -379,6 +374,7 @@ public class KubectlClient implements AutoCloseable {
      * @param deploymentName Deployment 名称
      */
     public void restartDeployment(String namespace, String deploymentName) {
+        requireWritable();
         List<String> args = Arrays.asList(
                 "rollout",
                 "restart",
@@ -399,6 +395,7 @@ public class KubectlClient implements AutoCloseable {
      * @param dto 更新参数
      */
     public void updateDeploymentImage(UpdateDeploymentDTO dto) {
+        requireWritable();
         List<String> args = new ArrayList<>(Arrays.asList(
                 "set",
                 "image",
@@ -421,6 +418,7 @@ public class KubectlClient implements AutoCloseable {
     }
 
     public void createNamespace(String namespace) {
+        requireWritable();
         List<String> args = Arrays.asList("create", "namespace", namespace);
         ExecResult result = execute(args, -1);
         // namespace 已存在时返回 1，但这不是错误
@@ -439,6 +437,7 @@ public class KubectlClient implements AutoCloseable {
      * @param password     密码
      */
     public void createDockerRegistrySecret(String namespace, String secretName, String dockerServer, String username, String password) {
+        requireWritable();
         List<String> args = Arrays.asList(
                 "create",
                 "secret",
@@ -464,6 +463,7 @@ public class KubectlClient implements AutoCloseable {
      * @param serviceAccountName ServiceAccount 名称
      */
     public void attachSecretToServiceAccount(String namespace, String secretName, String serviceAccountName) {
+        requireWritable();
         // 先获取当前 ServiceAccount 的 YAML
         List<String> getArgs = Arrays.asList(
                 "get",
@@ -518,6 +518,7 @@ public class KubectlClient implements AutoCloseable {
      * @param replicas       副本数
      */
     public void scaleDeployment(String namespace, String deploymentName, int replicas) {
+        requireWritable();
         List<String> args = Arrays.asList(
                 "scale",
                 "deployment/" + deploymentName,
@@ -604,6 +605,7 @@ public class KubectlClient implements AutoCloseable {
      * @param secretNames Secret 名称列表
      */
     public void deleteSecrets(String namespace, List<String> secretNames) throws KubectlException {
+        requireWritable();
         List<String> args = new ArrayList<>(Arrays.asList("delete", "secret", "-n", namespace));
         args.addAll(secretNames);
         args.add("--ignore-not-found=true");
@@ -672,6 +674,12 @@ public class KubectlClient implements AutoCloseable {
     public void close() {
         if (tempDir != null) {
             FileUtil.del(tempDir);
+        }
+    }
+
+    private void requireWritable() {
+        if (readOnly) {
+            throw new KubectlException("接管集群为只读模式，禁止执行 kubectl 写操作");
         }
     }
 

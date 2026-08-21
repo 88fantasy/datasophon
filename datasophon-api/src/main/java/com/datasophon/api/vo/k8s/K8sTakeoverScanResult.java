@@ -1,5 +1,7 @@
 package com.datasophon.api.vo.k8s;
 
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
+
 import java.util.List;
 
 /**
@@ -25,26 +27,22 @@ public record K8sTakeoverScanResult(List<ScannedRelease> matched,
      * @param chart            chart 原始字段，如 {@code apisix-2.12.5}
      * @param chartName        从 chart 切出的名称
      * @param chartVersion     从 chart 切出的版本
-     * @param appVersion       应用版本
      * @param frameServiceId   匹配到的框架服务定义 ID；pending 中为 null
      * @param frameServiceName 匹配到的框架服务名；pending 中为 null
      * @param catalog          服务分类 ENVIRONMENT / MIDDLEWARE / APPLICATION；pending 中为 null
      * @param registered       该 release 是否已经登记过，供前端默认不重复勾选
      * @param sourceKind       来源类型 HELM=Helm release CR=operator 自定义资源
-     * @param kind             CR 的 K8s Kind，如 {@code DorisDisaggregatedCluster}；HELM 来源为 null
      */
     public record ScannedRelease(String releaseName,
                                  String namespace,
                                  String chart,
                                  String chartName,
                                  String chartVersion,
-                                 String appVersion,
                                  Integer frameServiceId,
                                  String frameServiceName,
                                  String catalog,
                                  boolean registered,
-                                 String sourceKind,
-                                 String kind) {
+                                 InstanceSourceKind sourceKind) {
     }
 
     /**

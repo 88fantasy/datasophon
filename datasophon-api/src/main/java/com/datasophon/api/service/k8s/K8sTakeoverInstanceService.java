@@ -85,7 +85,7 @@ public class K8sTakeoverInstanceService {
      */
     public String readValues(Integer clusterId, Integer instanceId) {
         K8sServiceInstanceVO instance = requireImportedInstance(clusterId, instanceId);
-        if (InstanceSourceKind.CR.name().equals(instance.getSourceKind())) {
+        if (InstanceSourceKind.CR.equals(instance.getSourceKind())) {
             throw new BusinessHintException("该实例由 Operator CR 管理，无 Helm values 可反查");
         }
         if (instance.getReleaseName() == null || instance.getReleaseName().isBlank()) {
@@ -104,7 +104,7 @@ public class K8sTakeoverInstanceService {
         if (!Objects.equals(clusterId, instance.getClusterId())) {
             throw new BusinessHintException("服务实例不属于该集群");
         }
-        if (!InstanceSource.IMPORTED.name().equals(instance.getSource())) {
+        if (!InstanceSource.IMPORTED.equals(instance.getSource())) {
             throw new BusinessHintException("该服务实例由平台安装，不适用接管相关操作");
         }
         return instance;

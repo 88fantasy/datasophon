@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -146,6 +147,23 @@ class OtelDorisReaderFactoryTest {
         assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("10.0.0.9:9030");
         // 走了外部数据源就不该再查角色实例表
         verify(roleService, never()).getServiceRoleInstanceListByClusterIdAndRoleName(anyInt(), anyString());
+    }
+
+    @Test
+    void reusesResolvedDatasourceWithoutRepeatingPlatformQueries() {
+        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
+        ClusterVariableService variableService = mock(ClusterVariableService.class);
+        K8sClusterConfigMapper mapper = mock(K8sClusterConfigMapper.class);
+        when(mapper.selectOne(any())).thenReturn(importedConfig("10.0.0.9", 9030));
+        ClusterInfoMapper clusterMapper = importedClusterMapper();
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                roleService, variableService, new OtelCredentialService(variableService), clusterMapper, mapper);
+
+        factory.create(7);
+        factory.create(7);
+
+        verify(clusterMapper, times(1)).selectById(7);
+        verify(mapper, times(1)).selectOne(any());
     }
 
     @Test

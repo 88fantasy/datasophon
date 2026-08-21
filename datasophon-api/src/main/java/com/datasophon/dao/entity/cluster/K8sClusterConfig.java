@@ -1,5 +1,6 @@
 package com.datasophon.dao.entity.cluster;
 
+import com.datasophon.common.k8s.config.K8sClientConfig;
 import com.datasophon.dao.enums.k8s.K8sAuthType;
 
 import java.io.Serializable;
@@ -15,7 +16,7 @@ import lombok.Data;
 
 @Data
 @TableName("t_ddh_k8s_cluster_config")
-public class K8sClusterConfig implements Serializable {
+public class K8sClusterConfig implements Serializable, K8sClientConfig {
     @TableId
     @Schema(description = "id")
     private Integer id;
@@ -64,6 +65,8 @@ public class K8sClusterConfig implements Serializable {
     @Schema(description = "Doris MySQL 协议端口，缺省 9030")
     private Integer dorisPort;
 
-    @Schema(description = "OTel 数据库名，缺省 otel")
-    private String dorisDatabase;
+    @Override
+    public String getAuthType() {
+        return type == null ? null : type.name();
+    }
 }

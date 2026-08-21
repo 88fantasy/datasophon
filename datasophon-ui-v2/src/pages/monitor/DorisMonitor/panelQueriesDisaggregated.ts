@@ -20,7 +20,81 @@
  * SOFTWARE.
  */
 
-import type { DorisPanelDescriptor } from '../_shared/dorisService';
+import type {
+  DorisPanelDescriptor,
+  DorisRangeQuery,
+} from '../_shared/dorisService';
+import { PANEL_QUERIES } from './panelQueries';
+
+const FE_PANEL_IDS = [
+  'DO-B01',
+  'DO-B02',
+  'DO-B03',
+  'DO-B04',
+  'DO-B05',
+  'DO-B06',
+  'DO-B07',
+  'DO-B08',
+  'DO-B09',
+  'DO-B10',
+  'DO-B12',
+];
+
+const FE_DEDUP_METRICS = new Set([
+  'doris_fe_request_total',
+  'doris_fe_query_total',
+  'doris_fe_query_err',
+]);
+
+function withoutGroupFilter(
+  filters: Record<string, string> | undefined,
+  dedupe: boolean,
+): Record<string, string> | undefined {
+  const result = Object.fromEntries(
+    Object.entries(filters ?? {}).filter(([key]) => key !== 'group'),
+  );
+  if (dedupe) {
+    result.user = '';
+    result.cluster_name = '';
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+function deriveDisaggFe(ids: string[]): Record<string, DorisPanelDescriptor> {
+  return Object.fromEntries(
+    ids.map((id) => {
+      const descriptor = PANEL_QUERIES[id];
+      if (descriptor?.type !== 'multi-range') {
+        throw new Error(`Expected ${id} to be a Doris multi-range panel`);
+      }
+      return [
+        id,
+        {
+          ...descriptor,
+          queries: descriptor.queries.map((query): DorisRangeQuery => {
+            const { filters, denominatorFilters, ...rest } = query;
+            const nextFilters = withoutGroupFilter(
+              filters,
+              FE_DEDUP_METRICS.has(query.metric),
+            );
+            const nextDenominatorFilters = withoutGroupFilter(
+              denominatorFilters,
+              query.denominatorMetric !== undefined &&
+                FE_DEDUP_METRICS.has(query.denominatorMetric),
+            );
+            return {
+              ...rest,
+              ...(nextFilters ? { filters: nextFilters } : {}),
+              ...(nextDenominatorFilters
+                ? { denominatorFilters: nextDenominatorFilters }
+                : {}),
+            };
+          }),
+        },
+      ];
+    }),
+  );
+}
 
 /**
  * 存算分离 Doris（DorisDisaggregatedCluster CR）看板面板描述符。
@@ -86,137 +160,8 @@ export const DISAGG_PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
     ],
   },
 
-  // ── FE 节点（DO-B，沿用耦合模式编号，仅去掉 group 过滤 + 去重维度） ──────────
-
-  'DO-B01': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'req/s',
-        metric: 'doris_fe_request_total',
-        rate: '2m',
-        table: 'sum',
-        filters: { user: '', cluster_name: '' },
-      },
-    ],
-  },
-
-  'DO-B02': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'query/s',
-        metric: 'doris_fe_query_total',
-        rate: '2m',
-        table: 'sum',
-        filters: { user: '', cluster_name: '' },
-      },
-    ],
-  },
-
-  'DO-B03': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'p99',
-        metric: 'doris_fe_query_latency_ms',
-        table: 'summary',
-        quantile: 0.99,
-      },
-    ],
-  },
-
-  'DO-B04': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'p50',
-        metric: 'doris_fe_query_latency_ms',
-        table: 'summary',
-        quantile: 0.5,
-      },
-      {
-        label: 'p75',
-        metric: 'doris_fe_query_latency_ms',
-        table: 'summary',
-        quantile: 0.75,
-      },
-      {
-        label: 'p99',
-        metric: 'doris_fe_query_latency_ms',
-        table: 'summary',
-        quantile: 0.99,
-      },
-    ],
-  },
-
-  'DO-B05': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'cumulative',
-        metric: 'doris_fe_query_err',
-        table: 'sum',
-        filters: { user: '', cluster_name: '' },
-      },
-      {
-        label: 'rate_1m',
-        metric: 'doris_fe_query_err',
-        rate: '1m',
-        table: 'sum',
-        filters: { user: '', cluster_name: '' },
-      },
-    ],
-  },
-
-  'DO-B06': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'error%',
-        metric: 'doris_fe_query_err',
-        rate: '2m',
-        table: 'sum',
-        filters: { user: '', cluster_name: '' },
-        denominatorMetric: 'doris_fe_query_total',
-        denominatorFilters: { user: '', cluster_name: '' },
-        scale: 100,
-      },
-    ],
-  },
-
-  'DO-B07': {
-    type: 'multi-range',
-    queries: [{ label: 'connections', metric: 'doris_fe_connection_total' }],
-  },
-
-  'DO-B08': {
-    type: 'multi-range',
-    queries: [
-      { label: 'score', metric: 'doris_fe_max_tablet_compaction_score' },
-    ],
-  },
-
-  'DO-B09': {
-    type: 'multi-range',
-    queries: [{ label: 'tablets', metric: 'doris_fe_scheduled_tablet_num' }],
-  },
-
-  'DO-B10': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'used',
-        metric: 'jvm_heap_size_bytes',
-        filters: { type: 'used' },
-      },
-      {
-        label: 'max',
-        metric: 'jvm_heap_size_bytes',
-        filters: { type: 'max' },
-      },
-    ],
-  },
+  // ── FE 节点（DO-B，沿用耦合模式编号，剥离 group 并为查询指标去重） ──────────
+  ...deriveDisaggFe(FE_PANEL_IDS),
 
   /** FE JVM Old GC：K8s 侧统一走 jvm_gc（name 区分 Old/Young，type 区分 count/time） */
   'DO-B11': {
@@ -231,18 +176,6 @@ export const DISAGG_PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
         label: 'avg_time_ms',
         metric: 'jvm_gc',
         filters: { name: 'G1 Old Generation Time', type: 'time' },
-      },
-    ],
-  },
-
-  'DO-B12': {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'p99',
-        metric: 'doris_fe_editlog_write_latency_ms',
-        table: 'summary',
-        quantile: 0.99,
       },
     ],
   },
@@ -472,9 +405,3 @@ export const DISAGG_PANEL_ROLE: Record<string, 'fe' | 'compute'> = {
     DISAGG_SEGMENT_PANEL_IDS.compute.map((id) => [id, 'compute' as const]),
   ),
 };
-
-export function getDisaggSegmentPanelIds(
-  segment: 'cluster' | 'fe' | 'compute',
-): string[] {
-  return DISAGG_SEGMENT_PANEL_IDS[segment];
-}

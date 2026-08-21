@@ -9,7 +9,6 @@ artifact:
   kind: operator
   operator:
     group: doris.selectdb.com
-    version: v1
     kind: DorisCluster
     plural: dorisclusters
     monitorProfile: doris-coupled

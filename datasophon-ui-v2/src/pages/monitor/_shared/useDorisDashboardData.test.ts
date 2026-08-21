@@ -83,4 +83,27 @@ describe('useDorisDashboardData failures', () => {
     expect(result.current.failedPanelIds).toEqual(['failed']);
     expect(result.current.error).toBeUndefined();
   });
+
+  it('does not issue requests or keep loading when no panels are active', async () => {
+    const { result, rerender } = renderHook(
+      ({ refreshKey }) =>
+        useDorisDashboardData({
+          panelDescriptors: descriptors,
+          panelIds: [],
+          instance: '.+',
+          timeRange: '1h',
+          clusterId: 1,
+          refreshKey,
+        }),
+      { initialProps: { refreshKey: 0 } },
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    rerender({ refreshKey: 1 });
+
+    expect(mocks.fetchDorisNodeCount).not.toHaveBeenCalled();
+    expect(mocks.queryDorisInstant).not.toHaveBeenCalled();
+    expect(mocks.queryDorisRange).not.toHaveBeenCalled();
+    expect(result.current).toMatchObject({ instant: {}, series: {} });
+  });
 });

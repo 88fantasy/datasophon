@@ -11,7 +11,6 @@ artifact:
   kind: operator
   operator:
     group: disaggregated.cluster.doris.com
-    version: v1
     kind: DorisDisaggregatedCluster
     plural: dorisdisaggregatedclusters
     monitorProfile: doris-disaggregated

@@ -13,6 +13,7 @@ import com.datasophon.common.k8s.vo.helm.HelmReleaseListItemVO;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.List;
@@ -138,7 +139,7 @@ class K8sTakeoverScanServiceTest {
     }
 
     @Test
-    @DisplayName("operator CR 扫描结果标 sourceKind=CR 并携带 K8s Kind，进入 matched 不落 pending")
+    @DisplayName("operator CR 扫描结果标 sourceKind=CR，进入 matched 不落 pending")
     void crResultEntersMatchedWithSourceKindCr() {
         FrameK8sServiceEntity dorisDefinition = definition(5, "doris", "MIDDLEWARE", null);
         K8sCrScanner.ScannedCr cr = new K8sCrScanner.ScannedCr(
@@ -151,22 +152,20 @@ class K8sTakeoverScanServiceTest {
         K8sTakeoverScanResult.ScannedRelease scanned = result.matched().get(0);
         assertThat(scanned.releaseName()).isEqualTo("doris-disaggregated-cluster");
         assertThat(scanned.namespace()).isEqualTo("doris");
-        assertThat(scanned.sourceKind()).isEqualTo("CR");
-        assertThat(scanned.kind()).isEqualTo("DorisDisaggregatedCluster");
+        assertThat(scanned.sourceKind()).isEqualTo(InstanceSourceKind.CR);
         assertThat(scanned.frameServiceId()).isEqualTo(5);
         assertThat(scanned.chart()).isNull();
     }
 
     @Test
-    @DisplayName("Helm release 结果标 sourceKind=HELM，kind 为 null")
-    void helmResultHasSourceKindHelmAndNullKind() {
+    @DisplayName("Helm release 结果标 sourceKind=HELM")
+    void helmResultHasSourceKindHelm() {
         List<HelmReleaseListItemVO> releases = List.of(release("zookeeper", "prod", "zookeeper-13.8.7"));
         List<FrameK8sServiceEntity> definitions = List.of(definition(2, "zookeeper", "MIDDLEWARE", null));
 
         K8sTakeoverScanResult result = scan(releases, definitions);
 
-        assertThat(result.matched().get(0).sourceKind()).isEqualTo("HELM");
-        assertThat(result.matched().get(0).kind()).isNull();
+        assertThat(result.matched().get(0).sourceKind()).isEqualTo(InstanceSourceKind.HELM);
     }
 
     @Test
@@ -225,7 +224,7 @@ class K8sTakeoverScanServiceTest {
 
         assertThat(result.matched()).hasSize(2);
         assertThat(result.matched()).extracting(K8sTakeoverScanResult.ScannedRelease::sourceKind)
-                .containsExactly("HELM", "CR");
+                .containsExactly(InstanceSourceKind.HELM, InstanceSourceKind.CR);
     }
 
     private K8sTakeoverScanResult scan(List<HelmReleaseListItemVO> releases,
@@ -270,17 +269,22 @@ class K8sTakeoverScanServiceTest {
     /** 构造一条已登记的接管实例。 */
     private static K8sServiceInstanceVO imported(int id, String namespace, String releaseName,
                                                  String serviceName) {
-        return imported(id, namespace, releaseName, serviceName, "HELM");
+        return imported(id, namespace, releaseName, serviceName, InstanceSourceKind.HELM);
     }
 
     private static K8sServiceInstanceVO imported(int id, String namespace, String releaseName,
                                                  String serviceName, String sourceKind) {
+        return imported(id, namespace, releaseName, serviceName, InstanceSourceKind.valueOf(sourceKind));
+    }
+
+    private static K8sServiceInstanceVO imported(int id, String namespace, String releaseName,
+                                                 String serviceName, InstanceSourceKind sourceKind) {
         K8sServiceInstanceVO instance = new K8sServiceInstanceVO();
         instance.setId(id);
         instance.setNamespace(namespace);
         instance.setReleaseName(releaseName);
         instance.setServiceName(serviceName);
-        instance.setSource(InstanceSource.IMPORTED.name());
+        instance.setSource(InstanceSource.IMPORTED);
         instance.setSourceKind(sourceKind);
         return instance;
     }

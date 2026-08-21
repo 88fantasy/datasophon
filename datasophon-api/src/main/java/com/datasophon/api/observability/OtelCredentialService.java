@@ -40,9 +40,9 @@ public class OtelCredentialService {
     static final String COLLECTOR_PASSWORD = "dorisCollectorPassword";
     static final String READER_PASSWORD = "dorisReaderPassword";
 
-    static final String DORIS_SERVICE_NAME = "DORIS";
+    public static final String DORIS_SERVICE_NAME = "DORIS";
     static final String DORIS_COLLECTOR_PASSWORD = "otel_collector_password";
-    static final String DORIS_READER_PASSWORD = "otel_reader_password";
+    public static final String DORIS_READER_PASSWORD = "otel_reader_password";
 
     private final ClusterVariableService variableService;
     private final SecureRandom random = new SecureRandom();

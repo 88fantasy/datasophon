@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.observability.OtelDorisReaderFactory;
@@ -15,6 +16,8 @@ import com.datasophon.common.model.k8s.K8sOperatorArtifact;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
@@ -183,6 +186,25 @@ class K8sMetricsJobProbeServiceTest {
         }
     }
 
+    @Test
+    @DisplayName("批量 Service 快照在内存中按 namespace 与 release 标签过滤，不再创建 kubectl 客户端")
+    void probesFromSharedServiceSnapshot() {
+        com.datasophon.api.service.k8s.K8sService k8sService =
+                mock(com.datasophon.api.service.k8s.K8sService.class);
+        K8sMetricsJobProbeService probeService =
+                new K8sMetricsJobProbeService(k8sService, mock(OtelDorisReaderFactory.class));
+        List<com.datasophon.common.k8s.vo.k8s.K8sService> services = List.of(
+                service("zookeeper-metrics", "prod", Map.of(K8sService.SRV_INST_ID_LABEL, "zookeeper")),
+                service("zookeeper-metrics", "other", Map.of(K8sService.SRV_INST_ID_LABEL, "zookeeper")),
+                service("other", "prod", Map.of(K8sService.SRV_INST_ID_LABEL, "other")));
+
+        K8sMetricsJobProbeService.ProbeResult result = probeService.probe(
+                "zookeeper", "prod", ACTIVE_JOBS, null, services);
+
+        assertThat(result.metricsJob()).isEqualTo("zookeeper-metrics");
+        verifyNoInteractions(k8sService);
+    }
+
     private K8sMetricsJobProbeService.ProbeResult probeByPrefix(String releaseName, String namespace,
                                                                 Set<String> activeJobs,
                                                                 K8sOperatorArtifact operator,
@@ -234,10 +256,17 @@ class K8sMetricsJobProbeServiceTest {
     }
 
     private static com.datasophon.common.k8s.vo.k8s.K8sService service(String name) {
+        return service(name, null, null);
+    }
+
+    private static com.datasophon.common.k8s.vo.k8s.K8sService service(String name, String namespace,
+                                                                       Map<String, String> labels) {
         com.datasophon.common.k8s.vo.k8s.K8sService svc = new com.datasophon.common.k8s.vo.k8s.K8sService();
         com.datasophon.common.k8s.vo.k8s.K8sService.Metadata metadata =
                 new com.datasophon.common.k8s.vo.k8s.K8sService.Metadata();
         metadata.setName(name);
+        metadata.setNamespace(namespace);
+        metadata.setLabels(labels);
         svc.setMetadata(metadata);
         return svc;
     }

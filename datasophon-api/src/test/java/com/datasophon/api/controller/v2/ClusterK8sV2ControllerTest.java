@@ -30,9 +30,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.api.service.k8s.K8sTakeoverReconcileService;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -42,11 +45,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 class ClusterK8sV2ControllerTest {
 
     private final K8sServiceInstanceService instanceService = mock(K8sServiceInstanceService.class);
+    private final K8sClusterNamespaceService namespaceService = mock(K8sClusterNamespaceService.class);
+    private final K8sTakeoverReconcileService reconcileService = mock(K8sTakeoverReconcileService.class);
     private final ClusterK8sV2Controller controller = new ClusterK8sV2Controller();
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(controller, "k8sServiceInstanceService", instanceService);
+        ReflectionTestUtils.setField(controller, "k8sClusterNamespaceService", namespaceService);
+        ReflectionTestUtils.setField(controller, "k8sTakeoverReconcileService", reconcileService);
     }
 
     @Test
@@ -80,5 +87,16 @@ class ClusterK8sV2ControllerTest {
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(404);
         verify(instanceService, never()).listResource(any());
+    }
+
+    @Test
+    void listAllInstancesDoesNotReconcileNamespacesOnPollingPath() {
+        when(instanceService.queryInstanceList(1)).thenReturn(List.of());
+
+        ApiResponse<List<K8sServiceInstanceVO>> response = controller.listAllInstances(1);
+
+        assertThat(response.isSuccess()).isTrue();
+        verify(namespaceService, never()).listAndUpdateNamespaceByClusterId(1);
+        verify(reconcileService).markMissing(1, List.of());
     }
 }

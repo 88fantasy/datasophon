@@ -77,7 +77,6 @@ class K8sManifestContractTest {
         artifact.setKind(K8sArtifact.KIND_OPERATOR);
         K8sOperatorArtifact operator = new K8sOperatorArtifact();
         operator.setGroup("example.io");
-        operator.setVersion("v1");
         operator.setPlural("examples");
         artifact.setOperator(operator);
 
@@ -110,7 +109,6 @@ class K8sManifestContractTest {
 
         K8sOperatorArtifact operator = artifact.getOperator();
         assertThat(operator.getGroup()).isEqualTo("disaggregated.cluster.doris.com");
-        assertThat(operator.getVersion()).isEqualTo("v1");
         assertThat(operator.getKind()).isEqualTo("DorisDisaggregatedCluster");
         assertThat(operator.getPlural()).isEqualTo("dorisdisaggregatedclusters");
         assertThat(operator.getMonitorProfile()).isEqualTo("doris-disaggregated");
@@ -148,7 +146,6 @@ class K8sManifestContractTest {
 
         K8sOperatorArtifact operator = artifact.getOperator();
         assertThat(operator.getGroup()).isEqualTo("doris.selectdb.com");
-        assertThat(operator.getVersion()).isEqualTo("v1");
         assertThat(operator.getKind()).isEqualTo("DorisCluster");
         assertThat(operator.getPlural()).isEqualTo("dorisclusters");
         assertThat(operator.getMonitorProfile()).isEqualTo("doris-coupled");

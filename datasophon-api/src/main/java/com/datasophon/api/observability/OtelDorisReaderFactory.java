@@ -50,7 +50,7 @@ import jakarta.annotation.PreDestroy;
 
 @Component
 public class OtelDorisReaderFactory {
-    private static final String DEFAULT_READER_USER = "otel_reader";
+    public static final String DEFAULT_READER_USER = "otel_reader";
 
     private static final Logger log = LoggerFactory.getLogger(OtelDorisReaderFactory.class);
 
@@ -99,6 +99,11 @@ public class OtelDorisReaderFactory {
         if (fallbackHost != null && !fallbackHost.isBlank()) {
             log.debug("Using Doris fallback connection {}:{}", fallbackHost, fallbackPort);
             return buildJdbcClient(clusterId, fallbackHost, fallbackPort, fallbackReaderUser(), fallbackPassword);
+        }
+
+        PoolEntry cached = pools.get(clusterId);
+        if (cached != null) {
+            return JdbcClient.create(cached.dataSource());
         }
 
         // 接管集群：Doris 不由本平台安装，角色实例表里查不到，改用接管时登记的外部数据源

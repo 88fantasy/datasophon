@@ -22,6 +22,7 @@
 
 package com.datasophon.api.service.k8s;
 
+import com.datasophon.api.observability.OtelCredentialService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.dao.entity.ClusterVariable;
@@ -33,9 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 /** 在一个事务内保存 Doris 地址和只读账号密码。 */
 @Service
 public class DorisDatasourcePersistenceService {
-
-    private static final String DORIS_SERVICE_NAME = "DORIS";
-    private static final String DORIS_READER_PASSWORD = "otel_reader_password";
 
     private final K8sClusterConfigService k8sClusterConfigService;
     private final ClusterVariableService clusterVariableService;
@@ -50,7 +48,8 @@ public class DorisDatasourcePersistenceService {
     public void save(K8sClusterConfig config, String password) {
         k8sClusterConfigService.updateById(config);
         ClusterVariable existing = clusterVariableService.getVariableByVariableName(
-                config.getClusterId(), DORIS_SERVICE_NAME, DORIS_READER_PASSWORD);
+                config.getClusterId(), OtelCredentialService.DORIS_SERVICE_NAME,
+                OtelCredentialService.DORIS_READER_PASSWORD);
         if (existing != null) {
             existing.setVariableValue(password);
             clusterVariableService.updateById(existing);
@@ -58,8 +57,8 @@ public class DorisDatasourcePersistenceService {
         }
         ClusterVariable variable = new ClusterVariable();
         variable.setClusterId(config.getClusterId());
-        variable.setServiceName(DORIS_SERVICE_NAME);
-        variable.setVariableName(DORIS_READER_PASSWORD);
+        variable.setServiceName(OtelCredentialService.DORIS_SERVICE_NAME);
+        variable.setVariableName(OtelCredentialService.DORIS_READER_PASSWORD);
         variable.setVariableValue(password);
         clusterVariableService.save(variable);
     }

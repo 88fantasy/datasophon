@@ -1,4 +1,0 @@
--- 本版本只涉及 DDL（放开 t_ddh_k8s_cluster_config.kube_config 为可空），无数据变更。
--- 迁移执行器 DatabaseMigration.runScript 对 dml 资源做 resource.exists() 判空，
--- 若同版本目录下缺 DML 文件会直接 NPE（现有版本均固定同时提供 DDL/DML 两个文件，
--- 应是绕开此限制的既定约定），因此保留本空文件。

@@ -1,6 +1,7 @@
 package com.datasophon.api.service.k8s;
 
 import com.datasophon.api.observability.OtelDorisReaderFactory;
+import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
 import com.datasophon.common.model.k8s.K8sOperatorArtifact;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
@@ -10,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -34,9 +36,6 @@ import org.springframework.stereotype.Service;
 public class K8sMetricsJobProbeService {
 
     private static final Logger log = LoggerFactory.getLogger(K8sMetricsJobProbeService.class);
-
-    /** Helm 为 release 下所有资源打的标准标签。 */
-    private static final String RELEASE_LABEL = "app.kubernetes.io/instance";
 
     /** 探测时回看的时间窗口，覆盖 TargetAllocator 的抓取间隔即可。 */
     private static final int LOOKBACK_HOURS = 1;
@@ -70,15 +69,50 @@ public class K8sMetricsJobProbeService {
     }
 
     /**
+     * 一次读取全集 Service，供同一批接管登记的多个 binding 复用。
+     *
+     * <p>查询失败时返回空集，保持登记流程「采集诊断失败不阻断本地登记」的既有语义。
+     */
+    public List<K8sService> allServices(K8sClusterConfig config) {
+        try {
+            K8sResourceList<K8sService> result = k8sService.batchExec(config,
+                    client -> client.getServicesAllNamespaces(), "查询集群全部 Service");
+            return result == null || result.getItems() == null ? List.of() : result.getItems();
+        } catch (Exception e) {
+            log.warn("查询集群全部 Service 失败：{}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
      * CR 来源服务的探测重载：{@code operatorArtifact} 非空时，Service 定位改用 name-prefix 启发式
      * （operator 管理的资源没有 Helm 标准标签），并按 {@code operatorArtifact.roles} 的正则把命中的
      * job 分类到角色桶里（如 fe/compute），供前端按角色分流查询。
      */
     public ProbeResult probe(K8sClusterConfig config, String releaseName, String namespace,
                              Set<String> activeJobs, K8sOperatorArtifact operatorArtifact) {
-        Set<String> serviceNames = operatorArtifact == null
-                ? serviceNamesOf(config, releaseName, namespace)
-                : serviceNamesByNamePrefix(config, releaseName, namespace);
+        String labelSelector = operatorArtifact == null
+                ? com.datasophon.api.service.k8s.K8sService.SRV_INST_ID_LABEL + "=" + releaseName
+                : null;
+        Predicate<String> nameFilter = operatorArtifact == null ? name -> true : namePrefixFilter(releaseName);
+        Set<String> serviceNames = serviceNames(config, namespace, labelSelector, nameFilter,
+                operatorArtifact == null ? "查询 release 的 Service" : "按前缀查询命名空间 Service");
+        return probe(activeJobs, operatorArtifact, serviceNames);
+    }
+
+    /**
+     * 使用批量读取的 Service 快照探测 job，避免每个 binding 重建 kubectl 客户端。
+     */
+    public ProbeResult probe(String releaseName, String namespace, Set<String> activeJobs,
+                             K8sOperatorArtifact operatorArtifact, List<K8sService> services) {
+        String labelSelector = operatorArtifact == null
+                ? com.datasophon.api.service.k8s.K8sService.SRV_INST_ID_LABEL + "=" + releaseName
+                : null;
+        Predicate<String> nameFilter = operatorArtifact == null ? name -> true : namePrefixFilter(releaseName);
+        return probe(activeJobs, operatorArtifact, serviceNames(services, namespace, labelSelector, nameFilter));
+    }
+
+    private ProbeResult probe(Set<String> activeJobs, K8sOperatorArtifact operatorArtifact, Set<String> serviceNames) {
         serviceNames.retainAll(activeJobs);
         if (serviceNames.isEmpty()) {
             return new ProbeResult(null, Map.of());
@@ -117,43 +151,52 @@ public class K8sMetricsJobProbeService {
      * 用 {@code prefix + "-"} 而非裸 {@code startsWith(prefix)}，避免 {@code nacos} 误吃到
      * {@code nacosxyz} 这类同前缀不同实体的 Service。
      */
-    private Set<String> serviceNamesByNamePrefix(K8sClusterConfig config, String namePrefix, String namespace) {
+    private Set<String> serviceNames(K8sClusterConfig config, String namespace, String labelSelector,
+                                     Predicate<String> nameFilter, String actionHint) {
         try {
             List<K8sService> services = k8sService.batchExec(config,
-                    client -> client.getServices(namespace, null).getItems(),
-                    "按前缀查询命名空间 Service");
-            Set<String> names = new LinkedHashSet<>();
-            for (K8sService service : services) {
-                if (service.getMetadata() == null || service.getMetadata().getName() == null) {
-                    continue;
-                }
-                String name = service.getMetadata().getName();
-                if (name.equals(namePrefix) || name.startsWith(namePrefix + "-")) {
-                    names.add(name);
-                }
-            }
-            return names;
+                    client -> client.getServices(namespace, labelSelector).getItems(), actionHint);
+            // kubectl 已按 namespace 过滤，避免要求测试/调用方再在 Metadata 上重复携带 namespace。
+            return serviceNames(services, null, null, nameFilter);
         } catch (Exception e) {
-            log.warn("按前缀 {} 查询命名空间 {} 的 Service 失败：{}", namePrefix, namespace, e.getMessage());
+            log.warn("查询命名空间 {} 的 Service 失败：{}", namespace, e.getMessage());
             return new LinkedHashSet<>();
         }
     }
 
-    private Set<String> serviceNamesOf(K8sClusterConfig config, String releaseName, String namespace) {
-        try {
-            List<K8sService> services = k8sService.batchExec(config,
-                    client -> client.getServices(namespace, RELEASE_LABEL + "=" + releaseName).getItems(),
-                    "查询 release 的 Service");
-            Set<String> names = new LinkedHashSet<>();
-            for (K8sService service : services) {
-                if (service.getMetadata() != null && service.getMetadata().getName() != null) {
-                    names.add(service.getMetadata().getName());
-                }
-            }
+    private Set<String> serviceNames(List<K8sService> services, String namespace, String labelSelector,
+                                     Predicate<String> nameFilter) {
+        Set<String> names = new LinkedHashSet<>();
+        if (services == null) {
             return names;
-        } catch (Exception e) {
-            log.warn("查询 release {} 的 Service 失败：{}", releaseName, e.getMessage());
-            return new LinkedHashSet<>();
         }
+        for (K8sService service : services) {
+            if (service.getMetadata() == null || service.getMetadata().getName() == null
+                    || (namespace != null && !namespace.equals(service.getMetadata().getNamespace()))
+                    || !matchesLabel(service, labelSelector)) {
+                continue;
+            }
+            String name = service.getMetadata().getName();
+            if (nameFilter.test(name)) {
+                names.add(name);
+            }
+        }
+        return names;
+    }
+
+    private static Predicate<String> namePrefixFilter(String prefix) {
+        return name -> name.equals(prefix) || name.startsWith(prefix + "-");
+    }
+
+    private static boolean matchesLabel(K8sService service, String labelSelector) {
+        if (labelSelector == null) {
+            return true;
+        }
+        int equalsAt = labelSelector.indexOf('=');
+        if (equalsAt < 1 || service.getMetadata().getLabels() == null) {
+            return false;
+        }
+        return labelSelector.substring(equalsAt + 1)
+                .equals(service.getMetadata().getLabels().get(labelSelector.substring(0, equalsAt)));
     }
 }

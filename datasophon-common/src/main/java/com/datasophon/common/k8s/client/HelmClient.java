@@ -46,11 +46,8 @@ public class HelmClient implements AutoCloseable {
     private final String helmPath;
 
     private final String kubeConfig;
-    private final String token;
-    private final String username;
-    private final String password;
     private final String serverCert;
-    private final String serverName;
+    private final boolean readOnly;
 
     private final File tempDir;
 
@@ -79,10 +76,7 @@ public class HelmClient implements AutoCloseable {
         } else {
             this.serverCert = null;
         }
-        this.token = options.getToken();
-        this.username = options.getUsername();
-        this.password = options.getPassword();
-        this.serverName = options.getServerName();
+        this.readOnly = options.isReadOnly();
         this.kubeConfig = SecureKubeConfigWriter.write(options, tempDir, serverCert);
 
         JsonMapper.Builder builder = JsonMapper.builder();
@@ -174,6 +168,7 @@ public class HelmClient implements AutoCloseable {
      * @throws HelmException 命令执行失败
      */
     public HelmReleaseVO upgrade(UpgradeParams params) throws HelmException {
+        requireWritable();
         if (StrUtil.isBlank(params.getReleaseName())) {
             throw new HelmException("releaseName 不能为空");
         }
@@ -403,6 +398,7 @@ public class HelmClient implements AutoCloseable {
      * @throws HelmException 命令执行失败
      */
     public void uninstall(UninstallParams params) throws HelmException {
+        requireWritable();
         if (StrUtil.isBlank(params.getReleaseName())) {
             throw new HelmException("releaseName 不能为空");
         }
@@ -445,6 +441,12 @@ public class HelmClient implements AutoCloseable {
     public void close() {
         if (tempDir != null) {
             FileUtil.del(tempDir);
+        }
+    }
+
+    private void requireWritable() {
+        if (readOnly) {
+            throw new HelmException("接管集群为只读模式，禁止执行 Helm 写操作");
         }
     }
 
