@@ -140,6 +140,43 @@ class K8sTakeoverRegisterServiceTest {
     }
 
     @Test
+    @DisplayName("存算一体 Doris（doris-coupled，fe/be 两角色）登记后 monitor_profile 与 metricsJob 正确")
+    void registersCoupledDorisWithFeAndBeRoles() {
+        Fixture fixture = new Fixture();
+        when(fixture.scanService.scan(7)).thenReturn(new K8sTakeoverScanResult(
+                List.of(Fixture.scanned("mycluster", "doris", 6, "CR")),
+                List.of(), List.of(), List.of()));
+
+        FrameK8sServiceEntity dorisCoupledDefinition = new FrameK8sServiceEntity();
+        dorisCoupledDefinition.setId(6);
+        dorisCoupledDefinition.setArtifact("{\"kind\":\"operator\",\"operator\":{"
+                + "\"group\":\"doris.selectdb.com\",\"version\":\"v1\","
+                + "\"kind\":\"DorisCluster\",\"plural\":\"dorisclusters\","
+                + "\"monitorProfile\":\"doris-coupled\","
+                + "\"roles\":[{\"name\":\"fe\",\"jobPattern\":\"-fe$\"},"
+                + "{\"name\":\"be\",\"jobPattern\":\"-be$\"}]}}");
+        when(fixture.frameService.getById(6)).thenReturn(dorisCoupledDefinition);
+        Map<String, List<String>> roleJobs = Map.of(
+                "fe", List.of("mycluster-fe"),
+                "be", List.of("mycluster-be"));
+        when(fixture.jobProbe.probe(any(), eq("mycluster"), eq("doris"), any(), any()))
+                .thenReturn(new K8sMetricsJobProbeService.ProbeResult(
+                        "mycluster-fe,mycluster-be", roleJobs));
+
+        List<K8sTakeoverRegisterResult> results = fixture.service.register(7, List.of(
+                new K8sTakeoverRegisterService.Binding("mycluster", "doris", 6, "CR")));
+
+        ArgumentCaptor<K8sServiceInstance> captor = ArgumentCaptor.forClass(K8sServiceInstance.class);
+        verify(fixture.instanceService).updateById(captor.capture());
+        K8sServiceInstance saved = captor.getValue();
+        assertThat(saved.getSourceKind()).isEqualTo(InstanceSourceKind.CR);
+        assertThat(saved.getMonitorProfile()).contains("doris-coupled").contains("fe").contains("be");
+        assertThat(saved.getMetricsJob()).isEqualTo("mycluster-fe,mycluster-be");
+
+        assertThat(results.get(0).roleJobs()).isEqualTo(roleJobs);
+    }
+
+    @Test
     @DisplayName("请求中的 release 不在最新扫描结果时拒绝登记")
     void rejectsBindingNotPresentInLatestScan() {
         Fixture fixture = new Fixture();

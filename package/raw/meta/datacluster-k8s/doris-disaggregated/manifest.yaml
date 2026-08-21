@@ -1,4 +1,4 @@
-name: doris
+name: doris-disaggregated
 version: "3.0.0"
 description: Doris 存算分离集群（DorisDisaggregatedCluster CR）
 type: MIDDLEWARE

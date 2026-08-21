@@ -1,0 +1,4 @@
+-- 本版本只涉及 DML（doris 框架服务定义改名为 doris-disaggregated，与新增的 doris-coupled
+-- 对称命名），无表结构变更。
+-- 迁移执行器 DatabaseMigration.runScript 对 dml 资源做 resource.exists() 判空，若同版本目录下
+-- 缺 DML 文件会直接 NPE（2.3.3 已验证过这个坑），因此即使无 DDL 变更也要保留本空文件。

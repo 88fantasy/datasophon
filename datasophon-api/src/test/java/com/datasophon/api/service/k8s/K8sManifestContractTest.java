@@ -99,7 +99,7 @@ class K8sManifestContractTest {
     @Test
     @DisplayName("Doris manifest 的 operator 块解析出正确的 GVK 与角色探测正则")
     void dorisManifest_operatorBlockParsesCorrectly() throws IOException {
-        Path dorisManifest = MANIFEST_DIR.resolve("doris").resolve("manifest.yaml");
+        Path dorisManifest = MANIFEST_DIR.resolve("doris-disaggregated").resolve("manifest.yaml");
         K8sServiceInfo info = YamlUtils.parseYaml(
                 Files.readString(dorisManifest, StandardCharsets.UTF_8), K8sServiceInfo.class);
 
@@ -131,6 +131,38 @@ class K8sManifestContractTest {
                 .isTrue();
         assertThat("doris-disaggregated-cluster-ms".matches(".*" + operator.getRoles().get(1).getJobPattern()))
                 .isFalse();
+    }
+
+    @Test
+    @DisplayName("doris-coupled manifest 的 operator 块解析出正确的 GVK 与角色探测正则")
+    void dorisCoupledManifest_operatorBlockParsesCorrectly() throws IOException {
+        Path dorisCoupledManifest = MANIFEST_DIR.resolve("doris-coupled").resolve("manifest.yaml");
+        K8sServiceInfo info = YamlUtils.parseYaml(
+                Files.readString(dorisCoupledManifest, StandardCharsets.UTF_8), K8sServiceInfo.class);
+
+        K8sArtifact artifact = info.getArtifact();
+        assertThat(artifact.getKind()).isEqualTo(K8sArtifact.KIND_OPERATOR);
+        // 纯 CR 扫描识别，不提供 datasophon 自装路径
+        assertThat(artifact.getYaml()).isNull();
+        assertThat(artifact.getHelm()).isNull();
+
+        K8sOperatorArtifact operator = artifact.getOperator();
+        assertThat(operator.getGroup()).isEqualTo("doris.selectdb.com");
+        assertThat(operator.getVersion()).isEqualTo("v1");
+        assertThat(operator.getKind()).isEqualTo("DorisCluster");
+        assertThat(operator.getPlural()).isEqualTo("dorisclusters");
+        assertThat(operator.getMonitorProfile()).isEqualTo("doris-coupled");
+
+        assertThat(operator.getRoles()).hasSize(2);
+        assertThat(operator.getRoles().get(0).getName()).isEqualTo("fe");
+        assertThat(operator.getRoles().get(0).getJobPattern()).isEqualTo("-fe$");
+        assertThat(operator.getRoles().get(1).getName()).isEqualTo("be");
+        assertThat(operator.getRoles().get(1).getJobPattern()).isEqualTo("-be$");
+
+        assertThat("mycluster-fe".matches(".*" + operator.getRoles().get(0).getJobPattern())).isTrue();
+        assertThat("mycluster-be".matches(".*" + operator.getRoles().get(1).getJobPattern())).isTrue();
+        assertThat("mycluster-cg1".matches(".*" + operator.getRoles().get(0).getJobPattern())).isFalse();
+        assertThat("mycluster-cg1".matches(".*" + operator.getRoles().get(1).getJobPattern())).isFalse();
     }
 
     @Test

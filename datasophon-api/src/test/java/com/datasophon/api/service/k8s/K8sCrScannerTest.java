@@ -31,7 +31,7 @@ class K8sCrScannerTest {
         K8sService k8sService = mock(K8sService.class);
         when(k8sService.batchExec(any(), any(), any())).thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
 
-        FrameK8sServiceEntity doris = definition("doris", dorisArtifact());
+        FrameK8sServiceEntity doris = definition("doris-disaggregated", dorisArtifact());
         K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(doris));
 
         assertThat(result.crs()).hasSize(1);
@@ -43,13 +43,41 @@ class K8sCrScannerTest {
     }
 
     @Test
+    @DisplayName("两个独立框架服务（各自一个 operator）互不干扰，各自的 CR 都能扫到")
+    void scansMultipleDefinitionsEachWithOwnOperator_bothCrdsIndependentlyFound() {
+        K8sService k8sService = mock(K8sService.class);
+        when(k8sService.batchExec(any(), any(), eq("扫描 CRD dorisdisaggregatedclusters.disaggregated.cluster.doris.com")))
+                .thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
+        when(k8sService.batchExec(any(), any(), eq("扫描 CRD dorisclusters.doris.selectdb.com")))
+                .thenReturn(crList(cr("mycluster", "doris")));
+
+        FrameK8sServiceEntity dorisDisaggregated = definition("doris-disaggregated", dorisArtifact());
+        FrameK8sServiceEntity dorisCoupled = definition("doris-coupled", dorisCoupledArtifact());
+
+        K8sCrScanner.CrScanResult result =
+                new K8sCrScanner(k8sService).scan(CONFIG, List.of(dorisDisaggregated, dorisCoupled));
+
+        assertThat(result.crs()).hasSize(2);
+        assertThat(result.crs())
+                .anySatisfy(c -> {
+                    assertThat(c.kind()).isEqualTo("DorisDisaggregatedCluster");
+                    assertThat(c.definition()).isSameAs(dorisDisaggregated);
+                })
+                .anySatisfy(c -> {
+                    assertThat(c.kind()).isEqualTo("DorisCluster");
+                    assertThat(c.definition()).isSameAs(dorisCoupled);
+                });
+        assertThat(result.complete()).isTrue();
+    }
+
+    @Test
     @DisplayName("多个定义指向同一 CRD（同 group+plural）只发一次 kubectl 请求")
     void dedupesRequestsForSameCrd() {
         K8sService k8sService = mock(K8sService.class);
         when(k8sService.batchExec(any(), any(), any())).thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
 
         // 构造两个 artifact 完全相同（同 group+plural）的定义，模拟"同一 CRD 被多个框架服务引用"
-        FrameK8sServiceEntity a = definition("doris", dorisArtifact());
+        FrameK8sServiceEntity a = definition("doris-disaggregated", dorisArtifact());
         FrameK8sServiceEntity b = definition("doris-alias", dorisArtifact());
 
         K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(a, b));
@@ -67,7 +95,7 @@ class K8sCrScannerTest {
         when(k8sService.batchExec(any(), any(), eq("扫描 CRD nacos.nacos.io")))
                 .thenReturn(crList(cr("nacos", "prod")));
 
-        FrameK8sServiceEntity doris = definition("doris", dorisArtifact());
+        FrameK8sServiceEntity doris = definition("doris-disaggregated", dorisArtifact());
         FrameK8sServiceEntity nacos = definition("nacos", nacosArtifact());
 
         K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(doris, nacos));
@@ -101,6 +129,14 @@ class K8sCrScannerTest {
                 + "\"kind\":\"DorisDisaggregatedCluster\",\"plural\":\"dorisdisaggregatedclusters\","
                 + "\"monitorProfile\":\"doris-disaggregated\","
                 + "\"roles\":[{\"name\":\"fe\",\"jobPattern\":\"-fe$\"},{\"name\":\"compute\",\"jobPattern\":\"-cg\\\\d+$\"}]}}";
+    }
+
+    private static String dorisCoupledArtifact() {
+        return "{\"kind\":\"operator\",\"operator\":{"
+                + "\"group\":\"doris.selectdb.com\",\"version\":\"v1\","
+                + "\"kind\":\"DorisCluster\",\"plural\":\"dorisclusters\","
+                + "\"monitorProfile\":\"doris-coupled\","
+                + "\"roles\":[{\"name\":\"fe\",\"jobPattern\":\"-fe$\"},{\"name\":\"be\",\"jobPattern\":\"-be$\"}]}}";
     }
 
     private static String nacosArtifact() {

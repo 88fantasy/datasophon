@@ -666,7 +666,7 @@ describe('K8s service instance monitoring tab', () => {
     vi.mocked(getK8sInstance).mockResolvedValue({
       data: {
         id: 101,
-        serviceName: 'doris',
+        serviceName: 'doris-disaggregated',
         metricsJob: 'doris-fe,doris-cg1,doris-cg2',
         sourceKind: 'CR',
         monitorProfile,
@@ -675,11 +675,41 @@ describe('K8s service instance monitoring tab', () => {
 
     renderK8s();
 
-    await screen.findByText(`Doris dashboard cluster 7 profile ${monitorProfile}`);
+    await screen.findByText(
+      `Doris dashboard cluster 7 profile ${monitorProfile}`,
+    );
     expect(dorisDashboardSpy).toHaveBeenCalledWith({
       clusterId: 7,
       embedded: true,
       job: 'doris-fe,doris-cg1,doris-cg2',
+      monitorProfile,
+    });
+  });
+
+  it('hands the registered monitorProfile through to a CR-backed coupled Doris dashboard', async () => {
+    const monitorProfile = JSON.stringify({
+      profile: 'doris-coupled',
+      roles: { fe: ['mycluster-fe'], be: ['mycluster-be'] },
+    });
+    vi.mocked(getK8sInstance).mockResolvedValue({
+      data: {
+        id: 102,
+        serviceName: 'doris-coupled',
+        metricsJob: 'mycluster-fe,mycluster-be',
+        sourceKind: 'CR',
+        monitorProfile,
+      },
+    } as never);
+
+    renderK8s();
+
+    await screen.findByText(
+      `Doris dashboard cluster 7 profile ${monitorProfile}`,
+    );
+    expect(dorisDashboardSpy).toHaveBeenCalledWith({
+      clusterId: 7,
+      embedded: true,
+      job: 'mycluster-fe,mycluster-be',
       monitorProfile,
     });
   });

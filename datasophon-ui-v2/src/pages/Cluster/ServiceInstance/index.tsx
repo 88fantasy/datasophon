@@ -48,7 +48,8 @@ const K8S_MONITOR_DASHBOARDS: Record<
   }>
 > = {
   apisix: ApisixDashboard,
-  doris: DorisDashboard,
+  'doris-disaggregated': DorisDashboard,
+  'doris-coupled': DorisDashboard,
   'dolphinscheduler-helm': DSDashboard,
   'juicefs-csi-driver': JuiceFSDashboard,
   kyuubi: KyuubiDashboard,
