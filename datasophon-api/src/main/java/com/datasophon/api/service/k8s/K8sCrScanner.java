@@ -41,13 +41,28 @@ public class K8sCrScanner {
     }
 
     /**
+     * CR 扫描结果。
+     *
+     * @param crs        本次成功扫到的 CR 实例
+     * @param failedCrds 扫描失败的 CRD 标识（{@code plural.group}）；非空代表本次结果不完整——
+     *                   调用方不能把「没扫到」当成「确认不存在」，否则一次 API server 抖动 /
+     *                   RBAC 变更就会让已登记的 CR 实例被误判为失联
+     */
+    public record CrScanResult(List<ScannedCr> crs, List<String> failedCrds) {
+
+        public boolean complete() {
+            return failedCrds.isEmpty();
+        }
+    }
+
+    /**
      * 扫描全部 {@code kind=operator} 框架服务定义对应的 CR 实例。
      *
      * <p>多个框架服务定义指向同一 CRD（同 group+plural）时只发一次 kubectl 请求；单个 CRD 扫描
      * 失败（如 CRD 未安装，属常态，不是每个接管集群都装了每种 operator）只记 warn 日志跳过，
-     * 不阻断其他 CRD 的扫描。
+     * 不阻断其他 CRD 的扫描，但会计入返回结果的 {@code failedCrds}，供调用方判断本次结果是否完整。
      */
-    public List<ScannedCr> scan(K8sClusterConfig config, List<FrameK8sServiceEntity> definitions) {
+    public CrScanResult scan(K8sClusterConfig config, List<FrameK8sServiceEntity> definitions) {
         Map<String, FrameK8sServiceEntity> crdToDefinition = new LinkedHashMap<>();
         Map<String, K8sOperatorArtifact> crdToOperator = new LinkedHashMap<>();
         for (FrameK8sServiceEntity definition : definitions) {
@@ -61,6 +76,7 @@ public class K8sCrScanner {
         }
 
         List<ScannedCr> results = new ArrayList<>();
+        List<String> failedCrds = new ArrayList<>();
         for (Map.Entry<String, K8sOperatorArtifact> entry : crdToOperator.entrySet()) {
             K8sOperatorArtifact operator = entry.getValue();
             FrameK8sServiceEntity definition = crdToDefinition.get(entry.getKey());
@@ -80,9 +96,10 @@ public class K8sCrScanner {
                 }
             } catch (Exception e) {
                 log.warn("扫描 CRD {} 失败：{}", entry.getKey(), e.getMessage());
+                failedCrds.add(entry.getKey());
             }
         }
-        return results;
+        return new CrScanResult(results, failedCrds);
     }
 
     private K8sOperatorArtifact operatorOf(FrameK8sServiceEntity definition) {

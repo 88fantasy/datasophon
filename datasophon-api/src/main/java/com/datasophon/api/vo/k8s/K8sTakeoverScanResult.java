@@ -5,13 +5,17 @@ import java.util.List;
 /**
  * 接管扫描结果。
  *
- * @param matched 已自动匹配到框架服务定义的 release，可直接登记
- * @param pending 未匹配上的 release，需人工从框架服务目录中指定绑定关系
- * @param missing 已登记但对应 release 已不在集群中的接管实例（重扫时的对账结果）
+ * @param matched    已自动匹配到框架服务定义的 release，可直接登记
+ * @param pending    未匹配上的 release，需人工从框架服务目录中指定绑定关系
+ * @param missing    已登记但对应 release 已不在集群中的接管实例（重扫时的对账结果）
+ * @param failedCrds 本次 CR 扫描失败的 CRD 标识（{@code plural.group}）；非空代表 CR 扫描不完整——
+ *                   {@code missing} 里不会包含任何本应由这些失败 CRD 覆盖的 CR 实例（避免误报失联），
+ *                   前端应据此展示「部分 CR 未扫描完整」的降级提示，而不是静默当成扫描正常完成
  */
 public record K8sTakeoverScanResult(List<ScannedRelease> matched,
                                     List<ScannedRelease> pending,
-                                    List<MissingInstance> missing) {
+                                    List<MissingInstance> missing,
+                                    List<String> failedCrds) {
 
     /**
      * 扫描到的单个 Helm release。

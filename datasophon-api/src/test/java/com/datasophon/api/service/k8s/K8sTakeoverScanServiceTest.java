@@ -185,6 +185,33 @@ class K8sTakeoverScanServiceTest {
     }
 
     @Test
+    @DisplayName("CR 扫描不完整（有 CRD 失败）时，已登记的 CR 实例不被误报进 missing")
+    void doesNotReportCrInstanceMissingWhenCrScanIncomplete() {
+        List<K8sServiceInstanceVO> registered =
+                List.of(imported(201, "doris", "doris-disaggregated-cluster", "doris", "CR"));
+
+        // 模拟本次 CR 扫描一个 CR 都没扫到（CRD 扫描失败），但带上失败标记
+        K8sTakeoverScanResult result = scan(List.of(), List.of(), registered, List.of(),
+                List.of("dorisdisaggregatedclusters.disaggregated.cluster.doris.com"));
+
+        assertThat(result.missing()).isEmpty();
+        assertThat(result.failedCrds()).containsExactly("dorisdisaggregatedclusters.disaggregated.cluster.doris.com");
+    }
+
+    @Test
+    @DisplayName("CR 扫描不完整时，Helm 类目的 missing 判定不受影响，照常判定")
+    void helmMissingStillDetectedWhenCrScanIncomplete() {
+        List<FrameK8sServiceEntity> definitions = List.of(definition(2, "zookeeper", "MIDDLEWARE", null));
+        List<K8sServiceInstanceVO> registered = List.of(imported(101, "prod", "zookeeper", "zookeeper"));
+
+        K8sTakeoverScanResult result = scan(List.of(), definitions, registered, List.of(),
+                List.of("nacos.nacos.io"));
+
+        assertThat(result.missing()).hasSize(1);
+        assertThat(result.missing().get(0).instanceId()).isEqualTo(101);
+    }
+
+    @Test
     @DisplayName("CR 与 Helm release 同 namespace+name 时仍作为两个部署单元返回")
     void distinguishesCrFromHelmOnNameCollision() {
         // 极端边界：operator 自身恰好用 helm 装且与 CR 实例撞了 namespace/name
@@ -216,6 +243,14 @@ class K8sTakeoverScanServiceTest {
                                        List<FrameK8sServiceEntity> definitions,
                                        List<K8sServiceInstanceVO> registered,
                                        List<K8sCrScanner.ScannedCr> crs) {
+        return scan(releases, definitions, registered, crs, List.of());
+    }
+
+    private K8sTakeoverScanResult scan(List<HelmReleaseListItemVO> releases,
+                                       List<FrameK8sServiceEntity> definitions,
+                                       List<K8sServiceInstanceVO> registered,
+                                       List<K8sCrScanner.ScannedCr> crs,
+                                       List<String> failedCrds) {
         HelmReleaseReader reader = mock(HelmReleaseReader.class);
         K8sCrScanner crScanner = mock(K8sCrScanner.class);
         FrameK8sServiceService frameService = mock(FrameK8sServiceService.class);
@@ -225,7 +260,7 @@ class K8sTakeoverScanServiceTest {
         when(configService.getByClusterId(7)).thenReturn(new K8sClusterConfig());
         when(frameService.listNewest(7)).thenReturn(definitions);
         when(reader.listDeployed(any())).thenReturn(releases);
-        when(crScanner.scan(any(), any())).thenReturn(crs);
+        when(crScanner.scan(any(), any())).thenReturn(new K8sCrScanner.CrScanResult(crs, failedCrds));
         when(instanceService.queryInstanceList(7)).thenReturn(registered);
 
         return new K8sTakeoverScanService(

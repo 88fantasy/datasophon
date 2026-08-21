@@ -68,6 +68,23 @@ class HostResponseUsageTest {
     }
 
     @Test
+    @DisplayName("节点名与 IP 不同时，memory/disk 落在节点名一条记录、load 落在 IP 另一条记录，两条需要合并生效")
+    void mergesHostnameAndIpKeyedRecordsWhenNodeNameDiffersFromIp() {
+        // 复现 C3：memory/disk 按 k8s.node.name 归键，load 按 service_instance_id（IP）归键，
+        // 节点名 != IP 时两者是 usage 里的两条不同记录；命中 hostname 那条（load 为 null）后
+        // 若不回落 ip 那条，averageLoad 会恒为 "-"。
+        HostResponse host = k8sHost("node-19", "192.168.201.19");
+
+        host.applyUsage(Map.of(
+                "node-19", new HostUsage(60.2 * GB, 37.6 * GB, null),
+                "192.168.201.19", new HostUsage(null, null, 5.46)));
+
+        assertThat(host.getUsedMem()).isEqualTo(60);
+        assertThat(host.getUsedDisk()).isEqualTo(38);
+        assertThat(host.getAverageLoad()).isEqualTo("5.46");
+    }
+
+    @Test
     @DisplayName("指标部分缺失时只覆盖有值的字段")
     void appliesOnlyPresentMetrics() {
         // 负载来自 hostmetrics receiver，与内存/磁盘不同源，可能单独缺失

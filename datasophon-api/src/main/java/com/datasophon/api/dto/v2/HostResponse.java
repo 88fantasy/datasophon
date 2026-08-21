@@ -158,7 +158,12 @@ public class HostResponse {
     /**
      * 用 OTel 节点指标补齐 K8s 主机的用量字段。
      *
-     * <p>指标里节点的标识是节点名（本环境即节点 IP），两侧都可能对不上——
+     * <p>{@code usage} 里 memory / disk 按 {@code k8s.node.name} 归键，load 按
+     * {@code service_instance_id}（节点 IP）归键（见 {@code K8sDashboardMetricsService#hostUsage}
+     * 的说明——节点名不同于 IP 时两者是不同的 key，同一节点在 {@code usage} 里可能拆成
+     * hostname 一条（含 memory/disk）、ip 一条（含 load）两条记录）。
+     * 因此这里按字段分别取值、互相回落，而不是整条记录二选一——否则命中 hostname 那条
+     * （memory/disk 有值但 load 为 null）后就不会再去 ip 那条里找 load，导致 load1m 恒为 {@code -}。
      * 没有采集到的节点（如未配 toleration 的 control-plane）保持 {@code fromK8sNode} 的降级值。
      *
      * @param usage 节点标识 → 用量，来自 {@code K8sDashboardMetricsService#hostUsage}
@@ -167,21 +172,28 @@ public class HostResponse {
         if (usage == null || usage.isEmpty()) {
             return;
         }
-        K8sDashboardMetricsService.HostUsage row = usage.get(hostname);
-        if (row == null) {
-            row = usage.get(ip);
-        }
-        if (row == null) {
+        K8sDashboardMetricsService.HostUsage byHostname = usage.get(hostname);
+        K8sDashboardMetricsService.HostUsage byIp = usage.get(ip);
+        if (byHostname == null && byIp == null) {
             return;
         }
-        if (row.memoryBytes() != null) {
-            usedMem = bytesToGb(row.memoryBytes());
+        Double memoryBytes = byHostname != null && byHostname.memoryBytes() != null
+                ? byHostname.memoryBytes()
+                : (byIp != null ? byIp.memoryBytes() : null);
+        Double diskBytes = byHostname != null && byHostname.diskBytes() != null
+                ? byHostname.diskBytes()
+                : (byIp != null ? byIp.diskBytes() : null);
+        Double load1m = byHostname != null && byHostname.load1m() != null
+                ? byHostname.load1m()
+                : (byIp != null ? byIp.load1m() : null);
+        if (memoryBytes != null) {
+            usedMem = bytesToGb(memoryBytes);
         }
-        if (row.diskBytes() != null) {
-            usedDisk = bytesToGb(row.diskBytes());
+        if (diskBytes != null) {
+            usedDisk = bytesToGb(diskBytes);
         }
-        if (row.load1m() != null) {
-            averageLoad = String.format("%.2f", row.load1m());
+        if (load1m != null) {
+            averageLoad = String.format("%.2f", load1m);
         }
     }
 

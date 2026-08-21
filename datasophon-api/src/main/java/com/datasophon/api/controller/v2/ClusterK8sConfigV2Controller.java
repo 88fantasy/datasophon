@@ -62,23 +62,46 @@ public class ClusterK8sConfigV2Controller extends ApiController {
     /**
      * Helm values 历史版本列表（仅含 id / version，降序）。
      *
+     * <p>同 {@link #save} 的越权问题：路径里的 {@code clusterId} 与 {@code instanceId} 互相独立，
+     * 换个 {@code instanceId} 就能列出任意实例（含别的集群）的 values 版本号 → valueId 映射，
+     * 是拿到 {@code valueId} 后调用 {@link #info} 读全文的前置步骤。这里用 {@link #belongsToCluster}
+     * 校验返回的记录确实属于路径声明的集群。
+     *
+     * @param clusterId  路径中的集群 ID
      * @param instanceId 实例 ID
      */
     @GetMapping("/versions")
     @Operation(summary = "获取 Helm values 版本列表")
-    public ApiResponse<List<K8sServiceInstanceValues>> versions(@PathVariable Integer instanceId) {
-        return ApiResponse.ok(k8sServiceInstanceValuesService.listSimpleByInstanceId(instanceId));
+    public ApiResponse<List<K8sServiceInstanceValues>> versions(@PathVariable Integer clusterId,
+                                                                @PathVariable Integer instanceId) {
+        List<K8sServiceInstanceValues> list = k8sServiceInstanceValuesService.listSimpleByInstanceId(instanceId);
+        if (!list.isEmpty() && !belongsToCluster(list.get(0), clusterId)) {
+            return ApiResponse.fail(404, "配置记录不存在");
+        }
+        return ApiResponse.ok(list);
     }
 
     /**
      * 按 valueId 读取完整 Helm values（含 values / deltaValues / metaFileType）。
      *
-     * @param valueId values 记录 ID
+     * <p>同 {@link #save} 的越权问题：{@code valueId} 未做归属校验，任意登录用户换个 URL 里的
+     * clusterId/instanceId/valueId 组合即可读到别的集群的 Helm values 全文（routinely 含密码等
+     * 敏感值）。这里用 {@link #belongsToCluster} 校验记录确实属于路径声明的集群与实例。
+     *
+     * @param clusterId  路径中的集群 ID
+     * @param instanceId 路径中的实例 ID
+     * @param valueId    values 记录 ID
      */
     @GetMapping("/{valueId}")
     @Operation(summary = "读取指定版本的 Helm values")
-    public ApiResponse<K8sServiceInstanceValues> info(@PathVariable Integer valueId) {
-        return ApiResponse.ok(k8sServiceInstanceValuesService.getById(valueId));
+    public ApiResponse<K8sServiceInstanceValues> info(@PathVariable Integer clusterId,
+                                                      @PathVariable Integer instanceId,
+                                                      @PathVariable Integer valueId) {
+        K8sServiceInstanceValues db = k8sServiceInstanceValuesService.getById(valueId);
+        if (db == null || !belongsToCluster(db, clusterId) || !Objects.equals(db.getInstanceId(), instanceId)) {
+            return ApiResponse.fail(404, "配置记录不存在");
+        }
+        return ApiResponse.ok(db);
     }
 
     /**
@@ -98,10 +121,18 @@ public class ClusterK8sConfigV2Controller extends ApiController {
     public ApiResponse<Void> save(@PathVariable Integer clusterId,
                                   @RequestBody K8sServiceInstanceValuesUpdateDTO req) {
         K8sServiceInstanceValues db = k8sServiceInstanceValuesService.getById(req.getId());
-        if (db == null || !Objects.equals(db.getClusterId(), clusterId)) {
+        if (!belongsToCluster(db, clusterId)) {
             return ApiResponse.fail(404, "配置记录不存在");
         }
         k8sServiceInstanceValuesService.update(req);
         return ApiResponse.ok();
+    }
+
+    /**
+     * 归属校验：记录存在且 {@code clusterId} 与路径声明的一致。
+     * {@code versions} / {@code info} / {@code save} 三个端点共用，避免下次再漏第四个端点。
+     */
+    private boolean belongsToCluster(K8sServiceInstanceValues db, Integer clusterId) {
+        return db != null && Objects.equals(db.getClusterId(), clusterId);
     }
 }

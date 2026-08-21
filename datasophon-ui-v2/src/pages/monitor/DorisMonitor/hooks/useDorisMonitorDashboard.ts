@@ -54,6 +54,14 @@ export interface DorisDashboardData {
   beInstances: string[];
   loading: boolean;
   error?: string;
+  /**
+   * 存算分离模式下 monitorProfile.roles 是否登记了该角色的 job（耦合模式下恒为
+   * true，因为不存在角色概念）。为 false 时该角色仍会按 `^$` 发起查询，只是必然
+   * 零命中（而不是退化成 `.+` 把别的实例聚合进来）——用于 UI 层区分「该角色暂无
+   * 采集 job」与「查询到的真实数据恰好为 0」（D1）。
+   */
+  feRoleAvailable: boolean;
+  computeRoleAvailable: boolean;
 }
 
 interface UseDorisMonitorDashboardParams {
@@ -97,6 +105,28 @@ const EMPTY_SERIES_COUPLED: Record<string, TimeSeriesPoint[]> =
 const EMPTY_SERIES_DISAGG: Record<string, TimeSeriesPoint[]> =
   Object.fromEntries(DISAGG_ALL_IDS.map((id) => [id, []]));
 
+/** 匹配不到任何真实 job label 的正则；job 标签不会是空字符串，故只匹配空串即可实现「零命中」。 */
+const NO_MATCH_JOB = '^$';
+
+/**
+ * 存算分离模式下把 monitorProfile.roles[role] 转成 job 过滤正则。
+ *
+ * 与 selectionsToRegex 的「空数组 = 全选 `.+`」语义刻意区分开：这里的空/缺省
+ * 表示后端 K8sTakeoverRegisterService.commit 在探测阶段没有为该角色发现任何
+ * job（只在探测到 job 时才写角色键），语义是「该角色暂无可用 job」而非「用户
+ * 没有筛选」。退化成 `.+` 会把其它 Doris 实例的数据一起聚合进当前看板，所以
+ * 这里必须匹配不到任何序列。
+ */
+export function resolveRoleJob(roleJobs: string[] | undefined): {
+  job: string;
+  available: boolean;
+} {
+  if (!roleJobs || roleJobs.length === 0) {
+    return { job: NO_MATCH_JOB, available: false };
+  }
+  return { job: selectionsToRegex(roleJobs), available: true };
+}
+
 export function useDorisMonitorDashboard({
   variables,
   activeSegment,
@@ -117,14 +147,10 @@ export function useDorisMonitorDashboard({
   );
   // 存算分离下 FE/计算组各自的 job 正则；耦合模式复用既有 job prop 范式（整个看板一个过滤）。
   const coupledJob = mode === 'coupled' ? metricsJobToRegex(job) : undefined;
-  const feJob =
-    mode === 'disaggregated'
-      ? selectionsToRegex(profile?.roles?.fe ?? [])
-      : coupledJob;
-  const computeJob =
-    mode === 'disaggregated'
-      ? selectionsToRegex(profile?.roles?.compute ?? [])
-      : coupledJob;
+  const feRole = resolveRoleJob(profile?.roles?.fe);
+  const computeRole = resolveRoleJob(profile?.roles?.compute);
+  const feJob = mode === 'disaggregated' ? feRole.job : coupledJob;
+  const computeJob = mode === 'disaggregated' ? computeRole.job : coupledJob;
 
   // 用 doris_fe_query_total / doris_be_memory_allocated_bytes 作为标签枚举基准；
   // 存算分离下按角色 job 过滤，只统计最近 5 分钟有上报的实例（后端 queryLabels 语义）。
@@ -229,5 +255,7 @@ export function useDorisMonitorDashboard({
     beInstances,
     loading: feData.loading || computeData.loading,
     error: feData.error ?? computeData.error,
+    feRoleAvailable: mode !== 'disaggregated' || feRole.available,
+    computeRoleAvailable: mode !== 'disaggregated' || computeRole.available,
   };
 }

@@ -67,9 +67,10 @@ const bytesPerSecondFormatter = (value: number) => `${formatBytes(value)}/s`;
 const rowsPerSecondFormatter = (value: number) => `${value.toFixed(0)} rows/s`;
 const secondsPerSecondFormatter = (value: number) => `${value.toFixed(2)}s/s`;
 
-const SectionHeader: FC<{ title: string; subtitle: string }> = ({
+const SectionHeader: FC<{ title: string; subtitle: string; warning?: string }> = ({
   title,
   subtitle,
+  warning,
 }) => {
   const { styles } = useStyles();
 
@@ -79,9 +80,17 @@ const SectionHeader: FC<{ title: string; subtitle: string }> = ({
       <Text type="secondary" style={{ marginLeft: 8 }}>
         {subtitle}
       </Text>
+      {warning && (
+        <Text type="warning" style={{ marginLeft: 8 }}>
+          {warning}
+        </Text>
+      )}
     </div>
   );
 };
+
+/** roles 缺该角色时（探测阶段未发现对应 job）展示的空态提示（D1） */
+const NO_ROLE_JOB_HINT = '该角色暂无采集 job';
 
 interface DorisDashboardProps {
   clusterId?: number;
@@ -133,16 +142,25 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
     setRefreshKey((key) => key + 1);
   }, []);
 
-  const { mode, instant, series, clusters, feInstances, beInstances, loading } =
-    useDorisMonitorDashboard({
-      variables,
-      activeSegment,
-      timeRange,
-      clusterId,
-      refreshKey,
-      job,
-      monitorProfile,
-    });
+  const {
+    mode,
+    instant,
+    series,
+    clusters,
+    feInstances,
+    beInstances,
+    loading,
+    feRoleAvailable,
+    computeRoleAvailable,
+  } = useDorisMonitorDashboard({
+    variables,
+    activeSegment,
+    timeRange,
+    clusterId,
+    refreshKey,
+    job,
+    monitorProfile,
+  });
   const isDisaggregated = mode === 'disaggregated';
 
   useEffect(() => {
@@ -312,6 +330,11 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
                 <SectionHeader
                   title={t('pages.dorisMonitor.section.fe')}
                   subtitle={t('pages.dorisMonitor.section.fe.subtitle')}
+                  warning={
+                    isDisaggregated && !feRoleAvailable
+                      ? NO_ROLE_JOB_HINT
+                      : undefined
+                  }
                 />
                 <Row gutter={MONITOR_ROW_GUTTER}>
                   <PanelCol span={12}>
@@ -445,6 +468,9 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
                         subtitle={t(
                           'pages.dorisMonitor.section.compute.subtitle',
                         )}
+                        warning={
+                          !computeRoleAvailable ? NO_ROLE_JOB_HINT : undefined
+                        }
                       />
                       <Row gutter={MONITOR_ROW_GUTTER}>
                         <PanelCol span={8}>

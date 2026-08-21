@@ -8,7 +8,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.datasophon.api.service.k8s.K8sCrScanner.ScannedCr;
 import com.datasophon.common.k8s.vo.k8s.K8sResource;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
@@ -33,13 +32,14 @@ class K8sCrScannerTest {
         when(k8sService.batchExec(any(), any(), any())).thenReturn(crList(cr("doris-disaggregated-cluster", "doris")));
 
         FrameK8sServiceEntity doris = definition("doris", dorisArtifact());
-        List<ScannedCr> result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(doris));
+        K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(doris));
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).name()).isEqualTo("doris-disaggregated-cluster");
-        assertThat(result.get(0).namespace()).isEqualTo("doris");
-        assertThat(result.get(0).kind()).isEqualTo("DorisDisaggregatedCluster");
-        assertThat(result.get(0).definition()).isSameAs(doris);
+        assertThat(result.crs()).hasSize(1);
+        assertThat(result.crs().get(0).name()).isEqualTo("doris-disaggregated-cluster");
+        assertThat(result.crs().get(0).namespace()).isEqualTo("doris");
+        assertThat(result.crs().get(0).kind()).isEqualTo("DorisDisaggregatedCluster");
+        assertThat(result.crs().get(0).definition()).isSameAs(doris);
+        assertThat(result.complete()).isTrue();
     }
 
     @Test
@@ -52,9 +52,9 @@ class K8sCrScannerTest {
         FrameK8sServiceEntity a = definition("doris", dorisArtifact());
         FrameK8sServiceEntity b = definition("doris-alias", dorisArtifact());
 
-        List<ScannedCr> result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(a, b));
+        K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(a, b));
 
-        assertThat(result).hasSize(1);
+        assertThat(result.crs()).hasSize(1);
         verify(k8sService, times(1)).batchExec(any(), any(), any());
     }
 
@@ -70,10 +70,12 @@ class K8sCrScannerTest {
         FrameK8sServiceEntity doris = definition("doris", dorisArtifact());
         FrameK8sServiceEntity nacos = definition("nacos", nacosArtifact());
 
-        List<ScannedCr> result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(doris, nacos));
+        K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService).scan(CONFIG, List.of(doris, nacos));
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).name()).isEqualTo("nacos");
+        assertThat(result.crs()).hasSize(1);
+        assertThat(result.crs().get(0).name()).isEqualTo("nacos");
+        assertThat(result.complete()).isFalse();
+        assertThat(result.failedCrds()).containsExactly("dorisdisaggregatedclusters.disaggregated.cluster.doris.com");
     }
 
     @Test
@@ -85,10 +87,11 @@ class K8sCrScannerTest {
         FrameK8sServiceEntity yamlDef = definition("easyflow", "{\"yaml\":\"easyflow.yaml\"}");
         FrameK8sServiceEntity noArtifactDef = definition("bare", null);
 
-        List<ScannedCr> result = new K8sCrScanner(k8sService)
+        K8sCrScanner.CrScanResult result = new K8sCrScanner(k8sService)
                 .scan(CONFIG, List.of(helmDef, yamlDef, noArtifactDef));
 
-        assertThat(result).isEmpty();
+        assertThat(result.crs()).isEmpty();
+        assertThat(result.complete()).isTrue();
         verify(k8sService, times(0)).batchExec(any(), any(), any());
     }
 

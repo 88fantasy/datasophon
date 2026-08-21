@@ -222,7 +222,7 @@ class K8sTakeoverRegisterServiceTest {
                             scanned("zookeeper", "prod", 2, "HELM"),
                             scanned("kyuubi", "spark", 3, "HELM"),
                             scanned("doris-disaggregated-cluster", "doris", 5, "CR")),
-                    List.of(), List.of()));
+                    List.of(), List.of(), List.of()));
             service = new K8sTakeoverRegisterService(
                     configService, namespaceService, instanceService, jobProbe, frameService, scanService,
                     accessGuard, transactionManager);

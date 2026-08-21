@@ -64,7 +64,8 @@ public class K8sTakeoverScanService {
         }
         List<FrameK8sServiceEntity> definitions = frameK8sServiceService.listNewest(clusterId);
         List<HelmReleaseListItemVO> releases = helmReleaseReader.listDeployed(config);
-        List<K8sCrScanner.ScannedCr> crs = k8sCrScanner.scan(config, definitions);
+        K8sCrScanner.CrScanResult crScanResult = k8sCrScanner.scan(config, definitions);
+        List<K8sCrScanner.ScannedCr> crs = crScanResult.crs();
 
         // 已登记的接管实例，用来判定「已接管」与「失联」两个方向
         List<K8sServiceInstanceVO> imported = k8sServiceInstanceService.queryInstanceList(clusterId).stream()
@@ -97,7 +98,12 @@ public class K8sTakeoverScanService {
             matched.add(toScanned(cr, registered));
         }
 
+        // CR 扫描不完整（有 CRD 失败）时跳过 CR 类目的 missing 判定：本次没扫到不等于确认不存在，
+        // 一次 API server 抖动 / RBAC 变更就会让全部已登记 CR 实例被误判为失联。Helm 类目走独立的
+        // deployedKeys 来源（helm list 失败直接抛异常向上传播，不会静默产出空结果），不受影响。
+        boolean skipCrMissing = !crScanResult.complete();
         List<K8sTakeoverScanResult.MissingInstance> missing = imported.stream()
+                .filter(instance -> !(skipCrMissing && "CR".equals(instance.getSourceKind())))
                 .filter(instance -> !deployedKeys.contains(
                         releaseKey(instance.getSourceKind(),
                                 instance.getNamespace(), instance.getReleaseName())))
@@ -108,7 +114,7 @@ public class K8sTakeoverScanService {
 
         // 刚拿到最新的集群状态，让轻对账缓存立刻跟上，避免重扫完侧边栏还挂着旧标记
         reconcileService.evict(clusterId);
-        return new K8sTakeoverScanResult(matched, pending, missing);
+        return new K8sTakeoverScanResult(matched, pending, missing, crScanResult.failedCrds());
     }
 
     /**

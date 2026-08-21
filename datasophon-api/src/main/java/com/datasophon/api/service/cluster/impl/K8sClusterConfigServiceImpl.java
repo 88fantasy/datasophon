@@ -61,6 +61,7 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
         }
         K8sClusterConfig db = getByClusterId(config.getClusterId());
         K8sClusterConfig effectiveConfig = mergeStoredCredential(config, db);
+        requireCredential(effectiveConfig);
         String host;
         String cert;
         if (K8sAuthType.config_file.equals(effectiveConfig.getType())) {
@@ -145,6 +146,34 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
             }
         }
         return merged;
+    }
+
+    /**
+     * 合并已存凭据后校验：首次配置（或已存凭据为空）时缺失凭据必须显式拒绝，
+     * 避免 {@code parser.parse(null)} 等空值一路传导到 NPE 500。
+     */
+    private void requireCredential(K8sClusterConfig config) {
+        K8sAuthType type = config.getType();
+        if (type == null) {
+            throw new BusinessHintException("连接集群方式不能为空");
+        }
+        switch (type) {
+            case config_file -> {
+                if (StringUtils.isBlank(config.getKubeConfig())) {
+                    throw new BusinessHintException("首次配置必须填写 kubeconfig 内容");
+                }
+            }
+            case token -> {
+                if (StringUtils.isBlank(config.getToken())) {
+                    throw new BusinessHintException("首次配置必须填写 token");
+                }
+            }
+            case password -> {
+                if (StringUtils.isBlank(config.getUsername()) || StringUtils.isBlank(config.getPassword())) {
+                    throw new BusinessHintException("首次配置必须填写用户名和密码");
+                }
+            }
+        }
     }
 
     @Override

@@ -91,6 +91,11 @@ const KyuubiDashboard: FC<KyuubiDashboardProps> = ({
   const [selectedJob, setSelectedJob] = useState(
     () => metricsJobToRegex(job) ?? '',
   );
+  // 上一次生效的 job prop：SPA 内切换 K8s 实例时路由组件不 remount（只换
+  // instanceId），lazy useState initializer 只在挂载时跑一次，selectedJob 会
+  // 停留在第一个实例的 job 上。用「上一次 prop」比较模式识别 job 真正变化的
+  // 那一刻去重置 selectedJob，同时不影响同一实例内用户的手动选择（D3）。
+  const [lastJobProp, setLastJobProp] = useState(job);
   const [selectedConnType, setSelectedConnType] = useState(
     'thrift_binary_connection',
   );
@@ -129,6 +134,13 @@ const KyuubiDashboard: FC<KyuubiDashboardProps> = ({
     clusterId,
     refreshKey,
   });
+
+  useEffect(() => {
+    // job prop 真正变化（不同实例）时才重置，同一实例内重渲染不触发
+    if (job === lastJobProp) return;
+    setLastJobProp(job);
+    setSelectedJob(metricsJobToRegex(job) ?? '');
+  }, [job, lastJobProp]);
 
   useEffect(() => {
     // 外部指定 job 时不再按集群全量 job 自动纠偏，否则会跳到别的服务上

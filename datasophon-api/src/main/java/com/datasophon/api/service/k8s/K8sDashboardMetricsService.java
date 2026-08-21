@@ -72,7 +72,11 @@ public class K8sDashboardMetricsService {
      *
      * <p>与 {@link #nodeUsage(Integer)} 的区别是多带一个平均负载，而负载来自 hostmetrics receiver、
      * **没有 {@code k8s.node.name} 资源属性**（实测为 NULL），只能按 {@code service_instance_id} 取，
-     * 因此不能直接复用 {@link #namedMetric}。两边的键都是节点 IP，可以对齐。
+     * 因此不能直接复用 {@link #namedMetric}。<b>注意：memory/disk 按 {@code k8s.node.name} 归键，
+     * load 按 {@code service_instance_id}（节点 IP）归键，节点名与 IP 不同的集群上二者是不同的 key</b>——
+     * 返回的 Map 里同一节点可能拆成两条记录（hostname 一条含 memory/disk，ip 一条含 load）。
+     * 只有节点名恰好等于 IP 时两侧键才会重合成一条记录；调用方（{@code HostResponse#applyUsage}）
+     * 按字段分别在 hostname/ip 两个 key 下回落取值，不能假设一次 {@code get(key)} 就能拿全三项指标。
      *
      * @param clusterId 集群 ID
      * @return 节点标识（IP / 节点名）→ 用量；查询失败返回空 Map，由调用方降级

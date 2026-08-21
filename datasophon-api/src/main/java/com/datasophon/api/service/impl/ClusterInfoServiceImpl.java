@@ -251,7 +251,13 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
                 throw new BusinessHintException(String.format("集群%s存在正在运行的实例，不能删除。请先停止所有的实例", clusterInfo.getClusterName()));
             }
         } else {
-            if (!ClusterState.NEED_CONFIG.equals(clusterInfo.getClusterState())) {
+            // 接管（IMPORTED）集群的服务实例按定义就是在运行的，且平台刻意不允许停它们
+            // （只读接管承诺，见 ClusterDeleteService#deleteCluster 对应分支的注释）；
+            // 这里跳过 running-instance 前置检查，否则用户会被卡在无法满足的条件里。
+            // 删除动作本身（ClusterDeleteService#deleteK8sClusterComponents）只清理平台侧
+            // 元数据，不会向被接管集群下发任何停止/卸载动作。
+            if (!ManageMode.IMPORTED.equals(clusterInfo.getManageMode())
+                    && !ClusterState.NEED_CONFIG.equals(clusterInfo.getClusterState())) {
                 boolean canDelete = !k8sServiceInstanceService.hasRunningInstance(clusterId);
                 if (!canDelete) {
                     throw new BusinessHintException(String.format("集群%s存在正在运行的实例，不能删除。请先停止所有的实例", clusterInfo.getClusterName()));

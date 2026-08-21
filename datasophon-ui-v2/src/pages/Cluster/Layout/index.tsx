@@ -323,15 +323,34 @@ const ClusterLayout: React.FC = () => {
     if (clusterInfo?.archType === 'k8s') {
       // K8s：与物理集群一致按服务分类（catalog）分组，namespace 降为实例属性
       const catItems: any[] = [];
+      const matchedInstanceIds = new Set<number>();
       for (const cat of CATALOG_ORDER) {
         const instances = k8sInstances.filter(
           (inst) => (inst.catalog || 'OTHER') === cat,
         );
         if (!instances.length) continue;
+        for (const inst of instances) matchedInstanceIds.add(inst.id);
         catItems.push({
           key: `cat-${cat}`,
           label: CATALOG_LABEL[cat] || cat,
           children: instances.map((inst) => ({
+            key: `/cluster/${numericClusterId}/service/${inst.id}`,
+            label: <K8sInstanceMenuItem instance={inst} />,
+          })),
+        });
+      }
+      // catalog 落到未知值（含 null——如对应 frame 行被清理导致 LEFT JOIN 落空）的
+      // 实例兜底进「其他」分组，保证「所有实例都会被渲染」这一不变量（D2）；
+      // 否则这些实例在侧边栏彻底隐身，而「取消接管」按钮只在实例详情页里，
+      // 导致登记记录无法从 UI 清理。
+      const otherInstances = k8sInstances.filter(
+        (inst) => !matchedInstanceIds.has(inst.id),
+      );
+      if (otherInstances.length) {
+        catItems.push({
+          key: 'cat-OTHER',
+          label: '其他',
+          children: otherInstances.map((inst) => ({
             key: `/cluster/${numericClusterId}/service/${inst.id}`,
             label: <K8sInstanceMenuItem instance={inst} />,
           })),

@@ -43,14 +43,17 @@ final class SecureKubeConfigWriter {
 
     private static final String NAME = "datasophon";
 
+    /** 与 {@code com.datasophon.dao.enums.k8s.K8sAuthType} 的枚举名保持一致。 */
+    private static final String TYPE_CONFIG_FILE = "config_file";
+    private static final String TYPE_TOKEN = "token";
+    private static final String TYPE_PASSWORD = "password";
+
     private SecureKubeConfigWriter() {
     }
 
     static String write(ClientOptions options, File tempDir, String certificateAuthority) {
         File config = new File(tempDir, "kubeConfig.yaml");
-        String content = StrUtil.isNotBlank(options.getKubeConfig())
-                ? options.getKubeConfig()
-                : generatedContent(options, certificateAuthority);
+        String content = resolveContent(options, certificateAuthority);
         FileUtil.writeString(content, config, StandardCharsets.UTF_8);
         if (!System.getProperty("os.name").toLowerCase().contains("window")) {
             try {
@@ -60,6 +63,24 @@ final class SecureKubeConfigWriter {
             }
         }
         return config.getAbsolutePath();
+    }
+
+    /**
+     * 优先按凭据类型（{@code options.getType()}）决定使用哪个字段，而不是按字段是否非空猜测——
+     * 切换认证方式后库中可能残留旧类型的凭据（历史脏数据），单凭"非空"判断会误用旧凭据连接。
+     * type 缺失（如未经 K8sClusterConfig 转换的调用方）时才回落旧的按内容非空判断的优先级顺序。
+     */
+    private static String resolveContent(ClientOptions options, String certificateAuthority) {
+        String type = options.getType();
+        if (TYPE_CONFIG_FILE.equals(type)) {
+            return options.getKubeConfig();
+        }
+        if (TYPE_TOKEN.equals(type) || TYPE_PASSWORD.equals(type)) {
+            return generatedContent(options, certificateAuthority);
+        }
+        return StrUtil.isNotBlank(options.getKubeConfig())
+                ? options.getKubeConfig()
+                : generatedContent(options, certificateAuthority);
     }
 
     private static String generatedContent(ClientOptions options, String certificateAuthority) {
