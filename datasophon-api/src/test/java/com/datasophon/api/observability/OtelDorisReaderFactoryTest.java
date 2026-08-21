@@ -24,7 +24,6 @@ package com.datasophon.api.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -35,16 +34,12 @@ import static org.mockito.Mockito.when;
 
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
-import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-import com.datasophon.dao.entity.cluster.K8sClusterConfig;
-import com.datasophon.dao.enums.ManageMode;
 import com.datasophon.dao.enums.ServiceRoleState;
-import com.datasophon.dao.mapper.ClusterInfoMapper;
-import com.datasophon.dao.mapper.cluster.K8sClusterConfigMapper;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -61,8 +56,7 @@ class OtelDorisReaderFactoryTest {
                 .thenReturn(List.of(role("ddh-01", ServiceRoleState.EXISTS_ALARM)));
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
                 roleService, variableService, new OtelCredentialService(variableService),
-                managedClusterMapper(),
-                mock(K8sClusterConfigMapper.class));
+                noExternalDatasource());
 
         factory.create(7);
 
@@ -77,8 +71,7 @@ class OtelDorisReaderFactoryTest {
                 .thenReturn(List.of(role("ddh-01", ServiceRoleState.STOP)));
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
                 roleService, variableService, new OtelCredentialService(variableService),
-                managedClusterMapper(),
-                mock(K8sClusterConfigMapper.class));
+                noExternalDatasource());
 
         assertThatThrownBy(() -> factory.create(7))
                 .isInstanceOf(IllegalStateException.class)
@@ -99,8 +92,7 @@ class OtelDorisReaderFactoryTest {
                 proxy(ClusterServiceRoleInstanceService.class),
                 proxy(ClusterVariableService.class),
                 credentialService,
-                managedClusterMapper(),
-                mock(K8sClusterConfigMapper.class));
+                noExternalDatasource());
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
@@ -118,8 +110,7 @@ class OtelDorisReaderFactoryTest {
                 proxy(ClusterServiceRoleInstanceService.class),
                 proxy(ClusterVariableService.class),
                 credentialService,
-                managedClusterMapper(),
-                mock(K8sClusterConfigMapper.class));
+                noExternalDatasource());
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackUser", "custom_reader");
@@ -132,14 +123,12 @@ class OtelDorisReaderFactoryTest {
     }
 
     @Test
-    void usesExternalDatasourceForImportedCluster() {
+    void usesExternalDatasourceWhenProviderResolvesOne() {
         ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
         ClusterVariableService variableService = mock(ClusterVariableService.class);
-        K8sClusterConfigMapper mapper = mock(K8sClusterConfigMapper.class);
-        when(mapper.selectOne(any())).thenReturn(importedConfig("10.0.0.9", 9030));
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
                 roleService, variableService, new OtelCredentialService(variableService),
-                importedClusterMapper(), mapper);
+                externalDatasource("10.0.0.9", "9030"));
 
         factory.create(7);
 
@@ -153,64 +142,38 @@ class OtelDorisReaderFactoryTest {
     void reusesResolvedDatasourceWithoutRepeatingPlatformQueries() {
         ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
         ClusterVariableService variableService = mock(ClusterVariableService.class);
-        K8sClusterConfigMapper mapper = mock(K8sClusterConfigMapper.class);
-        when(mapper.selectOne(any())).thenReturn(importedConfig("10.0.0.9", 9030));
-        ClusterInfoMapper clusterMapper = importedClusterMapper();
+        ExternalOtelDatasourceProvider provider = externalDatasource("10.0.0.9", "9030");
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
-                roleService, variableService, new OtelCredentialService(variableService), clusterMapper, mapper);
+                roleService, variableService, new OtelCredentialService(variableService), provider);
 
         factory.create(7);
         factory.create(7);
 
-        verify(clusterMapper, times(1)).selectById(7);
-        verify(mapper, times(1)).selectOne(any());
+        verify(provider, times(1)).find(7);
     }
 
     @Test
     void fallsBackToRoleInstanceWhenNoExternalDatasource() {
         ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
         ClusterVariableService variableService = mock(ClusterVariableService.class);
-        K8sClusterConfigMapper mapper = mock(K8sClusterConfigMapper.class);
-        // 物理集群没有 K8s 配置记录；接管集群未登记 doris_host 时同样回落
-        when(mapper.selectOne(any())).thenReturn(null);
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
                 .thenReturn(List.of(role("ddh-01", ServiceRoleState.RUNNING)));
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
                 roleService, variableService, new OtelCredentialService(variableService),
-                managedClusterMapper(), mapper);
+                noExternalDatasource());
 
         factory.create(7);
 
         assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("ddh-01:9030");
-    }
-
-    @Test
-    void ignoresExternalDatasourceForManagedCluster() {
-        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
-        ClusterVariableService variableService = mock(ClusterVariableService.class);
-        K8sClusterConfigMapper mapper = mock(K8sClusterConfigMapper.class);
-        when(mapper.selectOne(any())).thenReturn(importedConfig("10.0.0.9", 9030));
-        when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
-                .thenReturn(List.of(role("ddh-01", ServiceRoleState.RUNNING)));
-        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
-                roleService, variableService, new OtelCredentialService(variableService),
-                managedClusterMapper(), mapper);
-
-        factory.create(7);
-
-        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("ddh-01:9030");
-        verify(mapper, never()).selectOne(any());
     }
 
     @Test
     void devFallbackTakesPrecedenceOverExternalDatasource() {
         ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
         ClusterVariableService variableService = mock(ClusterVariableService.class);
-        K8sClusterConfigMapper mapper = mock(K8sClusterConfigMapper.class);
-        when(mapper.selectOne(any())).thenReturn(importedConfig("10.0.0.9", 9030));
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
                 roleService, variableService, new OtelCredentialService(variableService),
-                importedClusterMapper(), mapper);
+                externalDatasource("10.0.0.9", "9030"));
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
@@ -226,8 +189,7 @@ class OtelDorisReaderFactoryTest {
                 proxy(ClusterServiceRoleInstanceService.class),
                 proxy(ClusterVariableService.class),
                 new OtelCredentialService(null),
-                managedClusterMapper(),
-                mock(K8sClusterConfigMapper.class));
+                noExternalDatasource());
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackPassword", "secret-1");
@@ -248,8 +210,7 @@ class OtelDorisReaderFactoryTest {
                 proxy(ClusterServiceRoleInstanceService.class),
                 proxy(ClusterVariableService.class),
                 new OtelCredentialService(null),
-                managedClusterMapper(),
-                mock(K8sClusterConfigMapper.class));
+                noExternalDatasource());
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
         factory.create(7);
@@ -261,27 +222,17 @@ class OtelDorisReaderFactoryTest {
         assertThat(old.isClosed()).isTrue();
     }
 
-    private static K8sClusterConfig importedConfig(String host, Integer port) {
-        K8sClusterConfig config = new K8sClusterConfig();
-        config.setDorisHost(host);
-        config.setDorisPort(port);
-        return config;
+    private static ExternalOtelDatasourceProvider noExternalDatasource() {
+        ExternalOtelDatasourceProvider provider = mock(ExternalOtelDatasourceProvider.class);
+        when(provider.find(anyInt())).thenReturn(Optional.empty());
+        return provider;
     }
 
-    private static ClusterInfoMapper managedClusterMapper() {
-        return clusterMapper(ManageMode.MANAGED);
-    }
-
-    private static ClusterInfoMapper importedClusterMapper() {
-        return clusterMapper(ManageMode.IMPORTED);
-    }
-
-    private static ClusterInfoMapper clusterMapper(ManageMode mode) {
-        ClusterInfoMapper mapper = mock(ClusterInfoMapper.class);
-        ClusterInfoEntity cluster = new ClusterInfoEntity();
-        cluster.setManageMode(mode);
-        when(mapper.selectById(anyInt())).thenReturn(cluster);
-        return mapper;
+    private static ExternalOtelDatasourceProvider externalDatasource(String host, String port) {
+        ExternalOtelDatasourceProvider provider = mock(ExternalOtelDatasourceProvider.class);
+        when(provider.find(anyInt())).thenReturn(
+                Optional.of(new ExternalOtelDatasourceProvider.ExternalDatasource(host, port)));
+        return provider;
     }
 
     @SuppressWarnings("unchecked")
