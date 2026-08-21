@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,7 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
     private K8sClusterNamespaceService k8sClusterNamespaceService;
 
     @Autowired
+    @Lazy
     private ImportedClusterWriteGuard importedClusterWriteGuard;
 
     @Override
