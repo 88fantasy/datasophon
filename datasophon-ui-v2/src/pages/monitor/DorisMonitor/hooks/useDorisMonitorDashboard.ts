@@ -136,8 +136,9 @@ export function useDorisMonitorDashboard({
   job,
   monitorProfile,
 }: UseDorisMonitorDashboardParams): DorisDashboardData {
-  const [feInstances, setFeInstances] = useState<string[]>([]);
-  const [beInstances, setBeInstances] = useState<string[]>([]);
+  // undefined 表示 labels 尚未成功返回；空数组表示查询成功但当前没有活跃上报实例。
+  const [feInstances, setFeInstances] = useState<string[] | undefined>();
+  const [beInstances, setBeInstances] = useState<string[] | undefined>();
   const [clusters, setClusters] = useState<string[]>([]);
 
   const mode = useMemo(() => resolveDorisMode(monitorProfile), [monitorProfile]);
@@ -156,18 +157,28 @@ export function useDorisMonitorDashboard({
   // 存算分离下按角色 job 过滤，只统计最近 5 分钟有上报的实例（后端 queryLabels 语义）。
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
+    setFeInstances(undefined);
+    setBeInstances(undefined);
+    setClusters([]);
+    Promise.allSettled([
       fetchDorisLabels('doris_fe_query_total', clusterId, feJob),
       fetchDorisLabels('doris_be_memory_allocated_bytes', clusterId, computeJob),
     ])
       .then(([feRes, beRes]) => {
         if (cancelled) return;
-        setFeInstances(feRes?.data?.instances ?? []);
-        setBeInstances(beRes?.data?.instances ?? []);
-        setClusters(feRes?.data?.jobs ?? []);
-      })
-      .catch(() => {
-        // labels 查询失败不影响面板数据，静默降级
+        setFeInstances(
+          feRes.status === 'fulfilled'
+            ? (feRes.value?.data?.instances ?? [])
+            : undefined,
+        );
+        setBeInstances(
+          beRes.status === 'fulfilled'
+            ? (beRes.value?.data?.instances ?? [])
+            : undefined,
+        );
+        setClusters(
+          feRes.status === 'fulfilled' ? (feRes.value?.data?.jobs ?? []) : [],
+        );
       });
     return () => {
       cancelled = true;
@@ -232,12 +243,13 @@ export function useDorisMonitorDashboard({
       mode === 'disaggregated'
         ? {
             // DO-A01–A06（角色注册表节点数 / 本地磁盘容量）在存算分离下没有对应数据源，
-            // 节点数改用 labels 接口的"最近 5 分钟有上报"实例计数；本地磁盘容量类字段
-            // 不适用（无本地磁盘），置 0，index.tsx 按 mode 跳过对应 StatPanel 渲染。
-            feNodeCount: feInstances.length,
-            feAliveCount: feInstances.length,
-            beNodeCount: beInstances.length,
-            beAliveCount: beInstances.length,
+            // 因此总数必须标记为不可用，不能把 labels 返回的活跃上报数同时当作总数，
+            // 否则节点失联后仍会显示健康。labels 查询失败时存活数也标记为不可用。
+            // 本地磁盘容量类字段不适用（无本地磁盘），置 0，index.tsx 按 mode 跳过渲染。
+            feNodeCount: Number.NaN,
+            feAliveCount: feInstances?.length ?? Number.NaN,
+            beNodeCount: Number.NaN,
+            beAliveCount: beInstances?.length ?? Number.NaN,
             usedCapacityBytes: 0,
             totalCapacityBytes: 0,
           }
@@ -251,8 +263,8 @@ export function useDorisMonitorDashboard({
           },
     series: { ...emptySeries, ...feData.series, ...computeData.series },
     clusters: clusters.length > 0 ? clusters : ['doris'],
-    feInstances,
-    beInstances,
+    feInstances: feInstances ?? [],
+    beInstances: beInstances ?? [],
     loading: feData.loading || computeData.loading,
     error: feData.error ?? computeData.error,
     feRoleAvailable: mode !== 'disaggregated' || feRole.available,

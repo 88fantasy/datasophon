@@ -242,7 +242,9 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
                       title={panelTitle('DO-A02')}
                       value={instant.feAliveCount}
                       color={
-                        instant.feAliveCount === instant.feNodeCount
+                        isDisaggregated
+                          ? dorisRoleColors.reference
+                          : instant.feAliveCount === instant.feNodeCount
                           ? CHART_COLORS.success
                           : CHART_COLORS.error
                       }
@@ -260,7 +262,9 @@ const DorisDashboard: FC<DorisDashboardProps> = ({
                       title={panelTitle('DO-A04')}
                       value={instant.beAliveCount}
                       color={
-                        instant.beAliveCount === instant.beNodeCount
+                        isDisaggregated
+                          ? dorisRoleColors.reference
+                          : instant.beAliveCount === instant.beNodeCount
                           ? CHART_COLORS.success
                           : CHART_COLORS.error
                       }
