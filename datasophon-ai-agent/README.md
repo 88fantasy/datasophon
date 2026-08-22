@@ -1,13 +1,38 @@
 # datasophon-ai-agent
 
-Datasophon AI 助手 sidecar 服务。基于 Node 22 + TypeScript + `@anthropic-ai/claude-agent-sdk`，
-通过 in-process MCP 工具调用集群/主机/服务实例状态，以及内置 Read/Glob/Grep/Bash 文件与命令工具，
-通过 OpenAI 兼容 SSE 与 `datasophon-api` 通信。
+Datasophon 的可选 AI 运维 sidecar。该模块是独立的 Node.js 22 + TypeScript 工程，不在根 Maven reactor 中；它使用 `@anthropic-ai/claude-agent-sdk` 运行 agent loop，通过 in-process MCP 工具读取 Datasophon 集群状态，并以 OpenAI 兼容 SSE 向 `datasophon-api` 返回文本和工具调用事件。
 
-## 快速启动
+## 数据流
+
+```text
+datasophon-ui-v2 /chatbot
+        │ POST /ddh/api/v2/chat/completions
+        ▼
+datasophon-api（会话落库、鉴权、SSE 反向代理）
+        │ POST /agent/chat + X-Agent-Token
+        ▼
+datasophon-ai-agent :18090
+        ├── Claude Agent SDK → Anthropic 兼容网关
+        ├── in-process MCP → /ddh/internal/agent/**
+        └── Read/Glob/Grep/Bash/Edit/WebSearch/WebFetch
+```
+
+## 环境要求
+
+- Node.js `>=22`。
+- 自建网关使用 Anthropic Messages API 兼容协议。
+- `ANTHROPIC_BASE_URL` 不要带 `/v1`；SDK 会自行追加 `/v1/messages`。
+
+## 安装与运行
 
 ```bash
+cd datasophon-ai-agent
 npm install
+
+# 开发模式
+npm run dev
+
+# 编译并启动
 npm run build
 npm start
 ```
@@ -15,24 +40,29 @@ npm start
 ## 环境变量
 
 | 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | 自建 Anthropic 兼容网关地址（**不要带 /v1 后缀**） |
-| `ANTHROPIC_AUTH_TOKEN` | （无） | 网关 Bearer token（`Authorization: Bearer <token>`）。**替代原 `ANTHROPIC_API_KEY`** |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | 模型 ID，原样透传网关 |
-| `AGENT_WORKDIR` | `/tmp/ddh-agent` | Read / Bash 工具的沙箱根目录，限制文件操作范围 |
-| `DATASOPHON_API_URL` | `http://localhost:8080/ddh` | Java 服务根地址（**不含 /api**，内部端点在 `/ddh/internal/agent/**`） |
-| `AGENT_INTERNAL_TOKEN` | `change-me` | 与 `DDH_AI_INTERNAL_TOKEN` 保持一致 |
-| `PORT` | `18090` | sidecar 监听端口 |
+|---|---|---|
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | Anthropic 兼容网关根地址，不含 `/v1` |
+| `ANTHROPIC_AUTH_TOKEN` | 无 | 网关 Bearer token；不使用 `ANTHROPIC_API_KEY` |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | 模型 ID，同时由 API 用于记录会话模型 |
+| `AGENT_WORKDIR` | `/tmp/ddh-agent` | SDK 子进程的工作目录，不是操作系统级沙箱 |
+| `DATASOPHON_API_URL` | `http://localhost:8080/ddh` | Datasophon 根地址，不含 `/api` |
+| `AGENT_INTERNAL_TOKEN` | `change-me` | sidecar 入站鉴权及回调 API 鉴权；须与 `DDH_AI_INTERNAL_TOKEN` 一致 |
+| `PORT` | `18090` | sidecar HTTP 端口 |
 
-> ⚠️ 与旧版的区别：`ANTHROPIC_API_KEY` 已不再使用，改用 `ANTHROPIC_AUTH_TOKEN`。
-> claude-agent-sdk spawn 的子进程走 `Authorization: Bearer` 而非 `x-api-key`。
+生产环境必须覆盖 `AGENT_INTERNAL_TOKEN` / `DDH_AI_INTERNAL_TOKEN` 的默认值，并通过 Secret 或进程环境注入模型网关凭据。
 
-## 接口
+## HTTP 接口
 
-`POST /agent/chat` — 接收消息列表，返回 OpenAI 兼容 SSE。
-需携带 `X-Agent-Token: <AGENT_INTERNAL_TOKEN>` 头。
+### `POST /agent/chat`
+
+接收消息并返回 `text/event-stream`。请求必须携带：
+
+```http
+X-Agent-Token: <AGENT_INTERNAL_TOKEN>
+```
 
 请求体：
+
 ```json
 {
   "messages": [
@@ -44,76 +74,65 @@ npm start
 }
 ```
 
-`GET /health` — 健康检查。
+`messages` 必须是非空数组；其余字段由 API 链路传入，sidecar 当前不直接消费。文本以 OpenAI `choices[].delta.content` 结构发送，工具事件编码在 `<tool-call>...</tool-call>` 中，结束帧为 `data: [DONE]`。
 
-`GET /debug` — 网关连通性测试（直接 HTTP，无需鉴权，不含敏感数据）。
+### `GET /health`
 
-## 工具列表
+返回 `{"status":"ok"}`，不鉴权。
 
-### 自定义运维工具（in-process MCP，server 名 `datasophon`）
+### `GET /debug`
 
-| 工具名（完整）| 说明 |
-|---|---|
-| `mcp__datasophon__list_clusters` | 列出所有集群 |
-| `mcp__datasophon__list_hosts` | 列出指定集群的主机（需 `cluster_id`）|
-| `mcp__datasophon__list_services` | 列出指定集群的服务实例（需 `cluster_id`）|
+向网关发送一次最小 Messages API 请求，返回连通性状态和最多 300 字符的响应摘要；该接口当前不鉴权，仅适合受限网络中的诊断使用，不应暴露到公网。
 
-### 内置工具（已在白名单）
+## Datasophon MCP 工具
+
+in-process MCP server 名为 `datasophon`，当前 3 个工具都声明为只读：
+
+| 完整工具名 | 后端接口 | 说明 |
+|---|---|---|
+| `mcp__datasophon__list_clusters` | `GET /ddh/internal/agent/clusters` | 列出集群 |
+| `mcp__datasophon__list_hosts` | `GET /ddh/internal/agent/clusters/{id}/hosts` | 列出指定集群主机 |
+| `mcp__datasophon__list_services` | `GET /ddh/internal/agent/clusters/{id}/services` | 列出指定集群服务实例 |
+
+回调请求使用 `X-Agent-Token: <AGENT_INTERNAL_TOKEN>`。对应 Java 端配置是 `DDH_AI_INTERNAL_TOKEN`。
+
+## SDK 内置工具
+
+sidecar 以 `permissionMode: "dontAsk"` 无人值守运行，只自动允许以下工具：
 
 | 工具 | 能力 |
 |---|---|
-| `Read` | 读取 `AGENT_WORKDIR` 内的文件 |
-| `Glob` | 按 glob 模式查找文件 |
-| `Grep` | 正则搜索文件内容 |
-| `Bash` | 执行 shell 命令（已禁止 `rm *` 和 `sudo *`）|
+| `Read` | 读取文件 |
+| `Glob` | 按 glob 查找文件 |
+| `Grep` | 搜索文件内容 |
+| `Bash` | 执行命令 |
+| `Edit` | 修改文件 |
+| `WebSearch` | 搜索互联网 |
+| `WebFetch` | 读取网页 |
+
+`Bash(rm *)` 和 `Bash(sudo *)` 由 `disallowedTools` 显式拒绝。此规则不是完整命令沙箱，`AGENT_WORKDIR` 也只设置当前工作目录；需要更强隔离时，应结合非 root 用户、容器只读文件系统、网络策略和独立挂载目录。
+
+SDK 的 `settingSources` 为空，不会加载宿主机 `~/.claude` 或项目级 Claude 设置，避免不同机器上的隐式行为差异。
 
 ## Docker
 
-```bash
-# 先构建 TypeScript
-npm run build
+镜像只复制编译后的 `dist/`，构建镜像前必须先编译 TypeScript：
 
-# 构建镜像（Node 22 镜像中 claude 二进制会自动作为可选依赖安装）
+```bash
+cd datasophon-ai-agent
+npm ci
+npm run build
 docker build -t datasophon/ai-agent:latest .
 
-# 运行
-docker run \
+docker run --rm \
   -e ANTHROPIC_AUTH_TOKEN=your-token \
   -e ANTHROPIC_BASE_URL=http://your-gateway:port \
   -e ANTHROPIC_MODEL=claude-sonnet-4-6 \
   -e DATASOPHON_API_URL=http://api:8080/ddh \
-  -e AGENT_INTERNAL_TOKEN=your-token \
+  -e AGENT_INTERNAL_TOKEN=replace-with-random-token \
   -e AGENT_WORKDIR=/var/ddh-agent \
   -p 18090:18090 \
   datasophon/ai-agent:latest
 ```
 
-## 架构说明
-
-```
-前端 chatbot (Ant Design X, OpenAI SSE)
-       │
-       ▼
-datasophon-api: POST /ddh/api/v2/chat/completions (SseEmitter)
-       │  Java 反代（落库 + 转发 SSE）
-       ▼
-datasophon-ai-agent: POST /agent/chat (Express + claude-agent-sdk)
-       │  query() — SDK 自动跑 agent loop（spawn claude 子进程）
-       ├──── in-process MCP tools (list_clusters / list_hosts / list_services)
-       │         │ fetch
-       │         ▼
-       │     datasophon-api: GET /ddh/internal/agent/** (X-Agent-Token)
-       │
-       └──── 内置工具 (Read / Glob / Grep / Bash)
-                  在 AGENT_WORKDIR 范围内操作本机文件
-       │
-       ▼
-  Anthropic 兼容网关 (ANTHROPIC_BASE_URL) → 模型 (ANTHROPIC_MODEL)
-```
-
-## 安全注意事项
-
-- `Bash` 工具仅在 `AGENT_WORKDIR` 目录内执行，生产环境应设为独立低权限目录。
-- `rm *` 和 `sudo *` 已通过 `disallowedTools` 作用域规则屏蔽。
-- `AGENT_INTERNAL_TOKEN` 生产环境必须使用强随机值（建议 32+ 字节）。
-- sidecar 进程建议以非 root 用户运行。
+生产运行建议使用非 root 用户，仅挂载必要目录，并在 API 与 sidecar 之间限制网络访问。内部 API 细节见 [内部 API 文档](../docs/internal-api/README.md)。

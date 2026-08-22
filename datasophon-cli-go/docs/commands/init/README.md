@@ -1,10 +1,10 @@
 # init — 单步初始化命令组
 
-`init` 命令组包含 **29 条**独立的初始化子命令，每条对应集群初始化流程中的一个步骤。通常由 `create cluster`（initALL DAG）自动调用；也可单独执行用于故障排查或补跑。
+`init` 命令组当前注册 **30 条**独立初始化子命令。它们是可单独调用的本地操作，其中多数也由 `create cluster` 的 37 步 Registry 复用，可用于故障排查或补跑。
 
 `init` 子命令的设计语义是"在已登录的当前节点上单步本地初始化"。涉及"指定某个特定节点远程安装"的命令（如 MySQL / Nexus / Rustfs / NTP Server / nmap / yum 离线源）已统一迁移到 [`create` 命令组](../create/README.md)，并支持配置文件 / 手动双模式入口。
 
-所有子命令均继承 [init 公共 flag](../../global-flags.md#init-公共-flag)（`-c/--config`、`--registryIp` 等）。
+所有子命令均继承 [init 公共 flag](../../global-flags.md#init-公共参数-init-公共-flag)（`-c/--config`、`--registryIp` 等）。
 
 ## 子命令速查
 
@@ -61,11 +61,12 @@
 
 > MySQL 自身安装请使用 [`create mysql`](../create/mysql.md)；配置文件模式下会自动依次调用 `mysql_app_db` 创建 `appDbs` 列表中的每个数据库，并对全部节点调用 `worker_local_properties`。
 
-### k8s — Kubernetes 生态（7 条）
+### k8s — Kubernetes 生态（8 条）
 
 |                     命令                      |            说明             |
 |---------------------------------------------|---------------------------|
-| [docker](./k8s/docker.md)                   | 安装 Docker（containerd 模式）  |
+| [docker](./k8s/docker.md)                   | 安装 Docker Engine            |
+| `containerd`                               | 安装 containerd、runc 与 CNI plugins |
 | [helm](./k8s/helm.md)                       | 安装 Helm                   |
 | [helmify](./k8s/helmify.md)                 | 安装 Helmify                |
 | [kubectl](./k8s/kubectl.md)                 | 安装 kubectl                |
@@ -82,6 +83,5 @@ datasophon-cli [--dry-run] init <subcommand> [flags]
 ## 参考
 
 - [initALL / standalone DAG 步骤表](../../reference/init-all-dag.md)
-- [init 公共 flag 说明](../../global-flags.md#init-公共-flag)
+- [init 公共 flag 说明](../../global-flags.md#init-公共参数-init-公共-flag)
 - [`create` 命令组](../create/README.md) — MySQL/Nexus/Rustfs/NTP/Nmap/Yum 等远程安装命令
-

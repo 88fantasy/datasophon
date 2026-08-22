@@ -1,92 +1,156 @@
-# Datasophon 部署包管理
+# Datasophon 离线制品与服务元数据
 
-本目录用于管理 Datasophon 各组件的部署包，包含下载清单、批量下载脚本和解压目录校验工具。
+`package/` 保存 Datasophon 安装服务时使用的制品清单、下载脚本和元数据。这里不是 Maven
+构建输出目录：`manifest.json` 定义需要准备的制品，`download.sh` 负责按仓库类型落盘，
+`raw/meta/` 则是物理集群和 Kubernetes 服务的声明式元数据源。
 
-## 目录结构
+## 当前清单
 
-```
+当前 `manifest.json` 共 39 条制品记录，覆盖 26 个服务：
+
+- 35 条公开下载记录；
+- 4 条私有制品记录，不配置 `downloadUrl`，需要人工放入目标目录：
+  - `datart-server.tar.gz`
+  - `gravitino-1.3.1-SNAPSHOT-bin.tar.gz`
+  - `valkey-8.1.8-openeuler22.03-x86_64.tar.gz`
+  - `valkey-8.1.8-jammy-arm64.tar.gz`
+
+openEuler x86_64 Valkey 私有包的构建输入、脚本和校验值见
+[Valkey 构建说明](./docs/valkey/BUILD.md)。
+
+清单字段以脚本实现为准：
+
+| 字段 | 说明 |
+|---|---|
+| `service` | 服务或制品逻辑名称 |
+| `arch` | `x86_64`、`aarch64` 或 `common` |
+| `packageName` | 下载后文件名 |
+| `decompressPackageName` | 期望的解压目录；不适用时可为 `null` |
+| `downloadUrl` | 下载地址；私有制品为 `null` |
+| `status` | `public` 或 `private` |
+| `repoType` / `repoTypes` | 指定一个或多个目标仓库；未指定时按扩展名推断 |
+| `os` | yum/apt 制品的系统目录，例如 `el7`、`el8`、`jammy` |
+
+## 目录路由
+
+`download.sh` 默认把制品写入仓库根目录下的以下位置：
+
+```text
 package/
-├── manifest.json          # 部署包清单（服务名、架构、下载地址）
-├── download.sh            # 批量下载脚本
-├── verify_decompress.py   # 解压目录校验工具
-├── base/                  # CLI 自身基础设施 bundle（nexus/mysql/rustfs 等，见下文说明）
-└── <packageName>.tar.gz   # 下载后的部署包（已加入 .gitignore，不入库）
+├── manifest.json
+├── download.sh
+├── verify_decompress.py
+├── raw/
+│   ├── packages/                 # tar.gz、zip、jar 等通用原始制品
+│   └── meta/
+│       ├── datacluster-physical/ # 物理集群服务 DDL 与模板
+│       └── datacluster-k8s/      # Kubernetes 服务 manifest
+├── base/                         # 基础环境制品
+├── docker/                       # Docker/OCI 镜像归档
+├── helm/                         # Helm Chart
+├── yum/<arch>/<os>/              # RPM 仓库布局
+└── apt/<arch>/<os>/              # DEB 仓库布局
 ```
 
-## 快速开始
+默认推断规则为：`.tar` 进入 `docker/`，`.rpm` 进入 `yum/`，`.deb` 进入
+`apt/`，其余进入 `raw/packages/`。显式的 `repoType` 或 `repoTypes` 优先；同一制品
+声明多个仓库时，脚本会使用硬链接，失败后退化为复制。
 
-### 1. 下载所有公有包
+查看脚本计算出的完整布局：
 
 ```bash
-bash package/download.sh
+bash package/download.sh --print-layout
 ```
 
-- 已存在且完整的文件（本地大小 ≥ Content-Length）自动跳过
-- 私有包自动跳过并在末尾列出提示
-- 下载失败以非零状态码退出，可重复执行直到全部完成
+## 下载制品
 
-### 2. 校验解压目录名
+从仓库根目录执行：
+
+```bash
+# 下载清单中的全部公开制品（包含所有架构）
+bash package/download.sh
+
+# 仅下载指定架构
+bash package/download.sh --arch x86_64
+bash package/download.sh --arch aarch64
+
+# 仅准备某类仓库
+bash package/download.sh --dir raw
+bash package/download.sh --dir base
+bash package/download.sh --dir docker
+bash package/download.sh --dir helm
+bash package/download.sh --dir yum
+bash package/download.sh --dir apt
+```
+
+支持的 `--arch` 值为 `x86_64`、`aarch64`、`common`；选择具体架构时仍会包含
+`arch=common` 的通用制品。
+
+支持的 `--dir` 值只有 `raw`、`base`、`docker`、`helm`、`yum`、`apt`。
+下载完成后脚本会生成 `<packageName>.md5`。已有 sidecar 时先校验本地 MD5；没有
+sidecar 时尝试用远端 `Content-Length` 判断文件是否完整。私有制品会打印待补齐路径，
+不会伪造下载成功。
+
+> JDK 清单项当前未显式声明 `repoType`，因此按默认规则下载到
+> `raw/packages/`，可供启用制品仓库的 CLI 从 raw 仓库获取。若关闭制品仓库并使用
+> `create cluster` 的本地包路径，当前计划会从 `<productPackagesPath>/base` 查找
+> JDK，离线执行前需同时把所需 JDK 文件放入该目录。
+
+## 上传到 Nexus
+
+制品准备完成后，可使用 Go CLI 按目录路由上传：
+
+```bash
+export DDH_HOME=/opt/datasophon
+
+# 预览，不产生上传；--dry-run 是根命令 flag
+datasophon-cli --dry-run upload registry \
+  --productPackagesPath ./package \
+  --webHost 127.0.0.1 --webPort 8081 \
+  -u admin -p 'YourPassword' \
+  --dockerHttpPort 8083 \
+  --enableRegistry
+
+# 执行上传
+datasophon-cli upload registry \
+  --productPackagesPath ./package \
+  --webHost 127.0.0.1 --webPort 8081 \
+  -u admin -p 'YourPassword' \
+  --dockerHttpPort 8083 \
+  --enableRegistry
+```
+
+CLI 上传会识别 `raw/`、`docker/`、`helm/`、`yum/`、`apt/`，并上传
+已有的 MD5 sidecar；`base/` 由 CLI 本地直接消费，不上传 Nexus。完整参数和 `--files` 行为见
+[CLI 上传命令](../datasophon-cli-go/docs/commands/upload/README.md)。
+
+## 服务元数据
+
+- `raw/meta/datacluster-physical/<SERVICE>/service_ddl.json`：物理集群服务参数、
+  角色、依赖、配置写入、Prometheus 与告警定义；模板位于同目录的 `templates/`。
+- `raw/meta/datacluster-k8s/<SERVICE>/manifest.yaml`：Kubernetes 服务的
+  Chart、命名空间、角色与依赖定义。
+
+Master 启动时从配置的元数据仓库加载这些内容，而不是从 Worker jar 内读取模板。修改元数据
+时应保持 DDL/manifest、模板和制品版本一致。
+
+## 解压与版本一致性检查
 
 ```bash
 python3 package/verify_decompress.py
 ```
 
-对每个已下载的包：
-- 读取压缩包内实际顶层目录名
-- 与 `service_ddl.json` 中的 `decompressPackageName` 比对
-- 不一致时自动写回 JSON 文件（多架构服务的归一化名称不修改）
+该工具会检查 `manifest.json` 中的压缩包能否解压，并尝试从目录或包名识别实际版本。
+它不是只读检查：检测到版本不一致时，可能直接回写 `manifest.json` 以及
+`raw/meta/datacluster-physical/**/service_ddl.json`。执行前应确保工作区可审阅，执行后
+必须检查 `git diff`；它不校验 Kubernetes manifest。
 
-### 3. 手动下载单个包
+## 维护清单
 
-```bash
-# 示例：手动重试 flink（代理环境可能需要）
-curl -L --max-time 3600 -C - \
-  -o package/flink-2.2.1-bin-scala_2.12.tgz \
-  "https://archive.apache.org/dist/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz"
-```
+新增或升级制品时：
 
-## manifest.json 字段说明
-
-| 字段 | 说明 |
-|---|---|
-| `service` | 服务名（对应 `meta/datacluster/<SERVICE>/`） |
-| `arch` | 架构（`x86_64` / `aarch64` / `common`） |
-| `packageName` | 包文件名，同时作为下载目标文件名 |
-| `decompressPackageName` | 解压后安装目录名，对应 `service_ddl.json` 中同名字段 |
-| `downloadUrl` | 下载地址；`null` 表示私有包，需手动上传 |
-| `status` | `public`（可自动下载）/ `private`（需手动上传） |
-| `note` | 备注（私有包说明、镜像地址等） |
-| `repoType` / `repoTypes` | 可选，指定一个或多个下载目的目录（`yum`/`apt`/`helm`/`docker`/`base`/`raw`）；不填则默认落到 `raw/packages/` |
-
-`NEXUS`/`MYSQL`/`RUSTFS`/`MYSQLD_EXPORTER` 是 `datasophon-cli-go` 直接消费的基础设施 bundle，固定下载到 `package/base/`。`OTELCOLLECTOR` 同时被 CLI 引导期 collector 和平台纳管的 OTELCOLLECTOR 服务消费，因此使用 `repoTypes: ["raw", "base"]`：只下载一次，再通过 hardlink（跨文件系统时回退 copy）同步到两个目录。`verify_decompress.py` 对子目录分流包可能显示 "MISSING"，以 `download.sh --print-layout` 和下载结果为准。
-
-## 私有包
-
-以下包为内部构建，无公开下载地址，需从内部 Nexus 手动上传到本目录：
-
-| 包文件名 | 说明 |
-|---|---|
-| `datart-server.tar.gz` | 内部 BI 服务 |
-| `redis-8.6.tar.gz` / `redis-8.6-arm.tar.gz` | 自定义构建（非官方版本号） |
-
-## Valkey 私有构建包
-
-Valkey x86_64 离线包是私有制品，不通过 `download.sh` 自动获取。构建、校验和制品说明见
-[docs/valkey/BUILD.md](./docs/valkey/BUILD.md)。
-
-## 多架构包说明
-
-ALERTMANAGER、DORIS、PROMETHEUS 各有 x86_64 和 aarch64 两个包，包内顶层目录名含架构后缀（如 `alertmanager-0.32.1.linux-amd64`）。Worker 安装时使用 `tar --strip-components=1` 剥除顶层目录，因此 `decompressPackageName` 使用归一化名称（如 `alertmanager-0.32.1`），与实际架构无关。
-
-## JDK 包（JDK8 / JDK17 / JDK21）
-
-三个 JDK 均来自 Eclipse Temurin（Adoptium），各有 x86_64 和 aarch64 两个包。与上述服务型组件不同，JDK 不对应 `meta/datacluster/<SERVICE>/service_ddl.json`，不走 Worker 的服务安装流程，而是由 `datasophon-cli-go`（`internal/cli/init/jdk8.go` / `jdk17.go` / `jdk21.go`）通过 `init jdk8` / `init jdk17` / `init jdk21` 子命令直接解压安装；CLI 内置固定的 tar 文件名与本清单的 `packageName` 保持一致。加 `--enableRegistry` 时从 Nexus（`repository/raw/packages/<packageName>`）下载，需先用 `datasophon-cli upload registry` 把 `package/raw/packages/` 下的 JDK 包上传。升级 JDK 版本时，需同步修改本清单条目与 CLI 源码中的版本号常量。
-
-## 更新清单
-
-如需新增或修改组件版本：
-
-1. 编辑 `manifest.json`，更新 `packageName` / `downloadUrl` / `decompressPackageName`
-2. 同步修改对应的 `datasophon-api/src/main/resources/meta/datacluster/<SERVICE>/service_ddl.json`
-3. 运行 `download.sh` 下载新包
-4. 运行 `verify_decompress.py` 校验目录名是否一致
+1. 在 `manifest.json` 中维护服务名、架构、文件名、解压目录、下载地址、状态和仓库路由。
+2. 运行 `bash package/download.sh --print-layout` 确认目标路径。
+3. 下载公开制品，人工补齐私有制品，并核对对应 `.md5`。
+4. 如需运行 `verify_decompress.py`，审阅其写回内容，不要直接把自动修改视为正确结果。
+5. 同步检查物理集群 DDL、Kubernetes manifest 和模板中的版本引用。

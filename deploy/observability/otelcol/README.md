@@ -44,35 +44,43 @@ otelcol-contrib validate --config otelcol-doris.yaml
 otelcol-contrib validate --config otelcol-s3.yaml
 ```
 
-## Java Agent traces 接入(Phase D)
+## Java Agent 接入
 
-`datasophon-api` 和 `datasophon-worker` 的发布包内置 `otel/opentelemetry-javaagent.jar`,但默认不启用。只有显式设置:
+`datasophon-api` 和 `datasophon-worker` 的发布包内置 `otel/opentelemetry-javaagent.jar`。当前两个启动脚本都将 `OTEL_JAVAAGENT_ENABLED` 默认为 `true`，会追加：
 
-```bash
-export OTEL_JAVAAGENT_ENABLED=true
+```text
+-javaagent:$DDH_HOME/otel/opentelemetry-javaagent.jar
 ```
 
-启动脚本才会追加 `-javaagent:$DDH_HOME/otel/opentelemetry-javaagent.jar`,并默认导出:
+默认导出配置为：
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 OTEL_TRACES_EXPORTER=otlp
-OTEL_METRICS_EXPORTER=none
-OTEL_LOGS_EXPORTER=none
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=otlp
 ```
 
-启用前置条件:本节点必须已安装并启动 OTELCOLLECTOR 角色,且 `otlp` receiver 正在监听 `localhost:4317`。未部署 collector 的节点不要开启,否则 agent 会持续尝试连接本机 OTLP 端口并产生错误日志。
+因此每个启动 API/Worker 的节点都应有 Collector 或其他 OTLP endpoint 在 `localhost:4317` 可达。暂未部署 Collector 时应显式关闭，避免持续重试和错误日志：
+
+```bash
+export OTEL_JAVAAGENT_ENABLED=false
+```
 
 可覆盖变量:
 
-- `OTEL_SERVICE_NAME`:默认 `datasophon-api` / `datasophon-worker`。
-- `OTEL_EXPORTER_OTLP_ENDPOINT`:默认 `http://localhost:4317`。
-- `OTEL_EXPORTER_OTLP_PROTOCOL`:默认 `grpc`。
+- `OTEL_SERVICE_NAME`：默认 `datasophon-api` / `datasophon-worker`。
+- `OTEL_EXPORTER_OTLP_ENDPOINT`：默认 `http://localhost:4317`。
+- `OTEL_EXPORTER_OTLP_PROTOCOL`：默认 `grpc`。
 
-建议在节点 `/etc/profile` 或 systemd unit 的 `Environment=` 中注入开关与覆盖变量;启动脚本会 `source /etc/profile`。
+建议在节点 `/etc/profile` 或 systemd unit 的 `Environment=` 中注入开关与覆盖变量；启动脚本会读取运行环境。
 
 ## 上传
 
-见 CLAUDE.local.md「upload registry 完整命令」,raw 仓库。两架构 tar.gz 放入
-`{datasophonPath}/package/`,`--enableRegistry` 必须显式传入。
+两架构 tar.gz 由 `package/manifest.json` 声明为 `repoTypes: ["raw", "base"]`，下载后分别位于：
+
+- `package/raw/packages/`：上传到 Nexus，供平台纳管的 OTELCOLLECTOR 服务使用。
+- `package/base/`：由 CLI 引导期 Collector 直接消费。
+
+可用 `bash package/download.sh --dir base` 准备基础制品；上传 Nexus 时将 `--productPackagesPath` 指向 `package/` 根目录，并显式传入 `--enableRegistry`。命令说明见 [upload README](../../../datasophon-cli-go/docs/commands/upload/README.md)。

@@ -12,9 +12,9 @@
 
 |           命令            |                   说明                   |
 |-------------------------|----------------------------------------|
-| [cluster](./cluster.md) | 完整集群初始化，走 plan → apply 两阶段流程（36 步 DAG） |
-| [node](./node.md)       | 新增单个节点的基础初始化（独立模式，10 步）                |
-| [config](./config.md)   | 生成带随机密码的 `cluster-sample.yml` 配置模板     |
+| [cluster](./cluster.md) | 完整集群初始化，走 plan → apply 两阶段流程（37 步 DAG） |
+| [node](./node.md)       | 新增单个节点的基础初始化（配置模式 12 步）                |
+| [config](./config.md)   | 按 `hadoop` / `kubernetes` 类型生成带随机密码的配置模板 |
 
 ### 基础组件安装（双模式）
 
@@ -29,12 +29,12 @@
 
 ## 典型使用顺序
 
-1. `create config` — 生成配置文件，编辑 `nodes` / `enable` / `node` 字段
+1. `create config -t <hadoop|kubernetes> -o <path>` — 生成配置文件，编辑 `nodes` / `enable` / `node` 字段
 2. `create registry` — 安装 Nexus（如启用制品库）
 3. `upload registry` — 上传安装包到 Nexus（可选）
 4. `create mysql` / `create rustfs` / `create ntp-server` / `create nmap-server` / `create yum-server` — 按需逐项安装基础组件
-5. `create cluster` — 执行完整集群初始化（36 步 DAG，自动跳过未启用模块对应的安装动作）
-6. `create node` — 后续单节点扩容
+5. `create cluster` — 执行完整集群初始化（37 步 Registry，按集群类型和 `enable` 条件跳过不适用步骤）
+6. `create node` — 后续单节点扩容；配置模式执行 12 步并在成功后写回节点列表
 
 > 注：单独运行的 `create <component>` 命令与 `create cluster` 中对应的 DAG 步骤共用底层 Task 实现；适合分阶段排障与重装单个组件的场景。
 
@@ -47,10 +47,14 @@ datasophon-cli [--dry-run] create <subcommand> [flags]
 全局 `--dry-run` 必须在 `create` 之前：
 
 ```bash
-datasophon-cli --dry-run create cluster -p /data/datasophon ...
+datasophon-cli --dry-run create cluster plan \
+  -t hadoop \
+  -p /data/datasophon \
+  --installPath /opt/install \
+  --productPackagesPath /data/install_datasophon/package
 ```
 
 ## 参考
 
-- [DAG 步骤表](../../reference/init-all-dag.md) — initALL 36 步与各步骤对应的 `create *` 命令
+- [DAG 步骤表](../../reference/init-all-dag.md) — initALL 37 步、配置模式新增节点 12 步与手动模式流程
 - [配置文件参考](../../config-reference.md) — `cluster-sample.yml` 各字段含义

@@ -1,280 +1,245 @@
 # Datasophon
 
-> 大数据 / 云原生平台自动化部署与运维管理系统。
-> 一键拉起 Hadoop / Spark / Flink / Hive / Doris / Kafka / Kubernetes 等 27+ 种内置服务,提供集群编排、配置下发、监控告警、可视化运维。
+> 大数据与云原生平台的自动化部署、接管、运维和可观测管理系统。
+
+Datasophon 通过“Master 控制面 + Worker/Agent 工作面”管理物理机和 Kubernetes 集群，提供节点初始化、服务编排、配置下发、启停升级、监控告警、日志/Trace 查询、血缘展示和只读接管等能力。当前开发版本为 `3.0-SNAPSHOT`。
 
 <p align="left">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.4.5-brightgreen" alt="Spring Boot 3.4.5">
-  <img src="https://img.shields.io/badge/Java-21+-blue" alt="Java 21">
-  <img src="https://img.shields.io/badge/Go-1.21-00ADD8" alt="Go 1.21">
-  <img src="https://img.shields.io/badge/React-19-61DAFB" alt="React 19">
-  <img src="https://img.shields.io/badge/gRPC-1.68-orange" alt="gRPC 1.68">
-  <img src="https://img.shields.io/badge/version-2.1--SNAPSHOT-lightgrey" alt="3.0-SNAPSHOT">
+  <img src="https://img.shields.io/badge/Java-21-blue" alt="Java 21">
+  <img src="https://img.shields.io/badge/Go-1.21+-00ADD8" alt="Go 1.21+">
+  <img src="https://img.shields.io/badge/React-19.2-61DAFB" alt="React 19.2">
+  <img src="https://img.shields.io/badge/gRPC-1.68.1-orange" alt="gRPC 1.68.1">
+  <img src="https://img.shields.io/badge/version-3.0--SNAPSHOT-lightgrey" alt="3.0-SNAPSHOT">
 </p>
 
----
+## 核心能力
 
-## 一、能做什么
+- **物理集群编排**：按服务元数据和 DAG 完成主机接入、安装、配置、启停、重启、升级与状态巡检。
+- **Kubernetes 管理**：支持托管集群部署，也支持以 `IMPORTED` 模式接管已有集群做只读扫描和监控；写操作在客户端入口统一封锁。
+- **节点初始化 CLI**：`datasophon-cli` 以 plan/apply 两阶段完成裸机初始化、基础组件安装、Nexus 上传和断点续跑。
+- **元数据驱动**：物理服务使用 `service_ddl.json`，K8s 产品使用 `manifest.yaml`；元数据与模板通过 Nexus 分发，可通过内部接口热加载。
+- **可观测与告警**：OpenTelemetry Collector 将 metrics、logs、traces 写入 Doris，并为平台、节点和服务提供监控看板与告警。
+- **数据血缘**：代理 Gravitino 血缘接口，展示实时和历史血缘图、作业流速及数据集变更。
+- **AI 运维助手（可选）**：独立 Node.js sidecar 通过内部只读 API 查询集群、主机和服务，并以 SSE 对接前端。
 
-- **集群一键化**:UI 上画拓扑 → 自动选机器、推安装包、下配置、拉起服务,失败可断点重试。
-- **节点初始化**:CLI 工具 `datasophon-cli` 把裸机/虚拟机准备好(JDK、Docker、K8s 基础、镜像仓库、MySQL、NTP …)。
-- **多形态集群**:同时支持 Hadoop 物理集群与 Kubernetes 集群,共用同一套元数据驱动模型。
-- **服务编排**:DAG + 角色策略,对外表现为"安装/启动/停止/重启/重配"等高层动作。
-- **可视化运维**:服务实例与角色实例视图、配置编辑(Monaco)、DAG/拓扑可视化(AntV X6/G6)、告警历史、日志查询、Grafana 代理。
-- **元数据驱动**:每种服务只需一份 `service_ddl.json` + 一个 Worker 端策略类,扩展新服务成本低。
-
----
-
-## 二、架构鸟瞰
+## 架构
 
 ```mermaid
 flowchart LR
-    UI["datasophon-ui<br/>React 19 + Antd Pro"]
-    CLI["datasophon-cli-go<br/>Go 1.21"]
-    API["datasophon-api<br/>Spring Boot 3.4 :8081"]
-    Wkr["datasophon-worker<br/>每节点 1 进程 :18082"]
-    Agent["datasophon-k8s-agent<br/>Spring Boot Web"]
-    DB[("MySQL + Flyway")]
-    Hosts[("物理或虚拟机")]
+    UI["datasophon-ui-v2<br/>React 19 + Umi Max 4"]
+    CLI["datasophon-cli-go<br/>Go 1.21+"]
+    API["datasophon-api<br/>HTTP 8080 / gRPC 18081"]
+    Worker["datasophon-worker<br/>gRPC 18082"]
+    Agent["datasophon-k8s-agent<br/>HTTP 12552"]
+    AI["datasophon-ai-agent<br/>HTTP 18090（可选）"]
+    MySQL[(MySQL)]
+    Nexus[(Nexus Meta/Packages)]
+    Doris[(Doris Observability)]
+    Hosts[(物理或虚拟机)]
+    K8s[(Kubernetes)]
 
-    UI -->|HTTP| API
-    CLI -.->|SSH 初始化裸机| Hosts
-    API -->|gRPC 18082 命令| Wkr
-    Wkr -->|gRPC 18081 Register HB| API
-    Wkr -.->|RegisterOlapNode 回调| API
-    API --> DB
-    API -->|HTTP + RSA 签名| Agent
+    UI -->|/ddh/api| API
+    CLI -.->|SSH / SFTP| Hosts
+    API --> MySQL
+    API --> Nexus
+    API --> Doris
+    API -->|gRPC command| Worker
+    Worker -->|register / heartbeat| API
+    Worker --> Hosts
+    API -->|RSA signed HTTP| Agent
+    Agent --> K8s
+    API -->|SSE proxy| AI
+    AI -->|/ddh/internal/agent| API
 ```
 
-| 模块 | 角色 | 进程/产物 | 端口 |
+| 模块 | 职责 | 运行形态 / 产物 | 默认端口 |
 |---|---|---|---|
-| `datasophon-api` | Master 主服务,集群编排核心 | Spring Boot 进程 | HTTP `8081` (`/ddh`) + gRPC `18081` |
-| `datasophon-worker` | Worker 节点进程,本地执行 | 每节点 1 个 main 进程 | gRPC `18082` |
-| `datasophon-grpc-api` | gRPC proto stub | 库 | — |
-| `datasophon-common` | 公共库(K8s 客户端、命令模型、Nexus 客户端) | 库 | — |
-| `datasophon-cli-go` | 节点初始化 CLI(Go 重写) | 单二进制 `datasophon-cli` | — |
-| `datasophon-k8s-agent` | K8s 内 Agent,签名鉴权远端执行 | Spring Boot Web Pod | 可配置 |
-| `datasophon-ui` | 前端 | 静态资源(内嵌至 API 包) | — |
+| `datasophon-api` | Master、REST API、DAG 编排、监控与血缘查询 | Spring Boot；`datasophon-manager-<version>.tar.gz` | HTTP `8080`、gRPC `18081` |
+| `datasophon-worker` | 在受管节点执行服务生命周期与资源操作 | 非 Spring Boot Java 进程；`datasophon-worker.tar.gz` | gRPC `18082`、JMX exporter `8585` |
+| `datasophon-grpc-api` | Master/Worker gRPC proto 与 checked-in stub | Java 库 | — |
+| `datasophon-common` | 公共命令模型、K8s/Nexus 客户端和工具 | Java 库 | — |
+| `datasophon-cli-go` | 节点初始化、基础设施安装和制品上传 | `datasophon-cli` 单二进制 | — |
+| `datasophon-ui-v2` | 当前默认 Web 前端 | Umi Max 静态资源，内嵌到 Manager 包 | 开发端口 `8000` |
+| `datasophon-k8s-agent` | 集群内签名鉴权执行边界 | Spring Boot Pod、Docker 镜像和 Helm Chart | HTTP `12552`，默认 NodePort `32552` |
+| `datasophon-assembly` | 汇总 Manager、Worker 和 CLI 交付物 | `datasophon-<version>-package.tar.gz` | — |
 
-> 设计与各模块详细职责请见 **[ARCHITECTURE.md](./ARCHITECTURE.md)**。
+`datasophon-ai-agent` 和 `datasophon-lineage-emitter` 是独立工程，不在根 Maven reactor 中。详细设计见 [系统架构文档](./docs/ARCHITECTURE.md)。
 
----
+## 技术栈
 
-## 三、技术栈
-
-| 层 | 技术 |
+| 层 | 当前实现 |
 |---|---|
-| Master / Worker / K8s Agent | **Java 21**、**Spring Boot 3.4.5**、MyBatis-Plus 3.5.9、Druid、Flyway 9 |
-| 跨进程通信 | **gRPC 1.68.1 / Protobuf 3.25.5**(grpc-spring-boot-starter 3.1.0,yidongnan/grpc-ecosystem) |
-| 数据库 | MySQL 8(`mysql-connector 8.2.0`),迁移 1.1.0 → 2.1.0 |
-| 任务编排 | 自实现 `RepoDAG` + `@Async masterExecutor` + `@Scheduled` 周期巡检 |
-| K8s 集成 | fabric8-kubernetes-client + Helm |
-| CLI | **Go 1.21**、Cobra、`golang.org/x/crypto/ssh` + `sftp` |
-| 前端 | **React 19**、Ant Design 6、**Ant Design Pro 2.8.10**、Vite、pnpm,AntV X6/G6/Dagre,Monaco + Shiki |
+| Master / Agent | Java 21、Spring Boot 3.4.5、Jetty、MyBatis-Plus 3.5.9、Druid 1.2.24 |
+| Worker | Java 21、gRPC Netty、Jackson、Freemarker；纯 `main()` 进程 |
+| 跨进程通信 | gRPC 1.68.1、Protobuf 3.25.5 |
+| 数据库 | MySQL 8；`DatabaseMigration` 自研迁移器（不是 Flyway） |
+| Kubernetes | fabric8 kubernetes-client、kubectl、Helm |
+| CLI | Go 1.21+、Cobra、Viper、SSH/SFTP |
+| 前端 | React 19.2、Umi Max 4、Ant Design 6、ProComponents 3、AntV、Monaco、Ant Design X |
+| 可观测 | OpenTelemetry Collector/Java Agent、Doris、Prometheus 兼容采集 |
 
----
+## 快速开始
 
-## 四、快速开始
+### 环境要求
 
-### 4.1 环境准备
-
-| 工具 | 推荐版本 |
+| 工具 | 要求 |
 |---|---|
-| JDK | JDK 21(JBR 21 / Microsoft OpenJDK 21) |
-| Maven | 使用项目自带 `./mvnw` (3.8.4) |
-| Node | 20.x(`frontend-maven-plugin` 自动下载,无需本机安装) |
-| Go | 1.21+(仅在编译 CLI 时需要) |
+| JDK | 21 |
+| Maven | 使用仓库自带 `./mvnw`（3.8.4） |
+| Node.js | `>=22`；Maven 前端构建固定 Node `22.14.0` / npm `10.9.2` |
+| Go | `1.21+`（仅构建 CLI 时需要） |
 | MySQL | 8.0+ |
 
-### 4.2 全量构建
+### 构建
 
 ```bash
-# 设置 JDK 21（必要 — 项目对 JDK 21 + Lombok 有强依赖）
+# 全量构建：包含 UI、API、Worker、CLI、K8s Agent 和最终 assembly
 export JAVA_HOME=/path/to/jdk-21
-
-# 全量构建（编译 + 打包 + 内嵌前端）
 ./mvnw clean package -DskipTests
 
-# 仅后端
-./mvnw clean package -DskipTests -pl datasophon-api -am
-
-# 仅前端
-cd datasophon-ui && pnpm install && pnpm build
+# API 及其依赖；跳过前端 npm 安装和构建
+./mvnw -pl datasophon-common,datasophon-grpc-api,datasophon-ui-v2,datasophon-api \
+  -Dskip.installnodenpm -Dskip.npm -DskipTests package
 
 # 单元测试
 ./mvnw test
 
-# 代码格式化
+# Java 格式检查/修复
 ./mvnw spotless:apply
 ```
 
-> 若是国内网络,建议先准备好 Maven `settings.xml` 镜像,避免 Maven Central 直连失败。
+国内网络环境可追加 `-Pgoogle-mirror`，或使用本地 Maven `settings.xml`。
 
-### 4.3 编译 CLI(可选)
+前端独立开发：
+
+```bash
+cd datasophon-ui-v2
+npm install
+npm start        # 启用 mock
+npm run dev      # 不启用 mock，连接后端代理
+npm run lint
+npm run test
+npm run build
+```
+
+CLI 独立构建：
 
 ```bash
 cd datasophon-cli-go
-# 当前平台
-go build -o dist/datasophon-cli ./cmd/datasophon-cli
-
-# 跨平台交叉编译
-GOOS=linux GOARCH=amd64 go build -o dist/datasophon-cli-linux-amd64  ./cmd/datasophon-cli
-GOOS=linux GOARCH=arm64 go build -o dist/datasophon-cli-linux-arm64  ./cmd/datasophon-cli
+make build       # dist/datasophon-cli
+make release     # linux/darwin × amd64/arm64
+make test
+make vet
 ```
 
-### 4.4 运行
+### Docker Compose 本地环境
 
-#### 方案 A:Docker(最快)
+先完成 API/Worker 打包，再启动基础联调环境：
 
 ```bash
-docker build -t datasophon/datasophon:dev .
-docker run -d -p 8081:8081 --name datasophon datasophon/datasophon:dev
-# 浏览器访问 http://host:8081/ddh,默认账号 admin / admin123
+./mvnw clean package -DskipTests
+docker compose -f deploy/compose/docker-compose.yml up --build
 ```
 
-#### 方案 B:Docker Compose
+访问 <http://127.0.0.1:8080/ddh>。更完整的 K8s、Standalone 和可观测环境见 [Compose 使用说明](./deploy/compose/README.md)。
 
-```bash
-cd deploy/compose
-docker compose up -d
-```
+### 默认账号与端口
 
-#### 方案 C:Kubernetes
-
-```bash
-# 见 deploy/k8s/ 中的 manifest
-kubectl apply -f deploy/k8s/
-```
-
-#### 方案 D:裸机
-
-```bash
-# Master
-tar -xzf datasophon-api/target/datasophon-manager-3.0-SNAPSHOT.tar.gz
-./bin/start-api.sh
-
-# Worker(每节点一个)
-./bin/start-worker.sh
-```
-
-详细部署文档:[deploy/Deployment.md](./deploy/Deployment.md)
-
-### 4.5 节点初始化(CLI)
-
-```bash
-# 必需环境变量
-export DDH_HOME=/opt/datasophon
-
-# 单步操作:防火墙关闭、JDK 21 安装、MySQL 启动 …
-datasophon-cli init firewall
-datasophon-cli init jdk21
-datasophon-cli init mysql
-
-# 一键 33 步全量初始化(plan → 确认 → apply)
-datasophon-cli create cluster -t hadoop
-
-# 仅生成计划,不执行
-datasophon-cli create cluster -t kubernetes --plan-only
-
-# 失败后从断点继续
-datasophon-cli create cluster apply -t kubernetes
-
-# 全局 --dry-run,只打印命令不实际执行
-datasophon-cli init mysql --dry-run
-```
-
-CLI 完整命令参考:[datasophon-cli-go/docs](./datasophon-cli-go/docs/)
-
----
-
-## 五、目录结构
-
-```
-datasophon/
-├── datasophon-api/          # Master 主服务 (Spring Boot 3.4)
-│   └── src/main/resources/
-│       ├── application.yml          # 主配置
-│       ├── db/migration/            # Flyway 1.1 → 2.1
-│       ├── mapper/*.xml             # MyBatis XML
-│       └── meta/datacluster/        # ⭐ 服务元数据 (HDFS, Doris, Kafka, …)
-├── datasophon-worker/       # Worker 节点进程
-├── datasophon-grpc-api/     # gRPC proto + stub
-│   └── src/main/proto/      #   registry / worker / master / common
-├── datasophon-common/       # 公共库 (K8s 客户端、命令模型)
-├── datasophon-cli-go/       # ⭐ Go 重写的节点初始化 CLI (替代 datasophon-cli)
-├── datasophon-cli/          # Java CLI (历史遗留,逐步淘汰)
-├── datasophon-k8s-agent/    # K8s 内 Agent (RSA 签名鉴权)
-├── datasophon-ui/           # React 19 + Antd Pro 前端
-├── deploy/
-│   ├── compose/             # Docker Compose
-│   ├── docker/              # Dockerfile + 入口脚本
-│   ├── k8s/                 # K8s manifest
-│   └── Deployment.md
-├── ARCHITECTURE.md          # ⭐ 架构文档(本 README 的延伸阅读)
-└── README.md
-```
-
----
-
-## 六、内置服务列表
-
-`datasophon-api/src/main/resources/meta/datacluster/` 内置以下服务定义,可在 UI 直接安装:
-
-| 类别 | 服务 |
+| 项目 | 默认值 |
 |---|---|
-| 存储 | HDFS、MinIO、JuiceFS、Elasticsearch |
-| 计算 | YARN、Spark 3、Flink、Hive、Kyuubi |
-| OLAP | Doris、StarRocks(via Doris 兼容) |
-| 消息/调度 | Kafka、Zookeeper、ETCD、Nacos、USCHEDULER |
-| 监控 | Prometheus、Grafana、AlertManager、Loki、Promtail |
-| 数据应用 | DATART、APISIX、Nginx、Redis、Amoro |
-
-新增服务只需:
-1. 编写 `meta/datacluster/<NAME>/service_ddl.json`(参数、模板、角色拓扑、告警)
-2. 在 `datasophon-worker/strategy/` 实现一个 `*HandlerStrategy` 类
-3. UI 自动渲染表单,无需改动
-
----
-
-## 七、默认账号 / 端口
-
-| 项 | 值 |
-|---|---|
-| 默认账号 | `admin` / `admin123` |
-| API HTTP | `8081`(上下文路径 `/ddh`) |
+| Web 登录 | `admin` / `DJEutbydS@U%f7Jb` |
+| API HTTP | `8080`，上下文 `/ddh` |
 | Master gRPC | `18081` |
 | Worker gRPC | `18082` |
-| MySQL | `3306`(可配置) |
+| K8s Agent HTTP | `12552` |
+| AI Agent HTTP | `18090` |
+| MySQL | `3306` |
 
----
+默认凭据仅用于初始化和本地验证，生产部署后应立即替换。
 
-## 八、文档
+## CLI 节点初始化
+
+`DDH_HOME` 是必填环境变量，计划、状态和运行资源都从该目录派生。
+
+```bash
+export DDH_HOME=/opt/datasophon
+
+# 生成配置（create cluster 固定读取该路径）
+mkdir -p "$DDH_HOME/datasophon-init/config"
+datasophon-cli create config -t hadoop \
+  -o "$DDH_HOME/datasophon-init/config/cluster-sample.yml"
+
+# 生成 37 步集群初始化计划，不执行
+datasophon-cli create cluster plan -t hadoop \
+  -p "$DDH_HOME" \
+  --installPath /opt/install \
+  --productPackagesPath /data/install_datasophon/package
+
+# 校验配置 hash 后执行，失败可再次 apply 断点续跑
+datasophon-cli create cluster apply -t hadoop \
+  -p "$DDH_HOME" \
+  --installPath /opt/install \
+  --productPackagesPath /data/install_datasophon/package
+
+# 单步本地初始化
+datasophon-cli init jdk21
+
+# 只打印命令
+datasophon-cli --dry-run init jdk21
+```
+
+完整说明见 [CLI 运维手册](./datasophon-cli-go/docs/README.md)。
+
+## 元数据与内置产品
+
+运行期元数据位于 `package/raw/meta/`，通过 Nexus raw 仓库分发：
+
+- `datacluster-physical/`：19 个物理服务 `service_ddl.json`，包含角色、依赖、参数、脚本、模板、告警与安装包信息。
+- `datacluster-k8s/`：17 个 K8s 产品 `manifest.yaml`，覆盖 Helm、Operator/CR 与普通工作负载等形态。
+
+新增或升级物理服务时，需要同步服务 DDL、模板/脚本、Worker 特殊策略（如有）及 `package/manifest.json`；K8s 产品以对应目录的 `manifest.yaml` 为事实源。
+
+## 目录结构
+
+```text
+datasophon/
+├── datasophon-api/                 # Master REST/gRPC 服务
+├── datasophon-worker/              # 节点 Worker
+├── datasophon-grpc-api/            # gRPC 契约与 stub
+├── datasophon-common/              # 公共库
+├── datasophon-cli-go/              # Go CLI
+├── datasophon-ui-v2/               # 当前默认前端
+├── datasophon-k8s-agent/           # K8s 内 Agent
+├── datasophon-assembly/            # 最终交付包
+├── datasophon-ai-agent/            # 可选 AI sidecar（独立 Node 工程）
+├── datasophon-lineage-emitter/      # 独立 Flink lineage emitter
+├── package/                         # 安装包清单与运行期元数据
+├── deploy/                          # Compose、Docker、K8s 部署资产
+└── docs/                            # 架构、OpenAPI、血缘及实施文档
+```
+
+旧 `datasophon-ui/` 已退出默认构建，仅保留历史参考；新前端工作统一在 `datasophon-ui-v2/` 完成。
+
+## 文档
 
 | 文档 | 用途 |
 |---|---|
-| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | 系统架构、设计权衡、关键文件速查 |
-| [deploy/Deployment.md](./deploy/Deployment.md) | 部署细节(裸机/Docker/K8s) |
-| [docs/](./docs/) | 历史文档与中文操作指南 |
-| [datasophon-cli-go/docs/](./datasophon-cli-go/docs/) | CLI 命令参考 |
-| [.claude/rules/project-structure.md](./.claude/rules/project-structure.md) | 完整工程结构索引(供 AI 工具与新人查阅) |
+| [系统架构](./docs/ARCHITECTURE.md) | 模块边界、协议、调用链和关键文件 |
+| [CLI 运维手册](./datasophon-cli-go/docs/README.md) | plan/apply、命令树、配置与恢复 |
+| [UI v2](./datasophon-ui-v2/README.md) | 前端能力、开发、测试和约束 |
+| [Compose 环境](./deploy/compose/README.md) | 基础、K8s、Standalone 和可观测环境 |
+| [REST API 契约](./docs/openapi/README.md) | 静态契约范围与动态 springdoc |
+| [内部 API](./docs/internal-api/README.md) | 元数据热加载与 AI Agent 回调 |
+| [部署包管理](./package/README.md) | 清单、下载、校验与 Nexus 目录布局 |
 
----
+## 贡献
 
-## 九、贡献
-
-1. Fork 仓库,基于 `dev`(或当前活跃分支)新建 feature 分支。
-2. 提交前运行:
-   ```bash
-   ./mvnw spotless:apply         # 后端格式化
-   ./mvnw test                    # 单元测试
-   cd datasophon-ui && pnpm lint  # 前端 lint
-   ```
+1. 基于 `dev` 或当前活跃分支创建功能分支。
+2. Java 改动运行相关 Maven 测试和 Spotless；前端改动在 `datasophon-ui-v2` 运行 `npm run lint`、`npm run test` 和必要的构建；CLI 改动运行 `make test && make vet`。
 3. 提交信息遵循 [Conventional Commits](https://www.conventionalcommits.org/)。
-4. 创建 PR 并描述动机、改动范围、测试方式。
+4. PR 中说明动机、改动范围、验证证据和已知限制。
 
----
+## License
 
-## 十、License
-
-源自 Datasophon 开源项目,沿用上游 License(详见 `LICENSE` 与 `NOTICE`)。
-本仓库为定制分支,在原始版本上做了 gRPC 替代 Pekko、CLI Go 重写、Spring Boot 3 升级等改造。
+本项目沿用仓库中的 [LICENSE](./LICENSE) 与 [NOTICE](./NOTICE)。
