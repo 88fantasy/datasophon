@@ -1,0 +1,19 @@
+name: doris-coupled
+version: "1.0.0"
+description: Doris 存算一体集群（经典 FE+BE 架构，DorisCluster CR，由社区 doris-operator 管理）
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  # 纯 CR 扫描识别，不提供 datasophon 自装路径（无 yaml/helm 字段）——只在接管场景下
+  # 被识别，与 doris-disaggregated 现有的"yaml+operator 双支持"不同，这里只需要 operator。
+  kind: operator
+  operator:
+    group: doris.selectdb.com
+    kind: DorisCluster
+    plural: dorisclusters
+    monitorProfile: doris-coupled
+    roles:
+      - name: fe
+        jobPattern: '-fe$'
+      - name: be
+        jobPattern: '-be$'

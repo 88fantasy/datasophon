@@ -1,0 +1,122 @@
+package com.datasophon.api.service.k8s;
+
+import com.datasophon.common.k8s.client.KubectlClient;
+import com.datasophon.common.k8s.vo.k8s.K8sResource;
+import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
+import com.datasophon.common.model.k8s.K8sArtifact;
+import com.datasophon.common.model.k8s.K8sOperatorArtifact;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+/**
+ * 只读枚举「operator CR」类型框架服务的 CR 实例，供接管扫描把它们当 pseudo-release 登记
+ * （见 {@link K8sArtifact#KIND_OPERATOR} / {@link K8sOperatorArtifact}）。
+ *
+ * <p>本类不做写操作，也不识别 operator controller 本体（如 doris-operator Deployment）——
+ * CR 能被扫到即隐含 operator 健康，本次范围只做 CR 扫描 + 监控看板。
+ */
+@Service
+public class K8sCrScanner {
+
+    private static final Logger log = LoggerFactory.getLogger(K8sCrScanner.class);
+
+    private final K8sService k8sService;
+
+    public K8sCrScanner(K8sService k8sService) {
+        this.k8sService = k8sService;
+    }
+
+    /** 扫描到的单个 CR 实例。 */
+    public record ScannedCr(FrameK8sServiceEntity definition, String name, String namespace, String kind) {
+    }
+
+    /**
+     * CR 扫描结果。
+     *
+     * @param crs        本次成功扫到的 CR 实例
+     * @param failedCrds 扫描失败的 CRD 标识（{@code plural.group}）；非空代表本次结果不完整——
+     *                   调用方不能把「没扫到」当成「确认不存在」，否则一次 API server 抖动 /
+     *                   RBAC 变更就会让已登记的 CR 实例被误判为失联
+     */
+    public record CrScanResult(List<ScannedCr> crs, List<String> failedCrds) {
+
+        public boolean complete() {
+            return failedCrds.isEmpty();
+        }
+    }
+
+    /**
+     * 扫描全部 {@code kind=operator} 框架服务定义对应的 CR 实例。
+     *
+     * <p>多个框架服务定义指向同一 CRD（同 group+plural）时只发一次 kubectl 请求；单个 CRD 扫描
+     * 失败（如 CRD 未安装，属常态，不是每个接管集群都装了每种 operator）只记 warn 日志跳过，
+     * 不阻断其他 CRD 的扫描，但会计入返回结果的 {@code failedCrds}，供调用方判断本次结果是否完整。
+     */
+    public CrScanResult scan(K8sClusterConfig config, List<FrameK8sServiceEntity> definitions) {
+        Map<String, CrdTarget> targets = new LinkedHashMap<>();
+        for (FrameK8sServiceEntity definition : definitions) {
+            K8sOperatorArtifact operator = K8sArtifact.operatorOf(definition.getArtifact());
+            if (operator == null || isBlank(operator.getGroup()) || isBlank(operator.getPlural())) {
+                continue;
+            }
+            String key = crdKey(operator);
+            targets.put(key, new CrdTarget(definition, operator));
+        }
+
+        if (targets.isEmpty()) {
+            return new CrScanResult(List.of(), List.of());
+        }
+        try {
+            return k8sService.batchExec(config, client -> scanTargets(client, targets), "批量扫描 operator CRD");
+        } catch (Exception e) {
+            log.warn("初始化 CR 扫描客户端失败：{}", e.getMessage());
+            return new CrScanResult(List.of(), new ArrayList<>(targets.keySet()));
+        }
+    }
+
+    private CrScanResult scanTargets(KubectlClient client, Map<String, CrdTarget> targets) {
+        List<ScannedCr> results = new ArrayList<>();
+        List<String> failedCrds = new ArrayList<>();
+        for (Map.Entry<String, CrdTarget> entry : targets.entrySet()) {
+            CrdTarget target = entry.getValue();
+            try {
+                K8sResourceList<K8sResource> crs = client.getCustomResourcesAllNamespaces(
+                        target.operator().getPlural(), target.operator().getGroup());
+                if (crs == null || crs.getItems() == null) {
+                    continue;
+                }
+                for (K8sResource cr : crs.getItems()) {
+                    if (cr.getMetadata() == null || cr.getMetadata().getName() == null) {
+                        continue;
+                    }
+                    results.add(new ScannedCr(target.definition(), cr.getMetadata().getName(),
+                            cr.getMetadata().getNamespace(), target.operator().getKind()));
+                }
+            } catch (Exception e) {
+                log.warn("扫描 CRD {} 失败：{}", entry.getKey(), e.getMessage());
+                failedCrds.add(entry.getKey());
+            }
+        }
+        return new CrScanResult(results, failedCrds);
+    }
+
+    private record CrdTarget(FrameK8sServiceEntity definition, K8sOperatorArtifact operator) {
+    }
+
+    private static String crdKey(K8sOperatorArtifact operator) {
+        return operator.getPlural() + "." + operator.getGroup();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+}

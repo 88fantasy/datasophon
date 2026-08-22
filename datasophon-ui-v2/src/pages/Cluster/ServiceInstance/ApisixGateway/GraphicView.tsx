@@ -1,10 +1,10 @@
+import { useIntl } from '@umijs/max';
 import { Alert, Menu } from 'antd';
 import React, { useMemo, useState } from 'react';
-import { useIntl } from '@umijs/max';
 import GlobalRuleTable from './GlobalRuleTable';
+import type { ApisixGatewayDoc } from './gatewayYaml';
 import RouteTable from './RouteTable';
 import UpstreamTable from './UpstreamTable';
-import type { ApisixGatewayDoc } from './gatewayYaml';
 
 const KNOWN_TOP_LEVEL_KEYS = ['upstreams', 'routes', 'global_rules'];
 
@@ -20,7 +20,9 @@ const GraphicView: React.FC<GraphicViewProps> = ({ doc, onChange }) => {
   const [resource, setResource] = useState<ResourceType>('routes');
 
   const unknownSegmentCount = useMemo(
-    () => Object.keys(doc).filter((key) => !KNOWN_TOP_LEVEL_KEYS.includes(key)).length,
+    () =>
+      Object.keys(doc).filter((key) => !KNOWN_TOP_LEVEL_KEYS.includes(key))
+        .length,
     [doc],
   );
 
@@ -31,11 +33,15 @@ const GraphicView: React.FC<GraphicViewProps> = ({ doc, onChange }) => {
     },
     {
       key: 'upstreams',
-      label: intl.formatMessage({ id: 'pages.apisixGateway.resource.upstreams' }),
+      label: intl.formatMessage({
+        id: 'pages.apisixGateway.resource.upstreams',
+      }),
     },
     {
       key: 'globalRules',
-      label: intl.formatMessage({ id: 'pages.apisixGateway.resource.globalRules' }),
+      label: intl.formatMessage({
+        id: 'pages.apisixGateway.resource.globalRules',
+      }),
     },
   ];
 
@@ -61,8 +67,12 @@ const GraphicView: React.FC<GraphicViewProps> = ({ doc, onChange }) => {
           style={{ width: 160, flexShrink: 0 }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          {resource === 'routes' && <RouteTable doc={doc} onChange={onChange} />}
-          {resource === 'upstreams' && <UpstreamTable doc={doc} onChange={onChange} />}
+          {resource === 'routes' && (
+            <RouteTable doc={doc} onChange={onChange} />
+          )}
+          {resource === 'upstreams' && (
+            <UpstreamTable doc={doc} onChange={onChange} />
+          )}
           {resource === 'globalRules' && (
             <GlobalRuleTable doc={doc} onChange={onChange} />
           )}

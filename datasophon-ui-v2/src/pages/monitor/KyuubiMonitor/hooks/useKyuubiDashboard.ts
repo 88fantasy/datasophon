@@ -3,9 +3,9 @@ import { fetchDorisLabels } from '../../_shared/dorisService';
 import type { TimeSeriesPoint } from '../../_shared/types';
 import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
 import {
+  buildKyuubiPanelQueries,
   KYUUBI_CONN_TYPES,
   KYUUBI_OP_TYPES,
-  buildKyuubiPanelQueries,
   type KyuubiDashboardVariables,
 } from '../panelQueries';
 

@@ -22,7 +22,8 @@
 
 import type { DorisPanelDescriptor } from '../_shared/dorisService';
 
-export type DorisDashboardSegment = 'cluster' | 'fe' | 'be';
+/** 'compute' 仅存算分离模式使用，替代耦合模式的 'be' 段 */
+export type DorisDashboardSegment = 'cluster' | 'fe' | 'be' | 'compute';
 
 /**
  * Doris 看板面板描述符（OTel Collector → Doris 存储路径）。
@@ -516,8 +517,10 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   },
 };
 
-export const DORIS_SEGMENT_PANEL_IDS: Record<DorisDashboardSegment, string[]> =
-  {
+export const DORIS_SEGMENT_PANEL_IDS: Record<
+  'cluster' | 'fe' | 'be',
+  string[]
+> = {
     cluster: [
       'DO-A01',
       'DO-A02',
@@ -559,7 +562,7 @@ export const DORIS_SEGMENT_PANEL_IDS: Record<DorisDashboardSegment, string[]> =
   };
 
 export function getDorisSegmentPanelIds(
-  segment: DorisDashboardSegment,
+  segment: 'cluster' | 'fe' | 'be',
 ): string[] {
   return DORIS_SEGMENT_PANEL_IDS[segment];
 }

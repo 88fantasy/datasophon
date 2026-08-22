@@ -3,7 +3,7 @@ import { fetchDorisLabels } from '../../_shared/dorisService';
 import { TIME_RANGE_SECONDS } from '../../_shared/panelTypes';
 import type { TimeSeriesPoint } from '../../_shared/types';
 import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
-import { PANEL_QUERIES, type JuiceFSPanelDescriptor } from '../panelQueries';
+import { type JuiceFSPanelDescriptor, PANEL_QUERIES } from '../panelQueries';
 
 export interface JuiceFSDashboardVariables {
   name: string;
@@ -131,6 +131,8 @@ export interface UseJuiceFSDashboardParams {
   variables: JuiceFSDashboardVariables;
   timeRange: string;
   clusterId?: number;
+  /** 接管实例登记的 job 正则；不传时保持「全部 job」 */
+  job?: string;
   refreshKey: number;
 }
 
@@ -138,6 +140,7 @@ export function useJuiceFSDashboard({
   variables,
   timeRange,
   clusterId = 1,
+  job = '.+',
   refreshKey,
 }: UseJuiceFSDashboardParams): JuiceFSDashboardData {
   const [volumes, setVolumes] = useState<string[]>([]);
@@ -167,7 +170,7 @@ export function useJuiceFSDashboard({
     panelDescriptors: descriptors,
     panelIds: ALL_PANEL_IDS,
     instance: '.+',
-    job: '.+',
+    job,
     timeRange,
     clusterId,
     refreshKey,

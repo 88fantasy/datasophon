@@ -1,9 +1,5 @@
 import type { IAnimation } from '@antv/g';
-import {
-  CubicHorizontal,
-  ExtensionCategory,
-  register,
-} from '@antv/g6';
+import { CubicHorizontal, ExtensionCategory, register } from '@antv/g6';
 
 export const FLOWING_LINEAGE_EDGE = 'lineage-flowing-edge';
 

@@ -31,6 +31,7 @@ import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.host.dto.QueryHostListPageDTO;
+import com.datasophon.api.service.k8s.K8sDashboardMetricsService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
@@ -42,6 +43,7 @@ import com.datasophon.dao.enums.ClusterArchType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,15 +78,19 @@ public class ClusterHostV2Controller extends ApiController {
 
     private final K8sService k8sService;
 
+    private final K8sDashboardMetricsService k8sDashboardMetricsService;
+
     @Autowired
     public ClusterHostV2Controller(ClusterHostService clusterHostService,
                                    ClusterInfoService clusterInfoService,
                                    K8sClusterConfigService k8sClusterConfigService,
-                                   K8sService k8sService) {
+                                   K8sService k8sService,
+                                   K8sDashboardMetricsService k8sDashboardMetricsService) {
         this.clusterHostService = clusterHostService;
         this.clusterInfoService = clusterInfoService;
         this.k8sClusterConfigService = k8sClusterConfigService;
         this.k8sService = k8sService;
+        this.k8sDashboardMetricsService = k8sDashboardMetricsService;
     }
 
     // ─── 分页主机列表 ─────────────────────────────────────────────
@@ -122,8 +128,21 @@ public class ClusterHostV2Controller extends ApiController {
                                           String cpuArchitecture,
                                           Integer hostState) {
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(clusterId);
+        // 整批只查一次 Doris；查不到就让每台主机保持 fromK8sNode 的降级值，不让主机列表跟着挂
+        Map<String, K8sDashboardMetricsService.HostUsage> usage;
+        try {
+            usage = k8sDashboardMetricsService.hostUsage(clusterId);
+        } catch (Exception e) {
+            log.warn("集群 {} 的节点用量指标查询失败，主机列表按无用量展示：{}", clusterId, e.getMessage());
+            usage = Map.of();
+        }
+        final Map<String, K8sDashboardMetricsService.HostUsage> nodeUsage = usage;
         List<HostResponse> all = k8sService.listNodes(config).stream()
-                .map(node -> HostResponse.fromK8sNode(clusterId, node))
+                .map(node -> {
+                    HostResponse host = HostResponse.fromK8sNode(clusterId, node);
+                    host.applyUsage(nodeUsage);
+                    return host;
+                })
                 .filter(host -> contains(host.getHostname(), hostname))
                 .filter(host -> contains(host.getIp(), ip))
                 .filter(host -> cpuArchitecture == null || cpuArchitecture.equals(host.getCpuArchitecture()))

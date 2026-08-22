@@ -82,7 +82,20 @@ public class OtelMetricsQueryService {
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
                     "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id",
-                    "job_id", "task_id", "subtask_index", "operator_name", "operation");
+                    "job_id", "task_id", "subtask_index", "operator_name", "operation", "workload_group");
+
+    /**
+     * 仅用于「键不存在」判断的属性白名单，不参与 SELECT/GROUP BY 别名生成（与
+     * {@link #ALLOWED_ATTR_FILTER_KEYS} 分开维护，避免 {@code user} 这类值混入
+     * {@link #buildExtraSelect} 的别名拼接）。
+     *
+     * <p>背景：Doris 存算分离集群里 {@code doris_fe_query_total}/{@code doris_fe_query_err} 同时存在
+     * "无 user/cluster_name 的全局汇总序列"与"按 user（多账号）/cluster_name（计算组）拆分的序列"，
+     * 不排除后者会被 SUM 重复计数，导致 QPS 类数字被放大且图上看不出异常（Phase 0 已用真实沙箱数据
+     * 验证）。调用方传入空值 filter（如 {@code {"user":""}}）时，{@link #appendAttrFilters} 会翻译成
+     * {@code attributes['user'] IS NULL}，只保留没有该维度的全局序列。
+     */
+    static final Set<String> ALLOWED_ABSENT_ATTR_KEYS = Set.of("user", "cluster_name");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "module", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
@@ -1067,10 +1080,14 @@ public class OtelMetricsQueryService {
         if (filters != null) {
             for (Map.Entry<String, String> entry : filters.entrySet()) {
                 String key = entry.getKey();
-                if (ALLOWED_ATTR_FILTER_KEYS.contains(key)) {
+                String value = entry.getValue();
+                if (value != null && value.isEmpty() && ALLOWED_ABSENT_ATTR_KEYS.contains(key)) {
+                    // 空值 filter：调用方要求该属性键不存在（如 {"user":""}），不生成命名参数
+                    sql.append("\n  AND attributes['").append(key).append("'] IS NULL");
+                } else if (ALLOWED_ATTR_FILTER_KEYS.contains(key)) {
                     sql.append("\n  AND CAST(attributes['").append(key)
                             .append("'] AS STRING)")
-                            .append(needsRegexp(entry.getValue()) ? " REGEXP " : " = ")
+                            .append(needsRegexp(value) ? " REGEXP " : " = ")
                             .append(":af_").append(key);
                 }
             }

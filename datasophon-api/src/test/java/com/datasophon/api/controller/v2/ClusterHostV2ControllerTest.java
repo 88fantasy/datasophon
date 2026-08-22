@@ -23,12 +23,16 @@
 package com.datasophon.api.controller.v2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.HostPageResponse;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.service.k8s.K8sDashboardMetricsService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -38,6 +42,7 @@ import com.datasophon.dao.enums.ClusterArchType;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
@@ -71,8 +76,12 @@ class ClusterHostV2ControllerTest {
             }
             return null;
         });
-        ClusterHostV2Controller controller =
-                new ClusterHostV2Controller(clusterHostService, clusterInfoService, configService, k8sService);
+        K8sDashboardMetricsService metricsService = mock(K8sDashboardMetricsService.class);
+        when(metricsService.hostUsage(anyInt())).thenReturn(Map.of(
+                "k8s-node-1", new K8sDashboardMetricsService.HostUsage(
+                        4d * 1024 * 1024 * 1024, 12d * 1024 * 1024 * 1024, 1.25)));
+        ClusterHostV2Controller controller = new ClusterHostV2Controller(
+                clusterHostService, clusterInfoService, configService, k8sService, metricsService);
 
         ApiResponse<HostPageResponse> response =
                 controller.list(7, 1, 20, null, null, null, null, null, null);
@@ -81,7 +90,44 @@ class ClusterHostV2ControllerTest {
         assertThat(response.getData().getTotal()).isEqualTo(1);
         assertThat(response.getData().getRecords()).hasSize(1);
         assertThat(response.getData().getRecords().get(0).getHostname()).isEqualTo("k8s-node-1");
+        // 用量由 OTel 指标补齐，不再是硬编码的 0 / "-"
+        assertThat(response.getData().getRecords().get(0).getUsedMem()).isEqualTo(4);
+        assertThat(response.getData().getRecords().get(0).getUsedDisk()).isEqualTo(12);
+        assertThat(response.getData().getRecords().get(0).getAverageLoad()).isEqualTo("1.25");
         assertThat(physicalHostQueried).isFalse();
+    }
+
+    @Test
+    void list_k8sCluster_metricsQueryFails_stillReturnsHosts() {
+        ClusterHostService clusterHostService = proxy(ClusterHostService.class, (p, method, args) -> null);
+        ClusterInfoService clusterInfoService = proxy(ClusterInfoService.class, (p, method, args) -> {
+            if ("getById".equals(method.getName())) {
+                ClusterInfoEntity cluster = new ClusterInfoEntity();
+                cluster.setId(7);
+                cluster.setArchType(ClusterArchType.k8s);
+                return cluster;
+            }
+            return null;
+        });
+        K8sClusterConfigService configService =
+                proxy(K8sClusterConfigService.class, (p, method, args) -> new K8sClusterConfig());
+        K8sService k8sService = proxy(K8sService.class, (p, method, args) -> "listNodes".equals(method.getName())
+                ? List.of(k8sNode("k8s-node-1", "10.0.0.7"))
+                : null);
+        K8sDashboardMetricsService metricsService = mock(K8sDashboardMetricsService.class);
+        when(metricsService.hostUsage(anyInt())).thenThrow(new IllegalStateException("doris unreachable"));
+
+        ClusterHostV2Controller controller = new ClusterHostV2Controller(
+                clusterHostService, clusterInfoService, configService, k8sService, metricsService);
+
+        ApiResponse<HostPageResponse> response =
+                controller.list(7, 1, 20, null, null, null, null, null, null);
+
+        // 指标查询失败不能让主机列表跟着失败，只是没有用量
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getData().getRecords()).hasSize(1);
+        assertThat(response.getData().getRecords().get(0).getUsedMem()).isZero();
+        assertThat(response.getData().getRecords().get(0).getAverageLoad()).isEqualTo("-");
     }
 
     private static K8sNode k8sNode(String name, String ip) {

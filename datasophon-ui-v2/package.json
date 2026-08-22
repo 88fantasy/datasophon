@@ -11,9 +11,11 @@
     "lint-staged": "lint-staged",
     "biome:lint": "biome lint",
     "biome": "biome check --write",
-    "prepare": "npx husky && max setup",
+    "prepare": "node scripts/copy-monaco.mjs && npx husky && max setup",
+    "predev": "node scripts/copy-monaco.mjs",
     "preview": "max preview --port 8000",
     "preview:build": "max build && max preview --port 8000",
+    "prestart": "node scripts/copy-monaco.mjs",
     "start": "cross-env UMI_ENV=dev max dev",
     "start:no-mock": "cross-env MOCK=none max dev",
     "start:pre": "cross-env UMI_ENV=pre MOCK=none max dev",
@@ -23,7 +25,8 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "doctor": "react-doctor .",
-    "tsc": "tsc --noEmit"
+    "tsc": "tsc --noEmit",
+    "prebuild": "node scripts/copy-monaco.mjs"
   },
   "browserslist": [
     "defaults"

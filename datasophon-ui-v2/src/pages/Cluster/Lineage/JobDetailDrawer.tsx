@@ -223,7 +223,8 @@ const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
                             items: [
                               {
                                 channel: 'y',
-                                valueFormatter: (value: number) => value.toFixed(2),
+                                valueFormatter: (value: number) =>
+                                  value.toFixed(2),
                               },
                             ],
                           }}

@@ -1,0 +1,7 @@
+name: bigdata
+version: "3.11.0"
+description: Bigdata 数据服务
+type: APPLICATION
+dependencies: []
+artifact:
+  yaml: bigdata.yaml

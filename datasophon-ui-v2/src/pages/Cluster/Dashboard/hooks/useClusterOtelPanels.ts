@@ -22,7 +22,11 @@
 
 import type { TimeSeriesPoint } from '../../../monitor/_shared/types';
 import { useDorisDashboardData } from '../../../monitor/_shared/useDorisDashboardData';
-import { ALL_PANEL_IDS, CLUSTER_DASHBOARD_JOB, PANEL_QUERIES } from '../panelQueries';
+import {
+  ALL_PANEL_IDS,
+  CLUSTER_DASHBOARD_JOB,
+  PANEL_QUERIES,
+} from '../panelQueries';
 
 export interface UseClusterOtelPanelsParams {
   clusterId: number;

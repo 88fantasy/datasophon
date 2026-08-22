@@ -1,3 +1,4 @@
+import additionalMonitor from './zh-CN/additionalMonitor';
 import apisixGateway from './zh-CN/apisixGateway';
 import apisixMonitor from './zh-CN/apisixMonitor';
 import clusterDashboard from './zh-CN/clusterDashboard';
@@ -7,7 +8,6 @@ import dorisMonitor from './zh-CN/dorisMonitor';
 import globalHeader from './zh-CN/globalHeader';
 import gravitinoMonitor from './zh-CN/gravitinoMonitor';
 import juicefsMonitor from './zh-CN/juicefsMonitor';
-import additionalMonitor from './zh-CN/additionalMonitor';
 import lineage from './zh-CN/lineage';
 import menu from './zh-CN/menu';
 import nacosMonitor from './zh-CN/nacosMonitor';

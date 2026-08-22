@@ -24,7 +24,12 @@ package com.datasophon.api.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
@@ -34,7 +39,7 @@ import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -50,7 +55,8 @@ class OtelDorisReaderFactoryTest {
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
                 .thenReturn(List.of(role("ddh-01", ServiceRoleState.EXISTS_ALARM)));
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
-                roleService, variableService, new OtelCredentialService(variableService));
+                roleService, variableService, new OtelCredentialService(variableService),
+                noExternalDatasource());
 
         factory.create(7);
 
@@ -64,7 +70,8 @@ class OtelDorisReaderFactoryTest {
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
                 .thenReturn(List.of(role("ddh-01", ServiceRoleState.STOP)));
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
-                roleService, variableService, new OtelCredentialService(variableService));
+                roleService, variableService, new OtelCredentialService(variableService),
+                noExternalDatasource());
 
         assertThatThrownBy(() -> factory.create(7))
                 .isInstanceOf(IllegalStateException.class)
@@ -84,7 +91,8 @@ class OtelDorisReaderFactoryTest {
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
                 proxy(ClusterServiceRoleInstanceService.class),
                 proxy(ClusterVariableService.class),
-                credentialService);
+                credentialService,
+                noExternalDatasource());
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
@@ -101,7 +109,8 @@ class OtelDorisReaderFactoryTest {
         OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
                 proxy(ClusterServiceRoleInstanceService.class),
                 proxy(ClusterVariableService.class),
-                credentialService);
+                credentialService,
+                noExternalDatasource());
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackUser", "custom_reader");
@@ -109,9 +118,121 @@ class OtelDorisReaderFactoryTest {
 
         factory.create(7);
 
-        Map<?, HikariDataSource> pools = (Map<?, HikariDataSource>) ReflectionTestUtils.getField(factory, "pools");
-        assertThat(pools).hasSize(1);
-        assertThat(pools.values().iterator().next().getUsername()).isEqualTo("custom_reader");
+        assertThat(factory.poolSizeForTest()).isEqualTo(1);
+        assertThat(factory.dataSourceForTest(7).getUsername()).isEqualTo("custom_reader");
+    }
+
+    @Test
+    void usesExternalDatasourceWhenProviderResolvesOne() {
+        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
+        ClusterVariableService variableService = mock(ClusterVariableService.class);
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                roleService, variableService, new OtelCredentialService(variableService),
+                externalDatasource("10.0.0.9", "9030"));
+
+        factory.create(7);
+
+        assertThat(factory.poolSizeForTest()).isEqualTo(1);
+        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("10.0.0.9:9030");
+        // 走了外部数据源就不该再查角色实例表
+        verify(roleService, never()).getServiceRoleInstanceListByClusterIdAndRoleName(anyInt(), anyString());
+    }
+
+    @Test
+    void reusesResolvedDatasourceWithoutRepeatingPlatformQueries() {
+        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
+        ClusterVariableService variableService = mock(ClusterVariableService.class);
+        ExternalOtelDatasourceProvider provider = externalDatasource("10.0.0.9", "9030");
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                roleService, variableService, new OtelCredentialService(variableService), provider);
+
+        factory.create(7);
+        factory.create(7);
+
+        verify(provider, times(1)).find(7);
+    }
+
+    @Test
+    void fallsBackToRoleInstanceWhenNoExternalDatasource() {
+        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
+        ClusterVariableService variableService = mock(ClusterVariableService.class);
+        when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
+                .thenReturn(List.of(role("ddh-01", ServiceRoleState.RUNNING)));
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                roleService, variableService, new OtelCredentialService(variableService),
+                noExternalDatasource());
+
+        factory.create(7);
+
+        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("ddh-01:9030");
+    }
+
+    @Test
+    void devFallbackTakesPrecedenceOverExternalDatasource() {
+        ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
+        ClusterVariableService variableService = mock(ClusterVariableService.class);
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                roleService, variableService, new OtelCredentialService(variableService),
+                externalDatasource("10.0.0.9", "9030"));
+        ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
+        ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
+
+        factory.create(7);
+
+        assertThat(factory.dataSourceForTest(7).getJdbcUrl()).contains("127.0.0.1:9030");
+    }
+
+    @Test
+    void replacesAndClosesPoolWhenConnectionSettingsChange() {
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                proxy(ClusterServiceRoleInstanceService.class),
+                proxy(ClusterVariableService.class),
+                new OtelCredentialService(null),
+                noExternalDatasource());
+        ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
+        ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret-1");
+        factory.create(7);
+        HikariDataSource old = factory.dataSourceForTest(7);
+
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret-2");
+        factory.create(7);
+
+        assertThat(factory.poolSizeForTest()).isEqualTo(1);
+        assertThat(old.isClosed()).isTrue();
+        assertThat(factory.dataSourceForTest(7)).isNotSameAs(old);
+    }
+
+    @Test
+    void invalidationClosesAndRemovesClusterPool() {
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                proxy(ClusterServiceRoleInstanceService.class),
+                proxy(ClusterVariableService.class),
+                new OtelCredentialService(null),
+                noExternalDatasource());
+        ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
+        factory.create(7);
+        HikariDataSource old = factory.dataSourceForTest(7);
+
+        factory.invalidate(7);
+
+        assertThat(factory.poolSizeForTest()).isZero();
+        assertThat(old.isClosed()).isTrue();
+    }
+
+    private static ExternalOtelDatasourceProvider noExternalDatasource() {
+        ExternalOtelDatasourceProvider provider = mock(ExternalOtelDatasourceProvider.class);
+        when(provider.find(anyInt())).thenReturn(Optional.empty());
+        return provider;
+    }
+
+    private static ExternalOtelDatasourceProvider externalDatasource(String host, String port) {
+        ExternalOtelDatasourceProvider provider = mock(ExternalOtelDatasourceProvider.class);
+        when(provider.find(anyInt())).thenReturn(
+                Optional.of(new ExternalOtelDatasourceProvider.ExternalDatasource(host, port)));
+        return provider;
     }
 
     @SuppressWarnings("unchecked")

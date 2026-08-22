@@ -20,7 +20,10 @@ vi.mock('@ant-design/pro-components', () => ({
     dataSource,
     toolBarRender,
   }: {
-    columns: Array<{ dataIndex?: string; render?: (v: unknown, r: any) => ReactNode }>;
+    columns: Array<{
+      dataIndex?: string;
+      render?: (v: unknown, r: any) => ReactNode;
+    }>;
     dataSource: any[];
     toolBarRender?: () => ReactNode;
   }) => (
@@ -33,7 +36,10 @@ vi.mock('@ant-design/pro-components', () => ({
               {columns.map((col, j) => (
                 <td key={col.dataIndex ?? j}>
                   {col.render
-                    ? col.render(col.dataIndex ? record[col.dataIndex] : undefined, record)
+                    ? col.render(
+                        col.dataIndex ? record[col.dataIndex] : undefined,
+                        record,
+                      )
                     : String(record[col.dataIndex ?? ''] ?? '')}
                 </td>
               ))}
@@ -63,7 +69,9 @@ describe('GlobalRuleTable builtin rule protection', () => {
   it('marks id 1/2 as builtin and hides edit/delete actions for them', () => {
     render(<GlobalRuleTable doc={DOC} onChange={vi.fn()} />);
 
-    const builtinTags = screen.getAllByText('pages.apisixGateway.globalRule.builtin');
+    const builtinTags = screen.getAllByText(
+      'pages.apisixGateway.globalRule.builtin',
+    );
     expect(builtinTags).toHaveLength(2);
 
     // 非内置规则(id 3)仍有编辑/删除入口

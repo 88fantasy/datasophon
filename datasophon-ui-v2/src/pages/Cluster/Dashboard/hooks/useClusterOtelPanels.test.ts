@@ -22,7 +22,10 @@
 
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { averageLatestValue, useClusterOtelPanels } from './useClusterOtelPanels';
+import {
+  averageLatestValue,
+  useClusterOtelPanels,
+} from './useClusterOtelPanels';
 
 const mocks = vi.hoisted(() => ({
   useDorisDashboardData: vi.fn(),

@@ -5,6 +5,7 @@ import com.datasophon.api.dto.instance.K8sServiceInstanceValuesSaveDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceValuesUpdateDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
+import com.datasophon.api.security.ImportedClusterWriteGuard;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
@@ -25,6 +26,7 @@ import java.util.List;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,16 +42,20 @@ import cn.hutool.core.util.StrUtil;
 @Service("k8sServiceInstanceValuesService")
 @Transactional(rollbackFor = BusinessHintException.class)
 public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceInstanceValuesMapper, K8sServiceInstanceValues> implements K8sServiceInstanceValuesService {
-    
+
     @Autowired
     private FrameK8sServiceService frameK8sServiceService;
-    
+
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
-    
+
     @Autowired
     private K8sClusterNamespaceService k8sClusterNamespaceService;
-    
+
+    @Autowired
+    @Lazy
+    private ImportedClusterWriteGuard importedClusterWriteGuard;
+
     @Override
     public List<K8sServiceInstanceValues> listSimpleByInstanceId(Integer instanceId) {
         return lambdaQuery()
@@ -60,11 +66,11 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
                         K8sServiceInstanceValues::getServiceId,
                         K8sServiceInstanceValues::getInstanceId,
                         K8sServiceInstanceValues::getVersion
-                
+
                 ).orderByDesc(K8sServiceInstanceValues::getVersion)
                 .list();
     }
-    
+
     @Override
     public K8sServiceInstanceValuesVO getValueFromRepo(Integer serviceId, String artifactType) {
         // 1. 根据 serviceId 查询 FrameK8sServiceEntity 对象
@@ -99,13 +105,13 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
             throw new BusinessException(String.format("IO异常，%s", e.getMessage()), e);
         }
     }
-    
+
     @Override
     public K8sServiceInstanceValues save(K8sServiceInstanceValuesSaveDTO values) {
         K8sClusterNamespace namespace = k8sClusterNamespaceService.createIfAbsent(new K8sNamespaceIdentityDTO(values.getClusterId(), values.getNamespace()));
         // 2. 根据 serviceId 查询服务实例，如果不存在则创建
         K8sServiceInstance instance = k8sServiceInstanceService.createIfAbsent(values.getClusterId(), namespace.getId(), values.getServiceId());
-        
+
         // 3. 获取当前最大 version
         List<K8sServiceInstanceValues> list = lambdaQuery()
                 .eq(K8sServiceInstanceValues::getInstanceId, instance.getId())
@@ -113,29 +119,34 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
                 .last("limit 1")
                 .list();
         Integer maxVersion = list.isEmpty() ? 0 : list.get(0).getVersion();
-        
+
         // 4. 创建 K8sServiceInstanceValues 对象
         K8sServiceInstanceValues instanceValues = BeanUtil.toBean(values, K8sServiceInstanceValues.class);
         instanceValues.setNamespaceId(namespace.getId());
         instanceValues.setInstanceId(instance.getId());
         instanceValues.setVersion(maxVersion + 1);
-        
+
         save(instanceValues);
-        
+
         return instanceValues;
     }
-    
+
     @Override
     public K8sServiceInstanceValues update(K8sServiceInstanceValuesUpdateDTO values) {
         K8sServiceInstanceValues db = getById(values.getId());
         if (db == null) {
             throw new BusinessHintException("对象不存在");
         }
+        // 门禁按记录自身的 clusterId 判定，不依赖调用方 URL 形态：
+        // /frame/k8sInstanceValues/update（旧版 v1 控制器）与 /v2/cluster/{clusterId}/k8s/instance/{instanceId}/config
+        // 都会走到这里，前者压根没有 clusterId 路径变量，后者的路径 clusterId 也可能与
+        // values 记录实际归属的集群不一致（跨集群 URL 篡改），只有此处能兜住两条路径。
+        importedClusterWriteGuard.requireWritable(db.getClusterId(), "修改服务配置");
         db.setDeltaValues(values.getDeltaValues());
         updateById(db);
         return db;
     }
-    
+
     @Override
     public K8sServiceInstanceValues getNewestValuesByInstanceId(Integer instanceId) {
         return lambdaQuery()
@@ -144,15 +155,15 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
                 .last("limit 1")
                 .one();
     }
-    
+
     @Override
     public void removeByInstanceId(Integer instanceId) {
         lambdaUpdate().eq(K8sServiceInstanceValues::getInstanceId, instanceId).remove();
     }
-    
+
     @Override
     public void removeByClusterId(Integer clusterId) {
         lambdaUpdate().eq(K8sServiceInstanceValues::getClusterId, clusterId).remove();
     }
-    
+
 }

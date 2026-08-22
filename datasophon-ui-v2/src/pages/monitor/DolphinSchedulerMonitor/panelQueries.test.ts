@@ -81,9 +81,7 @@ describe('DolphinSchedulerMonitor panel queries', () => {
     });
     expect(PANEL_QUERIES['D-A06']).toMatchObject({
       type: 'multi-range',
-      queries: [
-        { metric: 'ds_worker_resource_download_duration_seconds_max' },
-      ],
+      queries: [{ metric: 'ds_worker_resource_download_duration_seconds_max' }],
     });
   });
 

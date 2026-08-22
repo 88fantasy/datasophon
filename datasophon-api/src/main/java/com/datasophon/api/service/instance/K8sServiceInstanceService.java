@@ -3,10 +3,12 @@ package com.datasophon.api.service.instance;
 import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -15,29 +17,42 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author zhanghuangbin
  */
 public interface K8sServiceInstanceService extends IService<K8sServiceInstance> {
-    
+
     List<K8sServiceInstanceVO> queryInstanceList(K8sNamespaceIdentityDTO query);
-    
+
+    /**
+     * 查询集群下全部命名空间的服务实例，供侧边栏按服务分类（catalog）分组展示。
+     */
+    List<K8sServiceInstanceVO> queryInstanceList(Integer clusterId);
+
     List<K8sServiceInstanceVO> listByIds(List<Integer> instanceIds);
-    
+
     default Optional<String> getServiceName(Integer instanceId) {
         return getVoById(instanceId).map(K8sServiceInstanceVO::getServiceName);
     }
-    
+
     default Optional<K8sServiceInstanceVO> getVoById(Integer instanceId) {
         List<K8sServiceInstanceVO> result = listByIds(Collections.singletonList(instanceId));
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
-    
+
+    default Optional<K8sServiceInstanceVO> getVoByClusterAndId(Integer clusterId, Integer instanceId) {
+        return getVoById(instanceId).filter(vo -> Objects.equals(clusterId, vo.getClusterId()));
+    }
+
     List<String> listResourceType(K8sServiceInstanceQueryDTO query);
-    
+
     Object listResource(K8sServiceInstanceQueryDTO query);
-    
+
     K8sServiceInstance createIfAbsent(Integer clusterId, Integer namespaceId, Integer serviceId);
-    
+
+    K8sServiceInstance createImportedIfAbsent(Integer clusterId, Integer namespaceId,
+                                              Integer serviceId, InstanceSourceKind sourceKind,
+                                              String releaseName);
+
     boolean removeInstanceId(Integer instanceId);
-    
+
     void removeByClusterId(Integer clusterId);
-    
+
     boolean hasRunningInstance(Integer clusterId);
 }

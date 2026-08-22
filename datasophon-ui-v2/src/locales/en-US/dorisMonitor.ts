@@ -6,6 +6,8 @@ export default {
   'pages.dorisMonitor.toolbar.rateInterval': 'Rate Window',
   'pages.dorisMonitor.toolbar.notice':
     'All queries use the DataSophon Prometheus proxy and Doris FE/BE group labels',
+  'pages.dorisMonitor.toolbar.notice.disaggregated':
+    'Disaggregated cluster (K8s operator CR): FE/compute groups are distinguished by job, not group labels; node counts reflect instances scraped in the last 5 minutes',
   'pages.dorisMonitor.section.cluster': 'Cluster Overview',
   'pages.dorisMonitor.section.cluster.subtitle':
     'cluster-wide FE/BE summary, capacity, and saturation trends',
@@ -15,6 +17,9 @@ export default {
   'pages.dorisMonitor.section.be': 'BE Backend',
   'pages.dorisMonitor.section.be.subtitle':
     'resource saturation, disk, compaction, scan/write throughput, latency, and network signals',
+  'pages.dorisMonitor.section.compute': 'Compute Group',
+  'pages.dorisMonitor.section.compute.subtitle':
+    'resource saturation, remote IO/S3 throughput, cache hit ratio, workload group, spill disk, and network signals',
 
   'pages.dorisMonitor.panel.DO-A01': 'FE Node Count',
   'pages.dorisMonitor.panel.DO-A02': 'FE Alive',
@@ -48,4 +53,16 @@ export default {
   'pages.dorisMonitor.panel.DO-C09': 'BE Push Rows',
   'pages.dorisMonitor.panel.DO-C10': 'BE Engine Request Latency',
   'pages.dorisMonitor.panel.DO-C11': 'BE Network Bytes',
+  'pages.dorisMonitor.panel.DO-D01': 'Compute CPU Idle %',
+  'pages.dorisMonitor.panel.DO-D02': 'Compute Memory Allocated',
+  'pages.dorisMonitor.panel.DO-D03': 'Spill Disk Usage %',
+  'pages.dorisMonitor.panel.DO-D04': 'Disk IO Utilization',
+  'pages.dorisMonitor.panel.DO-D05': 'Compaction Throughput',
+  'pages.dorisMonitor.panel.DO-D06': 'Scan Bytes Rate',
+  'pages.dorisMonitor.panel.DO-D07': 'Scan Rows Rate',
+  'pages.dorisMonitor.panel.DO-D08': 'Workload Group CPU Time',
+  'pages.dorisMonitor.panel.DO-D09': 'Network Bytes',
+  'pages.dorisMonitor.panel.DO-D10': 'Remote IO Ratio',
+  'pages.dorisMonitor.panel.DO-D11': 'S3 Read/Write Throughput',
+  'pages.dorisMonitor.panel.DO-D12': 'Data Page Cache Hit Ratio',
 };

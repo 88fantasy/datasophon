@@ -30,6 +30,7 @@ import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.dto.v2.FrameServiceItemResponse;
 import com.datasophon.api.dto.v2.FrameServiceRoleItemResponse;
 import com.datasophon.api.dto.v2.HostResponse;
+import com.datasophon.api.security.ImportedReadOnly;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
@@ -40,15 +41,9 @@ import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import lombok.Data;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,6 +54,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 /**
  * v2 添加服务向导接口 — 给已建集群追加服务（物理集群路径）。
@@ -72,12 +72,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 @RestController
 @RequestMapping("/v2/cluster/{clusterId}/add-service")
 public class ClusterAddServiceV2Controller extends ApiController {
-    
+
     private final PhysicalProductInstallService physicalProductInstallService;
     private final ServiceInstallService serviceInstallService;
     private final ClusterHostService clusterHostService;
     private final ExtRepoInstallDelegateService extRepoInstallDelegateService;
-    
+
     public ClusterAddServiceV2Controller(
                                          PhysicalProductInstallService physicalProductInstallService,
                                          ServiceInstallService serviceInstallService,
@@ -88,9 +88,9 @@ public class ClusterAddServiceV2Controller extends ApiController {
         this.clusterHostService = clusterHostService;
         this.extRepoInstallDelegateService = extRepoInstallDelegateService;
     }
-    
+
     // ─── 步骤 2：选择服务 ───────────────────────────────────────────────────
-    
+
     /** 按部署清单获取最新服务列表（清单中出现的服务带 selected=true）。 */
     @PostMapping("/list-newest")
     public ApiResponse<List<FrameServiceItemResponse>> listNewest(
@@ -102,7 +102,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
         return ApiResponse.ok(FrameServiceItemResponse.fromList(physicalProductInstallService.listNewestByDeployment(dto)));
     }
-    
+
     /** 校验所选服务的依赖完整性（缺依赖时返回错误信息）。 */
     @PostMapping("/check-dependency")
     public ApiResponse<Object> checkDependency(
@@ -114,9 +114,9 @@ public class ClusterAddServiceV2Controller extends ApiController {
         }
         return ApiResponse.ok(result.getData());
     }
-    
+
     // ─── 步骤 3/4：分配角色 ────────────────────────────────────────────────
-    
+
     /** 获取 Master 角色列表（按部署清单回填 hosts）。 */
     @PostMapping("/service-roles")
     public ApiResponse<List<FrameServiceRoleItemResponse>> serviceRoles(
@@ -130,7 +130,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         dto.setServiceRoleType(1);
         return ApiResponse.ok(FrameServiceRoleItemResponse.fromList(physicalProductInstallService.getServiceRoleListByDeployment(dto)));
     }
-    
+
     /** 获取非 Master（Worker/Client）角色列表（按部署清单回填 hosts）。 */
     @PostMapping("/non-master-roles")
     public ApiResponse<List<FrameServiceRoleItemResponse>> nonMasterRoles(
@@ -143,7 +143,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         dto.setServiceIds(joinIds(req.getServiceIds()));
         return ApiResponse.ok(FrameServiceRoleItemResponse.fromList(physicalProductInstallService.getNonMasterRoleListByDeployment(dto)));
     }
-    
+
     /** 查询集群全部已纳管主机（角色分配候选）。 */
     @GetMapping("/hosts")
     public ApiResponse<List<HostResponse>> hosts(@PathVariable Integer clusterId) {
@@ -153,7 +153,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
                         .orderByAsc(Constants.HOSTNAME));
         return ApiResponse.ok(HostResponse.fromList(list));
     }
-    
+
     /** 保存服务角色与主机映射关系（Master/Worker 步共用）。 */
     @PostMapping("/role-host-mapping")
     public ApiResponse<Void> saveRoleHostMapping(
@@ -162,9 +162,9 @@ public class ClusterAddServiceV2Controller extends ApiController {
         serviceInstallService.saveServiceRoleHostMapping(clusterId, list);
         return ApiResponse.ok();
     }
-    
+
     // ─── 步骤 5：服务配置 ───────────────────────────────────────────────────
-    
+
     /** 从服务 DDL 定义读取配置项（未安装服务的初始配置）。 */
     @GetMapping("/config-from-ddl")
     public ApiResponse<List<ServiceConfig>> configFromDdl(
@@ -172,8 +172,9 @@ public class ClusterAddServiceV2Controller extends ApiController {
                                                           @RequestParam String serviceName) {
         return ApiResponse.ok(serviceInstallService.getServiceConfigFromDdl(clusterId, serviceName));
     }
-    
+
     /** 保存单个服务的配置（请求体形态与 ClusterServiceConfigV2Controller 一致）。 */
+    @ImportedReadOnly("修改服务配置")
     @PostMapping("/save-config")
     public ApiResponse<Void> saveConfig(
                                         @PathVariable Integer clusterId,
@@ -182,10 +183,11 @@ public class ClusterAddServiceV2Controller extends ApiController {
         serviceInstallService.saveServiceConfig(clusterId, req.getServiceName(), req.getServiceConfig(), roleGroupId);
         return ApiResponse.ok();
     }
-    
+
     // ─── 步骤 6：安装并启动 ────────────────────────────────────────────────
-    
+
     /** 生成通用安装命令并立即执行 DAG，返回 dagId 供前端跳转 DAG 全屏图。 */
+    @ImportedReadOnly("安装服务")
     @PostMapping("/install")
     public ApiResponse<Map<String, String>> install(
                                                     @PathVariable Integer clusterId,
@@ -196,13 +198,13 @@ public class ClusterAddServiceV2Controller extends ApiController {
         extRepoInstallDelegateService.redeploy(runDag);
         return ApiResponse.ok(Collections.singletonMap("dagId", dagId));
     }
-    
+
     // ─── 内部 DTO / 工具 ────────────────────────────────────────────────────
-    
+
     private static String passwd(String value) {
         return value != null ? value : "";
     }
-    
+
     private static String joinIds(List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
             return "";
@@ -216,7 +218,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         }
         return sb.toString();
     }
-    
+
     /** 部署清单请求体（clusterId 由路径变量提供）。 */
     @Data
     public static class ManifestRequest {
@@ -225,14 +227,14 @@ public class ClusterAddServiceV2Controller extends ApiController {
         /** 配置文件密码，可为空。 */
         private String contentDecodePasswd;
     }
-    
+
     /** 服务依赖校验请求体。 */
     @Data
     public static class ServiceIdsRequest {
         @NotEmpty(message = "服务ID列表不能为空")
         private List<Integer> serviceIds;
     }
-    
+
     /** 角色列表查询请求体。 */
     @Data
     public static class RoleQueryRequest {
@@ -242,7 +244,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         @NotEmpty(message = "服务ID列表不能为空")
         private List<Integer> serviceIds;
     }
-    
+
     /** 保存服务配置请求体。 */
     @Data
     public static class SaveConfigRequest {
@@ -253,7 +255,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         /** 角色组ID，新装服务传 -1（默认）。 */
         private Integer roleGroupId;
     }
-    
+
     /** 安装请求体。 */
     @Data
     public static class InstallRequest {

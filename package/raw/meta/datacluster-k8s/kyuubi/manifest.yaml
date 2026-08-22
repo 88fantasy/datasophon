@@ -1,0 +1,7 @@
+name: kyuubi
+version: "0.1.0"
+description: Kyuubi 与 Spark on K8s
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  helm: kyuubi-0.1.0.tgz

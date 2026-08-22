@@ -5,6 +5,7 @@ import {
   DesktopOutlined,
   FundProjectionScreenOutlined,
   HistoryOutlined,
+  ImportOutlined,
   NodeIndexOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -17,7 +18,7 @@ import { Badge, Button, Dropdown, Layout, Menu, Spin, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import { listClusters } from '@/services/cluster';
-import { listK8sInstances, listK8sNamespaces } from '@/services/k8s';
+import { listAllK8sInstances } from '@/services/k8s';
 import { listClusterServices } from '@/services/service';
 import AddServiceModal from '../AddService/AddServiceModal';
 import UploadManifestModal from '../Deploy/UploadManifestModal';
@@ -31,6 +32,9 @@ const CATALOG_LABEL: Record<string, string> = {
   MIDDLEWARE: '中间件',
   APPLICATION: '应用',
 };
+
+/** 侧边栏服务分组顺序，物理集群与 K8s 集群共用 */
+const CATALOG_ORDER = ['ENVIRONMENT', 'MIDDLEWARE', 'APPLICATION'];
 
 const STATE_BADGE_COLOR: Record<
   number,
@@ -56,7 +60,10 @@ interface K8sInstanceMenuItemProps {
 const K8sInstanceMenuItem: React.FC<K8sInstanceMenuItemProps> = ({
   instance,
 }) => {
-  const badgeStatus = K8S_STATE_BADGE_COLOR[instance.state] ?? 'default';
+  // 轻对账发现 release 已从集群消失时，状态色让位给失联提示
+  const badgeStatus = instance.missing
+    ? 'error'
+    : (K8S_STATE_BADGE_COLOR[instance.state] ?? 'default');
   return (
     <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
       <Badge status={badgeStatus} />
@@ -67,8 +74,14 @@ const K8sInstanceMenuItem: React.FC<K8sInstanceMenuItemProps> = ({
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
         }}
+        title={
+          instance.missing
+            ? '该服务的 Helm release 已不在集群中，登记仍保留'
+            : undefined
+        }
       >
         {instance.serviceName}
+        {instance.missing ? '（已失联）' : ''}
       </span>
     </div>
   );
@@ -209,13 +222,10 @@ const ClusterLayout: React.FC = () => {
     };
   }, [numericClusterId, clusterInfo?.archType]);
 
-  // ── K8s 集群：namespace + 实例列表轮询（3 秒间隔）──────────────
-  const [k8sNamespaces, setK8sNamespaces] = useState<DATASOPHON.K8sNamespace[]>(
-    [],
-  );
-  const [k8sInstancesMap, setK8sInstancesMap] = useState<
-    Record<string, DATASOPHON.K8sServiceInstanceVO[]>
-  >({});
+  // ── K8s 集群：实例列表轮询（3 秒间隔，单次请求覆盖全部 namespace）──
+  const [k8sInstances, setK8sInstances] = useState<
+    DATASOPHON.K8sServiceInstanceVO[]
+  >([]);
 
   useEffect(() => {
     if (clusterInfo?.archType !== 'k8s') return;
@@ -223,19 +233,9 @@ const ClusterLayout: React.FC = () => {
     let cancelled = false;
     const fetchK8s = async () => {
       try {
-        const nsRes = await listK8sNamespaces(numericClusterId);
-        const namespaces = Array.isArray(nsRes) ? nsRes : (nsRes.data ?? []);
+        const res = await listAllK8sInstances(numericClusterId);
         if (cancelled) return;
-        setK8sNamespaces(namespaces);
-
-        const map: Record<string, DATASOPHON.K8sServiceInstanceVO[]> = {};
-        await Promise.all(
-          namespaces.map(async (ns) => {
-            const iRes = await listK8sInstances(numericClusterId, ns.namespace);
-            map[ns.namespace] = Array.isArray(iRes) ? iRes : (iRes.data ?? []);
-          }),
-        );
-        if (!cancelled) setK8sInstancesMap(map);
+        setK8sInstances(Array.isArray(res) ? res : (res.data ?? []));
       } catch {
         /* global error handler */
       }
@@ -321,18 +321,50 @@ const ClusterLayout: React.FC = () => {
     ];
 
     if (clusterInfo?.archType === 'k8s') {
-      // K8s：两层菜单 namespace → 实例
-      const nsItems = k8sNamespaces.map((ns) => {
-        const instances = k8sInstancesMap[ns.namespace] ?? [];
-        return {
-          key: `ns-${ns.namespace}`,
-          label: ns.namespace,
-          children: instances.map((inst) => ({
+      // K8s：与物理集群一致按服务分类（catalog）分组，namespace 降为实例属性
+      // catalog 落到未知值（含 null——如对应 frame 行被清理导致 LEFT JOIN 落空）的
+      // 实例兜底进「其他」分组，保证「所有实例都会被渲染」这一不变量（D2）；
+      // 否则这些实例在侧边栏彻底隐身，而「取消接管」按钮只在实例详情页里，
+      // 导致登记记录无法从 UI 清理。
+      const catalogGroups = [
+        ...CATALOG_ORDER.map((catalog) => ({
+          key: `cat-${catalog}`,
+          label: CATALOG_LABEL[catalog] || catalog,
+          instances: k8sInstances.filter((inst) => inst.catalog === catalog),
+        })),
+        {
+          key: 'cat-OTHER',
+          label: '其他',
+          instances: k8sInstances.filter(
+            (inst) => !CATALOG_ORDER.includes(inst.catalog),
+          ),
+        },
+      ];
+      const catItems = catalogGroups.flatMap(({ key, label, instances }) =>
+        instances.length
+          ? [
+              {
+                key,
+                label,
+                children: instances.map((inst) => ({
             key: `/cluster/${numericClusterId}/service/${inst.id}`,
             label: <K8sInstanceMenuItem instance={inst} />,
-          })),
-        };
-      });
+                })),
+              },
+            ]
+          : [],
+      );
+      // 接管集群多一个「接管服务」入口，兼作 D13 的「重新扫描」入口
+      const takeoverItem =
+        clusterInfo?.manageMode === 'IMPORTED'
+          ? [
+              {
+                key: `/cluster/${numericClusterId}/takeover`,
+                icon: <ImportOutlined />,
+                label: '接管服务',
+              },
+            ]
+          : [];
       return [
         baseItem,
         {
@@ -340,15 +372,15 @@ const ClusterLayout: React.FC = () => {
           icon: <FundProjectionScreenOutlined />,
           label: '监控概览',
         },
-        ...nsItems,
+        ...takeoverItem,
+        ...catItems,
         ...bottomItems,
       ];
     }
 
     // 物理集群：按 catalog 分组（原有逻辑不变）
     const items: any[] = [overviewItem, baseItem];
-    const catalogOrder = ['ENVIRONMENT', 'MIDDLEWARE', 'APPLICATION'];
-    for (const cat of catalogOrder) {
+    for (const cat of CATALOG_ORDER) {
       const services = groupedServices[cat];
       if (!services?.length) continue;
       items.push({
@@ -363,9 +395,9 @@ const ClusterLayout: React.FC = () => {
     return [...items, ...bottomItems];
   }, [
     clusterInfo?.archType,
+    clusterInfo?.manageMode,
     groupedServices,
-    k8sNamespaces,
-    k8sInstancesMap,
+    k8sInstances,
     numericClusterId,
     intl,
   ]);

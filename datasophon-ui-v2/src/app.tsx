@@ -1,3 +1,6 @@
+// 必须最先执行：在任何 @monaco-editor/react 的 Editor 挂载前把 vs 资源路径指向本地静态目录
+import '@/monacoLoader';
+
 import { LinkOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { SettingDrawer } from '@ant-design/pro-components';
@@ -34,6 +37,7 @@ import {
 } from '@/components';
 import { currentUser as queryCurrentUser } from '@/services/auth';
 import defaultSettings from '../config/defaultSettings';
+import { PUBLIC_PATH } from '../config/publicPath';
 import { errorConfig } from './requestErrorConfig';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -140,19 +144,19 @@ export const layout: RunTimeLayoutConfig = ({
     },
     bgLayoutImgList: [
       {
-        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/D2LWSqNny4sAAAAAAAAAAAAAFl94AQBr',
+        src: `${PUBLIC_PATH}images/bg-layout-1.webp`,
         left: 85,
         bottom: 100,
         height: '303px',
       },
       {
-        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/C2TWRpJpiC0AAAAAAAAAAAAAFl94AQBr',
+        src: `${PUBLIC_PATH}images/bg-layout-2.webp`,
         bottom: -68,
         right: -45,
         height: '303px',
       },
       {
-        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/F6vSTbj8KpYAAAAAAAAAAAAAFl94AQBr',
+        src: `${PUBLIC_PATH}images/bg-layout-3.webp`,
         bottom: 0,
         left: 0,
         width: '331px',

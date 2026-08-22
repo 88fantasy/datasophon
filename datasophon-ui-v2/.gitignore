@@ -9,6 +9,9 @@ _roadhog-api-doc
 # production
 /dist
 
+# monaco-editor 静态资源由 scripts/copy-monaco.mjs 在构建/开发前同步，不进仓库
+/public/monaco
+
 # misc
 .DS_Store
 npm-debug.log*

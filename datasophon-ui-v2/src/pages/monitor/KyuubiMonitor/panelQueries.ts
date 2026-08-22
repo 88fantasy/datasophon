@@ -37,7 +37,13 @@ export function buildKyuubiPanelQueries(
   const trendSeconds = TREND_SECONDS[trendInterval];
   return {
     KY01: { type: 'instant', metric: 'kyuubi_jvm_uptime', agg: 'count' },
-    KY02: { type: 'instant', metric: 'kyuubi_jvm_uptime' },
+    // Kyuubi Dropwizard 的 JVM uptime 单位是毫秒；多实例取最大值并换算为秒。
+    KY02: {
+      type: 'instant',
+      metric: 'kyuubi_jvm_uptime',
+      agg: 'max',
+      scale: 0.001,
+    },
     KY03: {
       type: 'instant',
       metric: 'kyuubi_connection_opened_INTERACTIVE',

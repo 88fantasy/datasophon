@@ -149,6 +149,26 @@ export function useDorisDashboardData({
     let cancelled = false;
 
     async function fetchAll() {
+      if (panelIds.length === 0) {
+        setData((prev) => {
+          const isAlreadyEmpty =
+            Object.keys(prev.instant).length === 0 &&
+            Object.keys(prev.series).length === 0 &&
+            prev.loading === false &&
+            prev.error === undefined &&
+            prev.failedPanelIds.length === 0;
+          return isAlreadyEmpty
+            ? prev
+            : {
+                instant: {},
+                series: {},
+                loading: false,
+                failedPanelIds: [],
+              };
+        });
+        return;
+      }
+
       if (clusterId <= 0) {
         setData({
           instant: {},

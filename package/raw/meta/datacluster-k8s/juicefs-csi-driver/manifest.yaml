@@ -1,0 +1,7 @@
+name: juicefs-csi-driver
+version: "0.31.4"
+description: JuiceFS CSI 驱动，提供 StorageClass
+type: ENVIRONMENT
+dependencies: []
+artifact:
+  helm: juicefs-csi-driver-0.31.4.tgz

@@ -30,6 +30,7 @@ import com.datasophon.dao.enums.ServiceRoleState;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,14 +44,15 @@ import jakarta.annotation.PreDestroy;
 
 @Component
 public class OtelDorisReaderFactory {
-    private static final String DEFAULT_READER_USER = "otel_reader";
+    public static final String DEFAULT_READER_USER = "otel_reader";
 
     private static final Logger log = LoggerFactory.getLogger(OtelDorisReaderFactory.class);
 
     private final ClusterServiceRoleInstanceService roleService;
     private final ClusterVariableService variableService;
     private final OtelCredentialService credentialService;
-    private final Map<PoolKey, HikariDataSource> pools = new ConcurrentHashMap<>();
+    private final ExternalOtelDatasourceProvider externalDatasourceProvider;
+    private final Map<Integer, PoolEntry> pools = new ConcurrentHashMap<>();
 
     /** 开发/测试直连兜底：配置后跳过集群注册表查询，直连指定 Doris FE 主机。生产环境留空。 */
     @Value("${datasophon.otel.doris.fallback-host:}")
@@ -67,10 +69,12 @@ public class OtelDorisReaderFactory {
 
     public OtelDorisReaderFactory(ClusterServiceRoleInstanceService roleService,
                                   ClusterVariableService variableService,
-                                  OtelCredentialService credentialService) {
+                                  OtelCredentialService credentialService,
+                                  ExternalOtelDatasourceProvider externalDatasourceProvider) {
         this.roleService = roleService;
         this.variableService = variableService;
         this.credentialService = credentialService;
+        this.externalDatasourceProvider = externalDatasourceProvider;
     }
 
     /** 用 otel_reader 账号（SELECT-only，满足 F1 凭据隔离）创建 JdbcClient。 */
@@ -78,7 +82,18 @@ public class OtelDorisReaderFactory {
         // 开发直连兜底：配置 datasophon.otel.doris.fallback-host 后跳过集群注册表
         if (fallbackHost != null && !fallbackHost.isBlank()) {
             log.debug("Using Doris fallback connection {}:{}", fallbackHost, fallbackPort);
-            return buildJdbcClient(fallbackHost, fallbackPort, fallbackReaderUser(), fallbackPassword);
+            return buildJdbcClient(clusterId, fallbackHost, fallbackPort, fallbackReaderUser(), fallbackPassword);
+        }
+
+        PoolEntry cached = pools.get(clusterId);
+        if (cached != null) {
+            return JdbcClient.create(cached.dataSource());
+        }
+
+        // 接管集群：Doris 不由本平台安装，角色实例表里查不到，改用接管时登记的外部数据源
+        JdbcClient external = createExternal(clusterId);
+        if (external != null) {
+            return external;
         }
 
         List<ClusterServiceRoleInstanceEntity> fes = roleService
@@ -95,21 +110,60 @@ public class OtelDorisReaderFactory {
         }
         String port = variableValue(clusterId, "query_port", "9030");
         String password = credentialService.getOrCreate(clusterId).readerPassword();
-        return buildJdbcClient(fes.get(0).getHostname(), port, DEFAULT_READER_USER, password);
+        return buildJdbcClient(clusterId, fes.get(0).getHostname(), port, DEFAULT_READER_USER, password);
+    }
+
+    /**
+     * 接管集群的外部 Doris 数据源。无登记时返回 null，由调用方回落到角色实例查询。
+     *
+     * <p>密码同样走 {@link OtelCredentialService}：接管时用户录入的密码被存为
+     * {@code DORIS / otel_reader_password} 变量，该服务会优先返回它而不是随机生成。
+     */
+    private JdbcClient createExternal(Integer clusterId) {
+        ExternalOtelDatasourceProvider.ExternalDatasource external =
+                externalDatasourceProvider.find(clusterId).orElse(null);
+        if (external == null) {
+            return null;
+        }
+        String password = credentialService.getOrCreate(clusterId).readerPassword();
+        log.debug("Using external Doris datasource {}:{} for cluster {}",
+                external.host(), external.port(), clusterId);
+        return buildJdbcClient(clusterId, external.host(), external.port(), DEFAULT_READER_USER, password);
     }
 
     private String fallbackReaderUser() {
         return fallbackUser == null || fallbackUser.isBlank() ? DEFAULT_READER_USER : fallbackUser;
     }
 
-    private JdbcClient buildJdbcClient(String host, String port, String user, String password) {
+    private JdbcClient buildJdbcClient(Integer clusterId, String host, String port, String user, String password) {
         PoolKey key = new PoolKey(host, port, user, password);
-        return JdbcClient.create(pools.computeIfAbsent(key, OtelDorisReaderFactory::newDataSource));
+        // HikariDataSource.close() 会阻塞等待活跃连接归还，可能长达 connectionTimeout。
+        // ConcurrentHashMap.compute() 的重映射函数执行期间持有该 key 所在桶的锁，在里面调用
+        // close() 等于让这把锁的持有时长绑定到远程连接归还耗时——同桶的其它 clusterId 的
+        // get/compute 都会被卡住。这里只在 compute() 内换引用，把旧连接池带出来，锁释放之后再关。
+        AtomicReference<HikariDataSource> toClose = new AtomicReference<>();
+        PoolEntry entry = pools.compute(clusterId, (id, current) -> {
+            if (current != null && current.key().equals(key)) {
+                return current;
+            }
+            if (current != null) {
+                toClose.set(current.dataSource());
+            }
+            return new PoolEntry(key, newDataSource(key));
+        });
+        HikariDataSource obsolete = toClose.get();
+        if (obsolete != null) {
+            obsolete.close();
+        }
+        return JdbcClient.create(entry.dataSource());
     }
 
     private static HikariDataSource newDataSource(PoolKey key) {
         HikariDataSource ds = new HikariDataSource();
         ds.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        // 不指定默认库：全部查询都用 otel.otel_metrics_gauge 等全限定表名（见 observability/ 与
+        // K8sMetricsJobProbeService），指定 /otel 没有收益，反而在 otel_reader 对该库暂无权限或
+        // 库尚未建好时让连接直接失败——本类曾因类似改动引发全平台 OTel 查询 500。
         ds.setJdbcUrl("jdbc:mysql://" + key.host() + ":" + key.port()
                 + "/?useUnicode=true&characterEncoding=utf8&useSSL=false");
         ds.setUsername(key.user());
@@ -126,12 +180,25 @@ public class OtelDorisReaderFactory {
 
     @PreDestroy
     public void close() {
-        pools.values().forEach(HikariDataSource::close);
+        pools.values().forEach(entry -> entry.dataSource().close());
         pools.clear();
+    }
+
+    /** 外部数据源配置变更后立即释放旧连接池。 */
+    public void invalidate(Integer clusterId) {
+        PoolEntry removed = pools.remove(clusterId);
+        if (removed != null) {
+            removed.dataSource().close();
+        }
     }
 
     int poolSizeForTest() {
         return pools.size();
+    }
+
+    HikariDataSource dataSourceForTest(Integer clusterId) {
+        PoolEntry entry = pools.get(clusterId);
+        return entry == null ? null : entry.dataSource();
     }
 
     private String variableValue(Integer clusterId, String name, String defaultValue) {
@@ -140,5 +207,8 @@ public class OtelDorisReaderFactory {
     }
 
     private record PoolKey(String host, String port, String user, String password) {
+    }
+
+    private record PoolEntry(PoolKey key, HikariDataSource dataSource) {
     }
 }

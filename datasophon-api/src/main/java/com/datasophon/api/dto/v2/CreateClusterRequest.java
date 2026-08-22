@@ -24,7 +24,9 @@ package com.datasophon.api.dto.v2;
 
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.enums.ClusterArchType;
+import com.datasophon.dao.enums.ManageMode;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -32,20 +34,28 @@ import lombok.Data;
 /** 新建集群请求体。只包含前端表单实际提交的 4 个字段。 */
 @Data
 public class CreateClusterRequest {
-    
+
     @NotBlank
     private String clusterName;
-    
+
     @NotBlank
     private String clusterCode;
-    
+
     /** 框架版本 ID；由 controller 负责解析为 clusterFrame / frameVersion 后回填。 */
     @NotNull
     private Integer frameId;
-    
+
     @NotNull
     private ClusterArchType archType;
-    
+
+    /** 管理模式；缺省 MANAGED（平台安装），IMPORTED 表示接管已存在的集群。 */
+    private ManageMode manageMode;
+
+    @AssertTrue(message = "IMPORTED 管理模式仅支持 K8s 集群")
+    public boolean isManageModeCompatible() {
+        return !ManageMode.IMPORTED.equals(manageMode) || ClusterArchType.k8s.equals(archType);
+    }
+
     /** 转为 {@link ClusterInfoEntity}；clusterFrame / frameVersion 由 {@code ClusterInfoService.saveCluster} 解析 frameId 后回填。 */
     public ClusterInfoEntity toEntity() {
         ClusterInfoEntity e = new ClusterInfoEntity();
@@ -53,6 +63,7 @@ public class CreateClusterRequest {
         e.setClusterCode(clusterCode);
         e.setFrameId(frameId);
         e.setArchType(archType);
+        e.setManageMode(manageMode == null ? ManageMode.MANAGED : manageMode);
         return e;
     }
 }

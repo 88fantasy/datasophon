@@ -417,6 +417,12 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             if (StrUtil.isNotBlank(serviceInfo.getArtifact().getYaml())) {
                 supportArtifacts.add("yaml");
             }
+            // kind=operator：组件的稳态运行身份是被 operator reconcile 的 CR（详见 K8sArtifact 类注释），
+            // 允许 helm/yaml 均为空、只靠 operator 描述 GVK 供接管扫描识别（本次范围只做扫描+监控看板，
+            // 不涉及 datasophon 自己安装该组件）。
+            if (serviceInfo.getArtifact().getOperator() != null) {
+                supportArtifacts.add("operator");
+            }
         }
         if (supportArtifacts.isEmpty()) {
             throw new BusinessHintException("服务%s的manifest文件不规范，artifact字段，至少支持一种部署方式");

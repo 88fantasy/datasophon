@@ -487,7 +487,11 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
         metric: 'jvm_memory_committed_bytes',
         filters: { area: 'heap' },
       },
-      { label: 'max', metric: 'jvm_memory_max_bytes', filters: { area: 'heap' } },
+      {
+        label: 'max',
+        metric: 'jvm_memory_max_bytes',
+        filters: { area: 'heap' },
+      },
     ],
   },
   'D-C08': {

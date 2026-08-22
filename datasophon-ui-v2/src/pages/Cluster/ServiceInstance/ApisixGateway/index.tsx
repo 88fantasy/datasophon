@@ -11,9 +11,9 @@
  */
 
 import { ProCard } from '@ant-design/pro-components';
-import { Button, Modal, Segmented, message } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
 import { useIntl } from '@umijs/max';
+import { Button, Modal, message, Segmented } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import { getApisixGateway, saveApisixGateway } from '@/services/service';
 import CodeView from './CodeView';
 import GraphicView from './GraphicView';
@@ -111,7 +111,9 @@ const ApisixGatewayPanel: React.FC<ApisixGatewayPanelProps> = ({
     setSaving(true);
     try {
       await saveApisixGateway(clusterId, instanceId, payload);
-      message.success(intl.formatMessage({ id: 'pages.apisixGateway.saveSuccess' }));
+      message.success(
+        intl.formatMessage({ id: 'pages.apisixGateway.saveSuccess' }),
+      );
       setText(payload);
       setGraphicDirty(false);
     } catch {
@@ -132,14 +134,20 @@ const ApisixGatewayPanel: React.FC<ApisixGatewayPanelProps> = ({
       >
         <Segmented
           value={view}
-          onChange={(v) => (v === 'graphic' ? switchToGraphic() : switchToCode())}
+          onChange={(v) =>
+            v === 'graphic' ? switchToGraphic() : switchToCode()
+          }
           options={[
             {
-              label: intl.formatMessage({ id: 'pages.apisixGateway.view.graphic' }),
+              label: intl.formatMessage({
+                id: 'pages.apisixGateway.view.graphic',
+              }),
               value: 'graphic',
             },
             {
-              label: intl.formatMessage({ id: 'pages.apisixGateway.view.code' }),
+              label: intl.formatMessage({
+                id: 'pages.apisixGateway.view.code',
+              }),
               value: 'code',
             },
           ]}
@@ -149,7 +157,11 @@ const ApisixGatewayPanel: React.FC<ApisixGatewayPanelProps> = ({
         </Button>
       </div>
       {view === 'code' ? (
-        <CodeView text={text} onChange={setText} managedSuffix={managedSuffix} />
+        <CodeView
+          text={text}
+          onChange={setText}
+          managedSuffix={managedSuffix}
+        />
       ) : (
         <GraphicView
           doc={doc}

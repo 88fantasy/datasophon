@@ -1,3 +1,4 @@
+import { formatRunningJobLabel } from './lineageFormatters';
 import type {
   CollapsedNode,
   GraphData,
@@ -5,7 +6,6 @@ import type {
   JobMetricsByAppId,
   LogicalEdge,
 } from './service';
-import { formatRunningJobLabel } from './lineageFormatters';
 
 export interface G6NodeData {
   canonicalName: string;
@@ -100,7 +100,8 @@ export function toG6Data(
   const jobOutputs = new Map<number, Map<number, JobOutputStat>>();
   graph.edges.forEach((edge) => {
     edge.jobs.forEach((job) => {
-      const outputsByDst = jobOutputs.get(job.jobId) ?? new Map<number, JobOutputStat>();
+      const outputsByDst =
+        jobOutputs.get(job.jobId) ?? new Map<number, JobOutputStat>();
       outputsByDst.set(edge.dst, {
         dstNodeId: edge.dst,
         dstName: nodeNameById.get(edge.dst) ?? String(edge.dst),
@@ -227,7 +228,8 @@ export function applyJobMetrics(
   data.edges.forEach((edge) => {
     edge.data.isRunningLink =
       !edge.data.isCollapsedLink &&
-      (runningJobNodeIds.has(edge.source) || runningJobNodeIds.has(edge.target));
+      (runningJobNodeIds.has(edge.source) ||
+        runningJobNodeIds.has(edge.target));
   });
 }
 

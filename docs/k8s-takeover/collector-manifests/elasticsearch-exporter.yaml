@@ -1,0 +1,122 @@
+# T-C3 Elasticsearch 采集补齐（Deployment + Service + ServiceMonitor）
+#
+# 交付去向：installation_manual 项目。datasophon 严格只读，不执行 apply。
+#
+# 实测依据（2026-08-17）：
+#   ES 版本 7.17.28（镜像 vpc-bj3-registry.cucloud.cn/unimed-mw/elasticsearch:7.17.28-ik2）
+#   GET http://elasticsearch-master:9200/            → 200，**无需认证**
+#   GET http://elasticsearch-master:9200/_prometheus/metrics → **405**，即未装 prometheus-exporter 插件
+#   → 因此必须外挂 prometheus-elasticsearch-exporter，不能像 Nacos/Doris 那样直接抓。
+#
+# ⚠️ 本期只要求「数据到位」，ES 看板下期做（见 §12）。
+#
+# ───────────────────────────────────────────────────────────────
+# 离线镜像准备（集群无外网，必须先导入私有仓库）
+# ───────────────────────────────────────────────────────────────
+#   上游镜像： quay.io/prometheuscommunity/elasticsearch-exporter:v1.7.0
+#   目标地址： vpc-bj3-registry.cucloud.cn/unimed-mw/elasticsearch-exporter:v1.7.0
+#
+#   在一台有外网的机器上执行：
+#     docker pull quay.io/prometheuscommunity/elasticsearch-exporter:v1.7.0
+#     docker save quay.io/prometheuscommunity/elasticsearch-exporter:v1.7.0 \
+#       -o elasticsearch-exporter-v1.7.0.tar
+#
+#   把 tar 拷到能访问私有仓库的机器上：
+#     docker load -i elasticsearch-exporter-v1.7.0.tar
+#     docker tag  quay.io/prometheuscommunity/elasticsearch-exporter:v1.7.0 \
+#                 vpc-bj3-registry.cucloud.cn/unimed-mw/elasticsearch-exporter:v1.7.0
+#     docker push vpc-bj3-registry.cucloud.cn/unimed-mw/elasticsearch-exporter:v1.7.0
+#
+#   选 v1.7.0 而非 latest：离线环境必须锁版本，否则重建 Pod 时可能拉到不存在的 tag。
+#   现有工作负载均未配 imagePullSecrets（仓库对集群内免密），故此处也不配。
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch-exporter
+  namespace: prod
+  labels:
+    app: elasticsearch-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch-exporter
+  template:
+    metadata:
+      labels:
+        app: elasticsearch-exporter
+    spec:
+      containers:
+        - name: exporter
+          image: vpc-bj3-registry.cucloud.cn/unimed-mw/elasticsearch-exporter:v1.7.0
+          args:
+            # 走集群内 Service，无需认证（已实测）
+            - --es.uri=http://elasticsearch-master:9200
+            - --es.all
+            - --es.indices
+            - --es.indices_settings
+            - --es.shards
+            - --es.cluster_settings
+            - --web.listen-address=:9114
+          ports:
+            - name: metrics
+              containerPort: 9114
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-exporter
+  namespace: prod
+  labels:
+    app: elasticsearch-exporter
+spec:
+  type: ClusterIP
+  selector:
+    app: elasticsearch-exporter
+  ports:
+    - name: metrics
+      port: 9114
+      targetPort: metrics
+
+---
+# 抓到的 job 名 = Service 名，即 `elasticsearch-exporter`。
+# 登记接管时 K8sMetricsJobProbeService 会把它探测出来并写进 metrics_job。
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: elasticsearch-exporter
+  namespace: prod
+  labels:
+    otel: enabled
+spec:
+  namespaceSelector:
+    matchNames:
+      - prod
+  selector:
+    matchLabels:
+      app: elasticsearch-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      scheme: http
+      interval: 30s

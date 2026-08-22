@@ -10,6 +10,7 @@ import com.datasophon.common.k8s.vo.k8s.K8sIngress;
 import com.datasophon.common.k8s.vo.k8s.K8sNamespace;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.common.k8s.vo.k8s.K8sPod;
+import com.datasophon.common.k8s.vo.k8s.K8sResource;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.common.k8s.vo.k8s.K8sSecret;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
@@ -28,8 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import lombok.Data;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -44,25 +43,23 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import lombok.Data;
 
 /**
  * kubectl 命令封装客户端
  */
 @Data
 public class KubectlClient implements AutoCloseable {
-    
+
     private final ObjectMapper mapper;
-    
+
     private final String kubectlPath;
     private final String kubeConfig;
-    private final String token;
-    private final String username;
-    private final String password;
     private final String serverCert;
-    private final String serverName;
-    
+    private final boolean readOnly;
+
     private final File tempDir;
-    
+
     public static String detectKubectlPath() {
         String path = PropertyUtils.getString("kubectl.install_path");
         if (StrUtil.isNotBlank(path)) {
@@ -70,7 +67,7 @@ public class KubectlClient implements AutoCloseable {
         }
         return "kubectl";
     }
-    
+
     public KubectlClient(ClientOptions options) {
         this.kubectlPath = detectKubectlPath();
         this.tempDir = PathUtils.getTmpDir("sensitive/" + RandomUtil.randomString(12));
@@ -78,14 +75,7 @@ public class KubectlClient implements AutoCloseable {
         if (!osName.contains("window")) {
             ShellUtils.exec(null, Arrays.asList("chmod", "-R", "0700", tempDir.getAbsolutePath()), -1);
         }
-        
-        if (StrUtil.isNotBlank(options.getKubeConfig())) {
-            File config = new File(tempDir, "kubeConfig.yaml");
-            FileUtil.writeString(options.getKubeConfig(), config, StandardCharsets.UTF_8);
-            this.kubeConfig = config.getAbsolutePath();
-        } else {
-            this.kubeConfig = null;
-        }
+
         if (StrUtil.isNotBlank(options.getServerCert())) {
             File cert = new File(tempDir, "ca.cert");
             Base64.decodeToFile(options.getServerCert(), cert);
@@ -93,23 +83,21 @@ public class KubectlClient implements AutoCloseable {
         } else {
             this.serverCert = null;
         }
-        this.token = options.getToken();
-        this.username = options.getUsername();
-        this.password = options.getPassword();
-        this.serverName = options.getServerName();
-        
+        this.readOnly = options.isReadOnly();
+        this.kubeConfig = SecureKubeConfigWriter.write(options, tempDir, serverCert);
+
         JsonMapper.Builder builder = JsonMapper.builder();
         builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
         builder.defaultLocale(Locale.CHINA);
         builder.defaultTimeZone(TimeZone.getTimeZone("GMT+8"));
-        
+
         builder.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
         builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         builder.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         builder.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
         mapper = builder.build();
     }
-    
+
     /**
      * 执行 kubectl 命令的基础方法
      *
@@ -119,37 +107,17 @@ public class KubectlClient implements AutoCloseable {
     private ExecResult execute(List<String> subCommandParts, int timeoutSeconds) {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(kubectlPath);
-        
-        // 认证优先级：kubeConfig > token > username/password
-        if (StrUtil.isNotBlank(kubeConfig)) {
-            commandParts.add("--kubeconfig");
-            // 路径可能存在空格
-            commandParts.add(String.format("%s", kubeConfig));
-        } else {
-            if (StrUtil.isNotBlank(token)) {
-                commandParts.add("--token");
-                commandParts.add(token);
-            } else {
-                commandParts.add("--username");
-                commandParts.add(username);
-                commandParts.add("--password");
-                commandParts.add(password);
-            }
-            // 如果有证书，添加证书支持
-            if (StrUtil.isNotBlank(serverCert)) {
-                commandParts.add("--certificate-authority");
-                commandParts.add(String.format("%s", serverCert));
-            } else {
-                commandParts.add("--insecure-skip-tls-verify=true");
-            }
-            commandParts.add("--server");
-            commandParts.add(serverName);
-        }
+
+        // SecureKubeConfigWriter 始终生成受限临时配置；认证信息不得回退到 argv。
+        commandParts.add("--kubeconfig");
+        commandParts.add(kubeConfig);
         commandParts.addAll(subCommandParts);
-        
-        return ShellUtils.execWithBash(null, commandParts, timeoutSeconds);
+
+        // 参数必须直接交给 ProcessBuilder，不能再经 bash -c 拼接；namespace、selector 等值
+        // 可能来自 HTTP 请求，shell 拼接会把分号、命令替换等内容解释成额外命令。
+        return ShellUtils.exec(null, commandParts, timeoutSeconds);
     }
-    
+
     /**
      * 执行 kubectl 命令并返回 JSON 解析结果
      *
@@ -157,19 +125,19 @@ public class KubectlClient implements AutoCloseable {
      * @return JSON 根节点
      * @throws KubectlException JSON 解析失败
      */
-    public String executeToJson(List<String> subCommandParts, int timeoutSeconds) throws KubectlException {
+    String executeToJson(List<String> subCommandParts, int timeoutSeconds) throws KubectlException {
         List<String> args = new ArrayList<>(subCommandParts);
         args.add("-o");
         args.add("json");
-        
+
         ExecResult result = execute(args, timeoutSeconds);
         if (!result.isSuccess()) {
             throw new KubectlException("kubectl 命令执行失败：" + result.getErrorTraceMessage());
         }
-        
+
         return result.getExecOut();
     }
-    
+
     /**
      * 获取集群版本信息
      *
@@ -180,7 +148,7 @@ public class KubectlClient implements AutoCloseable {
         if (!result.isSuccess()) {
             throw new KubectlException("获取 K8s 版本失败：" + result.getExecOut());
         }
-        
+
         String output = result.getExecOut().trim();
         String[] lines = output.split("\\r?\\n");
         for (String line : lines) {
@@ -190,7 +158,7 @@ public class KubectlClient implements AutoCloseable {
         }
         throw new KubectlException("无法解析 K8s 版本信息：" + output);
     }
-    
+
     /**
      * 获取节点列表
      *
@@ -200,7 +168,7 @@ public class KubectlClient implements AutoCloseable {
         String jsonNode = executeToJson(Arrays.asList("get", "nodes"), 30);
         return parseResourceList(jsonNode, K8sNode.class);
     }
-    
+
     /**
      * 获取命名空间列表
      *
@@ -210,7 +178,7 @@ public class KubectlClient implements AutoCloseable {
         String jsonNode = executeToJson(Arrays.asList("get", "namespaces"), 30);
         return parseResourceList(jsonNode, K8sNamespace.class);
     }
-    
+
     /**
      * 获取指定命名空间的 Pods
      *
@@ -242,6 +210,7 @@ public class KubectlClient implements AutoCloseable {
 
     /** 应用由服务端生成的 Kubernetes YAML。 */
     public void applyYaml(String yaml) throws KubectlException {
+        requireWritable();
         File file = new File(tempDir, "manifest.yaml");
         FileUtil.writeString(yaml, file, StandardCharsets.UTF_8);
         ExecResult result = execute(Arrays.asList("apply", "-f", file.getAbsolutePath()), 60);
@@ -249,7 +218,7 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException("应用 K8s 清单失败：" + result.getErrorTraceMessage());
         }
     }
-    
+
     /**
      * 获取指定命名空间的 Deployments
      *
@@ -276,7 +245,21 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException("解析工作负载列表失败，" + e.getMessage(), e);
         }
     }
-    
+
+    /**
+     * 只读枚举所有命名空间下指定 CRD 的自定义资源（CR）实例，供接管扫描识别 operator 管理的组件用
+     * （见 {@link com.datasophon.common.model.k8s.K8sOperatorArtifact}）。
+     *
+     * @param plural CRD 的复数资源名，如 {@code dorisdisaggregatedclusters}
+     * @param group  CRD 的 apiGroup，如 {@code disaggregated.cluster.doris.com}
+     * @return CR 实例列表；CRD 未安装（`kubectl get` 非零退出）时抛出 {@link KubectlException}，
+     *     由调用方按 CRD 粒度捕获跳过，不阻断其他 CRD 的扫描
+     */
+    public K8sResourceList<K8sResource> getCustomResourcesAllNamespaces(String plural, String group) throws KubectlException {
+        String jsonNode = executeToJson(Arrays.asList("get", plural + "." + group, "-A"), 30);
+        return parseResourceList(jsonNode, K8sResource.class);
+    }
+
     /**
      * 获取指定命名空间中指定名称的 Deployment
      *
@@ -299,7 +282,7 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException(String.format("解析 Deployment 失败，%s", e.getMessage()), e);
         }
     }
-    
+
     /**
      * 获取指定命名空间的 Services
      *
@@ -316,7 +299,17 @@ public class KubectlClient implements AutoCloseable {
         String jsonNode = executeToJson(args, 30);
         return parseResourceList(jsonNode, K8sService.class);
     }
-    
+
+    /**
+     * 获取所有命名空间的 Services
+     *
+     * @return Service 列表
+     */
+    public K8sResourceList<K8sService> getServicesAllNamespaces() throws KubectlException {
+        String jsonNode = executeToJson(Arrays.asList("get", "services", "-A"), 30);
+        return parseResourceList(jsonNode, K8sService.class);
+    }
+
     /**
      * 获取指定命名空间的 Ingresses
      *
@@ -333,7 +326,7 @@ public class KubectlClient implements AutoCloseable {
         String jsonNode = executeToJson(args, 30);
         return parseResourceList(jsonNode, K8sIngress.class);
     }
-    
+
     /**
      * 获取指定命名空间的 ConfigMaps
      *
@@ -350,7 +343,7 @@ public class KubectlClient implements AutoCloseable {
         String jsonNode = executeToJson(args, 30);
         return parseResourceList(jsonNode, K8sConfigMap.class);
     }
-    
+
     /**
      * 获取指定的 Secret
      *
@@ -373,7 +366,7 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException("kubectl 命令执行失败：" + result.getErrorTraceMessage());
         }
     }
-    
+
     /**
      * 重启指定的 Deployment
      *
@@ -381,6 +374,7 @@ public class KubectlClient implements AutoCloseable {
      * @param deploymentName Deployment 名称
      */
     public void restartDeployment(String namespace, String deploymentName) {
+        requireWritable();
         List<String> args = Arrays.asList(
                 "rollout",
                 "restart",
@@ -394,26 +388,27 @@ public class KubectlClient implements AutoCloseable {
                             deploymentName, namespace, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 更新 Deployment 的容器镜像
      *
      * @param dto 更新参数
      */
     public void updateDeploymentImage(UpdateDeploymentDTO dto) {
+        requireWritable();
         List<String> args = new ArrayList<>(Arrays.asList(
                 "set",
                 "image",
                 "deployment/" + dto.getDeployment(),
                 "-n",
                 dto.getNamespace()));
-        
+
         // 为每个容器镜像添加 --container 参数
         for (UpdateDeploymentDTO.Image image : dto.getImages()) {
             String imageRef = image.getNewImage() + ":" + image.getTag();
             args.add(String.format("%s=%s", image.getContainerName(), imageRef));
         }
-        
+
         ExecResult result = execute(args, -1);
         if (!result.isSuccess()) {
             throw new KubectlException(
@@ -421,8 +416,9 @@ public class KubectlClient implements AutoCloseable {
                             dto.getDeployment(), dto.getNamespace(), result.getErrorTraceMessage()));
         }
     }
-    
+
     public void createNamespace(String namespace) {
+        requireWritable();
         List<String> args = Arrays.asList("create", "namespace", namespace);
         ExecResult result = execute(args, -1);
         // namespace 已存在时返回 1，但这不是错误
@@ -430,7 +426,7 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException(String.format("create namespace %s fail, %s", namespace, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 创建 docker-registry 类型的 Secret
      *
@@ -441,6 +437,7 @@ public class KubectlClient implements AutoCloseable {
      * @param password     密码
      */
     public void createDockerRegistrySecret(String namespace, String secretName, String dockerServer, String username, String password) {
+        requireWritable();
         List<String> args = Arrays.asList(
                 "create",
                 "secret",
@@ -457,7 +454,7 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException(String.format("create docker-registry secret %s in namespace %s fail, %s", secretName, namespace, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 将 Secret 附加到指定的 ServiceAccount
      *
@@ -466,6 +463,7 @@ public class KubectlClient implements AutoCloseable {
      * @param serviceAccountName ServiceAccount 名称
      */
     public void attachSecretToServiceAccount(String namespace, String secretName, String serviceAccountName) {
+        requireWritable();
         // 先获取当前 ServiceAccount 的 YAML
         List<String> getArgs = Arrays.asList(
                 "get",
@@ -479,15 +477,15 @@ public class KubectlClient implements AutoCloseable {
         if (!getResult.isSuccess()) {
             throw new KubectlException(String.format("get serviceaccount %s in namespace %s fail, %s", serviceAccountName, namespace, getResult.getErrorTraceMessage()));
         }
-        
+
         String yaml = getResult.getExecOut();
-        
+
         // 检查 imagePullSecrets 是否已存在该 secret
         if (yaml.contains("imagePullSecrets") && yaml.contains("name: " + secretName)) {
             // secret 已经附加到 service account
             return;
         }
-        
+
         // 使用 patch 命令添加 imagePullSecrets
         String patch = String.format("{\n" +
                 "  \"imagePullSecrets\": [\n" +
@@ -511,7 +509,7 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException(String.format("attach secret %s to serviceaccount %s in namespace %s fail, %s", secretName, serviceAccountName, namespace, patchResult.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 缩放指定的 Deployment
      *
@@ -520,6 +518,7 @@ public class KubectlClient implements AutoCloseable {
      * @param replicas       副本数
      */
     public void scaleDeployment(String namespace, String deploymentName, int replicas) {
+        requireWritable();
         List<String> args = Arrays.asList(
                 "scale",
                 "deployment/" + deploymentName,
@@ -533,7 +532,7 @@ public class KubectlClient implements AutoCloseable {
                             deploymentName, replicas, namespace, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 解析 K8s 资源列表 JSON
      */
@@ -546,7 +545,7 @@ public class KubectlClient implements AutoCloseable {
             throw new KubectlException(String.format("解析结果错误失败，%s", e.getMessage()), e);
         }
     }
-    
+
     /**
      * 检查资源是否存在
      *
@@ -563,7 +562,7 @@ public class KubectlClient implements AutoCloseable {
         }
         args.add("-o");
         args.add("jsonpath={.items[*].metadata.name}");
-        
+
         ExecResult result = execute(args, 30);
         if (!result.isSuccess()) {
             return false;
@@ -571,7 +570,34 @@ public class KubectlClient implements AutoCloseable {
         String output = result.getExecOut().trim();
         return StrUtil.isNotBlank(output);
     }
-    
+
+    /**
+     * 列出集群内全部 Helm release 的「namespace/名称」标识。
+     *
+     * <p>Helm 把 release 状态存在打了 {@code owner=helm} 标签的 Secret 里，release 名在
+     * {@code name} 标签上。这里用 jsonpath 只取标签，**不取 Secret 内容**——内容是 gzip
+     * 后的 base64 全量 manifest，动辄几 MB，对账没必要拉下来解压。
+     *
+     * @return 形如 {@code prod/zookeeper} 的标识列表，去重由调用方负责
+     */
+    public List<String> getHelmReleaseKeys() throws KubectlException {
+        List<String> args = Arrays.asList("get", "secret", "-A", "-l", "owner=helm",
+                "-o", "jsonpath={range .items[*]}{.metadata.namespace}/{.metadata.labels.name}{\"\\n\"}{end}");
+
+        ExecResult result = execute(args, 30);
+        if (!result.isSuccess()) {
+            throw new KubectlException("获取 Helm release 列表失败：" + result.getErrorTraceMessage());
+        }
+        String output = result.getExecOut();
+        if (StrUtil.isBlank(output)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(output.split("\\R"))
+                .map(String::trim)
+                .filter(StrUtil::isNotBlank)
+                .toList();
+    }
+
     /**
      * 批量删除指定的 Secret
      *
@@ -579,16 +605,17 @@ public class KubectlClient implements AutoCloseable {
      * @param secretNames Secret 名称列表
      */
     public void deleteSecrets(String namespace, List<String> secretNames) throws KubectlException {
+        requireWritable();
         List<String> args = new ArrayList<>(Arrays.asList("delete", "secret", "-n", namespace));
         args.addAll(secretNames);
         args.add("--ignore-not-found=true");
-        
+
         ExecResult result = execute(args, 60);
         if (!result.isSuccess()) {
             throw new KubectlException(String.format("删除 secrets 失败，%s", result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 获取 Pod 日志
      *
@@ -601,29 +628,29 @@ public class KubectlClient implements AutoCloseable {
      */
     public String getPodLog(String namespace, String podName, String containerName, boolean previous, int lines) throws KubectlException {
         List<String> args = new ArrayList<>(Arrays.asList("logs", podName, "-n", namespace));
-        
+
         if (StrUtil.isNotBlank(containerName)) {
             args.add("-c");
             args.add(containerName);
         }
-        
+
         if (previous) {
             args.add("--previous");
         }
-        
+
         if (lines > 0) {
             args.add("--tail");
             args.add(String.valueOf(lines));
         }
-        
+
         ExecResult result = execute(args, 60);
         if (!result.isSuccess()) {
             throw new KubectlException(String.format("获取 pod/%s 日志失败，%s", podName, result.getErrorTraceMessage()));
         }
-        
+
         return result.getExecOut();
     }
-    
+
     /**
      * 获取 事件
      * 对应命令：kubectl events --for=deployment/<deployment-name> -n <namespace>
@@ -642,13 +669,18 @@ public class KubectlClient implements AutoCloseable {
         K8sResourceList<K8sEvent> list = parseResourceList(result, K8sEvent.class);
         return list.getItems() == null ? new ArrayList<>(0) : list.getItems();
     }
-    
+
     @Override
     public void close() {
         if (tempDir != null) {
-            // FIXME
-            // FileUtil.del(tempDir);
+            FileUtil.del(tempDir);
         }
     }
-    
+
+    private void requireWritable() {
+        if (readOnly) {
+            throw new KubectlException("接管集群为只读模式，禁止执行 kubectl 写操作");
+        }
+    }
+
 }

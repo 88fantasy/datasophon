@@ -1,0 +1,125 @@
+# T-C4 节点指标采集器（补 control-plane toleration）
+#
+# 交付去向：installation_manual 项目。datasophon 严格只读，不执行 apply。
+#
+# ⚠️ 这不是新装，是**在现有配置上补一处**。目标集群已运行同名 CR（部署于 2026-07 前后）。
+#
+# ───────────────────────────────────────────────────────────────
+# 为什么要改：实测证据（2026-08-17）
+# ───────────────────────────────────────────────────────────────
+#   kubectl get nodes                                    → 13 个节点
+#   kubectl -n otel get ds datasophon-k8s-metrics-collector → desired=10 ready=10
+#   kubectl -n kube-system get ds calico-node              → desired=13 ready=13   ← 对照组
+#   kubectl -n otel get ds ... -o jsonpath='{...tolerations}' → **空**
+#
+#   缺的 3 台正是 control-plane（192.168.201.35 / .44 / .60）。
+#   后果：这 3 台在 datasophon 主机管理页与 K8sDashboard 里都没有内存/磁盘/负载数据。
+#
+# ───────────────────────────────────────────────────────────────
+# ⚠️ 必须改 CR，不能 patch DaemonSet
+# ───────────────────────────────────────────────────────────────
+#   DaemonSet `datasophon-k8s-metrics-collector` 的 ownerReferences 指向
+#   OpenTelemetryCollector/datasophon-k8s-metrics（由 opentelemetry-operator 托管）。
+#   直接 `kubectl patch ds` **会被 operator 还原**。
+#
+# 本文件 = 线上现有配置 + `tolerations` 一段，其余逐字未改（从 CR 实际 spec 导出）。
+#
+# apply：
+#   kubectl apply -f datasophon-k8s-metrics-collector.yaml
+# 验收：
+#   kubectl -n otel get ds datasophon-k8s-metrics-collector   → desired 应变为 13
+#   kubectl -n otel get pods -o wide | grep metrics           → 3 台 control-plane 上各有一个 Pod
+#   约 5 分钟后 datasophon 主机管理页 13 台节点全部有内存/磁盘/负载
+# 回滚：
+#   删除下方 tolerations 段后重新 apply，desired 会退回 10
+#
+# 影响面：会滚动重建采集 Pod（纯采集组件，不影响业务负载）。
+
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: datasophon-k8s-metrics
+  namespace: otel
+spec:
+  mode: daemonset
+  serviceAccount: datasophon-k8s-metrics
+
+  # ★ 本次唯一新增：容忍 control-plane 污点，让采集器覆盖全部 13 个节点
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    # 兼容 1.24 之前用 master 标签的节点
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+
+  env:
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  volumes:
+    - name: hostfs
+      hostPath:
+        path: /
+  volumeMounts:
+    - name: hostfs
+      mountPath: /hostfs
+      readOnly: true
+
+  config:
+    receivers:
+      hostmetrics:
+        collection_interval: 30s
+        root_path: /hostfs
+        scrapers:
+          cpu: {}
+          disk: {}
+          filesystem: {}
+          load: {}
+          memory: {}
+      kubeletstats:
+        auth_type: serviceAccount
+        collection_interval: 30s
+        endpoint: https://${env:K8S_NODE_NAME}:10250
+        insecure_skip_verify: true
+        metric_groups:
+          - node
+          - pod
+        node: ${env:K8S_NODE_NAME}
+    processors:
+      batch: {}
+      resource/datasophon:
+        attributes:
+          # 保持 "local"：datasophon 的 K8sDashboardMetricsService 有 localMarker() 回落分支，
+          # 改成真实 clusterId 也可以，但**两边必须同时改**，否则看板会查不到数据。
+          - action: upsert
+            key: datasophon.cluster.id
+            value: local
+          - action: upsert
+            key: service.name
+            value: node
+          - action: upsert
+            key: service.instance.id
+            value: ${env:K8S_NODE_NAME}
+          - action: upsert
+            key: host.name
+            value: ${env:K8S_NODE_NAME}
+    exporters:
+      otlp/gateway:
+        endpoint: gateway-collector.otel.svc:4317
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        metrics:
+          receivers:
+            - hostmetrics
+            - kubeletstats
+          processors:
+            - resource/datasophon
+            - batch
+          exporters:
+            - otlp/gateway

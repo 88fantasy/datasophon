@@ -1,10 +1,10 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
+import { LOGO_URL } from '@root/config/publicPath';
 import { FormattedMessage, SelectLang, useIntl, useModel } from '@umijs/max';
 import { Alert } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { startTransition, useState } from 'react';
-import { LOGO_URL } from '@root/config/publicPath';
 import { login } from '@/services/auth';
 import Logo from './Logo';
 
@@ -44,16 +44,23 @@ const LoginMessage: React.FC<{ content: string }> = ({ content }) => (
 
 /**
  * Only allow same-origin relative paths; block open-redirect attacks.
+ *
+ * Fallback is `/ddh/`, not `/` — this app is deployed under the `/ddh`
+ * context-path (see `config/config.ts` `base: '/ddh'`), and the result here
+ * goes straight into `window.location.href` (a raw browser navigation, not
+ * umi's basename-aware `history`), so it must already include the prefix.
  */
+const FALLBACK_REDIRECT = '/ddh/';
+
 const getSafeRedirectUrl = (redirect: string | null): string => {
-  if (!redirect?.startsWith('/')) return '/';
-  if (redirect.startsWith('//')) return '/';
+  if (!redirect?.startsWith('/')) return FALLBACK_REDIRECT;
+  if (redirect.startsWith('//')) return FALLBACK_REDIRECT;
   try {
     const parsed = new URL(redirect, window.location.origin);
-    if (parsed.origin !== window.location.origin) return '/';
+    if (parsed.origin !== window.location.origin) return FALLBACK_REDIRECT;
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return '/';
+    return FALLBACK_REDIRECT;
   }
 };
 

@@ -69,7 +69,9 @@ describe('RustfsMonitor panel queries (Doris 描述符)', () => {
     if (r12.type !== 'multi-range') return;
     const q = r12.queries[0];
     expect(q.metric).toBe('rustfs_cluster_capacity_used_bytes');
-    expect(q.denominatorMetric).toBe('rustfs_cluster_capacity_usable_total_bytes');
+    expect(q.denominatorMetric).toBe(
+      'rustfs_cluster_capacity_usable_total_bytes',
+    );
     expect(q.scale).toBe(100);
   });
 
@@ -92,7 +94,9 @@ describe('RustfsMonitor panel queries (Doris 描述符)', () => {
           ? [panel.metric]
           : panel.type === 'multi-range'
             ? panel.queries.flatMap((q) =>
-                q.denominatorMetric ? [q.metric, q.denominatorMetric] : [q.metric],
+                q.denominatorMetric
+                  ? [q.metric, q.denominatorMetric]
+                  : [q.metric],
               )
             : [];
       for (const m of metrics) {

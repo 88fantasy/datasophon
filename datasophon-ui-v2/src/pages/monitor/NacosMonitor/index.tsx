@@ -24,7 +24,7 @@ import { useIntl } from '@umijs/max';
 import { Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import { CHART_COLORS, colorByThreshold } from '../_shared/charts/formatters';
-import { selectionsToRegex } from '../_shared/charts/promql';
+import { metricsJobToRegex, selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
@@ -74,11 +74,14 @@ const THREAD_COLORS = {
 export interface NacosDashboardProps {
   clusterId: number;
   embedded?: boolean;
+  /** 接管实例登记的 metricsJob（逗号分隔）；不传时用物理侧固定的 NacosServer */
+  job?: string;
 }
 
 const NacosDashboard: FC<NacosDashboardProps> = ({
   clusterId,
   embedded = false,
+  job,
 }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
@@ -102,10 +105,13 @@ const NacosDashboard: FC<NacosDashboardProps> = ({
     setRefreshKey((key) => key + 1);
   }, []);
 
+  const jobFilter = useMemo(() => metricsJobToRegex(job), [job]);
+
   const { instant, series, instances, loading } = useNacosDashboard({
     instance,
     timeRange,
     clusterId,
+    job: jobFilter,
     refreshKey,
   });
 
@@ -125,7 +131,7 @@ const NacosDashboard: FC<NacosDashboardProps> = ({
           onRefresh={handleRefresh}
         />
       }
-      meta={`service_name=~"${NACOS_JOB_FILTER}" · instance=~"${instance}" · range=${timeRange}`}
+      meta={`service_name=~"${jobFilter ?? NACOS_JOB_FILTER}" · instance=~"${instance}" · range=${timeRange}`}
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>

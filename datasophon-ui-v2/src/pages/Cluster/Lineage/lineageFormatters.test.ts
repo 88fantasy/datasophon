@@ -6,8 +6,7 @@ import {
   formatRowCount,
   formatRunningJobLabel,
 } from './lineageFormatters';
-import type { JobMetrics } from './service';
-import type { GraphJob } from './service';
+import type { GraphJob, JobMetrics } from './service';
 
 const JOB: GraphJob = {
   jobId: 10,
@@ -47,7 +46,11 @@ describe('lineage formatters', () => {
     // 没有运行态指标不等于没有信息可显示：lastRowCount / lastRunAt 本来就查得到，
     // 退成 "- task · -" 这种占位是白白丢掉历史作业唯一能展示的东西。
     expect(
-      formatJobNodeLabel(JOB, undefined, new Date('2026-08-04T03:03:00Z').getTime()),
+      formatJobNodeLabel(
+        JOB,
+        undefined,
+        new Date('2026-08-04T03:03:00Z').getTime(),
+      ),
     ).toBe('daily_orders_etl\n120万行 · 3分钟前');
   });
 

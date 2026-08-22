@@ -1,0 +1,7 @@
+name: apisix
+version: "2.12.5"
+description: APISIX 网关（standalone 模式）
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  helm: apisix-2.12.5.tgz

@@ -1,0 +1,21 @@
+name: doris-disaggregated
+version: "3.0.0"
+description: Doris 存算分离集群（DorisDisaggregatedCluster CR）
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  # yaml 供 datasophon 新建 MANAGED 集群时 apply CR 清单，安装路径不变。
+  yaml: ddc-cluster.yaml
+  # kind=operator：组件稳态运行身份是被 operator reconcile 的 CR，供接管扫描识别（只读枚举 CR
+  # 实例，不识别 doris-operator 本体）。
+  kind: operator
+  operator:
+    group: disaggregated.cluster.doris.com
+    kind: DorisDisaggregatedCluster
+    plural: dorisdisaggregatedclusters
+    monitorProfile: doris-disaggregated
+    roles:
+      - name: fe
+        jobPattern: '-fe$'
+      - name: compute
+        jobPattern: '-cg\d+$'

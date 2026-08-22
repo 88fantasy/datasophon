@@ -1,4 +1,4 @@
-import { Graph, type ElementDatum, type IElementEvent } from '@antv/g6';
+import { type ElementDatum, Graph, type IElementEvent } from '@antv/g6';
 import { history, useIntl, useParams } from '@umijs/max';
 import {
   Alert,
@@ -26,9 +26,8 @@ import FreshnessAlert from './FreshnessAlert';
 import { FLOWING_LINEAGE_EDGE } from './flowingLineageEdge';
 import JobDetailDrawer from './JobDetailDrawer';
 import { formatJobNodeLabel } from './lineageFormatters';
-import { applyJobMetrics, mergeExpansion, toG6Data } from './lineageGraphData';
 import type { JobOutputStat } from './lineageGraphData';
-import { getGraph, getImpact, getJobMetrics, listTables } from './service';
+import { applyJobMetrics, mergeExpansion, toG6Data } from './lineageGraphData';
 import type {
   GraphData,
   GraphJob,
@@ -37,6 +36,7 @@ import type {
   SnapshotFreshness,
   SourceFreshness,
 } from './service';
+import { getGraph, getImpact, getJobMetrics, listTables } from './service';
 
 /** Drawer 需要的作业信息：单输出走原有字段，多输出额外带 outputs 按目标表拆分统计。 */
 type SelectedJob = GraphJob & { outputs?: JobOutputStat[] };
@@ -129,7 +129,10 @@ const LineageGraph: React.FC = () => {
         setGraphData(undefined);
       } else if (impactMode) {
         message.error(
-          errorMessageOf(error, t('pages.lineage.graph.loadFailed', '加载失败')),
+          errorMessageOf(
+            error,
+            t('pages.lineage.graph.loadFailed', '加载失败'),
+          ),
         );
       }
       // 非 impact 模式没有传 skipErrorHandler，默认错误处理已经弹过 toast，这里不重复提示
@@ -168,7 +171,10 @@ const LineageGraph: React.FC = () => {
           fetchRoot();
         } else {
           message.error(
-            errorMessageOf(error, t('pages.lineage.graph.expandFailed', '展开失败')),
+            errorMessageOf(
+              error,
+              t('pages.lineage.graph.expandFailed', '展开失败'),
+            ),
           );
         }
       }
@@ -258,19 +264,19 @@ const LineageGraph: React.FC = () => {
               ? '#ffffff'
               : d.data?.isJobNode
                 ? '#f9f0ff'
-              : d.data?.impactHighlighted
-                ? '#fff1f0'
-                : (LAYER_FILL[String(d.data?.dwLayer ?? '')] ?? '#fafafa'),
+                : d.data?.impactHighlighted
+                  ? '#fff1f0'
+                  : (LAYER_FILL[String(d.data?.dwLayer ?? '')] ?? '#fafafa'),
           stroke: (d) =>
             d.data?.isRoot
               ? '#faad14'
               : d.data?.isJobNode
                 ? '#722ed1'
-              : d.data?.impactHighlighted
-                ? '#ff4d4f'
-                : d.data?.isCollapsedPlaceholder
-                  ? '#bfbfbf'
-                  : '#85a5ff',
+                : d.data?.impactHighlighted
+                  ? '#ff4d4f'
+                  : d.data?.isCollapsedPlaceholder
+                    ? '#bfbfbf'
+                    : '#85a5ff',
           lineDash: (d) =>
             d.data?.isCollapsedPlaceholder ? [4, 4] : undefined,
           lineWidth: (d) => (d.data?.isRoot ? 3 : 1.5),
@@ -296,9 +302,7 @@ const LineageGraph: React.FC = () => {
       },
       edge: {
         type: (d) =>
-          d.data?.isRunningLink
-            ? FLOWING_LINEAGE_EDGE
-            : 'cubic-horizontal',
+          d.data?.isRunningLink ? FLOWING_LINEAGE_EDGE : 'cubic-horizontal',
         style: {
           endArrow: true,
           lineWidth: 1.5,
@@ -323,10 +327,7 @@ const LineageGraph: React.FC = () => {
         {
           type: 'tooltip',
           trigger: 'hover',
-          getContent: async (
-            _event: IElementEvent,
-            items: ElementDatum[],
-          ) => {
+          getContent: async (_event: IElementEvent, items: ElementDatum[]) => {
             const item = items[0];
             const content = document.createElement('div');
             content.style.maxWidth = 'min(520px, calc(100vw - 48px))';
@@ -336,7 +337,10 @@ const LineageGraph: React.FC = () => {
 
             if (!item.data.isJobNode) {
               const details = [
-                [t('pages.lineage.tooltip.tableName', '表名'), item.data.tableName],
+                [
+                  t('pages.lineage.tooltip.tableName', '表名'),
+                  item.data.tableName,
+                ],
                 [
                   t('pages.lineage.tooltip.canonicalName', '完整名称'),
                   item.data.canonicalName,
@@ -345,7 +349,10 @@ const LineageGraph: React.FC = () => {
                   t('pages.lineage.tooltip.connector', '连接器'),
                   item.data.connector,
                 ],
-                [t('pages.lineage.tooltip.catalog', 'Catalog'), item.data.catalogName],
+                [
+                  t('pages.lineage.tooltip.catalog', 'Catalog'),
+                  item.data.catalogName,
+                ],
                 [
                   t('pages.lineage.tooltip.database', '数据库'),
                   item.data.databaseName,
@@ -442,7 +449,9 @@ const LineageGraph: React.FC = () => {
     const res = await listTables({ clusterId, keyword: trimmed, size: 1 });
     const match = res.data.list[0];
     if (!match) {
-      message.warning(t('pages.lineage.graph.searchNotFound', '未找到匹配的表'));
+      message.warning(
+        t('pages.lineage.graph.searchNotFound', '未找到匹配的表'),
+      );
       return;
     }
     history.push(`/cluster/${clusterId}/lineage/${match.id}`);
@@ -475,8 +484,14 @@ const LineageGraph: React.FC = () => {
           disabled={impactMode}
           onChange={(value) => setDirection(value as LineageDirection)}
           options={[
-            { label: t('pages.lineage.graph.upstream', '上游'), value: 'upstream' },
-            { label: t('pages.lineage.graph.downstream', '下游'), value: 'downstream' },
+            {
+              label: t('pages.lineage.graph.upstream', '上游'),
+              value: 'upstream',
+            },
+            {
+              label: t('pages.lineage.graph.downstream', '下游'),
+              value: 'downstream',
+            },
             { label: t('pages.lineage.graph.both', '双向'), value: 'both' },
           ]}
         />

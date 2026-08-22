@@ -5,6 +5,7 @@ import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.exceptions.BusinessHintException;
+import com.datasophon.api.security.ImportedClusterWriteGuard;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cmd.ClusterK8sServiceCommandService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
@@ -60,40 +61,43 @@ import cn.hutool.core.lang.Pair;
 @Service("extRepoInstallDelegateService")
 @Transactional(rollbackFor = Exception.class)
 public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegateService {
-    
+
     private static final Logger log = LoggerFactory.getLogger(ExtRepoInstallDelegateServiceImpl.class);
-    
+
     @Autowired
     private UploadTempFileService uploadTempFileService;
-    
+
     @Autowired
     private ClusterInfoService clusterInfoService;
-    
+
     @Autowired
     private ClusterServiceCommandHostCommandService hostCommandService;
-    
+
     @Autowired
     private DAGService dagService;
-    
+
     @Autowired
     private DagDefinitionEntityMapper dagDefinitionEntityMapper;
-    
+
     @Autowired
     @Qualifier("physicalProductInstallService")
     private ExtRepoInstallService physicalExtRepoInstallService;
-    
+
     @Autowired
     @Qualifier("k8SProductInstallService")
     private ExtRepoInstallService k8SExtRepoInstallService;
     @Autowired
     private ClusterK8sServiceCommandService clusterK8sServiceCommandService;
-    
+
+    @Autowired
+    private ImportedClusterWriteGuard importedClusterWriteGuard;
+
     @Override
     public ValidateResultVO validDeploymentFile(DeploymentDTO dto) {
         DeploymentModel model = doParseDeploymentFile(dto);
         return doInTargetHandler(dto.getClusterId(), handler -> handler.validateDeploymentModel(model, dto));
     }
-    
+
     private DeploymentModel doParseDeploymentFile(DeploymentDTO dto) {
         File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId())
                 .orElseThrow(() -> new BusinessHintException("部署清单文件不存在"));
@@ -101,7 +105,7 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
         DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
         return model;
     }
-    
+
     private <T> T doInTargetHandler(Integer clusterId, ThrowableMapper<ExtRepoInstallService, T> consumer) {
         ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
         try {
@@ -114,12 +118,13 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
             throw new RuntimeException(e.getMessage(), e);
         }
     }
-    
+
     @Override
     public InstallResult deploy(DeploymentDTO dto) {
+        importedClusterWriteGuard.requireWritable(dto.getClusterId(), "部署服务");
         return doInTargetHandler(dto.getClusterId(), handler -> handler.deploy(dto));
     }
-    
+
     @Override
     public void redeploy(RunDagDto dto) {
         DagDefinitionEntity def = dagDefinitionEntityMapper.selectById(dto.getDagId());
@@ -129,22 +134,23 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
         if (def.getCreatedTime().plusDays(1).isBefore(LocalDateTime.now())) {
             throw new BusinessHintException("任务已经过期, 不允许在运行");
         }
+        importedClusterWriteGuard.requireWritable(def.getClusterId(), "重新运行部署任务");
         List<NodeDefinition> nodes = dagService.getNodesByDagId(dto.getDagId(), true);
         if (nodes.isEmpty()) {
             return;
         }
-        
+
         doInTargetHandler(def.getClusterId(), handler -> {
             handler.redeploy(dto);
             return null;
         });
     }
-    
+
     @Override
     public InstallProgressDAG getDeployProgressDAG2(String dagId) {
         DagDefinitionEntity def = dagDefinitionEntityMapper.selectById(dagId);
         InstallProgressDAG result = BeanUtil.toBean(def, InstallProgressDAG.class);
-        
+
         List<NodeDefinition> nodes = dagService.getNodesByDagId(dagId, true);
         if (nodes.isEmpty()) {
             return result;
@@ -152,13 +158,13 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
         result.setClusterId(def.getClusterId());
         ClusterInfoEntity cluster = clusterInfoService.getById(def.getClusterId());
         result.setArchType(cluster.getArchType());
-        
+
         List<InstallProgressDAG.Node> resultNodes = new ArrayList<>();
         if (ClusterArchType.physical.equals(cluster.getArchType())) {
             for (NodeDefinition node : nodes) {
                 InstallProgressDAG.Node resultNode = BeanUtil.toBean(node, InstallProgressDAG.Node.class);
                 ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
-                
+
                 String cmdId = serviceNode.getCommandId();
                 resultNode.setCommandId(cmdId);
                 List<InstallProgressDAG.SrvRole> roles = createSrvRole(cmdId, serviceNode);
@@ -170,7 +176,7 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
             for (NodeDefinition node : nodes) {
                 InstallProgressDAG.Node resultNode = BeanUtil.toBean(node, InstallProgressDAG.Node.class);
                 K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
-                
+
                 String cmdId = serviceNode.getCommandId();
                 commandIds.add(cmdId);
                 resultNode.setCommandId(cmdId);
@@ -182,11 +188,11 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
                 ClusterK8sServiceCommandEntity cmd = map.get(n.getCommandId());
                 n.setK8s(cmd);
             });
-            
+
         }
-        
+
         result.setNodes(resultNodes);
-        
+
         List<InstallProgressDAG.EdgeVO> edges = new ArrayList<>();
         for (EdgeDefinition edgeDef : dagService.getEdgesByDagId(dagId)) {
             InstallProgressDAG.EdgeVO edge = new InstallProgressDAG.EdgeVO();
@@ -196,10 +202,10 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
             edges.add(edge);
         }
         result.setEdges(edges);
-        
+
         return result;
     }
-    
+
     private List<InstallProgressDAG.SrvRole> createSrvRole(String cmdId, ServiceNode serviceNode) {
         List<ClusterServiceCommandHostCommandEntity> hostCmdList = hostCommandService.lambdaQuery()
                 .eq(ClusterServiceCommandHostCommandEntity::getCommandId, cmdId)
@@ -207,13 +213,13 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
         Map<String, ClusterServiceCommandHostCommandEntity> map = CollectionUtil.toMap(hostCmdList, new HashMap<>(),
                 ClusterServiceCommandHostCommandEntity::getHostCommandId);
         List<InstallProgressDAG.SrvRole> roles = new ArrayList<>();
-        
+
         ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getMasterRoles()).forEach(pair -> roles.add(newRole(pair, map)));
         ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getClientRoles()).forEach(pair -> roles.add(newRole(pair, map)));
         ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getWorkerRoles()).forEach(pair -> roles.add(newRole(pair, map)));
         return roles;
     }
-    
+
     private InstallProgressDAG.SrvRole newRole(Pair<String, List<ServiceRoleInfo>> pair, Map<String, ClusterServiceCommandHostCommandEntity> map) {
         InstallProgressDAG.SrvRole role = new InstallProgressDAG.SrvRole();
         role.setRoleName(pair.getKey());
@@ -231,19 +237,20 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
         });
         return role;
     }
-    
+
     @Override
     public String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames) {
         return doInTargetHandler(clusterId, handler -> handler.generateGenericInstallCommand(clusterId, serviceNames));
     }
-    
+
     @Override
     public String generateAndExecSrvInstCmd(Integer clusterId, CommandType commandType, List<Integer> serviceInstanceIds) {
+        importedClusterWriteGuard.requireWritable(clusterId, "启停服务");
         if (Arrays.asList(CommandType.UPGRADE_SERVICE, CommandType.INSTALL_SERVICE).contains(commandType)) {
             throw new UnsupportedOperationException(String.format("command %s is not support", commandType));
         }
         return doInTargetHandler(clusterId, handler -> handler.generateAndExecSrvInstCmd(clusterId, commandType, serviceInstanceIds));
-        
+
     }
-    
+
 }

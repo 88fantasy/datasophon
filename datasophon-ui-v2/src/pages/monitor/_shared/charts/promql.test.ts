@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   mergeNamedSeries,
+  metricsJobToRegex,
+  parseMetricsJobs,
   type PrometheusMatrix,
   type PrometheusVector,
   vectorToScalar,
@@ -17,7 +19,10 @@ function vector(values: string[]): PrometheusVector {
 }
 
 function matrix(
-  rows: Array<{ metric: Record<string, string>; values: Array<[number, string]> }>,
+  rows: Array<{
+    metric: Record<string, string>;
+    values: Array<[number, string]>;
+  }>,
 ): PrometheusMatrix {
   return { resultType: 'matrix', result: rows };
 }
@@ -68,11 +73,17 @@ describe('mergeNamedSeries', () => {
         matrix: matrix([
           {
             metric: { instance: 'be-1:8040', job: 'DorisBE' },
-            values: [[1000, '10'], [1015, '11']],
+            values: [
+              [1000, '10'],
+              [1015, '11'],
+            ],
           },
           {
             metric: { instance: 'be-2:8040', job: 'DorisBE' },
-            values: [[1000, '20'], [1015, '21']],
+            values: [
+              [1000, '20'],
+              [1015, '21'],
+            ],
           },
         ]),
       },
@@ -135,5 +146,35 @@ describe('mergeNamedSeries', () => {
     expect(seriesNames).toContain('Total (/data0)');
     // 若丢弃 query label 前缀，两条会都叫 "/data0" 而碰撞成一条线。
     expect(new Set(seriesNames).size).toBe(2);
+  });
+});
+
+describe('metricsJobToRegex', () => {
+  it('returns undefined for an unregistered job so dashboards keep their own filter', () => {
+    expect(metricsJobToRegex(undefined)).toBeUndefined();
+    expect(metricsJobToRegex(null)).toBeUndefined();
+    expect(metricsJobToRegex('')).toBeUndefined();
+    expect(metricsJobToRegex(' , ')).toBeUndefined();
+  });
+
+  it('joins a comma-separated metricsJob into one alternation', () => {
+    expect(metricsJobToRegex('apisix')).toBe('apisix');
+    expect(metricsJobToRegex('ds-master, ds-worker')).toBe(
+      'ds-master|ds-worker',
+    );
+  });
+
+  it('escapes regex metacharacters in service names', () => {
+    // Service 名里出现 . 时，未转义会退化成任意字符匹配
+    expect(metricsJobToRegex('redis.cluster')).toBe('redis\\.cluster');
+  });
+});
+
+describe('parseMetricsJobs', () => {
+  it('splits comma-delimited jobs and drops blank entries', () => {
+    expect(parseMetricsJobs(' ds-master, ,ds-worker ')).toEqual([
+      'ds-master',
+      'ds-worker',
+    ]);
   });
 });

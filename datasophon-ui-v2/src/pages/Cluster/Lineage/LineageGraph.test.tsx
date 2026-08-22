@@ -1,10 +1,22 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type { Mock } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
 import LineageGraph from './LineageGraph';
-import { getGraph, getImpact, getJob, getJobMetrics, listTables } from './service';
 import type { GraphJob } from './service';
+import {
+  getGraph,
+  getImpact,
+  getJob,
+  getJobMetrics,
+  listTables,
+} from './service';
 
 const { historyPush } = vi.hoisted(() => ({ historyPush: vi.fn() }));
 
@@ -37,8 +49,12 @@ const { graphInstances } = vi.hoisted(() => ({
     options: Record<string, unknown>;
     render: Mock;
     fitView: Mock;
-    updateNodeData: (updates: Array<{ id: string; data?: Record<string, unknown> }>) => void;
-    updateEdgeData: (updates: Array<{ id: string; data?: Record<string, unknown> }>) => void;
+    updateNodeData: (
+      updates: Array<{ id: string; data?: Record<string, unknown> }>,
+    ) => void;
+    updateEdgeData: (
+      updates: Array<{ id: string; data?: Record<string, unknown> }>,
+    ) => void;
     draw: () => Promise<void>;
   }>,
 }));
@@ -105,7 +121,9 @@ vi.mock('@antv/g6', () => ({
     getEdgeData(id: string) {
       const edges = (
         this as unknown as {
-          data: { edges?: Array<{ id: string; data?: Record<string, unknown> }> };
+          data: {
+            edges?: Array<{ id: string; data?: Record<string, unknown> }>;
+          };
         }
       ).data.edges;
       return edges?.find((edge) => edge.id === id);
@@ -113,14 +131,18 @@ vi.mock('@antv/g6', () => ({
 
     // P1 增量刷新路径用到的 G6 v5 API：按 id 把 data 浅合并进已有节点/边（与真实 G6 的
     // mergeElementsData 语义一致），不整体替换、不触发 render/fitView。
-    updateNodeData(updates: Array<{ id: string; data?: Record<string, unknown> }>) {
+    updateNodeData(
+      updates: Array<{ id: string; data?: Record<string, unknown> }>,
+    ) {
       updates.forEach((update) => {
         const node = this.data.nodes?.find((item) => item.id === update.id);
         if (node) node.data = { ...(node.data ?? {}), ...(update.data ?? {}) };
       });
     }
 
-    updateEdgeData(updates: Array<{ id: string; data?: Record<string, unknown> }>) {
+    updateEdgeData(
+      updates: Array<{ id: string; data?: Record<string, unknown> }>,
+    ) {
       updates.forEach((update) => {
         const edge = this.data.edges?.find((item) => item.id === update.id);
         if (edge) edge.data = { ...(edge.data ?? {}), ...(update.data ?? {}) };
@@ -183,9 +205,7 @@ function job(overrides: Partial<GraphJob> = {}): GraphJob {
 
 function renderGraphPage() {
   return render(
-    <ClusterContext.Provider
-      value={{ clusterId: 7, clusterInfo: {} } as never}
-    >
+    <ClusterContext.Provider value={{ clusterId: 7, clusterInfo: {} } as never}>
       <LineageGraph />
     </ClusterContext.Provider>,
   );
@@ -205,7 +225,12 @@ describe('LineageGraph', () => {
 
   it('loads the root graph with default depth/direction and renders freshness', async () => {
     vi.mocked(getGraph).mockResolvedValue({
-      data: { nodes: [node(1, 'a'), node(2, 'b')], edges: [{ src: 1, dst: 2, jobs: [] }], collapsed: [], truncated: false },
+      data: {
+        nodes: [node(1, 'a'), node(2, 'b')],
+        edges: [{ src: 1, dst: 2, jobs: [] }],
+        collapsed: [],
+        truncated: false,
+      },
       snapshot: FRESH_SNAPSHOT,
       sourceFreshness: OK_SOURCE,
     });
@@ -225,12 +250,22 @@ describe('LineageGraph', () => {
 
   it('switches to impact analysis and calls getImpact instead of getGraph', async () => {
     vi.mocked(getGraph).mockResolvedValue({
-      data: { nodes: [node(1, 'a')], edges: [], collapsed: [], truncated: false },
+      data: {
+        nodes: [node(1, 'a')],
+        edges: [],
+        collapsed: [],
+        truncated: false,
+      },
       snapshot: FRESH_SNAPSHOT,
       sourceFreshness: OK_SOURCE,
     });
     vi.mocked(getImpact).mockResolvedValue({
-      data: { nodes: [node(1, 'a'), node(2, 'b')], edges: [], collapsed: [], truncated: false },
+      data: {
+        nodes: [node(1, 'a'), node(2, 'b')],
+        edges: [],
+        collapsed: [],
+        truncated: false,
+      },
       snapshot: FRESH_SNAPSHOT,
       sourceFreshness: OK_SOURCE,
     });
@@ -250,11 +285,18 @@ describe('LineageGraph', () => {
 
   it('shows an inline alert when impact analysis is unavailable (503, stale snapshot)', async () => {
     vi.mocked(getGraph).mockResolvedValue({
-      data: { nodes: [node(1, 'a')], edges: [], collapsed: [], truncated: false },
+      data: {
+        nodes: [node(1, 'a')],
+        edges: [],
+        collapsed: [],
+        truncated: false,
+      },
       snapshot: FRESH_SNAPSHOT,
       sourceFreshness: OK_SOURCE,
     });
-    vi.mocked(getImpact).mockRejectedValue({ response: { status: 503, data: {} } });
+    vi.mocked(getImpact).mockRejectedValue({
+      response: { status: 503, data: {} },
+    });
 
     renderGraphPage();
     await waitFor(() => expect(getGraph).toHaveBeenCalledTimes(1));
@@ -272,7 +314,13 @@ describe('LineageGraph', () => {
         nodes: [node(1, 'a')],
         edges: [],
         collapsed: [
-          { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 2, direction: 'downstream' },
+          {
+            type: 'collapsed',
+            nodeId: 1,
+            token: 'n:1:down:g3',
+            hiddenCount: 2,
+            direction: 'downstream',
+          },
         ],
         truncated: true,
       },
@@ -310,16 +358,29 @@ describe('LineageGraph', () => {
         nodes: [node(1, 'a')],
         edges: [],
         collapsed: [
-          { type: 'collapsed', nodeId: 1, token: 'n:1:down:g3', hiddenCount: 2, direction: 'downstream' },
+          {
+            type: 'collapsed',
+            nodeId: 1,
+            token: 'n:1:down:g3',
+            hiddenCount: 2,
+            direction: 'downstream',
+          },
         ],
         truncated: true,
       },
       snapshot: FRESH_SNAPSHOT,
       sourceFreshness: OK_SOURCE,
     });
-    vi.mocked(getGraph).mockRejectedValueOnce({ response: { status: 409, data: {} } });
+    vi.mocked(getGraph).mockRejectedValueOnce({
+      response: { status: 409, data: {} },
+    });
     vi.mocked(getGraph).mockResolvedValueOnce({
-      data: { nodes: [node(1, 'a')], edges: [], collapsed: [], truncated: false },
+      data: {
+        nodes: [node(1, 'a')],
+        edges: [],
+        collapsed: [],
+        truncated: false,
+      },
       snapshot: FRESH_SNAPSHOT,
       sourceFreshness: OK_SOURCE,
     });
@@ -370,7 +431,9 @@ describe('LineageGraph', () => {
     graph.handlers['edge:click']({ target: { id: '1->job:10' } });
 
     expect(await screen.findByText('关联作业')).toBeInTheDocument();
-    await waitFor(() => expect(getJob).toHaveBeenCalledWith(7, 10, { skipErrorHandler: true }));
+    await waitFor(() =>
+      expect(getJob).toHaveBeenCalledWith(7, 10, { skipErrorHandler: true }),
+    );
   });
 
   it('opens the job detail drawer with a per-target-table breakdown for a multi-output job, matching the value shown via its own edge', async () => {
@@ -378,9 +441,21 @@ describe('LineageGraph', () => {
       data: {
         nodes: [node(1, 'a'), node(2, 'b'), node(3, 'c'), node(4, 'd')],
         edges: [
-          { src: 1, dst: 2, jobs: [job({ edgeId: 100, lastRowCount: 10, lastBytes: 10 })] },
-          { src: 1, dst: 3, jobs: [job({ edgeId: 101, lastRowCount: 20, lastBytes: 20 })] },
-          { src: 1, dst: 4, jobs: [job({ edgeId: 102, lastRowCount: 30, lastBytes: 30 })] },
+          {
+            src: 1,
+            dst: 2,
+            jobs: [job({ edgeId: 100, lastRowCount: 10, lastBytes: 10 })],
+          },
+          {
+            src: 1,
+            dst: 3,
+            jobs: [job({ edgeId: 101, lastRowCount: 20, lastBytes: 20 })],
+          },
+          {
+            src: 1,
+            dst: 4,
+            jobs: [job({ edgeId: 102, lastRowCount: 30, lastBytes: 30 })],
+          },
         ],
         collapsed: [],
         truncated: false,
@@ -431,8 +506,12 @@ describe('LineageGraph', () => {
     // 就断言通过，那样会在 React 还没提交这次点击触发的重渲染前，误命中切换前遗留的旧节点。
     // 用 waitFor 连着 closest 断言一起重试，直到真正落到新渲染出的 Descriptions 结构上。
     await waitFor(() => {
-      expect(screen.getByText('20行').closest('.ant-descriptions')).not.toBeNull();
-      expect(screen.getByText('20 B').closest('.ant-descriptions')).not.toBeNull();
+      expect(
+        screen.getByText('20行').closest('.ant-descriptions'),
+      ).not.toBeNull();
+      expect(
+        screen.getByText('20 B').closest('.ant-descriptions'),
+      ).not.toBeNull();
     });
   });
 
@@ -522,7 +601,10 @@ describe('LineageGraph', () => {
       edge: { type: (datum: unknown) => string };
       plugins: Array<{
         type: string;
-        getContent?: (event: unknown, items: unknown[]) => Promise<HTMLElement | string>;
+        getContent?: (
+          event: unknown,
+          items: unknown[],
+        ) => Promise<HTMLElement | string>;
       }>;
     };
     const jobNode = graph.data.nodes?.find((item) => item.id === 'job:10');
@@ -541,13 +623,17 @@ describe('LineageGraph', () => {
 
     const tooltip = options.plugins.find((plugin) => plugin.type === 'tooltip');
     const tooltipContent = await tooltip?.getContent?.({}, [jobNode]);
-    expect((tooltipContent as HTMLElement).textContent).toContain('✓12 task · 5.1万行/秒');
+    expect((tooltipContent as HTMLElement).textContent).toContain(
+      '✓12 task · 5.1万行/秒',
+    );
 
     const tableNode = graph.data.nodes?.find((item) => item.id === '1');
     const tableTooltip = await tooltip?.getContent?.({}, [tableNode]);
     expect((tableTooltip as HTMLElement).textContent).toContain('表名：a');
     expect((tableTooltip as HTMLElement).textContent).toContain('完整名称：a');
-    expect((tableTooltip as HTMLElement).style.maxWidth).toBe('min(520px, calc(100vw - 48px))');
+    expect((tableTooltip as HTMLElement).style.maxWidth).toBe(
+      'min(520px, calc(100vw - 48px))',
+    );
     expect((tableTooltip as HTMLElement).style.overflowWrap).toBe('anywhere');
 
     view.unmount();
@@ -558,7 +644,12 @@ describe('LineageGraph', () => {
 
   it('searches by keyword and navigates to the matched table', async () => {
     vi.mocked(getGraph).mockResolvedValue({
-      data: { nodes: [node(1, 'a')], edges: [], collapsed: [], truncated: false },
+      data: {
+        nodes: [node(1, 'a')],
+        edges: [],
+        collapsed: [],
+        truncated: false,
+      },
       snapshot: FRESH_SNAPSHOT,
       sourceFreshness: OK_SOURCE,
     });
@@ -580,7 +671,11 @@ describe('LineageGraph', () => {
     });
 
     await waitFor(() =>
-      expect(listTables).toHaveBeenCalledWith({ clusterId: 7, keyword: 'orders', size: 1 }),
+      expect(listTables).toHaveBeenCalledWith({
+        clusterId: 7,
+        keyword: 'orders',
+        size: 1,
+      }),
     );
     await waitFor(() =>
       expect(historyPush).toHaveBeenCalledWith('/cluster/7/lineage/9'),

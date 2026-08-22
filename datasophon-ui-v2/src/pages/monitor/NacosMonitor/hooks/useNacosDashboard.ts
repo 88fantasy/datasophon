@@ -51,6 +51,8 @@ export interface UseNacosDashboardParams {
   instance: string;
   timeRange: string;
   clusterId: number;
+  /** 接管实例登记的 job 正则；不传时用物理侧固定的 NacosServer */
+  job?: string;
   refreshKey: number;
 }
 
@@ -69,6 +71,7 @@ export function useNacosDashboard({
   instance,
   timeRange,
   clusterId,
+  job = NACOS_JOB_FILTER,
   refreshKey,
 }: UseNacosDashboardParams): NacosDashboardData {
   const [instances, setInstances] = useState<string[]>([]);
@@ -78,20 +81,20 @@ export function useNacosDashboard({
       setInstances([]);
       return;
     }
-    fetchDorisLabels('nacos_monitor', clusterId, NACOS_JOB_FILTER)
+    fetchDorisLabels('nacos_monitor', clusterId, job)
       .then((res) => {
         if (res?.data) setInstances(res.data.instances);
       })
       .catch(() => {
         setInstances([]);
       });
-  }, [clusterId, refreshKey]);
+  }, [clusterId, job, refreshKey]);
 
   const data = useDorisDashboardData({
     panelDescriptors: PANEL_QUERIES,
     panelIds: QUERY_PANEL_IDS,
     instance,
-    job: NACOS_JOB_FILTER,
+    job,
     timeRange,
     clusterId,
     refreshKey,

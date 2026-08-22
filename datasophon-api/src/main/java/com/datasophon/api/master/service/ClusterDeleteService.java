@@ -23,10 +23,12 @@
 package com.datasophon.api.master.service;
 
 import com.datasophon.api.master.handler.k8s.K8sAgentUninstallHandler;
+import com.datasophon.api.observability.OtelDorisReaderFactory;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.host.ClusterHostService;
@@ -47,6 +49,7 @@ import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterArchType;
+import com.datasophon.dao.enums.ManageMode;
 
 import java.util.List;
 import java.util.Map;
@@ -81,6 +84,8 @@ public class ClusterDeleteService {
     private final K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
     private final K8sClusterNamespaceService k8sClusterNamespaceService;
     private final K8sService k8sService;
+    private final ClusterVariableService clusterVariableService;
+    private final OtelDorisReaderFactory otelDorisReaderFactory;
 
     public ClusterDeleteService(ClusterInfoService clusterInfoService,
                                 ClusterServiceRoleInstanceService roleInstanceService,
@@ -91,7 +96,9 @@ public class ClusterDeleteService {
                                 K8sServiceInstanceService k8sServiceInstanceService,
                                 K8sServiceInstanceValuesService k8sServiceInstanceValuesService,
                                 K8sClusterNamespaceService k8sClusterNamespaceService,
-                                K8sService k8sService) {
+                                K8sService k8sService,
+                                ClusterVariableService clusterVariableService,
+                                OtelDorisReaderFactory otelDorisReaderFactory) {
         this.clusterInfoService = clusterInfoService;
         this.roleInstanceService = roleInstanceService;
         this.roleGroupConfigService = roleGroupConfigService;
@@ -102,6 +109,8 @@ public class ClusterDeleteService {
         this.k8sServiceInstanceValuesService = k8sServiceInstanceValuesService;
         this.k8sClusterNamespaceService = k8sClusterNamespaceService;
         this.k8sService = k8sService;
+        this.clusterVariableService = clusterVariableService;
+        this.otelDorisReaderFactory = otelDorisReaderFactory;
     }
 
     /**
@@ -123,12 +132,17 @@ public class ClusterDeleteService {
             }
             deletePhysicalClusterComponents(clusterId);
         } else {
-            boolean success = deleteK8sAgent(clusterId);
-            if (!success) {
-                return;
+            // 接管集群的 agent 不是平台装的，卸载它等于动了别人的集群，与只读接管的承诺相悖
+            if (!ManageMode.IMPORTED.equals(clusterInfo.getManageMode())) {
+                boolean success = deleteK8sAgent(clusterId);
+                if (!success) {
+                    return;
+                }
             }
             deleteK8sClusterComponents(clusterId);
         }
+        clusterVariableService.removeByClusterId(clusterId);
+        otelDorisReaderFactory.invalidate(clusterId);
         clusterInfoService.removeById(clusterId);
     }
 

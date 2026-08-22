@@ -11,8 +11,11 @@ import com.datasophon.common.k8s.dto.UpgradeParams;
 import com.datasophon.common.k8s.exception.HelmException;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,121 +39,125 @@ import org.mockito.Mockito;
  */
 @DisplayName("HelmClient 单元测试")
 class HelmClientTest {
-    
+
     private static final String TEST_HELM_PATH = "/usr/bin/helm";
     private static final int DEFAULT_TIMEOUT = 30;
-    
+
     @BeforeEach
     public void init() {
         PropertiesPathUtils.resetPropertyFile();
     }
-    
+
     /**
      * 构造方法和 helmPath 检测相关测试
      */
     @Nested
     @DisplayName("构造方法测试")
     class ConstructorTests {
-        
+
         @Test
         @DisplayName("Windows 系统下应使用默认 helm 路径")
         void testConstructor_Windows() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Windows 10");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ClientOptions options = new ClientOptions();
                     options.setServerName("https://k8s.example.com");
                     options.setToken("test-token");
-                    
+
                     HelmClient client = new HelmClient(options);
-                    
+
                     Assertions.assertEquals("helm", client.getHelmPath());
                 }
             } finally {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("非 Windows 系统下 helm 命令存在时应使用检测到的路径")
         void testConstructor_NonWindows_HelmExists() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
-                try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+
+                try (
+                        MockedStatic<PropertyUtils> mockedPropertyUtils = Mockito.mockStatic(PropertyUtils.class);
+                        MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                    mockedPropertyUtils.when(() -> PropertyUtils.getString("helm.install_path"))
+                            .thenReturn(TEST_HELM_PATH);
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(true);
                     when(mockResult.getExecOut()).thenReturn("/usr/bin/helm\n");
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setServerName("https://k8s.example.com");
                     options.setToken("test-token");
-                    
+
                     HelmClient client = new HelmClient(options);
-                    
+
                     Assertions.assertEquals("/usr/bin/helm", client.getHelmPath());
                 }
             } finally {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("非 Windows 系统下 helm 命令不存在时应使用默认路径")
         void testConstructor_NonWindows_HelmNotExists() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(false);
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setServerName("https://k8s.example.com");
                     options.setToken("test-token");
-                    
+
                     HelmClient client = new HelmClient(options);
-                    
+
                     Assertions.assertEquals("helm", client.getHelmPath());
                 }
             } finally {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("使用 KubeConfig 配置构造")
         void testConstructor_WithKubeConfig() {
             String originalOsName = System.getProperty("os.name");
-            
+
             try {
                 System.setProperty("os.name", "Linux");
-                
+
                 try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                     ExecResult mockResult = mock(ExecResult.class);
                     when(mockResult.isSuccess()).thenReturn(false);
-                    
+
                     mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                             .thenReturn(mockResult);
-                    
+
                     ClientOptions options = new ClientOptions();
                     options.setKubeConfig("apiVersion: v1\nclusters: []");
-                    
+
                     HelmClient client = new HelmClient(options);
-                    
+
                     Assertions.assertNotNull(client.getKubeConfig());
                     Assertions.assertTrue(client.getKubeConfig().endsWith("kubeConfig.yaml"));
                 }
@@ -158,120 +165,149 @@ class HelmClientTest {
                 System.setProperty("os.name", originalOsName);
             }
         }
-        
+
         @Test
         @DisplayName("使用 Token 认证配置构造")
-        void testConstructor_WithToken() {
+        void testConstructor_WithToken() throws Exception {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token-123");
                 options.setServerName("https://k8s.example.com");
-                
+
                 HelmClient client = new HelmClient(options);
-                
-                Assertions.assertEquals("test-token-123", client.getToken());
-                Assertions.assertEquals("https://k8s.example.com", client.getServerName());
+
+                String kubeConfig = Files.readString(Path.of(client.getKubeConfig()));
+                Assertions.assertTrue(kubeConfig.contains("test-token-123"));
+                Assertions.assertTrue(kubeConfig.contains("https://k8s.example.com"));
+                client.close();
             }
         }
-        
+
         @Test
         @DisplayName("使用用户名密码认证配置构造")
-        void testConstructor_WithUsernamePassword() {
+        void testConstructor_WithUsernamePassword() throws Exception {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ClientOptions options = new ClientOptions();
                 options.setUsername("admin");
                 options.setPassword("password123");
                 options.setServerName("https://k8s.example.com");
-                
+
                 HelmClient client = new HelmClient(options);
-                
-                Assertions.assertEquals("admin", client.getUsername());
-                Assertions.assertEquals("password123", client.getPassword());
+
+                String kubeConfig = Files.readString(Path.of(client.getKubeConfig()));
+                Assertions.assertTrue(kubeConfig.contains("username: admin"));
+                Assertions.assertTrue(kubeConfig.contains("password: password123"));
+                client.close();
             }
         }
     }
-    
+
+    @Nested
+    @DisplayName("接管集群只读保护")
+    class ReadOnlyTests {
+
+        @Test
+        void upgradeAndUninstallAreBlockedBeforeExecutingHelm() {
+            try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
+                ClientOptions options = new ClientOptions();
+                options.setReadOnly(true);
+                try (HelmClient client = new HelmClient(options)) {
+                    Assertions.assertThrows(HelmException.class, () -> client.upgrade(new UpgradeParams()));
+                    Assertions.assertThrows(HelmException.class, () -> client.uninstall("default", "release"));
+                }
+            }
+        }
+    }
+
     /**
      * execute 方法相关测试
      */
     @Nested
     @DisplayName("execute 方法测试")
     class ExecuteTests {
-        
+
         @Test
         @DisplayName("execute 使用 KubeConfig 认证")
         void testExecute_WithKubeConfig() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--kubeconfig"));
-                            Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("kubeConfig.yaml")));
+                            if (args.contains("list")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertTrue(args.stream().anyMatch(a -> a.endsWith("kubeConfig.yaml")));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setKubeConfig("apiVersion: v1");
                 HelmClient client = new HelmClient(options);
-                
+
                 client.execute(new ArrayList<>(Arrays.asList("list")), 30);
             }
         }
-        
+
         @Test
         @DisplayName("execute 使用 Token 认证")
         void testExecute_WithToken() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--kube-token"));
-                            Assertions.assertTrue(args.contains("test-token"));
+                            if (args.contains("list")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertFalse(args.contains("--kube-token"));
+                                Assertions.assertFalse(args.contains("test-token"));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 client.execute(new ArrayList<>(Arrays.asList("list")), 30);
             }
         }
-        
+
         @Test
         @DisplayName("execute 使用用户名密码认证")
         void testExecute_WithUsernamePassword() {
             try (MockedStatic<ShellUtils> mockedShellUtils = Mockito.mockStatic(ShellUtils.class)) {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--kube-username"));
-                            Assertions.assertTrue(args.contains("admin"));
-                            Assertions.assertTrue(args.contains("--kube-password"));
-                            Assertions.assertTrue(args.contains("password123"));
+                            if (args.contains("list")) {
+                                Assertions.assertTrue(args.contains("--kubeconfig"));
+                                Assertions.assertFalse(args.contains("--kube-username"));
+                                Assertions.assertFalse(args.contains("admin"));
+                                Assertions.assertFalse(args.contains("--kube-password"));
+                                Assertions.assertFalse(args.contains("password123"));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setUsername("admin");
                 options.setPassword("password123");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 client.execute(new ArrayList<>(Arrays.asList("list")), 30);
             }
         }
-        
+
         @Test
         @DisplayName("execute 命令执行失败")
         void testExecute_Failure() {
@@ -279,29 +315,29 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("exit code: 1");
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 ExecResult result = client.execute(new ArrayList<>(Arrays.asList("invalid-command")), 30);
-                
+
                 Assertions.assertFalse(result.isSuccess());
             }
         }
     }
-    
+
     /**
      * executeWithResult 方法相关测试
      */
     @Nested
     @DisplayName("executeWithResult 方法测试")
     class ExecuteWithResultTests {
-        
+
         @Test
         @DisplayName("executeWithResult 成功")
         void testExecuteWithResult_Success() {
@@ -309,22 +345,22 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("output\n");
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 ExecResult result = client.execute(new ArrayList<>(Collections.singletonList("list")), 30);
-                
+
                 Assertions.assertTrue(result.isSuccess());
                 Assertions.assertEquals("output\n", result.getExecOut());
             }
         }
-        
+
         @Test
         @DisplayName("executeWithResult 失败应抛出 HelmException")
         void testExecuteWithResult_Failure() {
@@ -332,29 +368,30 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("command failed");
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
-                HelmException exception = Assertions.assertThrows(HelmException.class, () -> client.execute(new ArrayList<>(Collections.singletonList("invalid")), 30));
-                
+
+                HelmException exception = Assertions.assertThrows(HelmException.class,
+                        () -> client.executeForJsonResult(new ArrayList<>(Collections.singletonList("invalid")), 30));
+
                 Assertions.assertTrue(exception.getMessage().contains("command failed"));
             }
         }
     }
-    
+
     /**
      * upgrade 方法相关测试
      */
     @Nested
     @DisplayName("upgrade 方法测试")
     class UpgradeTests {
-        
+
         @Test
         @DisplayName("upgrade 成功 - 基本参数")
         void testUpgrade_Success_Basic() {
@@ -363,26 +400,26 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
                 params.setNamespace("default");
-                
+
                 HelmReleaseVO result = client.upgrade(params);
-                
+
                 Assertions.assertNotNull(result);
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 成功 - 包含 valuesFiles")
         void testUpgrade_Success_WithValuesFiles() {
@@ -391,30 +428,32 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--values"));
-                            Assertions.assertTrue(args.contains("/path/to/values.yaml"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--values"));
+                                Assertions.assertTrue(args.contains("/path/to/values.yaml"));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
                 params.setNamespace("default");
                 params.setValuesFiles(Collections.singletonList("/path/to/values.yaml"));
-                
+
                 client.upgrade(params);
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 成功 - 包含 setValues")
         void testUpgrade_Success_WithSetValues() {
@@ -423,30 +462,32 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--set"));
-                            Assertions.assertTrue(args.contains("image.tag=v1.0.0"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--set"));
+                                Assertions.assertTrue(args.contains("image.tag=v1.0.0"));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
                 params.setNamespace("default");
                 params.setSetValues(Collections.singletonList("image.tag=v1.0.0"));
-                
+
                 client.upgrade(params);
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 失败 - releaseName 为空")
         void testUpgrade_Failure_EmptyReleaseName() {
@@ -454,17 +495,17 @@ class HelmClientTest {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("");
                 params.setChartPath("./my-chart");
-                
+
                 HelmException exception = Assertions.assertThrows(HelmException.class, () -> client.upgrade(params));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("releaseName 不能为空"));
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 失败 - chartPath 为空")
         void testUpgrade_Failure_EmptyChartPath() {
@@ -472,17 +513,17 @@ class HelmClientTest {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("");
-                
+
                 HelmException exception = Assertions.assertThrows(HelmException.class, () -> client.upgrade(params));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("chartPath 不能为空"));
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 失败 - 命令执行失败")
         void testUpgrade_Failure_CommandFailed() {
@@ -490,25 +531,25 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(false);
                 when(mockResult.getErrorTraceMessage()).thenReturn("release not found");
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
-                
+
                 HelmException exception = Assertions.assertThrows(HelmException.class, () -> client.upgrade(params));
-                
+
                 Assertions.assertTrue(exception.getMessage().contains("release not found"));
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 失败 - JSON 解析失败")
         void testUpgrade_Failure_JsonParseError() {
@@ -516,25 +557,25 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn("invalid json {");
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenReturn(mockResult);
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
-                
+
                 HelmException exception = Assertions.assertThrows(HelmException.class, () -> client.upgrade(params));
-                
-                Assertions.assertTrue(exception.getMessage().contains("解析 helm upgrade 响应失败"));
+
+                Assertions.assertTrue(exception.getMessage().contains("解析 helm 响应失败"));
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 包含 install 参数")
         void testUpgrade_WithInstall() {
@@ -543,28 +584,30 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--install"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--install"));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
                 params.setInstall(true);
-                
+
                 client.upgrade(params);
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 包含 timeout 参数")
         void testUpgrade_WithTimeout() {
@@ -573,29 +616,31 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--timeout"));
-                            Assertions.assertTrue(args.contains("600s"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--timeout"));
+                                Assertions.assertTrue(args.contains("600s"));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
                 params.setTimeoutSeconds(600);
-                
+
                 client.upgrade(params);
             }
         }
-        
+
         @Test
         @DisplayName("upgrade 包含 description 参数")
         void testUpgrade_WithDescription() {
@@ -604,37 +649,39 @@ class HelmClientTest {
                 ExecResult mockResult = mock(ExecResult.class);
                 when(mockResult.isSuccess()).thenReturn(true);
                 when(mockResult.getExecOut()).thenReturn(jsonResponse);
-                
-                mockedShellUtils.when(() -> ShellUtils.execWithBash(any(), any(), anyLong()))
+
+                mockedShellUtils.when(() -> ShellUtils.exec(any(), any(), anyLong()))
                         .thenAnswer(invocation -> {
                             List<String> args = invocation.getArgument(1);
-                            Assertions.assertTrue(args.contains("--description"));
-                            Assertions.assertTrue(args.contains("Release upgrade"));
+                            if (args.contains("upgrade")) {
+                                Assertions.assertTrue(args.contains("--description"));
+                                Assertions.assertTrue(args.contains("Release upgrade"));
+                            }
                             return mockResult;
                         });
-                
+
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
-                
+
                 UpgradeParams params = new UpgradeParams();
                 params.setReleaseName("my-release");
                 params.setChartPath("./my-chart");
                 params.setDescription("Release upgrade");
-                
+
                 client.upgrade(params);
             }
         }
     }
-    
+
     /**
      * close 方法相关测试
      */
     @Nested
     @DisplayName("close 方法测试")
     class CloseTests {
-        
+
         @Test
         @DisplayName("close 方法调用成功")
         void testClose_Success() {
@@ -642,10 +689,12 @@ class HelmClientTest {
                 ClientOptions options = new ClientOptions();
                 options.setToken("test-token");
                 options.setServerName("https://k8s.example.com");
-                
+
                 HelmClient client = new HelmClient(options);
-                
+
+                Assertions.assertTrue(client.getTempDir().isDirectory());
                 Assertions.assertDoesNotThrow(() -> client.close());
+                Assertions.assertFalse(client.getTempDir().exists());
             }
         }
     }

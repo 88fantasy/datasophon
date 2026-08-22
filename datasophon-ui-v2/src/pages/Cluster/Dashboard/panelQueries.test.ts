@@ -21,7 +21,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { ALL_PANEL_IDS, CLUSTER_DASHBOARD_JOB, PANEL_QUERIES } from './panelQueries';
+import {
+  ALL_PANEL_IDS,
+  CLUSTER_DASHBOARD_JOB,
+  PANEL_QUERIES,
+} from './panelQueries';
 
 describe('Cluster Dashboard panel queries', () => {
   it('defines all 4 panels and fixes the Doris job to the host_metrics job', () => {

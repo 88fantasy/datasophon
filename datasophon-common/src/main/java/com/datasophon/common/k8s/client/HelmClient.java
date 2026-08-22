@@ -5,6 +5,7 @@ import com.datasophon.common.k8s.dto.UninstallParams;
 import com.datasophon.common.k8s.dto.UpgradeParams;
 import com.datasophon.common.k8s.exception.HelmException;
 import com.datasophon.common.k8s.vo.helm.HelmHistoryVO;
+import com.datasophon.common.k8s.vo.helm.HelmReleaseListItemVO;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
 import com.datasophon.common.k8s.vo.helm.HelmStatusVO;
 import com.datasophon.common.lang.VisibleForTesting;
@@ -14,16 +15,12 @@ import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -36,6 +33,8 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helm 命令封装客户端
@@ -43,20 +42,17 @@ import cn.hutool.core.util.StrUtil;
 @Slf4j
 @Data
 public class HelmClient implements AutoCloseable {
-    
+
     private final String helmPath;
-    
+
     private final String kubeConfig;
-    private final String token;
-    private final String username;
-    private final String password;
     private final String serverCert;
-    private final String serverName;
-    
+    private final boolean readOnly;
+
     private final File tempDir;
-    
+
     private final ObjectMapper mapper;
-    
+
     public static String detectHelmPath() {
         String path = PropertyUtils.getString("helm.install_path");
         if (StrUtil.isNotBlank(path)) {
@@ -64,7 +60,7 @@ public class HelmClient implements AutoCloseable {
         }
         return "helm";
     }
-    
+
     public HelmClient(ClientOptions options) {
         this.helmPath = detectHelmPath();
         this.tempDir = PathUtils.getTmpDir("sensitive/" + RandomUtil.randomString(12));
@@ -72,14 +68,7 @@ public class HelmClient implements AutoCloseable {
         if (!osName.contains("window")) {
             ShellUtils.exec(null, Arrays.asList("chmod", "-R", "0700", tempDir.getAbsolutePath()), -1);
         }
-        
-        if (StrUtil.isNotBlank(options.getKubeConfig())) {
-            File config = new File(tempDir, "kubeConfig.yaml");
-            FileUtil.writeString(options.getKubeConfig(), config, StandardCharsets.UTF_8);
-            this.kubeConfig = config.getAbsolutePath();
-        } else {
-            this.kubeConfig = null;
-        }
+
         if (StrUtil.isNotBlank(options.getServerCert())) {
             File cert = new File(tempDir, "ca.cert");
             Base64.decodeToFile(options.getServerCert(), cert);
@@ -87,23 +76,21 @@ public class HelmClient implements AutoCloseable {
         } else {
             this.serverCert = null;
         }
-        this.token = options.getToken();
-        this.username = options.getUsername();
-        this.password = options.getPassword();
-        this.serverName = options.getServerName();
-        
+        this.readOnly = options.isReadOnly();
+        this.kubeConfig = SecureKubeConfigWriter.write(options, tempDir, serverCert);
+
         JsonMapper.Builder builder = JsonMapper.builder();
         builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
         builder.defaultLocale(Locale.CHINA);
         builder.defaultTimeZone(TimeZone.getTimeZone("GMT+8"));
-        
+
         builder.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
         builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         builder.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         builder.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
         mapper = builder.build();
     }
-    
+
     /**
      * 执行 helm 命令的基础方法
      *
@@ -114,35 +101,17 @@ public class HelmClient implements AutoCloseable {
     ExecResult execute(List<String> subCommandParts, int timeoutSeconds) {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(helmPath);
-        
-        // 添加认证参数
-        if (StrUtil.isNotBlank(kubeConfig)) {
-            commandParts.add("--kubeconfig");
-            commandParts.add(kubeConfig);
-        } else {
-            if (StrUtil.isNotBlank(token)) {
-                commandParts.add("--kube-token");
-                commandParts.add(token);
-            } else if (StrUtil.isNotBlank(username) && StrUtil.isNotBlank(password)) {
-                commandParts.add("--kube-username");
-                commandParts.add(username);
-                commandParts.add("--kube-password");
-                commandParts.add(password);
-            }
-            if (StrUtil.isNotBlank(serverCert)) {
-                commandParts.add("--kube-ca-file");
-                commandParts.add(serverCert);
-            }
-            if (StrUtil.isNotBlank(serverName)) {
-                commandParts.add("--kube-apiserver");
-                commandParts.add(serverName);
-            }
-        }
+
+        // SecureKubeConfigWriter 始终生成受限临时配置；认证信息不得回退到 argv。
+        commandParts.add("--kubeconfig");
+        commandParts.add(kubeConfig);
         commandParts.addAll(subCommandParts);
-        
-        return ShellUtils.execWithBash(null, commandParts, timeoutSeconds);
+
+        // 参数必须直接交给 ProcessBuilder，不能再经 bash -c 拼接；release、namespace 等值
+        // 可能来自 HTTP 请求，shell 拼接会把分号、命令替换等内容解释成额外命令。
+        return ShellUtils.exec(null, commandParts, timeoutSeconds);
     }
-    
+
     /**
      * 执行 helm 命令并返回执行结果
      *
@@ -161,12 +130,12 @@ public class HelmClient implements AutoCloseable {
         }
         return result;
     }
-    
+
     @VisibleForTesting
     ExecResult executeForJsonResult(List<String> subCommandParts, int timeoutSeconds) throws HelmException {
         return executeForJsonResult(subCommandParts, timeoutSeconds, true);
     }
-    
+
     private <T> T convert(ExecResult result, Class<T> clazz) {
         try {
             String content = result.getExecOut();
@@ -178,7 +147,7 @@ public class HelmClient implements AutoCloseable {
             throw new HelmException("解析 helm 响应失败：" + e.getMessage() + "。响应体：\n" + result.getExecOut());
         }
     }
-    
+
     private <T> List<T> convertList(ExecResult result, Class<T> clazz) {
         try {
             String content = result.getExecOut();
@@ -190,7 +159,7 @@ public class HelmClient implements AutoCloseable {
             throw new HelmException("解析 helm 响应失败：" + e.getMessage() + "。响应体：\n" + result.getExecOut());
         }
     }
-    
+
     /**
      * 升级 Helm release
      *
@@ -199,19 +168,20 @@ public class HelmClient implements AutoCloseable {
      * @throws HelmException 命令执行失败
      */
     public HelmReleaseVO upgrade(UpgradeParams params) throws HelmException {
+        requireWritable();
         if (StrUtil.isBlank(params.getReleaseName())) {
             throw new HelmException("releaseName 不能为空");
         }
         if (StrUtil.isBlank(params.getChartPath())) {
             throw new HelmException("chartPath 不能为空");
         }
-        
+
         List<String> command = buildUpgradeCommand(params);
         log.info("执行 helm upgrade: release={}, chart={}", params.getReleaseName(), params.getChartPath());
         ExecResult result = executeForJsonResult(command, params.getTimeoutSeconds() + 1);
         return convert(result, HelmReleaseVO.class);
     }
-    
+
     /**
      * 构建 helm upgrade 命令参数
      *
@@ -223,7 +193,7 @@ public class HelmClient implements AutoCloseable {
         args.add("upgrade");
         args.add(params.getReleaseName());
         args.add(params.getChartPath());
-        
+
         // 添加 values 文件
         if (params.getValuesFiles() != null) {
             for (String valuesFile : params.getValuesFiles()) {
@@ -231,7 +201,7 @@ public class HelmClient implements AutoCloseable {
                 args.add(valuesFile);
             }
         }
-        
+
         // 添加 set 参数
         if (params.getSetValues() != null) {
             for (String setValue : params.getSetValues()) {
@@ -239,7 +209,7 @@ public class HelmClient implements AutoCloseable {
                 args.add(setValue);
             }
         }
-        
+
         // 添加 set-file 参数
         if (params.getSetFileValues() != null) {
             for (String setFileValue : params.getSetFileValues()) {
@@ -247,22 +217,22 @@ public class HelmClient implements AutoCloseable {
                 args.add(setFileValue);
             }
         }
-        
+
         // 命名空间
         if (StrUtil.isNotBlank(params.getNamespace())) {
             args.add("--namespace");
             args.add(params.getNamespace());
         }
-        
+
         // 超时
         args.add("--timeout");
         args.add(params.getTimeoutSeconds() + "s");
-        
+
         // install 选项
         if (params.isInstall()) {
             args.add("--install");
         }
-        
+
         // wait
         if (params.isWait()) {
             args.add("--wait");
@@ -270,46 +240,81 @@ public class HelmClient implements AutoCloseable {
         if (params.isWaitForJob()) {
             args.add("--wait-for-jobs");
         }
-        
+
         // description
         if (StrUtil.isNotBlank(params.getDescription())) {
             args.add("--description");
             args.add(params.getDescription());
         }
-        
+
         return args;
     }
-    
+
     /**
-     * 列出指定 namespace 的 release 列表
+     * 列出 release。
      *
-     * @param namespace 命名空间
-     * @param filter    过滤条件（如 pending, deployed, failed 等）
+     * <p>{@code helm list -o json} 返回的是扁平结构（见 {@link HelmReleaseListItemVO}），
+     * 与 {@code helm upgrade} 返回的 {@link HelmReleaseVO} 结构不同，不可混用。
+     *
+     * <p>不传 {@code --all}：该 flag 在 helm v4 已移除，且默认输出已覆盖
+     * 接管扫描关心的 deployed 状态。
+     *
+     * @param namespace 命名空间；为空则跨全部命名空间（{@code -A}）
+     * @param filter    按 status 过滤（如 deployed / failed）；为空则不过滤
      * @return release 列表
      * @throws HelmException 命令执行失败
      */
-    public List<HelmReleaseVO> list(String namespace, String filter) throws HelmException {
+    public List<HelmReleaseListItemVO> list(String namespace, String filter) throws HelmException {
         List<String> args = new ArrayList<>();
         args.add("list");
-        
+
         if (StrUtil.isNotBlank(namespace)) {
             args.add("--namespace");
             args.add(namespace);
+        } else {
+            args.add("-A");
         }
-        
-        args.add("--all");
-        
+
         ExecResult result = executeForJsonResult(args, 30);
-        List<HelmReleaseVO> releases = convertList(result, HelmReleaseVO.class);
-        List<HelmReleaseVO> filtered = new ArrayList<>();
-        for (HelmReleaseVO release : releases) {
-            if (release.getInfo() != null && filter.equalsIgnoreCase(release.getInfo().getStatus())) {
+        List<HelmReleaseListItemVO> releases = convertList(result, HelmReleaseListItemVO.class);
+        if (StrUtil.isBlank(filter)) {
+            return releases;
+        }
+        List<HelmReleaseListItemVO> filtered = new ArrayList<>();
+        for (HelmReleaseListItemVO release : releases) {
+            if (filter.equalsIgnoreCase(release.getStatus())) {
                 filtered.add(release);
             }
         }
         return filtered;
     }
-    
+
+    /**
+     * 读取 release 的 user-supplied values（{@code helm get values -o json}）。
+     *
+     * <p>只返回用户覆盖过的值，不含 chart 默认值；供接管场景的只读配置展示使用。
+     *
+     * @param releaseName release 名称
+     * @param namespace   命名空间
+     * @return values 的 JSON 文本；release 无自定义 values 时返回 {@code null} 字面量文本
+     * @throws HelmException 命令执行失败
+     */
+    public String getValues(String releaseName, String namespace) throws HelmException {
+        if (StrUtil.isBlank(releaseName)) {
+            throw new IllegalArgumentException("releaseName 不能为空");
+        }
+        List<String> args = new ArrayList<>();
+        args.add("get");
+        args.add("values");
+        args.add(releaseName);
+        if (StrUtil.isNotBlank(namespace)) {
+            args.add("--namespace");
+            args.add(namespace);
+        }
+
+        return executeForJsonResult(args, 30).getExecOut();
+    }
+
     /**
      * 查询指定 release 的历史记录
      *
@@ -322,17 +327,17 @@ public class HelmClient implements AutoCloseable {
         if (StrUtil.isBlank(releaseName)) {
             throw new IllegalArgumentException("releaseName 不能为空");
         }
-        
+
         List<String> args = new ArrayList<>();
         args.add("history");
         args.add(releaseName);
-        
+
         if (StrUtil.isNotBlank(namespace)) {
             args.add("--namespace");
             args.add(namespace);
         }
         ExecResult result = executeForJsonResult(args, 30, false);
-        
+
         if (!result.isSuccess() && !StrUtil.trimToEmpty(result.getExecOut()).contains("not found")) {
             throw new HelmException("helm 命令执行失败：" + result.getErrorTraceMessage());
         }
@@ -342,7 +347,7 @@ public class HelmClient implements AutoCloseable {
         }
         return convertList(result, HelmHistoryVO.class);
     }
-    
+
     /**
      * 查询指定 release 的状态信息
      *
@@ -356,21 +361,21 @@ public class HelmClient implements AutoCloseable {
         List<String> args = new ArrayList<>();
         args.add("status");
         args.add(releaseName);
-        
+
         if (StrUtil.isNotBlank(namespace)) {
             args.add("--namespace");
             args.add(namespace);
         }
-        
+
         if (revision != null) {
             args.add("--revision");
             args.add(revision.toString());
         }
-        
+
         ExecResult result = executeForJsonResult(args, 30);
         return convert(result, HelmStatusVO.class);
     }
-    
+
     /**
      * 卸载 Helm release（保留历史记录）
      *
@@ -385,7 +390,7 @@ public class HelmClient implements AutoCloseable {
         params.setKeepHistory(true);
         uninstall(params);
     }
-    
+
     /**
      * 卸载 Helm release
      *
@@ -393,32 +398,33 @@ public class HelmClient implements AutoCloseable {
      * @throws HelmException 命令执行失败
      */
     public void uninstall(UninstallParams params) throws HelmException {
+        requireWritable();
         if (StrUtil.isBlank(params.getReleaseName())) {
             throw new HelmException("releaseName 不能为空");
         }
-        
+
         List<String> args = new ArrayList<>();
         args.add("uninstall");
         args.add(params.getReleaseName());
-        
+
         // 命名空间
         if (StrUtil.isNotBlank(params.getNamespace())) {
             args.add("--namespace");
             args.add(params.getNamespace());
         }
-        
+
         // 保留 release 历史记录
         if (params.isKeepHistory()) {
             args.add("--keep-history");
         }
-        
+
         // 超时
         args.add("--timeout");
         args.add(params.getTimeoutSeconds() + "s");
-        
+
         log.info("执行 helm uninstall: release={}, keepHistory={}", params.getReleaseName(), params.isKeepHistory());
         ExecResult result = execute(args, params.getTimeoutSeconds() + 1);
-        
+
         // 如果执行失败，检查是否是因为 release 不存在
         if (!result.isSuccess()) {
             String errorMsg = result.getErrorTraceMessage();
@@ -430,13 +436,18 @@ public class HelmClient implements AutoCloseable {
             throw new HelmException("helm 命令执行失败：" + errorMsg);
         }
     }
-    
+
     @Override
     public void close() {
         if (tempDir != null) {
-            // FIXME
-            // FileUtil.del(tempDir);
+            FileUtil.del(tempDir);
         }
     }
-    
+
+    private void requireWritable() {
+        if (readOnly) {
+            throw new HelmException("接管集群为只读模式，禁止执行 Helm 写操作");
+        }
+    }
+
 }

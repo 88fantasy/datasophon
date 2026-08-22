@@ -1,0 +1,7 @@
+name: elasticsearch
+version: "8.5.1"
+description: Elasticsearch 集群
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  helm: elasticsearch-8.5.1.tgz

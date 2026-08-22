@@ -204,7 +204,10 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   R17: {
     type: 'multi-range',
     queries: [
-      { label: 'Open', metric: 'rustfs_system_process_file_descriptor_open_total' },
+      {
+        label: 'Open',
+        metric: 'rustfs_system_process_file_descriptor_open_total',
+      },
       {
         label: 'Limit',
         metric: 'rustfs_system_process_file_descriptor_limit_total',

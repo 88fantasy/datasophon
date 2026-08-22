@@ -23,6 +23,8 @@
 package com.datasophon.api.dto.v2;
 
 import com.datasophon.api.service.host.dto.QueryHostListPageDTO;
+import com.datasophon.api.service.k8s.K8sDashboardMetricsService;
+import com.datasophon.common.k8s.util.K8sNodeUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.dao.entity.ClusterHostDO;
 
@@ -31,6 +33,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import lombok.Data;
@@ -136,13 +139,15 @@ public class HostResponse {
         r.setId(stableNodeId(name));
         r.setHostname(name);
         r.setClusterId(clusterId);
-        r.setIp(findAddress(status, "InternalIP"));
+        r.setIp(K8sNodeUtils.findAddress(status, "InternalIP"));
         r.setHostState(isReady(status) ? 1 : 2);
         r.setCreateTime(parseDate(metadata != null ? metadata.getCreationTimestamp() : null));
         r.setCheckTime(findReadyHeartbeatTime(status));
         r.setCoreNum(parseCpu(status != null ? status.getCapacity() : null));
         r.setTotalMem(parseStorageGb(status != null ? status.getCapacity() : null, "memory"));
         r.setTotalDisk(parseStorageGb(status != null ? status.getCapacity() : null, "ephemeral-storage"));
+        // 用量不在 kubectl 的 node 对象里，需另行从 OTel 指标补齐，见 applyUsage(...)；
+        // 补不上时保持这里的降级值，主机列表不能因为指标查不到而失败
         r.setUsedMem(0);
         r.setUsedDisk(0);
         r.setAverageLoad("-");
@@ -150,6 +155,46 @@ public class HostResponse {
         r.setNodeLabel(extractNodeRole(metadata != null ? metadata.getLabels() : null));
         r.setServiceRoleNum(0);
         return r;
+    }
+
+    /**
+     * 用 OTel 节点指标补齐 K8s 主机的用量字段。
+     *
+     * <p>{@code usage} 里 memory / disk 按 {@code k8s.node.name} 归键，load 按
+     * {@code service_instance_id}（节点 IP）归键（见 {@code K8sDashboardMetricsService#hostUsage}
+     * 的说明——节点名不同于 IP 时两者是不同的 key，同一节点在 {@code usage} 里可能拆成
+     * hostname 一条（含 memory/disk）、ip 一条（含 load）两条记录）。
+     * 因此这里按字段分别取值、互相回落，而不是整条记录二选一——否则命中 hostname 那条
+     * （memory/disk 有值但 load 为 null）后就不会再去 ip 那条里找 load，导致 load1m 恒为 {@code -}。
+     * 没有采集到的节点（如未配 toleration 的 control-plane）保持 {@code fromK8sNode} 的降级值。
+     *
+     * @param usage 节点标识 → 用量，来自 {@code K8sDashboardMetricsService#hostUsage}
+     */
+    public void applyUsage(java.util.Map<String, K8sDashboardMetricsService.HostUsage> usage) {
+        if (usage == null || usage.isEmpty()) {
+            return;
+        }
+        K8sDashboardMetricsService.HostUsage byHostname = usage.get(hostname);
+        K8sDashboardMetricsService.HostUsage byIp = usage.get(ip);
+        if (byHostname == null && byIp == null) {
+            return;
+        }
+        Double memoryBytes = pick(byHostname, byIp, K8sDashboardMetricsService.HostUsage::memoryBytes);
+        Double diskBytes = pick(byHostname, byIp, K8sDashboardMetricsService.HostUsage::diskBytes);
+        Double load1m = pick(byHostname, byIp, K8sDashboardMetricsService.HostUsage::load1m);
+        if (memoryBytes != null) {
+            usedMem = bytesToGb(memoryBytes);
+        }
+        if (diskBytes != null) {
+            usedDisk = bytesToGb(diskBytes);
+        }
+        if (load1m != null) {
+            averageLoad = String.format("%.2f", load1m);
+        }
+    }
+
+    private static Integer bytesToGb(double bytes) {
+        return (int) Math.round(bytes / 1024 / 1024 / 1024);
     }
 
     private static Integer stableNodeId(String name) {
@@ -160,15 +205,11 @@ public class HostResponse {
         return hash == Integer.MIN_VALUE ? 0 : Math.abs(hash);
     }
 
-    private static String findAddress(K8sNode.NodeStatus status, String type) {
-        if (status == null || status.getAddresses() == null) {
-            return null;
-        }
-        return status.getAddresses().stream()
-                .filter(address -> type.equals(address.getType()))
-                .map(K8sNode.NodeAddress::getAddress)
-                .findFirst()
-                .orElse(null);
+    private static Double pick(K8sDashboardMetricsService.HostUsage byHostname,
+                               K8sDashboardMetricsService.HostUsage byIp,
+                               Function<K8sDashboardMetricsService.HostUsage, Double> extractor) {
+        Double hostnameValue = byHostname == null ? null : extractor.apply(byHostname);
+        return hostnameValue != null || byIp == null ? hostnameValue : extractor.apply(byIp);
     }
 
     private static boolean isReady(K8sNode.NodeStatus status) {

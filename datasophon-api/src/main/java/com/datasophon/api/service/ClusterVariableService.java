@@ -34,8 +34,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author gaodayu
  */
 public interface ClusterVariableService extends IService<ClusterVariable> {
-    
+
     ClusterVariable getVariableByVariableName(Integer clusterId, String serviceName, String variableName);
-    
+
     List<ClusterVariable> getVariables(Integer clusterId, String serviceName);
+
+    void removeByClusterId(Integer clusterId);
 }

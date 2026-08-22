@@ -5,6 +5,7 @@ import com.datasophon.api.dto.log.K8sRuntimeEventQueryDTO;
 import com.datasophon.api.dto.log.K8sRuntimeLogQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.api.service.k8s.K8sClientOptionsFactory;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.api.vo.k8s.K8sConfigMapInfo;
@@ -33,6 +34,7 @@ import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.common.k8s.vo.k8s.K8sSecret;
 import com.datasophon.common.storage.impl.NexusImageStorage;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.time.LocalDateTime;
@@ -45,7 +47,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,6 +59,9 @@ public class K8sServiceImpl implements K8sService {
 
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
+
+    @Autowired
+    private K8sClientOptionsFactory clientOptionsFactory;
 
     /** 拉取私有镜像仓库镜像所用的 docker-registry Secret 名称（与 K8s 集群内约定一致）。 */
     private static final String NEXUS_REGISTRY_SECRET_NAME = "nexus-registry-secret";
@@ -145,6 +149,11 @@ public class K8sServiceImpl implements K8sService {
             K8sResourceList<K8sNode> nodes = client.getNodes();
             return nodes.getItems() != null ? nodes.getItems() : List.of();
         }, "获取 K8s 集群节点列表");
+    }
+
+    @Override
+    public List<String> listHelmReleaseKeys(K8sClusterConfig config) {
+        return exec(newOptions(config), KubectlClient::getHelmReleaseKeys, "获取 Helm release 列表");
     }
 
     @Override
@@ -266,13 +275,36 @@ public class K8sServiceImpl implements K8sService {
     }
 
     private String buildLabelSelector(Integer instanceId) {
-        String serviceName = k8sServiceInstanceService.getServiceName(instanceId)
+        K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(instanceId)
                 .orElseThrow(() -> new BusinessException(String.format("K8s 服务实例 %s 不存在", instanceId)));
-        return buildLabelSelector(serviceName);
+        return buildLabelSelector(instance);
     }
 
-    private String buildLabelSelector(String serviceName) {
-        return String.format("%s=%s,%s=%s", MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE, SRV_INST_ID_LABEL, HelmUtils.createReleaseName(serviceName));
+    /**
+     * 接管实例的资源过滤口径：
+     * <ul>
+     *   <li>{@code sourceKind=CR}（operator 托管，见 {@link InstanceSourceKind#CR}）——CR 的子资源
+     *       由各 operator 自行打标签，没有跨 operator 通用、可验证的稳定标签（{@code releaseName}
+     *       字段在 CR 场景下存的是 CR 实例名，不是 Helm release 名，套用 Helm 的
+     *       managed-by/instance 标签必然是伪造）。为避免伪造出一个从不存在的标签导致 selector
+     *       命中率恒为 0，CR 实例不加 label selector，只按 namespace 过滤——代价是同 namespace
+     *       下多个 CR 实例的资源会互相"串"到彼此的 Tab 里；等有跨 operator 通用标签后再收紧。</li>
+     *   <li>{@code releaseName} 非空（Helm 接管实例）——直接用登记时记录的真实 release 名，不再套
+     *       {@code HelmUtils.createReleaseName(serviceName)} 重新推导：接管支持 release 名与
+     *       chart/服务名不同（如 release {@code fdb-cluster} 对应 chart {@code fdb-operator}），
+     *       用服务名重新推导只会推出一个从未存在过的 release 名。</li>
+     *   <li>{@code releaseName} 为空（平台自建实例）——回落旧逻辑，按服务名推导 Helm release 名，
+     *       与安装时 {@code HelmUtils.createReleaseName(serviceName)} 生成的 release 名一致。</li>
+     * </ul>
+     */
+    private String buildLabelSelector(K8sServiceInstanceVO instance) {
+        if (InstanceSourceKind.CR.equals(instance.getSourceKind())) {
+            return null;
+        }
+        String releaseName = StrUtil.isNotBlank(instance.getReleaseName())
+                ? instance.getReleaseName()
+                : HelmUtils.createReleaseName(instance.getServiceName());
+        return String.format("%s=%s,%s=%s", MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE, SRV_INST_ID_LABEL, releaseName);
     }
 
     /**
@@ -563,9 +595,7 @@ public class K8sServiceImpl implements K8sService {
     }
 
     private ClientOptions newOptions(K8sClusterConfig config) {
-        ClientOptions options = BeanUtil.toBean(config, ClientOptions.class);
-        options.setServerName(config.getServerHost());
-        return options;
+        return clientOptionsFactory.from(config);
     }
 
     @Override

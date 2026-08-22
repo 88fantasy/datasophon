@@ -63,7 +63,11 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   },
 
   // ── R2 状态指示(counter,0 正常) ───────────────────────────────────────────
-  A05: { type: 'instant', table: 'sum', metric: 'apisix_nginx_metric_errors_total' },
+  A05: {
+    type: 'instant',
+    table: 'sum',
+    metric: 'apisix_nginx_metric_errors_total',
+  },
 
   // ── R3 流量(counter rate,table=sum) ───────────────────────────────────────
   A06: {
@@ -185,10 +189,26 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   A11: {
     type: 'multi-range',
     queries: [
-      { label: 'active', metric: 'apisix_nginx_http_current_connections', filters: { state: 'active' } },
-      { label: 'reading', metric: 'apisix_nginx_http_current_connections', filters: { state: 'reading' } },
-      { label: 'writing', metric: 'apisix_nginx_http_current_connections', filters: { state: 'writing' } },
-      { label: 'waiting', metric: 'apisix_nginx_http_current_connections', filters: { state: 'waiting' } },
+      {
+        label: 'active',
+        metric: 'apisix_nginx_http_current_connections',
+        filters: { state: 'active' },
+      },
+      {
+        label: 'reading',
+        metric: 'apisix_nginx_http_current_connections',
+        filters: { state: 'reading' },
+      },
+      {
+        label: 'writing',
+        metric: 'apisix_nginx_http_current_connections',
+        filters: { state: 'writing' },
+      },
+      {
+        label: 'waiting',
+        metric: 'apisix_nginx_http_current_connections',
+        filters: { state: 'waiting' },
+      },
     ],
   },
 

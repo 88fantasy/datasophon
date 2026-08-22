@@ -105,7 +105,9 @@ const ServiceHealthPanel: FC<ServiceHealthPanelProps> = ({
   return (
     <MonitorPanelCard
       title={title}
-      extra={<Typography.Link onClick={onViewMore}>{viewMoreLabel}</Typography.Link>}
+      extra={
+        <Typography.Link onClick={onViewMore}>{viewMoreLabel}</Typography.Link>
+      }
     >
       <Table<DATASOPHON.ClusterDashboardServiceHealth>
         rowKey="serviceName"

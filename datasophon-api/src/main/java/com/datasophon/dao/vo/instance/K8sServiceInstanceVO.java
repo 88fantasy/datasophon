@@ -1,5 +1,8 @@
 package com.datasophon.dao.vo.instance;
 
+import com.datasophon.dao.enums.k8s.InstanceSource;
+import com.datasophon.dao.enums.k8s.InstanceSourceKind;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -8,27 +11,46 @@ import lombok.Data;
  */
 @Data
 public class K8sServiceInstanceVO {
-    
+
     private Integer id;
-    
+
     @Schema(description = "集群")
     private Integer clusterId;
-    
+
     @Schema(description = "名空间ID")
     private Integer namespaceId;
-    
+
     @Schema(description = "名空间")
     private String namespace;
-    
+
     @Schema(description = "分类， ENVIRONMENT=基础环境, MIDDLEWARE=中间件, APPLICATION=应用")
     private String catalog;
-    
+
     @Schema(description = "服务ID")
     private Integer serviceId;
-    
+
     @Schema(description = "服务名称")
     private String serviceName;
-    
+
     @Schema(description = "0初始化 1成功 2失败")
     private Integer state;
+
+    @Schema(description = "来源：INSTALLED=平台安装, IMPORTED=接管登记")
+    private InstanceSource source;
+
+    @Schema(description = "接管实例对应的 helm release 名，平台安装的为空")
+    private String releaseName;
+
+    @Schema(description = "指标 job（对应 Doris service_name），多个以英文逗号分隔")
+    private String metricsJob;
+
+    @Schema(description = "来源类型 HELM=Helm release CR=Operator 自定义资源，默认 HELM")
+    private InstanceSourceKind sourceKind;
+
+    @Schema(description = "看板画像 JSON（模式判定 + 角色→job 映射）原文，CR 来源专用，前端自行 JSON.parse")
+    private String monitorProfile;
+
+    /** 非数据库列：轻对账发现 release 已从目标集群消失时为 true，仅接管实例会被赋值。 */
+    @Schema(description = "接管实例失联标记：对应的 Helm release 已不在目标集群中")
+    private Boolean missing;
 }

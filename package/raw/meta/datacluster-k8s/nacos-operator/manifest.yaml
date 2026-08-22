@@ -1,0 +1,7 @@
+name: nacos-operator
+version: "0.1.0"
+description: Nacos Operator
+type: ENVIRONMENT
+dependencies: []
+artifact:
+  helm: nacos-operator-0.1.0.tgz

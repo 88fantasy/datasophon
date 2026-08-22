@@ -25,6 +25,7 @@ package com.datasophon.api.controller.v2;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.SaveConfigRequest;
+import com.datasophon.api.security.ImportedReadOnly;
 import com.datasophon.api.service.ClusterServiceInstanceConfigService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ServiceInstallService;
@@ -32,11 +33,7 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 
-import jakarta.validation.Valid;
-
 import java.util.List;
-
-import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,6 +43,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * v2 服务配置读写接口（物理集群）。
@@ -60,16 +60,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v2/cluster/{clusterId}/service/instance/{instanceId}/config")
 public class ClusterServiceConfigV2Controller extends ApiController {
-    
+
     @Autowired
     private ClusterServiceInstanceConfigService configService;
-    
+
     @Autowired
     private ServiceInstallService serviceInstallService;
-    
+
     @Autowired
     private ClusterServiceInstanceService instanceService;
-    
+
     /**
      * 配置历史版本列表（降序）。
      *
@@ -84,7 +84,7 @@ public class ClusterServiceConfigV2Controller extends ApiController {
         List<Integer> versions = (List<Integer>) result.getData();
         return ApiResponse.ok(versions != null ? versions : List.of());
     }
-    
+
     /**
      * 按版本获取配置参数列表。
      *
@@ -103,7 +103,7 @@ public class ClusterServiceConfigV2Controller extends ApiController {
         List<ServiceConfig> configs = (List<ServiceConfig>) result.getData();
         return ApiResponse.ok(configs != null ? configs : List.of());
     }
-    
+
     /**
      * 保存配置（自动生成新版本号并打 needRestart 标记）。
      *
@@ -114,6 +114,7 @@ public class ClusterServiceConfigV2Controller extends ApiController {
      * @param instanceId  服务实例 ID
      * @param req         角色组 ID + 配置项列表
      */
+    @ImportedReadOnly("修改服务配置")
     @PostMapping
     public ApiResponse<Void> save(@PathVariable Integer clusterId,
                                   @PathVariable Integer instanceId,

@@ -43,18 +43,18 @@ import cn.hutool.core.collection.CollectionUtil;
 public class FrameK8sServiceServiceImpl extends ServiceImpl<FrameK8sServiceMapper, FrameK8sServiceEntity>
         implements
             FrameK8sServiceService {
-    
+
     private static final Logger log = LoggerFactory.getLogger(FrameK8sServiceServiceImpl.class);
-    
+
     @Autowired
     private FrameInfoService frameInfoService;
-    
+
     @Autowired
     private ClusterInfoMapper clusterInfoMapper;
-    
+
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
-    
+
     @Override
     public List<FrameK8sServiceEntity> listSimpleService(List<Integer> frameIds) {
         if (CollectionUtil.isEmpty(frameIds)) {
@@ -65,7 +65,7 @@ public class FrameK8sServiceServiceImpl extends ServiceImpl<FrameK8sServiceMappe
                 .select(FrameK8sServiceEntity::getServiceName, FrameK8sServiceEntity::getServiceVersion, FrameK8sServiceEntity::getFrameId)
                 .list();
     }
-    
+
     @Override
     public List<FrameK8sServiceEntity> getByFrameCode(String clusterFrame) {
         FrameInfoEntity frameInfo = frameInfoService.getByFrameCode(clusterFrame);
@@ -81,19 +81,23 @@ public class FrameK8sServiceServiceImpl extends ServiceImpl<FrameK8sServiceMappe
                         FrameK8sServiceEntity::getServiceDesc,
                         FrameK8sServiceEntity::getDependencies,
                         FrameK8sServiceEntity::getType,
-                        FrameK8sServiceEntity::getSupportArtifacts)
+                        FrameK8sServiceEntity::getSupportArtifacts,
+                        // 接管扫描（K8sTakeoverScanService.match / K8sCrScanner）复用 listNewest() 的
+                        // 结果做 Helm chart 名 / operator CR GVK 匹配，两者都要读 artifact 字段；
+                        // 不补这一列会导致 definition.getArtifact() 恒为 null，匹配逻辑静默失效。
+                        FrameK8sServiceEntity::getArtifact)
                 .list();
     }
-    
+
     @Override
     public List<FrameK8sServiceEntity> listNewest(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
         if (clusterInfo == null) {
             return Collections.emptyList();
         }
-        
+
         List<FrameK8sServiceEntity> list = getByFrameCode(clusterInfo.getClusterFrame());
-        
+
         // 对于每一个服务，只保留最新版本
         Map<String, FrameK8sServiceEntity> existEntity = new HashMap<>();
         list.forEach(newVal -> {
@@ -106,12 +110,12 @@ public class FrameK8sServiceServiceImpl extends ServiceImpl<FrameK8sServiceMappe
                 }
             }
         });
-        
+
         list = new ArrayList<>(existEntity.values());
         list.sort(Comparator.comparing(FrameK8sServiceEntity::getServiceName));
         return list;
     }
-    
+
     @Override
     public ServiceMetaItem getServiceMetaItem(Integer serviceId) {
         FrameK8sServiceEntity entity = getById(serviceId);
@@ -125,7 +129,7 @@ public class FrameK8sServiceServiceImpl extends ServiceImpl<FrameK8sServiceMappe
         item.setType(MetaStorage.K8S);
         return item;
     }
-    
+
     @Override
     public boolean removeById(Integer serviceId) {
         FrameK8sServiceEntity entity = getById(serviceId);
@@ -139,12 +143,12 @@ public class FrameK8sServiceServiceImpl extends ServiceImpl<FrameK8sServiceMappe
         if (count > 0) {
             throw new BusinessHintException(String.format("服务 %s 还存在%s个实例，无法删除", entity.getServiceName(), count));
         }
-        
+
         // 删除 nexus 的对应的 meta 相关文件
         FrameInfoEntity frameInfo = frameInfoService.getById(entity.getFrameId());
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         metaStorage.removeK8sMeta(frameInfo.getFrameCode(), entity.getServiceName());
-        
+
         // 删除 helm 相关文件 (如果有 chart 的话)
         if (entity.getSupportArtifacts() != null && entity.getSupportArtifacts().contains("helm")) {
             HelmStorage helmStorage = StorageUtils.getHelmStorage();

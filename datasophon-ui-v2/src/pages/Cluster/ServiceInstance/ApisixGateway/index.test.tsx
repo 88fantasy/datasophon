@@ -89,12 +89,16 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
   it('code view is usable standalone: loads text and saves it verbatim', async () => {
     mockGetResponse('routes:\n  - id: 1\n    uri: /get\n');
-    render(<ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />);
+    render(
+      <ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />,
+    );
 
     const editor = await screen.findByTestId('editor');
     expect(editor).toHaveValue('routes:\n  - id: 1\n    uri: /get\n');
 
-    fireEvent.change(editor, { target: { value: 'routes:\n  - id: 1\n    uri: /new\n' } });
+    fireEvent.change(editor, {
+      target: { value: 'routes:\n  - id: 1\n    uri: /new\n' },
+    });
     fireEvent.click(screen.getByText('pages.apisixGateway.save'));
 
     await waitFor(() =>
@@ -108,7 +112,9 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
   it('code -> graphic: unparsable YAML stays on code view and does not crash', async () => {
     mockGetResponse('not: [valid');
-    render(<ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />);
+    render(
+      <ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />,
+    );
     await screen.findByTestId('editor');
 
     fireEvent.mouseDown(screen.getByText('pages.apisixGateway.view.graphic'));
@@ -120,7 +126,9 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
   it('code -> graphic: valid YAML switches successfully', async () => {
     mockGetResponse('routes:\n  - id: 1\n    uri: /get\n');
-    render(<ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />);
+    render(
+      <ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />,
+    );
     await screen.findByTestId('editor');
 
     fireEvent.click(screen.getByText('pages.apisixGateway.view.graphic'));
@@ -131,7 +139,9 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
   it('graphic -> code (unchanged): reuses the original text verbatim, preserving comments/formatting', async () => {
     mockGetResponse(WITH_COMMENTS_TEXT);
-    render(<ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />);
+    render(
+      <ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />,
+    );
     await screen.findByTestId('editor');
 
     fireEvent.click(screen.getByText('pages.apisixGateway.view.graphic'));
@@ -145,7 +155,9 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
   it('graphic -> code (changed, no comments): dumps doc without confirmation', async () => {
     mockGetResponse('routes:\n  - id: 1\n    uri: /get\n');
-    render(<ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />);
+    render(
+      <ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />,
+    );
     await screen.findByTestId('editor');
 
     fireEvent.click(screen.getByText('pages.apisixGateway.view.graphic'));
@@ -163,7 +175,9 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
   it('graphic -> code (changed, has comments): asks for confirmation before dumping', async () => {
     mockGetResponse(WITH_COMMENTS_TEXT);
-    render(<ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />);
+    render(
+      <ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />,
+    );
     await screen.findByTestId('editor');
 
     fireEvent.click(screen.getByText('pages.apisixGateway.view.graphic'));
@@ -174,7 +188,8 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
     await waitFor(() =>
       expect(
-        screen.getAllByText('pages.apisixGateway.confirm.commentsLostTitle').length,
+        screen.getAllByText('pages.apisixGateway.confirm.commentsLostTitle')
+          .length,
       ).toBeGreaterThan(0),
     );
     // 确认前仍停在图形化视图，代码尚未被覆盖
@@ -187,12 +202,16 @@ describe('ApisixGatewayPanel view switch state machine', () => {
 
     const editor = await screen.findByTestId('editor');
     expect((editor as HTMLTextAreaElement).value).toContain('/added');
-    expect((editor as HTMLTextAreaElement).value).not.toContain('a real comment');
+    expect((editor as HTMLTextAreaElement).value).not.toContain(
+      'a real comment',
+    );
   });
 
   it('saves dump(doc) when currently on the graphic view', async () => {
     mockGetResponse('routes:\n  - id: 1\n    uri: /get\n');
-    render(<ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />);
+    render(
+      <ApisixGatewayPanel clusterId={CLUSTER_ID} instanceId={INSTANCE_ID} />,
+    );
     await screen.findByTestId('editor');
 
     fireEvent.click(screen.getByText('pages.apisixGateway.view.graphic'));

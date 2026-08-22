@@ -1,0 +1,74 @@
+package com.datasophon.api.dto.instance;
+
+import java.util.List;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+/** 接管流程的请求体。 */
+public class K8sTakeoverDTO {
+
+    /** 保存接管集群的 OTel Doris 数据源。 */
+    @Data
+    public static class DatasourceSave {
+
+        // host 会被 DorisDatasourceDiscoveryService.jdbcUrl 直接拼进 JDBC URL；
+        // 不限字符集会让 ? & # / 之类的连接串分隔符可控，等价于 JDBC 注入
+        // （如塞入 allowLoadLocalInfile 读取平台本地文件、autoDeserialize 反序列化）。
+        // 这里只放行 hostname / IPv4 / IPv6 会出现的字符。
+        @Schema(description = "Doris FE 主机，需平台可直连")
+        @NotBlank(message = "Doris 主机不能为空")
+        @Size(max = 253, message = "主机长度不能超过 253")
+        @Pattern(regexp = "[A-Za-z0-9.:\\[\\]-]+", message = "主机必须是合法的主机名或 IP 地址")
+        private String host;
+
+        @Schema(description = "MySQL 协议端口，缺省 9030")
+        @Min(value = 1, message = "端口范围为 1-65535")
+        @Max(value = 65535, message = "端口范围为 1-65535")
+        private Integer port;
+
+        @Schema(description = "只读账号密码")
+        @NotBlank(message = "密码不能为空")
+        private String password;
+    }
+
+    /** 提交接管登记。 */
+    @Data
+    public static class Register {
+
+        @Schema(description = "确认后的服务绑定关系")
+        @NotEmpty(message = "未选择要接管的服务")
+        private List<Binding> bindings;
+    }
+
+    @Data
+    public static class Binding {
+
+        @Schema(description = "Helm release 名")
+        @NotBlank(message = "release 名不能为空")
+        @Size(max = 253, message = "release 名长度不能超过 253")
+        @Pattern(regexp = "[a-z0-9]([-a-z0-9.]*[a-z0-9])?", message = "release 名必须是合法的 Kubernetes DNS 名称")
+        private String releaseName;
+
+        @Schema(description = "所在命名空间")
+        @NotBlank(message = "命名空间不能为空")
+        @Size(max = 63, message = "命名空间长度不能超过 63")
+        @Pattern(regexp = "[a-z0-9]([-a-z0-9]*[a-z0-9])?", message = "命名空间必须是合法的 Kubernetes DNS label")
+        private String namespace;
+
+        @Schema(description = "绑定到的框架服务定义 ID")
+        @NotNull(message = "未指定框架服务")
+        private Integer frameServiceId;
+
+        @Schema(description = "来源类型 HELM=Helm release CR=Operator 自定义资源；缺省 HELM，兼容旧前端")
+        @Pattern(regexp = "HELM|CR", message = "来源类型只支持 HELM 或 CR")
+        private String sourceKind;
+    }
+}

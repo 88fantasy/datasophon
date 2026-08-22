@@ -7,6 +7,7 @@ import {
   formatBytes,
   formatCompact,
 } from '../_shared/charts/formatters';
+import { metricsJobToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
@@ -62,7 +63,18 @@ const usAxisFormatter = (value: number) =>
 const resourceFormatter = (value: number) =>
   value > 1000 ? formatBytes(value) : percentFormatter(value);
 
-const JuiceFSMonitor: FC = () => {
+export interface JuiceFSMonitorProps {
+  clusterId?: number;
+  embedded?: boolean;
+  /** 接管实例登记的 metricsJob（逗号分隔）；不传时保持「全部 job」 */
+  job?: string;
+}
+
+const JuiceFSMonitor: FC<JuiceFSMonitorProps> = ({
+  clusterId = 1,
+  embedded = false,
+  job,
+}) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
@@ -92,7 +104,8 @@ const JuiceFSMonitor: FC = () => {
     useJuiceFSDashboard({
       variables,
       timeRange,
-      clusterId: 1,
+      clusterId,
+      job: metricsJobToRegex(job),
       refreshKey,
     });
 
@@ -105,7 +118,8 @@ const JuiceFSMonitor: FC = () => {
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title={title}
+      title={embedded ? undefined : title}
+      embedded={embedded}
       toolbar={
         <JuiceFSDashboardToolbar
           volume={selectedVolume}

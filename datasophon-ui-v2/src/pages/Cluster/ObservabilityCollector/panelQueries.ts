@@ -67,7 +67,11 @@ export const COLLECTOR_PANEL_QUERIES: Record<
         ['receiver', 'transport'],
         'refused',
       ),
-      ...signalRateQueries('otelcol_processor_dropped_', ['processor'], 'dropped'),
+      ...signalRateQueries(
+        'otelcol_processor_dropped_',
+        ['processor'],
+        'dropped',
+      ),
       {
         label: 'Filtered datapoints',
         metric: 'otelcol_processor_filter_datapoints_filtered',

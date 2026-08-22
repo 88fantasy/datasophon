@@ -118,7 +118,7 @@ const ConfigModalK8s: React.FC<Props> = ({
               <ProFormItem
                 name="kubeConfig"
                 label="配置文件内容"
-                rules={[{ required: true, message: '请输入 kubeconfig 内容' }]}
+                extra="已保存的 kubeconfig 不会回显；留空表示继续使用原配置"
               >
                 <Editor
                   height="300px"
@@ -145,7 +145,11 @@ const ConfigModalK8s: React.FC<Props> = ({
                 rules={REQUIRED}
               />
               {type === T_TOKEN && (
-                <ProFormTextArea name="token" label="Token" rules={REQUIRED} />
+                <ProFormTextArea
+                  name="token"
+                  label="Token"
+                  extra="已保存的 Token 不会回显；留空表示继续使用原 Token"
+                />
               )}
               {type === T_PASSWORD && (
                 <>
@@ -157,7 +161,7 @@ const ConfigModalK8s: React.FC<Props> = ({
                   <ProFormText.Password
                     name="password"
                     label="密码"
-                    rules={REQUIRED}
+                    extra="已保存的密码不会回显；留空表示继续使用原密码"
                   />
                 </>
               )}

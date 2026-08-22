@@ -1,0 +1,7 @@
+name: dolphinscheduler-helm
+version: "3.2.2"
+description: DolphinScheduler 调度平台
+type: MIDDLEWARE
+dependencies: []
+artifact:
+  helm: dolphinscheduler-helm-3.2.2.tgz

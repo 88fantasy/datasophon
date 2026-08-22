@@ -1,0 +1,7 @@
+name: ustream
+version: "1.0.0"
+description: ustream 流式计算服务（含 Flink History Server）
+type: APPLICATION
+dependencies: []
+artifact:
+  yaml: ustream.yaml

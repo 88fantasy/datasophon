@@ -6,8 +6,8 @@ import { useContext, useRef, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import FreshnessAlert from './FreshnessAlert';
 import LineageOverview, { LAYER_COLOR } from './LineageOverview';
-import { listTables } from './service';
 import type { NodeMeta, SnapshotFreshness, SourceFreshness } from './service';
+import { listTables } from './service';
 
 const DW_LAYERS = ['CDC', 'ODS', 'DWD', 'DIM', 'DWS', 'ADS', 'TMP'];
 
@@ -113,7 +113,10 @@ const LineageTableList: React.FC = () => {
         title={t('pages.lineage.overview.title', '分层概览')}
         style={{ marginBottom: 16 }}
       >
-        <LineageOverview clusterId={clusterId} refreshKey={overviewRefreshKey} />
+        <LineageOverview
+          clusterId={clusterId}
+          refreshKey={overviewRefreshKey}
+        />
       </Card>
       <ProTable<NodeMeta>
         actionRef={actionRef}

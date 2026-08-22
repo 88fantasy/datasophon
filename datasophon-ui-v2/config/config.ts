@@ -146,7 +146,10 @@ export default defineConfig({
       variant: 'filled',
       theme: {
         token: {
-          fontFamily: 'AlibabaSans, sans-serif',
+          // 与 src/global.less 中 body 的字体栈保持一致，避免 AlibabaSans 加载失败时
+          // 直接掉到 sans-serif，丢失完整的系统字体回退链
+          fontFamily:
+            "AlibabaSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'",
           // 以下 token 对齐监控平台设计稿的整体观感：更大的圆角、
           // 更柔和的卡片阴影、偏冷的浅灰底色。应用内容区没有接入
           // antd 的 darkAlgorithm（暗色仅切换 ProLayout 顶栏），

@@ -144,7 +144,7 @@ const K8sDashboard: React.FC = () => {
           style={{ marginBottom: 12 }}
           title={
             data.telemetry.message ??
-            'OTel 指标暂不可用，当前仅展示 K8s API 实时状态。'
+            '未采集到节点指标，当前仅展示 K8s API 实时状态。请确认集群内已部署节点指标采集器。'
           }
         />
       )}

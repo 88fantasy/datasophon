@@ -951,5 +951,40 @@ class OtelMetricsQueryServiceTest {
             OtelMetricsQueryService.appendAttrFilters(sb, Map.of("__proto__", "x"), null);
             assertThat(sb.toString()).isEmpty();
         }
+
+        @Test
+        void appendAttrFilters_absentKeyEmptyValue_appendsIsNullClause() {
+            // Doris 存算分离下 doris_fe_query_total 同时存在按 user/cluster_name 拆分的重复序列，
+            // 调用方传空值 filter 要求该属性键不存在，避免 SUM 时把重复序列一起加总。
+            StringBuilder sb = new StringBuilder();
+            Map<String, String> filters = new HashMap<>();
+            filters.put("user", "");
+            filters.put("cluster_name", "");
+            OtelMetricsQueryService.appendAttrFilters(sb, filters, null);
+            String s = sb.toString();
+            assertThat(s).contains("attributes['user'] IS NULL");
+            assertThat(s).contains("attributes['cluster_name'] IS NULL");
+            assertThat(s).doesNotContain(":af_user").doesNotContain(":af_cluster_name");
+        }
+
+        @Test
+        void appendAttrFilters_absentKeyNonEmptyValue_silentlyIgnored() {
+            // user/cluster_name 只支持"键不存在"这一种用法（空值），非空值时不在
+            // ALLOWED_ATTR_FILTER_KEYS 里，按既有白名单规则静默忽略。
+            StringBuilder sb = new StringBuilder();
+            OtelMetricsQueryService.appendAttrFilters(sb, Map.of("user", "root"), null);
+            assertThat(sb.toString()).isEmpty();
+        }
+
+        @Test
+        void allowedAbsentAttrKeys_disjointFromAllowedAttrFilterKeys() {
+            // ALLOWED_ABSENT_ATTR_KEYS 只用于"键不存在"判断，不能与普通等值过滤白名单重叠，
+            // 否则 user/cluster_name 这类危险字面量会混入 buildExtraSelect 的 SELECT 别名生成。
+            // 该断言同时保证 bindAttrFilterParams 对 user/cluster_name 天然不绑定参数
+            // （因为它检查的正是 ALLOWED_ATTR_FILTER_KEYS，与 appendAttrFilters 生成的
+            // IS NULL 子句（无占位符）行为一致，无需改动 bindAttrFilterParams 本身）。
+            assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                    .doesNotContainAnyElementsOf(OtelMetricsQueryService.ALLOWED_ABSENT_ATTR_KEYS);
+        }
     }
 }

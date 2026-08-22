@@ -15,8 +15,9 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 @Mapper
 public interface K8sServiceInstanceMapper extends BaseMapper<K8sServiceInstance> {
-    
+
     List<K8sServiceInstanceVO> selectInstanceList(@Param("clusterId") Integer clusterId, @Param("namespace") String namespace);
-    
+
     List<K8sServiceInstanceVO> selectByIds(@Param("instanceIds") List<Integer> instanceIds);
+
 }

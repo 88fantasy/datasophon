@@ -1,10 +1,12 @@
 import {
   ModalForm,
+  ProFormDependency,
+  ProFormRadio,
   ProFormSelect,
   ProFormText,
 } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
-import { message } from 'antd';
+import { Alert, message } from 'antd';
 import { createCluster, listFrames, updateCluster } from '@/services/cluster';
 
 interface Props {
@@ -58,8 +60,9 @@ const BuildOrEditModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
               clusterCode: cluster.clusterCode,
               frameId: cluster.frameId,
               archType: cluster.archType,
+              manageMode: cluster.manageMode ?? 'MANAGED',
             }
-          : { archType: 'physical' }
+          : { archType: 'physical', manageMode: 'MANAGED' }
       }
       onFinish={handleFinish}
       modalProps={{ destroyOnHidden: true }}
@@ -90,6 +93,38 @@ const BuildOrEditModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
         options={archOptions}
         rules={[{ required: true, message: '请选择集群类型' }]}
       />
+      {/* 接管模式只对 K8s 集群有意义：物理集群由平台逐节点安装，没有「已存在的集群」可接管 */}
+      <ProFormDependency name={['archType']}>
+        {({ archType }) =>
+          archType === 'k8s' ? (
+            <>
+              <ProFormRadio.Group
+                name="manageMode"
+                label="创建方式"
+                radioType="button"
+                options={[
+                  { label: '新建集群', value: 'MANAGED' },
+                  { label: '接管现有集群', value: 'IMPORTED' },
+                ]}
+                rules={[{ required: true, message: '请选择创建方式' }]}
+              />
+              <ProFormDependency name={['manageMode']}>
+                {({ manageMode }) =>
+                  manageMode === 'IMPORTED' ? (
+                    <Alert
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 24 }}
+                      message="接管模式为只读监控"
+                      description="创建后需配置集群连接与 Doris 数据源，再扫描并登记已存在的服务。平台不会向该集群下发任何变更。"
+                    />
+                  ) : null
+                }
+              </ProFormDependency>
+            </>
+          ) : null
+        }
+      </ProFormDependency>
     </ModalForm>
   );
 };
