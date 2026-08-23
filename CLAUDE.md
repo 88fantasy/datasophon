@@ -25,6 +25,7 @@ Datasophon 是大数据 / 云原生平台自动化部署与运维管理系统,�
 | `datasophon-ui-v2` | `datasophon-ui-v2/` | **当前默认前端**(Umi Max 4 + antd 6 + ProComponents 3) | 静态资源;`npm run build`;Node ≥ 22,npm + Biome(禁 pnpm/yarn/ESLint/Prettier) | 开发服务器 `8000` |
 | `datasophon-ui` | `datasophon-ui/` | 旧前端(React 19 + Vite + pnpm),已从 Maven 模块列表移除 | 仅历史参考,不再迭代 | `5180` |
 | `datasophon-assembly` | `datasophon-assembly/` | Maven 顶层 assembly 打包模块 | 纯 `pom` 模块,无 Java 源码;`target/datasophon-<version>-package.tar.gz` | — |
+| `datasophon-flink-metrics-otel` | `datasophon-flink-metrics-otel/` | Flink 1.20.x OTLP metrics reporter | 独立 Maven 工程;shaded Flink plugin jar,不在根 reactor | — |
 
 > 顶层 `pom.xml` 当前模块列表:`datasophon-common` → `datasophon-grpc-api` → `datasophon-worker` → `datasophon-cli-go` → `datasophon-ui-v2` → `datasophon-api` → `datasophon-k8s-agent` → `datasophon-assembly`(后者 `package` 依赖前面所有 `tar.gz` 产物)。
 
@@ -92,6 +93,13 @@ Flink 集群的作业壳 jar,`./mvnw test` **跑不到它的测试**。改动该
 ```bash
 ./mvnw -f datasophon-lineage-emitter/pom.xml test        # 21 个单元测试
 ./mvnw -f datasophon-lineage-emitter/pom.xml package     # Flink 2.0;-Pflink-1.20 切 1.20
+```
+
+**`datasophon-flink-metrics-otel` 同样不在根 reactor**。改动后必须显式验证 Flink 1.20.x 版本：
+
+```bash
+./mvnw -f datasophon-flink-metrics-otel/pom.xml clean verify
+./mvnw -f datasophon-flink-metrics-otel/pom.xml clean verify -Dflink.version=1.20.4
 ```
 
 ### 3.3 前端(`datasophon-ui-v2`,当前默认)
@@ -235,6 +243,7 @@ datasophon/
 ├── datasophon-ui-v2/             # 前端(当前默认,Umi Max + npm + Biome)
 ├── datasophon-ui/                # 旧前端(pnpm + Vite,已停止迭代)
 ├── datasophon-assembly/          # 顶层 assembly 打包
+├── datasophon-flink-metrics-otel/ # Flink 1.20.x OTLP metrics plugin(独立 Maven 工程)
 ├── deploy/                       # compose / docker / k8s 部署资产
 ├── .mcp.json                     # MCP 服务声明
 └── CLAUDE.md                     # 本文件

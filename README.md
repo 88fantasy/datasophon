@@ -63,8 +63,9 @@ flowchart LR
 | `datasophon-ui-v2` | 当前默认 Web 前端 | Umi Max 静态资源，内嵌到 Manager 包 | 开发端口 `8000` |
 | `datasophon-k8s-agent` | 集群内签名鉴权执行边界 | Spring Boot Pod、Docker 镜像和 Helm Chart | HTTP `12552`，默认 NodePort `32552` |
 | `datasophon-assembly` | 汇总 Manager、Worker 和 CLI 交付物 | `datasophon-<version>-package.tar.gz` | — |
+| `datasophon-flink-metrics-otel` | 将 Flink 1.20.x 指标通过 OTLP/gRPC 导出到 OTel Collector | Flink metrics plugin shaded jar | — |
 
-`datasophon-ai-agent` 和 `datasophon-lineage-emitter` 是独立工程，不在根 Maven reactor 中。详细设计见 [系统架构文档](./docs/ARCHITECTURE.md)。
+`datasophon-ai-agent`、`datasophon-lineage-emitter` 和 `datasophon-flink-metrics-otel` 是独立工程，不在根 Maven reactor 中。详细设计见 [系统架构文档](./docs/ARCHITECTURE.md)。
 
 ## 技术栈
 
@@ -214,6 +215,7 @@ datasophon/
 ├── datasophon-assembly/            # 最终交付包
 ├── datasophon-ai-agent/            # 可选 AI sidecar（独立 Node 工程）
 ├── datasophon-lineage-emitter/      # 独立 Flink lineage emitter
+├── datasophon-flink-metrics-otel/   # Flink 1.20.x OTLP metrics plugin
 ├── package/                         # 安装包清单与运行期元数据
 ├── deploy/                          # Compose、Docker、K8s 部署资产
 └── docs/                            # 架构、OpenAPI、血缘及实施文档
