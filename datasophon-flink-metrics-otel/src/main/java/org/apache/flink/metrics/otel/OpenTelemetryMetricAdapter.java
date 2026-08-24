@@ -42,9 +42,13 @@ import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.Histogram;
 import org.apache.flink.metrics.HistogramStatistics;
 import org.apache.flink.metrics.Meter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Converts Flink metrics to OpenTelemetry metric data. */
 final class OpenTelemetryMetricAdapter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(OpenTelemetryMetricAdapter.class);
 
     private static final InstrumentationScopeInfo INSTRUMENTATION_SCOPE_INFO =
             InstrumentationScopeInfo.create("io.confluent.flink.common.metrics");
@@ -58,6 +62,11 @@ final class OpenTelemetryMetricAdapter {
             MetricMetadata metadata) {
         long delta = count - previousCount;
         if (delta < 0) {
+            LOG.warn(
+                    "Non-monotonic counter {}: current count {} is less than previous count {}",
+                    metadata.getName(),
+                    count,
+                    previousCount);
             return Optional.empty();
         }
         return Optional.of(
@@ -82,6 +91,11 @@ final class OpenTelemetryMetricAdapter {
             CollectionMetadata collection, Gauge<?> gauge, MetricMetadata metadata) {
         Object value = gauge.getValue();
         if (!(value instanceof Number)) {
+            LOG.debug(
+                    "Couldn't adapt gauge {} with non-numeric value {} of type {}",
+                    metadata.getName(),
+                    value,
+                    value == null ? "null" : value.getClass().getName());
             return Optional.empty();
         }
         Number number = (Number) value;

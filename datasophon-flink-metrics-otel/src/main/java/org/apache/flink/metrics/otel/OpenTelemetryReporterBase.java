@@ -28,7 +28,7 @@ import org.apache.flink.metrics.MetricConfig;
 abstract class OpenTelemetryReporterBase {
 
     protected Resource resource = Resource.getDefault();
-    protected MetricExporter exporter;
+    protected volatile MetricExporter exporter;
 
     protected void open(MetricConfig config) {
         AttributesBuilder attributes = io.opentelemetry.api.common.Attributes.builder();

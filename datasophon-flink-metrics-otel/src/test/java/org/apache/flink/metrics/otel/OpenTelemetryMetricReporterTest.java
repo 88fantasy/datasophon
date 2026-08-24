@@ -20,21 +20,27 @@ package org.apache.flink.metrics.otel;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
+import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.flink.metrics.CharacterFilter;
@@ -225,6 +231,54 @@ class OpenTelemetryMetricReporterTest {
 
         assertDoesNotThrow(() -> reporter.notifyOfRemovedMetric(counter, "records", group));
         assertTrue(reporter.collectAllMetrics().isEmpty());
+    }
+
+    @Test
+    void initializesCollectionStartTimeOnOpenInsteadOfEpochZero() {
+        Instant openedAt = Instant.parse("2026-08-24T10:15:30.123456789Z");
+        OpenTelemetryMetricReporter reporter =
+                new OpenTelemetryMetricReporter(Clock.fixed(openedAt, ZoneOffset.UTC));
+        MetricConfig config = new MetricConfig();
+        config.setProperty("exporter.endpoint", "http://127.0.0.1:4317");
+        reporter.open(config);
+        SimpleCounter counter = new SimpleCounter();
+        counter.inc(5L);
+        reporter.notifyOfAddedMetric(counter, "records", new TestMetricGroup());
+
+        LongPointData point =
+                onlyMetric(reporter.collectAllMetrics())
+                        .getLongSumData()
+                        .getPoints()
+                        .iterator()
+                        .next();
+
+        long openedAtNanos =
+                TimeUnit.SECONDS.toNanos(openedAt.getEpochSecond()) + openedAt.getNano();
+        assertEquals(openedAtNanos, point.getStartEpochNanos());
+        assertEquals(openedAtNanos, point.getEpochNanos());
+        reporter.close();
+    }
+
+    @Test
+    void stopsExportingAfterCloseAndClosesIdempotently() {
+        OpenTelemetryMetricReporter reporter = new OpenTelemetryMetricReporter();
+        RecordingMetricExporter exporter = new RecordingMetricExporter();
+        reporter.exporter = exporter;
+        SimpleCounter counter = new SimpleCounter();
+        counter.inc(3L);
+        reporter.notifyOfAddedMetric(counter, "records", new TestMetricGroup());
+
+        reporter.close();
+        assertTrue(exporter.shutdown);
+
+        // Flink shuts the reporter scheduler down only after close(), so a queued report() must
+        // neither throw nor export. Clearing the exporter reference instead would turn that
+        // report() into a NullPointerException that report()'s own catch block hides, so assert
+        // the reference survives rather than relying on the absence of a throw.
+        assertSame(exporter, reporter.exporter);
+        assertDoesNotThrow(reporter::report);
+        assertTrue(exporter.exported.isEmpty());
+        assertDoesNotThrow(reporter::close);
     }
 
     private static MetricData onlyMetric(Collection<MetricData> metrics) {

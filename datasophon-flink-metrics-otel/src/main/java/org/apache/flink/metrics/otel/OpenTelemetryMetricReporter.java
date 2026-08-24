@@ -22,6 +22,7 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.MetricData;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.internal.export.MetricProducer;
 import java.time.Clock;
 import java.time.Instant;
@@ -60,7 +61,8 @@ public class OpenTelemetryMetricReporter extends OpenTelemetryReporterBase
     private final Clock clock;
     private Map<Metric, Long> lastValueSnapshots = Collections.emptyMap();
     private long lastCollectTimeNanos;
-    private CompletableResultCode lastResult;
+    private volatile CompletableResultCode lastResult;
+    private volatile boolean closed;
 
     public OpenTelemetryMetricReporter() {
         this(Clock.systemUTC());
@@ -71,25 +73,36 @@ public class OpenTelemetryMetricReporter extends OpenTelemetryReporterBase
     }
 
     @Override
-    public void open(MetricConfig config) {
+    public synchronized void open(MetricConfig config) {
+        LOG.info("Starting OpenTelemetryMetricReporter");
         super.open(config);
         OtlpGrpcMetricExporterBuilder builder = OtlpGrpcMetricExporter.builder();
         OpenTelemetryReporterOptions.configureEndpoint(config, builder::setEndpoint);
         OpenTelemetryReporterOptions.configureTimeout(config, builder::setTimeout);
         exporter = builder.build();
+        // Deltas are reported over [lastCollectTimeNanos, now]. Leaving this at 0 would make the
+        // first exported point claim a collection interval starting at 1970-01-01.
+        lastCollectTimeNanos = currentTimeNanos();
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
         if (exporter == null) {
             return;
         }
         exporter.flush().join(1, TimeUnit.MINUTES);
-        if (lastResult != null) {
-            lastResult.join(1, TimeUnit.MINUTES);
+        CompletableResultCode result = lastResult;
+        if (result != null) {
+            result.join(1, TimeUnit.MINUTES);
         }
+        // The exporter reference is deliberately kept: a report() already queued by Flink's
+        // reporter scheduler, which is only shut down after close(), must hit a closed exporter
+        // returning a failed result instead of a NullPointerException.
         exporter.close();
-        exporter = null;
     }
 
     @Override
@@ -104,6 +117,11 @@ public class OpenTelemetryMetricReporter extends OpenTelemetryReporterBase
             meters.put((Meter) metric, metadata);
         } else if (metric instanceof Histogram) {
             histograms.put((Histogram) metric, metadata);
+        } else {
+            LOG.warn(
+                    "Cannot add metric {} of unsupported type {}",
+                    metricName,
+                    metric.getClass().getName());
         }
     }
 
@@ -164,9 +182,13 @@ public class OpenTelemetryMetricReporter extends OpenTelemetryReporterBase
 
     @Override
     public void report() {
+        MetricExporter currentExporter = exporter;
+        if (closed || currentExporter == null) {
+            return;
+        }
         Collection<MetricData> metrics = collectAllMetrics();
         try {
-            CompletableResultCode result = exporter.export(metrics);
+            CompletableResultCode result = currentExporter.export(metrics);
             lastResult = result;
             result.whenComplete(
                     () -> {

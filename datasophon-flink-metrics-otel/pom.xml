@@ -61,7 +61,8 @@ limitations under the License.
       <artifactId>opentelemetry-sdk</artifactId>
       <version>${opentelemetry.version}</version>
     </dependency>
-    <!-- Flink 2.0.2 pins the Java-only 3.14 line; this keeps the shaded plugin free of Kotlin runtime dependencies. -->
+    <!-- OpenTelemetry 1.30.1 resolves OkHttp 4.x, which drags the Kotlin runtime into the shaded
+         plugin. Pinning the Java-only 3.14 line, as upstream flink-metrics-otel does, avoids it. -->
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
