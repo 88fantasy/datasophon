@@ -224,3 +224,47 @@ Doris 网络优先级固定 `fe_priority_networks=192.168.10.0/24`、`be_priorit
 ## 5. 后续：阶段 B Hadoop 扩展
 
 阶段 B 单独规划并审批 HDFS、YARN、Hive、Spark3、Kyuubi 的角色、磁盘、端口和容量。完成前不得将 Kyuubi 计入阶段 A 的「无 Hadoop」验收。
+
+---
+
+## 6. Flink 1.20.x OTLP metrics reporter 验证（2026-08-23）
+
+本节记录 `datasophon-flink-metrics-otel` 的独立现场验证，不改写 §3～§4 的历史升级过程。验证时 Doris 当前状态为 `1 FE + 3 BE` 全部 Alive，版本均为 `doris-4.1.3-rc02-7126cf65d96`。
+
+### 6.1 验证拓扑与隔离措施
+
+| 项 | 验证值 |
+|---|---|
+| Flink | `ddh-02`，Flink `1.20.4` standalone 临时集群 |
+| Reporter | `datasophon-flink-metrics-otel/target/flink-metrics-otel-1.20-1.0.0-SNAPSHOT.jar` |
+| Reporter SHA-256 | `75ac35b2a8effd1874386bc268f65ce5acf86c079d24b11eaef5c95bd4243599` |
+| OTLP 接收端 | `ddh-02:4317`，OTel Collector `0.156.0` |
+| Doris 查询端 | `ddh-01:9030`，数据库 `otel` |
+| 唯一资源标识 | `service.name=flink-120-otel-final-20260823-1701` |
+| 隔离端口 | REST `18091`；RPC/data/blob `16122`～`16125` |
+
+临时集群从现有 Flink 1.20.4 安装目录复制，但使用独立配置、PID、日志、checkpoint 和端口；未停止或修改现有 `flink-cluster-cdc`。Reporter 以 Flink plugin 方式放入 `plugins/metrics-otel/`，JobManager 与 TaskManager 日志均确认以 5 秒周期加载 `org.apache.flink.metrics.otel.OpenTelemetryMetricReporter`。
+
+### 6.2 验证结果
+
+| 检查项 | 结果 | 证据 |
+|---|---|---|
+| Flink plugin SPI 加载 | PASSED | JobManager/TaskManager 均创建 `metrics-otel` plugin loader，无 `ClassNotFoundException` / `NoClassDefFoundError` |
+| OTLP/gRPC → Collector → Doris | PASSED | 唯一 `service.name` 最终写入 Gauge `1033` 行、Sum `84` 行 |
+| Counter/Meter 语义 | PASSED | Sum 行为 `aggregation_temporality=Delta`、`is_monotonic=1` |
+| 指标命名 | PASSED | Doris 可见 `flink.jobmanager.*`、`flink.taskmanager.*` 点分逻辑作用域名称 |
+| 作业属性 | PASSED | 内置 `StateMachineExample` 作业 `7aec49673f177729fecd40cb28d42c83` 产生 `207` 条含 `job_id` 的 Gauge 行，同时包含 `job_name`、`host` |
+| 导出错误 | PASSED | 临时集群日志无 OTLP 导出失败；Collector 日志无该 `service.name` 对应 error/warn |
+| 兼容性构建 | PASSED | Flink `1.20.0`、`1.20.4`、`1.20.5` 均完成 `clean verify` |
+
+验证完成后已取消示例作业、停止临时集群，并删除 `/data/install_datasophon/flink-otel-final-20260823-1701`。临时端口全部释放；现有 Flink 1.20.4 CDC 集群 REST `8081` 仍为 1 个 TaskManager、4 个可用 slot，原 JobManager/TaskManager 进程保持运行。Doris 中带唯一 `service.name` 的验收数据作为链路证据保留。
+
+### 6.3 验证覆盖边界与后续事项
+
+以下三点在本次现场验证中**未覆盖**，记录于此避免被 §6.2 的 `PASSED` 结论掩盖：
+
+1. **Histogram → Summary 链路未验证。** §6.2 只观测到 Gauge 与 Sum 两类数据行，无 Summary 行。`otel_metrics_summary` 此前有过 quantile 相关缺陷,该路径需单独补验。
+2. **jar 指纹已失效。** §6.1 记录的 SHA-256 对应代码评审整改**之前**的构建产物。整改（关闭期竞态、`lastCollectTimeNanos` 初始化、日志恢复、NOTICE 补全）后 jar 内容已变，重新部署前须重新构建、重新记录指纹并复验本节链路。
+3. **尚未接入平台自动分发。** `FLINK/service_ddl.json` 无 `metrics.reporter` 相关参数，Worker 侧无下发逻辑,`package/` 未纳入该 jar。当前只能人工将 jar 放入各节点 `$FLINK_HOME/plugins/metrics-otel/`；纳入平台受管部署需单独规划。
+
+**结论：`PASSED`(范围以 §6.2 表格所列检查项为准,不含 §6.3 所列未覆盖项)。** Flink 1.20.x reporter 可按 Flink 2.0 的 metrics OTLP 契约运行，并在本环境完成 Flink → OTLP/gRPC → OTel Collector → Doris 的真实链路验证。

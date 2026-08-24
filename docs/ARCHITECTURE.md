@@ -90,10 +90,13 @@ flowchart LR
 | `datasophon-common`    | 公共库(K8s 客户端、模型、命令消息、Nexus) | 库,无进程                   | —                            | fabric8 K8s client、fastjson2、Jackson          |
 | `datasophon-cli-go`    | 节点初始化 CLI                  | Go 二进制 `datasophon-cli` | —                            | Go 1.21、Cobra、`golang.org/x/crypto/ssh`       |
 | `datasophon-k8s-agent` | K8s 内 Agent                | Spring Boot Web         | HTTP(可配置)                    | RSA 签名鉴权                                      |
+| `datasophon-flink-metrics-otel` | Flink 1.20.x OTLP 指标插件 | Flink plugin shaded jar | — | Flink Metrics SPI、OpenTelemetry OTLP/gRPC |
 | `datasophon-ui`        | 前端                         | 静态资源,Nginx/Spring 静态服务  | —                            | React 19、Antd 6、Antd Pro 2.8、Vite、pnpm        |
 | `datasophon-cli`(Java) | **历史遗留**,逐步被 `cli-go` 替代   | 命令行                     | —                            | 仅用于兼容                                         |
 
 > ⚠️ **Pekko(原 Akka)已于 2026-05-23 完全移除**(commit `d0b93b09`)。Master↔Worker 跨进程通信改为 gRPC,Master 内部本地调度改为 Spring `@Async` / `@Scheduled`。后文涉及"原 Actor"字样均为代码注释中的历史脚注,不再真实存在。
+
+`datasophon-flink-metrics-otel` 与 `datasophon-lineage-emitter` 不加入根 Maven reactor，需使用各自的 `pom.xml` 独立构建。前者保留 Flink 2.0 `flink-metrics-otel` 的 factory/config 契约，仅向 Flink 1.20.x 回移 metrics reporter，不包含 Flink 2.x trace reporter SPI。
 
 ### 3.2 datasophon-api 包结构
 
@@ -476,6 +479,7 @@ erDiagram
 | datasophon-worker    | `target/` 包含可执行脚本 + 全量 jar                                             |
 | datasophon-cli-go    | `dist/datasophon-cli-{linux,darwin}-{amd64,arm64}`                     |
 | datasophon-k8s-agent | Docker 镜像(`docker/`)+ Helm Chart(`helm/`)                              |
+| datasophon-flink-metrics-otel | `target/flink-metrics-otel-1.20-<version>.jar`（独立构建的 shaded plugin） |
 
 ### 7.2 部署形态
 

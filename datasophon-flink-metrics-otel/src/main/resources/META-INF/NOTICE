@@ -1,0 +1,25 @@
+Datasophon Flink 1.20 OpenTelemetry Metrics Reporter
+Copyright 2024-2026 Datasophon Contributors
+
+This product contains a backport derived from Apache Flink's
+flink-metrics-otel module.
+
+Apache Flink
+Copyright 2014-2026 The Apache Software Foundation
+
+The derived source is used under the Apache License, Version 2.0.
+
+This product bundles the following third-party dependencies into the shaded
+plugin jar. Each is licensed under the Apache License, Version 2.0.
+
+OpenTelemetry Java (io.opentelemetry) 1.30.1 / 1.30.1-alpha
+Copyright The OpenTelemetry Authors
+https://github.com/open-telemetry/opentelemetry-java
+
+OkHttp (com.squareup.okhttp3) 3.14.9
+Copyright Square, Inc.
+https://github.com/square/okhttp
+
+Okio (com.squareup.okio) 1.17.2
+Copyright Square, Inc.
+https://github.com/square/okio
