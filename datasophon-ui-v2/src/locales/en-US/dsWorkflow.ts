@@ -30,6 +30,8 @@ export default {
   'dsWorkflow.metric.rows': 'rows',
   'dsWorkflow.metric.rate': 'row/s',
   'dsWorkflow.metric.approximate': 'approx.',
+  'dsWorkflow.metric.processed': 'Processed approx.',
+  'dsWorkflow.metric.items': 'rows',
   'dsWorkflow.metric.unavailable': '—',
   'dsWorkflow.error.tokenMissing':
     'Configure apiToken in the DS service settings',

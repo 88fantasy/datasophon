@@ -57,7 +57,36 @@ export default {
   'GET /ddh/api/v2/cluster/7/service/instance/34/role/webuis': (_req: Request, res: Response) => {
     res.json({ success: true, data: [] });
   },
-  'GET /ddh/api/v2/ds/projects': (_req: Request, res: Response) => {
+  'GET /ddh/api/v2/ds/projects': (req: Request, res: Response) => {
+    const failure = req.headers.cookie
+      ?.split(';')
+      .map((item) => item.trim())
+      .find((item) => item.startsWith('dsMockFailure='))
+      ?.split('=')[1];
+    if (failure === 'token-missing') {
+      res.json({
+        success: false,
+        errorCode: 400,
+        errorMessage: '请在 DS 服务配置中填写 apiToken',
+      });
+      return;
+    }
+    if (failure === 'token-invalid') {
+      res.status(401).json({
+        success: false,
+        errorCode: 401,
+        errorMessage: 'DS apiToken 已失效',
+      });
+      return;
+    }
+    if (failure === 'unavailable') {
+      res.status(502).json({
+        success: false,
+        errorCode: 502,
+        errorMessage: 'DS Open API 不可达或请求超时',
+      });
+      return;
+    }
     res.json({
       success: true,
       data: { list: projects, total: projects.length, pageNo: 1, pageSize: 200 },
@@ -195,6 +224,8 @@ export default {
               jobName: 'ds-7-830003-synthetic-stream',
               rowsPerSecond: 22.8,
               approximate: true,
+              processedApprox: 1234567,
+              since: '2026-08-25T11:00:36Z',
             },
           },
         ],

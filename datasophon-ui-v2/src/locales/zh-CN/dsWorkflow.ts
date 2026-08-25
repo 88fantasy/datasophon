@@ -29,6 +29,8 @@ export default {
   'dsWorkflow.metric.rows': '行',
   'dsWorkflow.metric.rate': 'row/s',
   'dsWorkflow.metric.approximate': '约',
+  'dsWorkflow.metric.processed': '已处理约',
+  'dsWorkflow.metric.items': '条',
   'dsWorkflow.metric.unavailable': '—',
   'dsWorkflow.error.tokenMissing': '请在 DS 服务配置中填写 apiToken',
   'dsWorkflow.error.tokenInvalid': 'DS apiToken 已失效',

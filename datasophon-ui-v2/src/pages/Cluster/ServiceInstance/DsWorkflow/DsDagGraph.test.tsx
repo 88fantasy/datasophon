@@ -81,7 +81,12 @@ describe('DsDagGraph node labels', () => {
           flowType: 'STREAM',
           durationSeconds: 1,
           retryTimes: 0,
-          metrics: { kind: 'STREAM', rowsPerSecond: 0, approximate: true },
+          metrics: {
+            kind: 'STREAM',
+            rowsPerSecond: 0,
+            approximate: true,
+            processedApprox: 1234567,
+          },
         },
         {
           taskCode: 3,
@@ -109,8 +114,13 @@ describe('DsDagGraph node labels', () => {
     expect(labelText({ data: dag.nodes[0] })).toContain('700 行 / 1 KB');
     expect(labelText({ data: dag.nodes[0] })).toContain('+1');
     expect(labelText({ data: dag.nodes[1] })).toContain('0.0 row/s');
-    expect(labelText({ data: dag.nodes[2] })).toMatch(/—$/);
-    expect(options?.node.style.labelMaxLines).toBe(6);
+    expect(labelText({ data: dag.nodes[1] })).toContain(
+      'dsWorkflow.metric.processed 1,234,567 dsWorkflow.metric.items',
+    );
+    expect(labelText({ data: dag.nodes[2] })).toContain(
+      'dsWorkflow.error.notBound',
+    );
+    expect(options?.node.style.labelMaxLines).toBe(7);
     expect(
       options?.data.nodes.map((node: { id: string }) => node.id),
     ).not.toContain('0');

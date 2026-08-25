@@ -205,4 +205,35 @@ describe('DsWorkflowPanel tree table', () => {
       expect(getDsWorkflows).toHaveBeenCalledWith(7, 1002, 1, 20, undefined),
     );
   });
+
+  it.each([
+    [
+      {
+        info: {
+          errorCode: 400,
+          errorMessage: '请在 DS 服务配置中填写 apiToken',
+        },
+      },
+      'dsWorkflow.error.tokenMissing',
+    ],
+    [
+      { response: { status: 401, data: { errorMessage: 'DS apiToken 已失效' } } },
+      'dsWorkflow.error.tokenInvalid',
+    ],
+    [
+      {
+        response: {
+          status: 502,
+          data: { errorMessage: 'DS Open API 不可达或请求超时' },
+        },
+      },
+      'dsWorkflow.error.unavailable',
+    ],
+  ])('shows a distinct inline error for %j', async (requestError, expected) => {
+    vi.mocked(getDsProjects).mockRejectedValueOnce(requestError);
+
+    render(<DsWorkflowPanel clusterId={7} instanceId={33} />);
+
+    expect(await screen.findByText(expected)).toBeInTheDocument();
+  });
 });

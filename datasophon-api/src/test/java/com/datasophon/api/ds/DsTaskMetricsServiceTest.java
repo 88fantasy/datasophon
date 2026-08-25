@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.datasophon.api.ds.DsStreamMetricRepository.StreamMetricCursor;
 import com.datasophon.api.dto.v2.DsDagNodeVO;
 import com.datasophon.api.dto.v2.DsTaskMetricsVO;
 import com.datasophon.api.lineage.proxy.GravitinoLineageClient;
@@ -49,6 +50,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,8 +64,9 @@ class DsTaskMetricsServiceTest {
 
     private final GravitinoLineageClient lineageClient = mock(GravitinoLineageClient.class);
     private final OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
+    private final DsStreamMetricAccumulator streamMetricAccumulator = mock(DsStreamMetricAccumulator.class);
     private final DsTaskMetricsService service = new DsTaskMetricsService(
-            lineageClient, queryService, Clock.fixed(NOW, ZoneOffset.UTC));
+            lineageClient, queryService, streamMetricAccumulator, Clock.fixed(NOW, ZoneOffset.UTC));
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
@@ -79,6 +82,8 @@ class DsTaskMetricsServiceTest {
                 anyMap(), anyMap(), anyMap(), anyMap(), anyList(), anyLong(), anyLong(), anyLong(),
                 anyString(), anyDouble(), isNull()))
                 .thenReturn(PrometheusMatrixResult.of(List.of()));
+        when(streamMetricAccumulator.registerAndRead(anyInt(), anyString(), anyString()))
+                .thenReturn(Optional.empty());
     }
 
     @Test
@@ -119,6 +124,9 @@ class DsTaskMetricsServiceTest {
                 .thenReturn(PrometheusMatrixResult.of(List.of(
                         new MatrixSeries(Map.of("job_id", JOB_ID),
                                 List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "22.8"})))));
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName))
+                .thenReturn(Optional.of(new StreamMetricCursor(
+                        7, JOB_ID, jobName, NOW.minusSeconds(600), NOW, 1234)));
 
         DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
 
@@ -127,6 +135,8 @@ class DsTaskMetricsServiceTest {
         assertThat(metrics.getJobName()).isEqualTo(jobName);
         assertThat(metrics.getRowsPerSecond()).isEqualTo(22.8);
         assertThat(metrics.getApproximate()).isTrue();
+        assertThat(metrics.getProcessedApprox()).isEqualTo(1234);
+        assertThat(metrics.getSince()).isEqualTo("2026-08-25T05:50:00Z");
         verify(queryService).queryRangeSum(eq(7),
                 eq("flink.taskmanager.job.task.operator.numRecordsOut"), isNull(), eq(1.0 / 60),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),

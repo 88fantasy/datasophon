@@ -27,11 +27,13 @@ import com.datasophon.api.observability.PrometheusVectorResult.VectorSample;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.dao.enums.ServiceRoleState;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -283,6 +285,55 @@ public class OtelMetricsQueryService {
                                                 String table, double quantile, String field) {
         return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
                 filtersRegex, filtersNotRegex, groupByKeys, start, end, step, table, quantile, field, true);
+    }
+
+    /** Returns the first observed sample for one Flink job. */
+    public Optional<Instant> queryFirstSampleAt(Integer clusterId, String metric, String jobId, String table) {
+        String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
+        Map<String, Object> row = createReader(clusterId).sql("""
+                SELECT MIN(timestamp) AS first_sample
+                FROM otel.%s
+                WHERE metric_name = :metric AND attributes['job_id'] = :jobId
+                """.formatted(otelTable))
+                .param("metric", metric)
+                .param("jobId", jobId)
+                .query()
+                .singleRow();
+        Object value = row.get("first_sample");
+        if (value instanceof java.sql.Timestamp timestamp) {
+            return Optional.of(timestamp.toInstant());
+        }
+        if (value instanceof java.time.LocalDateTime localDateTime) {
+            return Optional.of(localDateTime.toInstant(java.time.ZoneOffset.UTC));
+        }
+        return Optional.empty();
+    }
+
+    /** Sums OTLP delta samples in the half-open interval {@code [start, end)}. */
+    public DeltaSummary queryDeltaSummary(Integer clusterId, String metric, String jobId,
+                                          Instant start, Instant end, String table) {
+        String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
+        Map<String, Object> row = createReader(clusterId).sql("""
+                SELECT COALESCE(SUM(value), 0) AS delta_value, COUNT(*) AS sample_count
+                FROM otel.%s
+                WHERE metric_name = :metric
+                  AND attributes['job_id'] = :jobId
+                  AND timestamp >= :start
+                  AND timestamp < :end
+                """.formatted(otelTable))
+                .param("metric", metric)
+                .param("jobId", jobId)
+                .param("start", java.sql.Timestamp.from(start))
+                .param("end", java.sql.Timestamp.from(end))
+                .query()
+                .singleRow();
+        Number value = (Number) row.get("delta_value");
+        Number sampleCount = (Number) row.get("sample_count");
+        return new DeltaSummary(value == null ? 0 : value.doubleValue(),
+                sampleCount == null ? 0 : sampleCount.longValue());
+    }
+
+    public record DeltaSummary(double value, long sampleCount) {
     }
 
     private PrometheusMatrixResult queryRange(Integer clusterId, String metric,

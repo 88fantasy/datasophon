@@ -1,0 +1,1 @@
+-- No data migration is required for DS streaming metric accumulation.

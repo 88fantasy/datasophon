@@ -28,10 +28,21 @@ function nodeLabel(
   statusLabel: string,
   approximateLabel: string,
   rowsLabel: string,
+  processedLabel: string,
+  itemsLabel: string,
+  notBoundLabel: string,
 ): string {
   const header = `${node.name}\n${node.taskType} · ${statusLabel}`;
   if (node.metrics?.kind === 'STREAM') {
-    return `${header}\n${approximateLabel} ${formatRate(node.metrics.rowsPerSecond)}`;
+    const lines = [
+      `${approximateLabel} ${formatRate(node.metrics.rowsPerSecond)}`,
+    ];
+    if (node.metrics.processedApprox != null) {
+      lines.push(
+        `${processedLabel} ${formatRows(node.metrics.processedApprox)} ${itemsLabel}`,
+      );
+    }
+    return `${header}\n${lines.join('\n')}`;
   }
   if (node.metrics?.kind === 'BATCH' && node.metrics.outputs?.length) {
     const lines = node.metrics.outputs
@@ -45,7 +56,9 @@ function nodeLabel(
     }
     return `${header}\n${lines.join('\n')}`;
   }
-  return `${header}\n—`;
+  return node.metricsError === 'NOT_BOUND'
+    ? `${header}\n— ${notBoundLabel}`
+    : `${header}\n—`;
 }
 
 const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
@@ -55,6 +68,9 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
     () => ({
       approximate: intl.formatMessage({ id: 'dsWorkflow.metric.approximate' }),
       rows: intl.formatMessage({ id: 'dsWorkflow.metric.rows' }),
+      processed: intl.formatMessage({ id: 'dsWorkflow.metric.processed' }),
+      items: intl.formatMessage({ id: 'dsWorkflow.metric.items' }),
+      notBound: intl.formatMessage({ id: 'dsWorkflow.error.notBound' }),
       status: (state?: string) =>
         intl.formatMessage({
           id: `dsWorkflow.state.${state ?? 'UNKNOWN'}`,
@@ -100,7 +116,7 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
       node: {
         type: 'rect',
         style: {
-          size: [290, 126],
+          size: [290, 145],
           radius: 10,
           fill: '#ffffff',
           stroke: (datum) =>
@@ -113,12 +129,15 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
               labels.status(node.state),
               labels.approximate,
               labels.rows,
+              labels.processed,
+              labels.items,
+              labels.notBound,
             );
           },
           labelPlacement: 'center',
           labelWordWrap: true,
           labelMaxWidth: 260,
-          labelMaxLines: 6,
+          labelMaxLines: 7,
           labelFontSize: 12,
           labelLineHeight: 19,
         },

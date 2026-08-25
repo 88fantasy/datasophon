@@ -22,6 +22,7 @@
 
 package com.datasophon.api.ds;
 
+import com.datasophon.api.ds.DsStreamMetricRepository.StreamMetricCursor;
 import com.datasophon.api.dto.v2.DsBatchOutputVO;
 import com.datasophon.api.dto.v2.DsDagNodeVO;
 import com.datasophon.api.dto.v2.DsTaskMetricsVO;
@@ -54,19 +55,23 @@ public class DsTaskMetricsService {
 
     private final GravitinoLineageClient lineageClient;
     private final OtelMetricsQueryService queryService;
+    private final DsStreamMetricAccumulator streamMetricAccumulator;
     private final Clock clock;
 
     @Autowired
     public DsTaskMetricsService(GravitinoLineageClient lineageClient,
-                                OtelMetricsQueryService queryService) {
-        this(lineageClient, queryService, Clock.systemUTC());
+                                OtelMetricsQueryService queryService,
+                                DsStreamMetricAccumulator streamMetricAccumulator) {
+        this(lineageClient, queryService, streamMetricAccumulator, Clock.systemUTC());
     }
 
     DsTaskMetricsService(GravitinoLineageClient lineageClient,
                          OtelMetricsQueryService queryService,
+                         DsStreamMetricAccumulator streamMetricAccumulator,
                          Clock clock) {
         this.lineageClient = lineageClient;
         this.queryService = queryService;
+        this.streamMetricAccumulator = streamMetricAccumulator;
         this.clock = clock;
     }
 
@@ -137,7 +142,14 @@ public class DsTaskMetricsService {
         metrics.setJobName(selected.jobName());
         metrics.setRowsPerSecond(rowsPerSecond);
         metrics.setApproximate(true);
+        streamMetricAccumulator.registerAndRead(clusterId, selected.jobId(), selected.jobName())
+                .ifPresent(cursor -> applyAccumulated(metrics, cursor));
         return metrics;
+    }
+
+    private static void applyAccumulated(DsTaskMetricsVO metrics, StreamMetricCursor cursor) {
+        metrics.setProcessedApprox(cursor.processedApprox());
+        metrics.setSince(cursor.since().toString());
     }
 
     private Double streamRate(Integer clusterId, String jobId, long sampledAt) {

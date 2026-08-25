@@ -4,6 +4,7 @@ import { Alert, Button, Select, Space, Tag, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getDsProjects, getDsWorkflows } from '@/services/dsWorkflow';
 import DsDagDrawer from './DsDagDrawer';
+import { classifyDsError, type DsErrorKind } from './errors';
 import { formatDsTime } from './formatters';
 import InstancesTable from './InstancesTable';
 
@@ -22,11 +23,11 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
   const [selectedInstance, setSelectedInstance] =
     useState<DATASOPHON.DsWorkflowInstance>();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<DsErrorKind>();
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
-    setError(false);
+    setError(undefined);
     try {
       const response = await getDsProjects(clusterId);
       const list = response.data?.list ?? [];
@@ -36,8 +37,8 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
           ? current
           : list[0]?.code,
       );
-    } catch {
-      setError(true);
+    } catch (requestError) {
+      setError(classifyDsError(requestError));
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
           <Alert
             type="error"
             showIcon
-            title={intl.formatMessage({ id: 'dsWorkflow.error.unavailable' })}
+            title={intl.formatMessage({ id: `dsWorkflow.error.${error}` })}
             action={
               <Button size="small" onClick={() => void loadProjects()}>
                 {intl.formatMessage({ id: 'dsWorkflow.retry' })}
@@ -150,18 +151,24 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
             options={false}
             pagination={{ defaultPageSize: 20, showSizeChanger: true }}
             request={async (params) => {
-              const response = await getDsWorkflows(
-                clusterId,
-                projectCode,
-                params.current ?? 1,
-                params.pageSize ?? 20,
-                typeof params.name === 'string' ? params.name : undefined,
-              );
-              return {
-                data: response.data?.list ?? [],
-                success: response.success !== false,
-                total: response.data?.total ?? 0,
-              };
+              try {
+                const response = await getDsWorkflows(
+                  clusterId,
+                  projectCode,
+                  params.current ?? 1,
+                  params.pageSize ?? 20,
+                  typeof params.name === 'string' ? params.name : undefined,
+                );
+                setError(undefined);
+                return {
+                  data: response.data?.list ?? [],
+                  success: response.success !== false,
+                  total: response.data?.total ?? 0,
+                };
+              } catch (requestError) {
+                setError(classifyDsError(requestError));
+                return { data: [], success: false, total: 0 };
+              }
             }}
             expandable={{
               expandedRowRender: (record) => (
