@@ -98,6 +98,22 @@ class DsDdlLoadTest {
                 });
     }
 
+    @Test
+    void apiTokenIsOptionalPlatformOnlyConfig() throws Exception {
+        JSONObject ddl = loadDdl(locateMetaDir());
+        JSONObject apiToken = ddl.getJSONArray("parameters").stream()
+                .map(JSONObject.class::cast)
+                .filter(parameter -> "apiToken".equals(parameter.getString("name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("parameter not found: apiToken"));
+
+        assertFalse(apiToken.getBooleanValue("required"));
+        assertEquals("", apiToken.getString("defaultValue"));
+        assertFalse(apiToken.getBooleanValue("register"));
+        assertTrue(apiToken.getString("description").contains("不会下发"));
+        assertFalse(ddl.getJSONObject("configWriter").toJSONString().contains("apiToken"));
+    }
+
     private static void assertManagedCredential(JSONArray parameters, String name, String expectedDefault) {
         JSONObject parameter = parameters.stream()
                 .map(JSONObject.class::cast)

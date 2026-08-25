@@ -238,15 +238,25 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             newConfig.setConfigVersion(1);
         } else {
             newConfig.setConfigVersion(config.getConfigVersion() + 1);
-            roleInstanceService.updateToNeedRestart(usedRoleGroupId);
-            roleGroupService.updateToNeedRestart(usedRoleGroupId);
-            serviceInstanceEntity.setNeedRestart(NeedRestart.YES);
+            if (requiresRestart(serviceName, config, newConfig)) {
+                roleInstanceService.updateToNeedRestart(usedRoleGroupId);
+                roleGroupService.updateToNeedRestart(usedRoleGroupId);
+                serviceInstanceEntity.setNeedRestart(NeedRestart.YES);
+            }
         }
         groupConfigService.save(newConfig);
         // update service instance
         serviceInstanceEntity.setUpdateTime(new Date());
         serviceInstanceEntity.setLabel(frameServiceEntity.getLabel());
         serviceInstanceService.updateById(serviceInstanceEntity);
+    }
+
+    /** DS apiToken is platform-only and absent from configFileJson, so saving only it needs no role restart. */
+    static boolean requiresRestart(String serviceName,
+                                   ClusterServiceRoleGroupConfig current,
+                                   ClusterServiceRoleGroupConfig next) {
+        return !"DS".equals(serviceName)
+                || !Objects.equals(current.getConfigFileJson(), next.getConfigFileJson());
     }
 
     static String registeredVariableValue(ServiceConfig config) {
@@ -314,8 +324,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     }
 
     @Override
-    public void downloadTemplate(String frameCode, String serviceName, String templateName, HttpServletResponse response)
-        throws IOException {
+    public void downloadTemplate(String frameCode, String serviceName, String templateName, HttpServletResponse response) throws IOException {
         if (!isSafeTemplatePath(templateName)
                 || (StringUtils.isNotBlank(frameCode) && !isSafePathSegment(frameCode))
                 || (StringUtils.isNotBlank(serviceName) && !isSafePathSegment(serviceName))) {
@@ -364,8 +373,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
      * 按服务坐标从 meta 存储读取模板，对应 package/raw/meta/{frameCode}/{serviceName}/templates/{templateName}
      * 取不到（资源不存在 / meta 存储未启用）返回 false，交由调用方回退到扁平模板路径。
      */
-    private boolean downloadTemplateFromMeta(String frameCode, String serviceName, String templateName, OutputStream out)
-        throws IOException {
+    private boolean downloadTemplateFromMeta(String frameCode, String serviceName, String templateName, OutputStream out) throws IOException {
         try {
             MetaStorage metaStorage = StorageUtils.getMetaStorage();
             ServiceMetaItem item = new ServiceMetaItem();

@@ -141,6 +141,20 @@ class ServiceInstallServiceImplTest {
                 .isEqualTo("http://192.168.10.131:9040");
     }
 
+    @Test
+    void dsPlatformOnlyConfigDoesNotRequireRestartWhenGeneratedFilesAreUnchanged() {
+        ClusterServiceRoleGroupConfig current = new ClusterServiceRoleGroupConfig();
+        current.setConfigFileJson("generated-ds-config");
+        ClusterServiceRoleGroupConfig tokenOnlyChange = new ClusterServiceRoleGroupConfig();
+        tokenOnlyChange.setConfigFileJson("generated-ds-config");
+        ClusterServiceRoleGroupConfig runtimeChange = new ClusterServiceRoleGroupConfig();
+        runtimeChange.setConfigFileJson("changed-generated-ds-config");
+
+        assertThat(ServiceInstallServiceImpl.requiresRestart("DS", current, tokenOnlyChange)).isFalse();
+        assertThat(ServiceInstallServiceImpl.requiresRestart("DS", current, runtimeChange)).isTrue();
+        assertThat(ServiceInstallServiceImpl.requiresRestart("HDFS", current, tokenOnlyChange)).isTrue();
+    }
+
     private static ServiceConfig config(String name, String value) {
         ServiceConfig config = new ServiceConfig();
         config.setName(name);

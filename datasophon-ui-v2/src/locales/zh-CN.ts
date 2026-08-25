@@ -5,6 +5,7 @@ import clusterDashboard from './zh-CN/clusterDashboard';
 import component from './zh-CN/component';
 import dolphinSchedulerMonitor from './zh-CN/dolphinSchedulerMonitor';
 import dorisMonitor from './zh-CN/dorisMonitor';
+import dsWorkflow from './zh-CN/dsWorkflow';
 import globalHeader from './zh-CN/globalHeader';
 import gravitinoMonitor from './zh-CN/gravitinoMonitor';
 import juicefsMonitor from './zh-CN/juicefsMonitor';
@@ -37,6 +38,7 @@ export default {
   ...prometheusMonitor,
   ...zookeeperMonitor,
   ...dolphinSchedulerMonitor,
+  ...dsWorkflow,
   ...dorisMonitor,
   ...nacosMonitor,
   ...gravitinoMonitor,

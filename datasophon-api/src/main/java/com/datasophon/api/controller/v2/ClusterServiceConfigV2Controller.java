@@ -23,6 +23,7 @@
 package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.ds.DsConfigService;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.SaveConfigRequest;
 import com.datasophon.api.security.ImportedReadOnly;
@@ -34,6 +35,7 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -70,6 +72,9 @@ public class ClusterServiceConfigV2Controller extends ApiController {
     @Autowired
     private ClusterServiceInstanceService instanceService;
 
+    @Autowired
+    private DsConfigService dsConfigService;
+
     /**
      * 配置历史版本列表（降序）。
      *
@@ -95,12 +100,17 @@ public class ClusterServiceConfigV2Controller extends ApiController {
      * @param version     版本号（可选，不传则返回最新版）
      */
     @GetMapping
-    public ApiResponse<List<ServiceConfig>> info(@PathVariable Integer instanceId,
+    public ApiResponse<List<ServiceConfig>> info(@PathVariable Integer clusterId,
+                                                 @PathVariable Integer instanceId,
                                                  @RequestParam Integer roleGroupId,
                                                  @RequestParam(required = false) Integer version) {
         Result result = configService.getServiceInstanceConfig(instanceId, version, roleGroupId, 1, 10000);
         @SuppressWarnings("unchecked")
         List<ServiceConfig> configs = (List<ServiceConfig>) result.getData();
+        ClusterServiceInstanceEntity instance = instanceService.getById(instanceId);
+        if (instance != null && Objects.equals(DsConfigService.SERVICE_NAME, instance.getServiceName())) {
+            configs = dsConfigService.mergeDdlFallback(clusterId, configs);
+        }
         return ApiResponse.ok(configs != null ? configs : List.of());
     }
 

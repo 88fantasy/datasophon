@@ -1,0 +1,33 @@
+export default {
+  'dsWorkflow.tab': 'Workflows',
+  'dsWorkflow.project.label': 'DS Project',
+  'dsWorkflow.project.placeholder': 'Select a project',
+  'dsWorkflow.project.empty': 'No projects are visible to the configured token',
+  'dsWorkflow.skeleton.ready':
+    'Project changed; workflow definitions will load below',
+  'dsWorkflow.retry': 'Retry',
+  'dsWorkflow.table.name': 'Workflow Name',
+  'dsWorkflow.table.releaseState': 'Release State',
+  'dsWorkflow.table.version': 'Version',
+  'dsWorkflow.table.owner': 'Owner',
+  'dsWorkflow.table.updateTime': 'Updated At',
+  'dsWorkflow.table.instanceName': 'Instance Name',
+  'dsWorkflow.table.state': 'State',
+  'dsWorkflow.table.startTime': 'Started At',
+  'dsWorkflow.table.duration': 'Duration',
+  'dsWorkflow.table.host': 'Execution Host',
+  'dsWorkflow.status.online': 'Online',
+  'dsWorkflow.status.offline': 'Offline',
+  'dsWorkflow.metric.rows': 'rows',
+  'dsWorkflow.metric.rate': 'row/s',
+  'dsWorkflow.metric.approximate': 'approx.',
+  'dsWorkflow.metric.unavailable': '—',
+  'dsWorkflow.error.tokenMissing':
+    'Configure apiToken in the DS service settings',
+  'dsWorkflow.error.tokenInvalid': 'The DS apiToken is invalid',
+  'dsWorkflow.error.unavailable': 'The DS Open API is currently unavailable',
+  'dsWorkflow.error.notBound':
+    'This task has not adopted the platform metrics convention',
+  'dsWorkflow.config.guide':
+    'Issue a token for a dedicated read-only DS account and save it in service settings',
+};

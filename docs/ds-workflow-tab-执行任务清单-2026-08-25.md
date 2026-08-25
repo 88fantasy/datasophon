@@ -98,9 +98,9 @@ Wave 3（累计聚合 + 端到端验收，3 个任务）
 
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| **W1-A1** | `DsApiClient`：端点解析 + token + 响应校验 | G0 | 按 `clusterId` 解析 `ApiServer` 端点、注入 token、统一错误映射 | 单测覆盖四种响应：正常 JSON、**401 且响应体为空**、**200 + HTML**、连接超时。**四种都不得抛出解析异常**，须映射为可读错误 | ⬜ | |
-| **W1-A2** | 端点 1/2/3 + VO | W1-A1 | `/v2/ds/projects`、`/workflows`、`/workflows/{code}/instances` | 单测断言：分页信封字段齐全；VO 中**不出现** DS 原始字段名（`totalList`/`dagData` 等）；时间与时长已转换 | ⬜ | |
-| **W1-A3** | 端点 4：DAG 组装（**暂不含指标**） | W1-A1 | `/v2/ds/instances/{id}/dag`，节点 + 边 + 状态 | 单测断言：**`preTaskCode == 0` 的边被丢弃**；节点状态由 `taskCode` 正确关联；`locations` 为 null 时不报错 | ⬜ | |
+| **W1-A1** | `DsApiClient`：端点解析 + token + 响应校验 | G0 | 按 `clusterId` 解析 `ApiServer` 端点、注入 token、统一错误映射 | 单测覆盖四种响应：正常 JSON、**401 且响应体为空**、**200 + HTML**、连接超时。**四种都不得抛出解析异常**，须映射为可读错误 | ✅ 完成 | JDK 21 显式模块链 `clean test`（`DsEndpointResolverTest,DsApiClientTest,DsConfigServiceTest,DsWorkflowServiceTest,DsDdlLoadTest,ServiceInstallServiceImplTest`）：19/19；含四响应与 `EXISTS_ALARM` 端点用例 |
+| **W1-A2** | 端点 1/2/3 + VO | W1-A1 | `/v2/ds/projects`、`/workflows`、`/workflows/{code}/instances` | 单测断言：分页信封字段齐全；VO 中**不出现** DS 原始字段名（`totalList`/`dagData` 等）；时间与时长已转换 | ✅ 完成 | 同上 19/19；`DsWorkflowServiceTest` 断言分页信封、稳定 VO、ISO 时间及秒级时长；合成 mock curl：projects=2、workflows=1、instances=1 |
+| **W1-A3** | 端点 4：DAG 组装（**暂不含指标**） | W1-A1 | `/v2/ds/instances/{id}/dag`，节点 + 边 + 状态 | 单测断言：**`preTaskCode == 0` 的边被丢弃**；节点状态由 `taskCode` 正确关联；`locations` 为 null 时不报错 | ✅ 完成 | 同上 19/19；`DsWorkflowServiceTest` 覆盖哑元边过滤、taskCode 状态关联及 null locations；合成 mock curl：dagNodes=1 |
 
 > ⚠️ **端点解析不得使用「状态严格等于 RUNNING」的过滤**（架构 §5.1）。
 > 单测须包含一个「角色带告警但进程健康」的用例，断言端点仍被判为可用。
@@ -109,8 +109,8 @@ Wave 3（累计聚合 + 端到端验收，3 个任务）
 
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| **W1-B1** | `DS/service_ddl.json` 新增 `apiToken` | G0 | 参数定义（非必填、默认空） | **新装**集群的配置页出现该参数并可保存 | ⬜ | |
-| **W1-B2** | 现存实例的参数兜底合并 | W1-B1 | 照既有网关配置服务的做法补合并逻辑 | **已安装**的 DS 实例（升级场景）在配置页也能看到该参数——这是最容易漏的一条，须单独验 | ⬜ | |
+| **W1-B1** | `DS/service_ddl.json` 新增 `apiToken` | G0 | 参数定义（非必填、默认空） | **新装**集群的配置页出现该参数并可保存 | ✅ 完成 | `jq empty package/raw/meta/datacluster-physical/DS/service_ddl.json`；上述 19/19 中 `DsDdlLoadTest` 3/3，断言默认空、可见且不写入节点配置 |
+| **W1-B2** | 现存实例的参数兜底合并 | W1-B1 | 照既有网关配置服务的做法补合并逻辑 | **已安装**的 DS 实例（升级场景）在配置页也能看到该参数——这是最容易漏的一条，须单独验 | ✅ 完成 | 上述 19/19；`DsConfigServiceTest` 验证旧实例 DDL 兜底，`ServiceInstallServiceImplTest` 验证保存平台参数不误标重启、运行配置仍标重启 |
 
 > W1-B1/B2 都改 `service_ddl.json` 与配置服务，**必须串行**，不要与线 A/C 抢同一文件。
 
@@ -118,7 +118,7 @@ Wave 3（累计聚合 + 端到端验收，3 个任务）
 
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| **W1-C1** | Tab 注册 + 项目下拉 + i18n 命名空间 | — | `ServiceInstance/index.tsx` 加 `isDS` 分支；新建 `DsWorkflow/` 目录与 `locales/{zh-CN,en-US}/dsWorkflow.ts` | **浏览器验证**：DS 组件详情页出现「工作流」Tab，非 DS 服务不出现；项目下拉能加载并切换。`npm run lint` 通过 | ⬜ | |
+| **W1-C1** | Tab 注册 + 项目下拉 + i18n 命名空间 | — | `ServiceInstance/index.tsx` 加 `isDS` 分支；新建 `DsWorkflow/` 目录与 `locales/{zh-CN,en-US}/dsWorkflow.ts` | **浏览器验证**：DS 组件详情页出现「工作流」Tab，非 DS 服务不出现；项目下拉能加载并切换。`npm run lint` 通过 | ✅ 完成 | Vitest 定向 3 文件 19/19；`npm run lint`、`npm run build`、DS 目录 `npx antd lint` 均通过；浏览器截图 `g1-ds-workflow-project-switch.png`（DS Tab 可见且切至合成流项目）、`g1-non-ds-no-workflow-tab.png`（非 DS 无该 Tab） |
 
 **门禁 G1**：三条线各自的验证通过；后端三个端点能被前端 mock 或 curl 调通；
 Tab 在浏览器里可见且项目下拉可用。
@@ -169,7 +169,7 @@ Tab 在浏览器里可见且项目下拉可用。
 | 门禁 | 日期 | 验证人 | 结果 | 备注 |
 |---|---|---|---|---|
 | G0 | 2026-08-25 | Codex | ✅ | 合成 SHELL 数据；隔离全新安装创建→上线→运行 SUCCESS，四角色重启通过；`.scratch/ds-workflow-tab/g0-{result,role-restart}.json` |
-| G1 | | | ⬜ | |
+| G1 | 2026-08-25 | Codex | ✅ | 全部使用合成数据；后端 19/19、前端 19/19、lint/build 通过；mock curl 四端点通过；DS/非 DS 浏览器走查与项目切换截图已存档 |
 | G2 | | | ⬜ | |
 | G3 | | | ⬜ | |
 

@@ -686,6 +686,19 @@
     },
     {
       "enabled": true,
+      "name": "apiToken",
+      "description": "供 Datasophon 工作流 Tab 只读访问 DS Open API；建议使用专用只读账号签发的 token，不会下发到 DS 节点",
+      "label": "DS开放接口令牌",
+      "hidden": false,
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
       "name": "masterServerPort",
       "port": true,
       "description": "MasterServer server.port（/actuator/prometheus 暴露端口）",
