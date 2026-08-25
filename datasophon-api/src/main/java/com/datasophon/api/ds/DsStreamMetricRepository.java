@@ -72,7 +72,7 @@ public class DsStreamMetricRepository {
                 SELECT cluster_id, job_id, job_name, since_time, cursor_time, processed_approx
                 FROM t_ddh_ds_stream_metric_job
                 WHERE cursor_time < ?
-                ORDER BY cursor_time
+                ORDER BY update_time, cursor_time
                 LIMIT ?
                 """, (rs, rowNum) -> mapCursor(rs.getInt("cluster_id"), rs.getString("job_id"),
                 rs.getString("job_name"), rs.getTimestamp("since_time"),
@@ -103,6 +103,14 @@ public class DsStreamMetricRepository {
             return true;
         });
         return Boolean.TRUE.equals(applied);
+    }
+
+    public void markAttempted(StreamMetricCursor cursor) {
+        jdbcTemplate.update("""
+                UPDATE t_ddh_ds_stream_metric_job
+                SET update_time = CURRENT_TIMESTAMP(3)
+                WHERE cluster_id = ? AND job_id = ? AND cursor_time = ?
+                """, cursor.clusterId(), cursor.jobId(), Timestamp.from(cursor.cursor()));
     }
 
     private static StreamMetricCursor mapCursor(int clusterId, String jobId, String jobName,

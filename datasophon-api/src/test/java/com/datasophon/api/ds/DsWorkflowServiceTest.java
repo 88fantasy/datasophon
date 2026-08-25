@@ -34,6 +34,7 @@ import com.datasophon.api.dto.v2.DsPageVO;
 import com.datasophon.api.dto.v2.DsTaskMetricsVO;
 import com.datasophon.api.dto.v2.DsWorkflowDefinitionVO;
 import com.datasophon.api.dto.v2.DsWorkflowInstanceVO;
+import com.datasophon.api.service.impl.ds.DsWorkflowServiceImpl;
 
 import java.util.List;
 
@@ -48,8 +49,8 @@ class DsWorkflowServiceTest {
     private final DsApiClient client = mock(DsApiClient.class);
     private final DsTaskMetricsService taskMetricsService = mock(DsTaskMetricsService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final DsWorkflowService service =
-            new DsWorkflowService(client, taskMetricsService, objectMapper, Runnable::run, Runnable::run);
+    private final DsWorkflowServiceImpl service =
+            new DsWorkflowServiceImpl(client, taskMetricsService, objectMapper, Runnable::run, Runnable::run);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -163,6 +164,32 @@ class DsWorkflowServiceTest {
                     assertThat(node.getMetrics()).isNull();
                     assertThat(node.getMetricsError()).isEqualTo("LOOKUP_FAILED");
                 });
+    }
+
+    @Test
+    void keepsFlinkBatchTaskOnBatchMetricsPath() throws Exception {
+        when(client.get(eq(7), eq("projects/99/workflow-instances/8"), anyMap()))
+                .thenReturn(json("""
+                        {"id":8,"workflowDefinitionCode":101,"name":"flink-batch","state":"SUCCESS",
+                        "dagData":{"taskDefinitionList":[
+                        {"code":1001,"name":"flink-batch","taskType":"FLINK"}],
+                        "workflowTaskRelationList":[]}}
+                        """));
+        when(client.get(eq(7), eq("projects/99/workflow-instances/8/tasks"), anyMap()))
+                .thenReturn(json("""
+                        {"taskList":[
+                        {"id":11,"taskCode":1001,"state":"SUCCESS","taskExecuteType":"BATCH"}]}
+                        """));
+        DsTaskMetricsVO metrics = new DsTaskMetricsVO();
+        metrics.setKind("BATCH");
+        when(taskMetricsService.metrics(eq(7), any())).thenReturn(metrics);
+
+        DsDagVO dag = service.dag(7, 99, 8);
+
+        assertThat(dag.getNodes()).singleElement().satisfies(node -> {
+            assertThat(node.getFlowType()).isEqualTo("BATCH");
+            assertThat(node.getMetrics().getKind()).isEqualTo("BATCH");
+        });
     }
 
     private JsonNode json(String value) throws Exception {

@@ -2,20 +2,22 @@ import { type ProColumns, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import { Alert, Button, Select, Space, Tag, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { getDsProjects, getDsWorkflows } from '@/services/dsWorkflow';
 import DsDagDrawer from './DsDagDrawer';
 import { classifyDsError, type DsErrorKind } from './errors';
 import { formatDsTime } from './formatters';
 import InstancesTable from './InstancesTable';
+import { getDsProjects, getDsWorkflows } from './service';
 
 interface DsWorkflowPanelProps {
   clusterId: number;
   instanceId: number;
+  dsWebUrl?: string;
 }
 
 const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
   clusterId,
   instanceId,
+  dsWebUrl,
 }) => {
   const intl = useIntl();
   const [projects, setProjects] = useState<DATASOPHON.DsProject[]>([]);
@@ -24,6 +26,7 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
     useState<DATASOPHON.DsWorkflowInstance>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<DsErrorKind>();
+  const [releaseStateFilter, setReleaseStateFilter] = useState('ALL');
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -90,8 +93,28 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
         search: false,
         render: (_, record) => formatDsTime(record.updateTime),
       },
+      {
+        title: intl.formatMessage({ id: 'dsWorkflow.table.action' }),
+        key: 'action',
+        width: 120,
+        search: false,
+        render: () =>
+          dsWebUrl ? (
+            <Button
+              type="link"
+              size="small"
+              href={dsWebUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {intl.formatMessage({ id: 'dsWorkflow.action.openDs' })}
+            </Button>
+          ) : (
+            '—'
+          ),
+      },
     ],
-    [intl],
+    [dsWebUrl, intl],
   );
 
   return (
@@ -119,6 +142,28 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
               setSelectedInstance(undefined);
             }}
           />
+          <Select<string>
+            aria-label={intl.formatMessage({
+              id: 'dsWorkflow.filter.releaseState',
+            })}
+            value={releaseStateFilter}
+            options={[
+              {
+                label: intl.formatMessage({ id: 'dsWorkflow.filter.all' }),
+                value: 'ALL',
+              },
+              {
+                label: intl.formatMessage({ id: 'dsWorkflow.status.online' }),
+                value: 'ONLINE',
+              },
+              {
+                label: intl.formatMessage({ id: 'dsWorkflow.status.offline' }),
+                value: 'OFFLINE',
+              },
+            ]}
+            style={{ minWidth: 150 }}
+            onChange={setReleaseStateFilter}
+          />
         </Space>
 
         {error ? (
@@ -144,10 +189,10 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
 
         {projectCode != null ? (
           <ProTable<DATASOPHON.DsWorkflowDefinition>
-            key={projectCode}
+            key={`${projectCode}-${releaseStateFilter}`}
             rowKey="code"
             columns={columns}
-            params={{ projectCode }}
+            params={{ projectCode, releaseStateFilter }}
             options={false}
             pagination={{ defaultPageSize: 20, showSizeChanger: true }}
             request={async (params) => {
@@ -161,7 +206,11 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
                 );
                 setError(undefined);
                 return {
-                  data: response.data?.list ?? [],
+                  data: (response.data?.list ?? []).filter(
+                    (workflow) =>
+                      releaseStateFilter === 'ALL' ||
+                      workflow.releaseState === releaseStateFilter,
+                  ),
                   success: response.success !== false,
                   total: response.data?.total ?? 0,
                 };

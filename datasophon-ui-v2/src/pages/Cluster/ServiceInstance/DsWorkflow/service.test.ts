@@ -5,7 +5,7 @@ import {
   getDsProjects,
   getDsWorkflowInstances,
   getDsWorkflows,
-} from './dsWorkflow';
+} from './service';
 
 vi.mock('@umijs/max', () => ({ request: vi.fn() }));
 

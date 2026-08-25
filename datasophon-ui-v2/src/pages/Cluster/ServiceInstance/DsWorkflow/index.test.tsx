@@ -2,12 +2,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import DsWorkflowPanel from './index';
 import {
   getDsProjects,
   getDsWorkflowInstances,
   getDsWorkflows,
-} from '@/services/dsWorkflow';
-import DsWorkflowPanel from './index';
+} from './service';
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({
@@ -17,6 +17,10 @@ vi.mock('@umijs/max', () => ({
 
 vi.mock('@ant-design/pro-components', () => ({
   ProTable: (props: {
+    columns?: Array<{
+      dataIndex?: string;
+      render?: (value: unknown, record: Record<string, unknown>) => ReactNode;
+    }>;
     request: (params: {
       current: number;
       pageSize: number;
@@ -46,6 +50,11 @@ vi.mock('@ant-design/pro-components', () => ({
               >
                 {String(row.name)}
               </button>
+              {props.columns?.map((column, index) => (
+                <div key={`${key}-${column.dataIndex ?? index}`}>
+                  {column.render ? column.render(undefined, row) : null}
+                </div>
+              ))}
               {props.expandable ? (
                 <button type="button" onClick={() => setExpanded(row)}>
                   expand-{key}
@@ -64,24 +73,42 @@ vi.mock('@ant-design/pro-components', () => ({
 
 vi.mock('antd', () => ({
   Alert: ({ title }: { title: ReactNode }) => <div>{title}</div>,
-  Button: ({ children }: { children: ReactNode }) => (
-    <button type="button">{children}</button>
-  ),
+  Button: ({
+    children,
+    href,
+    target,
+  }: {
+    children: ReactNode;
+    href?: string;
+    target?: string;
+  }) =>
+    href ? (
+      <a href={href} target={target}>
+        {children}
+      </a>
+    ) : (
+      <button type="button">{children}</button>
+    ),
   Select: ({
     value,
     options,
     onChange,
     'aria-label': ariaLabel,
   }: {
-    value?: number;
-    options: Array<{ label: string; value: number }>;
-    onChange?: (value: number) => void;
+    value?: number | string;
+    options: Array<{ label: string; value: number | string }>;
+    onChange?: (value: number | string) => void;
     'aria-label'?: string;
   }) => (
     <select
       aria-label={ariaLabel}
       value={value ?? ''}
-      onChange={(event) => onChange?.(Number(event.target.value))}
+      onChange={(event) => {
+        const option = options.find(
+          (item) => String(item.value) === event.target.value,
+        );
+        if (option) onChange?.(option.value);
+      }}
     >
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -111,7 +138,7 @@ vi.mock('./DsDagDrawer', () => ({
   ),
 }));
 
-vi.mock('@/services/dsWorkflow', () => ({
+vi.mock('./service', () => ({
   getDsProjects: vi.fn(),
   getDsWorkflows: vi.fn(),
   getDsWorkflowInstances: vi.fn(),
@@ -204,6 +231,62 @@ describe('DsWorkflowPanel tree table', () => {
     await waitFor(() =>
       expect(getDsWorkflows).toHaveBeenCalledWith(7, 1002, 1, 20, undefined),
     );
+  });
+
+  it('filters the current workflow page by release state', async () => {
+    vi.mocked(getDsWorkflows).mockResolvedValue({
+      success: true,
+      data: {
+        list: [
+          {
+            code: 800001,
+            name: 'online workflow',
+            version: 1,
+            releaseState: 'ONLINE',
+          },
+          {
+            code: 800002,
+            name: 'offline workflow',
+            version: 1,
+            releaseState: 'OFFLINE',
+          },
+        ],
+        total: 2,
+        pageNo: 1,
+        pageSize: 20,
+      },
+    });
+    render(<DsWorkflowPanel clusterId={7} instanceId={33} />);
+    await screen.findByTestId('row-800001');
+
+    fireEvent.change(
+      screen.getByLabelText('dsWorkflow.filter.releaseState'),
+      { target: { value: 'OFFLINE' } },
+    );
+
+    await screen.findByText('offline workflow');
+    await waitFor(() =>
+      expect(screen.queryByText('online workflow')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('offers a link to the DS native Web UI', async () => {
+    render(
+      <DsWorkflowPanel
+        clusterId={7}
+        instanceId={33}
+        dsWebUrl="http://ds.example/dolphinscheduler/ui"
+      />,
+    );
+
+    const link = await screen.findByRole('link', {
+      name: 'dsWorkflow.action.openDs',
+    });
+    expect(link).toHaveAttribute(
+      'href',
+      'http://ds.example/dolphinscheduler/ui',
+    );
+    expect(link).toHaveAttribute('target', '_blank');
   });
 
   it.each([

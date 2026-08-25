@@ -1,7 +1,7 @@
 import { type ProColumns, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { getDsWorkflowInstances } from '@/services/dsWorkflow';
 import { formatDsTime, formatDuration } from './formatters';
+import { getDsWorkflowInstances } from './service';
 
 interface InstancesTableProps {
   clusterId: number;

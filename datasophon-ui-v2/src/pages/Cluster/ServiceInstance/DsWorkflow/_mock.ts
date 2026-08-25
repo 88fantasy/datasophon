@@ -49,7 +49,10 @@ export default {
     res.json({ success: true, data: { id: 33, serviceName: 'DS' } });
   },
   'GET /ddh/api/v2/cluster/7/service/instance/33/role/webuis': (_req: Request, res: Response) => {
-    res.json({ success: true, data: [] });
+    res.json({
+      success: true,
+      data: [{ name: 'DolphinScheduler', webUrl: 'http://ds.example.test' }],
+    });
   },
   'GET /ddh/api/v2/cluster/7/service/instance/34': (_req: Request, res: Response) => {
     res.json({ success: true, data: { id: 34, serviceName: 'HDFS' } });

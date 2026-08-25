@@ -7,7 +7,8 @@ CREATE TABLE `t_ddh_ds_stream_metric_job` (
     `processed_approx` bigint NOT NULL DEFAULT 0 COMMENT 'Observed delta sum, approximate',
     `update_time` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     PRIMARY KEY (`cluster_id`, `job_id`),
-    KEY `idx_ds_stream_metric_cursor` (`cursor_time`)
+    KEY `idx_ds_stream_metric_cursor` (`cursor_time`),
+    KEY `idx_ds_stream_metric_pending` (`update_time`, `cursor_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DS streaming job observed totals';
 
 CREATE TABLE `t_ddh_ds_stream_metric_period` (

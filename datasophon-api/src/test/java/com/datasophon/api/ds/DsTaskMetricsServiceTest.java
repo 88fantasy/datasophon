@@ -66,7 +66,9 @@ class DsTaskMetricsServiceTest {
     private final OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
     private final DsStreamMetricAccumulator streamMetricAccumulator = mock(DsStreamMetricAccumulator.class);
     private final DsTaskMetricsService service = new DsTaskMetricsService(
-            lineageClient, queryService, streamMetricAccumulator, Clock.fixed(NOW, ZoneOffset.UTC));
+            new DsBatchMetricsProvider(lineageClient),
+            new DsStreamMetricsProvider(
+                    queryService, streamMetricAccumulator, Clock.fixed(NOW, ZoneOffset.UTC)));
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
@@ -119,7 +121,7 @@ class DsTaskMetricsServiceTest {
                 eq("flink.taskmanager.job.task.operator.numRecordsOut"), isNull(), eq(1.0 / 60),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
                 eq(Map.of("job_id", "^(?:" + JOB_ID + ")$")), eq(Map.of()), eq(List.of("job_id")),
-                eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond()), eq(60L),
+                eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond() - 1), eq(60L),
                 eq("sum"), eq(0.5), isNull()))
                 .thenReturn(PrometheusMatrixResult.of(List.of(
                         new MatrixSeries(Map.of("job_id", JOB_ID),
@@ -141,6 +143,61 @@ class DsTaskMetricsServiceTest {
                 eq("flink.taskmanager.job.task.operator.numRecordsOut"), isNull(), eq(1.0 / 60),
                 eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
                 eq(List.of("job_id")), anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull());
+    }
+
+    @Test
+    void prefersOtlpDeltaReporterWhenBothReporterPathsExist() {
+        String jobName = "ds-7-12-synthetic-stream";
+        PrometheusVectorResult discovery = PrometheusVectorResult.of(List.of(
+                new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                        new Object[]{NOW.getEpochSecond(), "1"})));
+        when(queryService.queryInstant(eq(7), anyString(), eq("max"), eq(1.0), eq(".+"), eq(".+"),
+                eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()), eq(NOW.getEpochSecond()),
+                anyString(), eq(List.of("job_id", "job_name"))))
+                .thenReturn(discovery);
+        when(queryService.queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), isNull(), eq(1.0 / 60),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(List.of("job_id")), anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
+        when(queryService.queryRange(eq(7),
+                eq("flink_taskmanager_job_task_operator_numRecordsOut"), eq("1m"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(List.of("job_id")), anyLong(), anyLong(), eq(60L), eq("gauge"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "20"})))));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getRowsPerSecond()).isEqualTo(10);
+    }
+
+    @Test
+    void hidesLifetimeTotalWhileHistoricalPeriodsAreStillCatchingUp() {
+        String jobName = "ds-7-12-synthetic-stream";
+        when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),
+                eq("max"), eq(1.0), eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "job_name"))))
+                .thenReturn(PrometheusVectorResult.of(List.of(
+                        new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                                new Object[]{NOW.getEpochSecond(), "1"}))));
+        when(queryService.queryRangeSum(eq(7), anyString(), isNull(), anyDouble(), eq(".+"), eq(".+"),
+                eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()), eq(List.of("job_id")),
+                anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName))
+                .thenReturn(Optional.of(new StreamMetricCursor(
+                        7, JOB_ID, jobName, NOW.minusSeconds(86_400), NOW.minusSeconds(60), 1234)));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getProcessedApprox()).isNull();
+        assertThat(metrics.getSince()).isEqualTo("2026-08-24T06:00:00Z");
     }
 
     private static DsDagNodeVO node(int taskInstanceId, String flowType) {

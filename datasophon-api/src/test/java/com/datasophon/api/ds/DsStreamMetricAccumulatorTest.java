@@ -51,13 +51,14 @@ class DsStreamMetricAccumulatorTest {
     private static final String JOB_ID = "0123456789abcdef0123456789abcdef";
 
     private DataSource dataSource;
+    private JdbcTemplate jdbcTemplate;
     private DsStreamMetricRepository repository;
 
     @BeforeEach
     void setUp() {
         dataSource = new DriverManagerDataSource(
                 "jdbc:h2:mem:ds_stream_" + System.nanoTime() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.execute("""
                 CREATE TABLE t_ddh_ds_stream_metric_job (
                     cluster_id INT NOT NULL,
@@ -66,6 +67,7 @@ class DsStreamMetricAccumulatorTest {
                     since_time DATETIME(3) NOT NULL,
                     cursor_time DATETIME(3) NOT NULL,
                     processed_approx BIGINT NOT NULL DEFAULT 0,
+                    update_time DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
                     PRIMARY KEY (cluster_id, job_id)
                 )
                 """);
@@ -116,6 +118,38 @@ class DsStreamMetricAccumulatorTest {
         StreamMetricCursor result = restartedRepository.find(7, JOB_ID).orElseThrow();
         assertThat(result.cursor()).isEqualTo(Instant.parse("2026-08-25T02:00:00Z"));
         assertThat(result.processedApprox()).isEqualTo(100);
+    }
+
+    @Test
+    void emptyObservedPeriodYieldsWithoutRecordingAHealthyZero() {
+        OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
+        when(queryService.queryDeltaSummary(anyInt(), anyString(), anyString(), any(), any(), anyString()))
+                .thenReturn(new DeltaSummary(0, 0));
+        DsStreamMetricAccumulator accumulator = new DsStreamMetricAccumulator(
+                repository, queryService, Clock.fixed(Instant.parse("2026-08-25T01:00:00Z"), ZoneOffset.UTC));
+
+        accumulator.collectScheduled();
+
+        StreamMetricCursor result = repository.find(7, JOB_ID).orElseThrow();
+        assertThat(result.cursor()).isEqualTo(Instant.parse("2026-08-25T00:00:00Z"));
+        assertThat(result.processedApprox()).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM t_ddh_ds_stream_metric_period", Integer.class)).isZero();
+    }
+
+    @Test
+    void recentlyProcessedBacklogYieldsToAnUnprocessedJobAtTheLimit() {
+        String unprocessedJobId = "fedcba9876543210fedcba9876543210";
+        repository.register(7, unprocessedJobId, "ds-7-13-stream", START.plusSeconds(1800));
+        jdbcTemplate.update("""
+                UPDATE t_ddh_ds_stream_metric_job
+                SET update_time = CASE WHEN job_id = ? THEN ? ELSE ? END
+                """, JOB_ID, "2026-08-25 00:00:00", "2026-08-25 00:01:00");
+        repository.markAttempted(repository.find(7, JOB_ID).orElseThrow());
+
+        assertThat(repository.findPending(Instant.parse("2026-08-25T03:00:00Z"), 1))
+                .extracting(StreamMetricCursor::jobId)
+                .containsExactly(unprocessedJobId);
     }
 
     private DsStreamMetricRepository newRepository() {

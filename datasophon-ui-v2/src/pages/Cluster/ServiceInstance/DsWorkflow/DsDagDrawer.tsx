@@ -1,8 +1,8 @@
 import { useIntl } from '@umijs/max';
 import { Alert, Drawer, Spin } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
-import { getDsDag } from '@/services/dsWorkflow';
 import DsDagGraph from './DsDagGraph';
+import { getDsDag } from './service';
 
 interface DsDagDrawerProps {
   clusterId: number;

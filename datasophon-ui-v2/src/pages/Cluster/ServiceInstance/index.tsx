@@ -337,6 +337,7 @@ const ServiceInstance: React.FC = () => {
         <DsWorkflowPanel
           clusterId={numericClusterId}
           instanceId={numericInstanceId}
+          dsWebUrl={webUis[0]?.webUrl}
         />
       ),
     });

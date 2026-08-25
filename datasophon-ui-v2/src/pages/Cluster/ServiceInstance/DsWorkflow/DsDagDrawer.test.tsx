@@ -1,8 +1,8 @@
 import { act, render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getDsDag } from '@/services/dsWorkflow';
 import DsDagDrawer from './DsDagDrawer';
+import { getDsDag } from './service';
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({ formatMessage: ({ id }: { id: string }) => id }),
@@ -16,7 +16,7 @@ vi.mock('antd', () => ({
 }));
 
 vi.mock('./DsDagGraph', () => ({ default: () => <div>graph</div> }));
-vi.mock('@/services/dsWorkflow', () => ({ getDsDag: vi.fn() }));
+vi.mock('./service', () => ({ getDsDag: vi.fn() }));
 
 const instance: DATASOPHON.DsWorkflowInstance = {
   id: 810001,

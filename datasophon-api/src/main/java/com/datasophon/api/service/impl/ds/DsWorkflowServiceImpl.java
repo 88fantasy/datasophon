@@ -20,8 +20,10 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.ds;
+package com.datasophon.api.service.impl.ds;
 
+import com.datasophon.api.ds.DsApiClient;
+import com.datasophon.api.ds.DsTaskMetricsService;
 import com.datasophon.api.dto.v2.DsDagEdgeVO;
 import com.datasophon.api.dto.v2.DsDagLocationVO;
 import com.datasophon.api.dto.v2.DsDagNodeVO;
@@ -30,6 +32,7 @@ import com.datasophon.api.dto.v2.DsPageVO;
 import com.datasophon.api.dto.v2.DsProjectVO;
 import com.datasophon.api.dto.v2.DsWorkflowDefinitionVO;
 import com.datasophon.api.dto.v2.DsWorkflowInstanceVO;
+import com.datasophon.api.service.ds.DsWorkflowService;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -53,7 +56,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Maps DolphinScheduler Open API structures onto Datasophon's stable workflow contract. */
 @Service
-public class DsWorkflowService {
+public class DsWorkflowServiceImpl implements DsWorkflowService {
 
     private static final Pattern DURATION_SECONDS = Pattern.compile("(\\d+)");
 
@@ -63,11 +66,11 @@ public class DsWorkflowService {
     private final Executor masterExecutor;
     private final Executor dsMetricsExecutor;
 
-    public DsWorkflowService(DsApiClient client,
-                             DsTaskMetricsService taskMetricsService,
-                             ObjectMapper objectMapper,
-                             @Qualifier("masterExecutor") Executor masterExecutor,
-                             @Qualifier("dsMetricsExecutor") Executor dsMetricsExecutor) {
+    public DsWorkflowServiceImpl(DsApiClient client,
+                                 DsTaskMetricsService taskMetricsService,
+                                 ObjectMapper objectMapper,
+                                 @Qualifier("masterExecutor") Executor masterExecutor,
+                                 @Qualifier("dsMetricsExecutor") Executor dsMetricsExecutor) {
         this.client = client;
         this.taskMetricsService = taskMetricsService;
         this.objectMapper = objectMapper;
@@ -75,6 +78,7 @@ public class DsWorkflowService {
         this.dsMetricsExecutor = dsMetricsExecutor;
     }
 
+    @Override
     public DsPageVO<DsProjectVO> projects(Integer clusterId) {
         int pageNo = 1;
         int pageSize = 200;
@@ -91,6 +95,7 @@ public class DsWorkflowService {
         return new DsPageVO<>(projects, page.path("total").asLong(projects.size()), pageNo, pageSize);
     }
 
+    @Override
     public DsPageVO<DsWorkflowDefinitionVO> workflows(Integer clusterId,
                                                       long projectCode,
                                                       int pageNo,
@@ -117,6 +122,7 @@ public class DsWorkflowService {
         return new DsPageVO<>(workflows, page.path("total").asLong(workflows.size()), pageNo, pageSize);
     }
 
+    @Override
     public DsPageVO<DsWorkflowInstanceVO> instances(Integer clusterId,
                                                     long projectCode,
                                                     long workflowCode,
@@ -131,6 +137,7 @@ public class DsWorkflowService {
         return new DsPageVO<>(instances, page.path("total").asLong(instances.size()), 1, limit);
     }
 
+    @Override
     public DsDagVO dag(Integer clusterId, long projectCode, int instanceId) {
         String resource = "projects/" + projectCode + "/workflow-instances/" + instanceId;
         CompletableFuture<JsonNode> instanceFuture = CompletableFuture.supplyAsync(
@@ -218,7 +225,7 @@ public class DsWorkflowService {
 
     private static boolean isStreamTask(String taskType, String taskExecuteType) {
         return "STREAM".equalsIgnoreCase(taskExecuteType)
-                || taskType != null && taskType.toUpperCase().startsWith("FLINK");
+                || "FLINK_STREAM".equalsIgnoreCase(taskType);
     }
 
     private static Throwable rootCause(Throwable error) {

@@ -105,6 +105,7 @@ public class DsStreamMetricAccumulator {
         DeltaSummary summary = queryService.queryDeltaSummary(
                 cursor.clusterId(), METRIC, cursor.jobId(), cursor.cursor(), periodEnd, "sum");
         if (summary.sampleCount() == 0) {
+            repository.markAttempted(cursor);
             return;
         }
         repository.accumulate(cursor, periodEnd, Math.round(summary.value()));

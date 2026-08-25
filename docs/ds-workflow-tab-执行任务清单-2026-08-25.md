@@ -132,7 +132,7 @@ Tab 在浏览器里可见且项目下拉可用。
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
 | **W2-D1** | 批指标绑定 | G1 | 按 `ds-<clusterId>-<taskInstanceId>` 查血缘，填充节点 `metrics` | 沙箱跑一条 Spark 批任务（行数**预先可算**），节点返回的各输出表行数与真实写入**逐值一致** | ✅ 完成 | JDK 21 显式模块链定向测试 22/22；沙箱合成 SPARK 实例 6 SUCCESS，`ds-1-6` 聚合 7 个 run，两个输出逐值为 700/234 行且容量为 6346/2733 B |
-| **W2-D2** | 流指标绑定 | G1 | 按作业名前缀匹配取 `job_id` 并计算速率 | 沙箱跑一条 Flink 流作业，节点返回的 `jobId` 与引擎 REST 的作业 id **一致**，速率非零且 `approximate=true` | ✅ 完成 | 同上 22/22；沙箱合成实例 9（SHELL + `taskExecuteType=STREAM`）命名 `ds-1-9-codex-w2-stream`，Doris `job_id` 与 Flink REST 精确一致，完整分钟桶速率 153/350 row/s，返回 `approximate=true` |
+| **W2-D2** | 流指标绑定 | G1 | 按作业名前缀匹配取 `job_id` 并计算速率 | 沙箱跑一条 Flink 流作业，节点返回的 `jobId` 与引擎 REST 的作业 id **一致**，速率非零且 `approximate=true` | ✅ 完成 | 同上 22/22；沙箱合成实例 9（SHELL + `taskExecuteType=STREAM`）命名 `ds-1-9-codex-w2-stream`，Doris `job_id` 与 Flink REST 精确一致，完整分钟桶速率 153/350 row/s，返回 `approximate=true`；复审回归覆盖双 reporter 只取 OTLP delta、完整分钟右边界排除与 FLINK 批任务不误判 |
 | **W2-D3** | 并发 / 超时 / 单点失败隔离 | W2-D1, W2-D2 | 有界并发、三档超时、单节点失败不影响整图 | 单测：让**一个**节点的指标查询抛异常，断言其余节点数据完整且该节点 `metricsError` 有值 | ✅ 完成 | `DsWorkflowServiceTest` 覆盖单节点异常隔离：批节点保留完整指标、失败流节点为 `LOOKUP_FAILED`；专用 8 线程/64 队列与单节点 3s 超时；定向测试 22/22 |
 
 > **批流判定用 `taskType`，禁止使用 `flowType`**（恒为固定字面量的假字段）。
@@ -142,7 +142,7 @@ Tab 在浏览器里可见且项目下拉可用。
 
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| **W2-E1** | 树表：主行 + 子行懒加载 | G1 | ProTable + expandable | **浏览器验证**：未展开时**不发**子行请求（看 Network）；展开后加载该定义的最近实例；主行显示上线状态标记 | ✅ 完成 | ego-browser Network：展开前实例请求 0，展开后仅发 `/workflows/800001/instances?...limit=10`；主行显示「已上线」，项目切换刷新定义；前端定向 5 文件 23/23 |
+| **W2-E1** | 树表：主行 + 子行懒加载 | G1 | ProTable + expandable | **浏览器验证**：未展开时**不发**子行请求（看 Network）；展开后加载该定义的最近实例；主行显示上线状态标记 | ✅ 完成 | ego-browser Network：展开前实例请求 0，展开后仅发 `/workflows/800001/instances?...limit=10`；主行显示「已上线」，项目切换刷新定义；复审补齐发布状态筛选与 DS 原生 Web UI 入口，截图 `review-{release-filter,ds-link}.png`；前端定向 6 文件 29/29 |
 | **W2-E2** | Drawer + G6 DAG + 15 秒轮询 | W2-E1 | 全屏 Drawer、G6 v5 图、轮询启停 | **浏览器验证**：仅**实例行**可点开；图能正常渲染且**无幽灵起点节点**；打开后每 15 秒有一次请求、**关闭后请求停止**（Network 面板确认） | ✅ 完成 | ego-browser：主行点击不打开、实例行打开 Drawer；16s 内 DAG 请求共 2 次，关闭后再等 16s 仍为 2；画布节点 id 不含 `0`；`DsDagDrawer` fake timer 测试通过 |
 | **W2-E3** | 节点视觉 + 格式化 | W2-E2, W2-D1, W2-D2 | 密度卡节点、批按表分列、流显速率 | **浏览器验证 + 截图**：批节点按输出表分列（超过 2 张折叠）、流节点显示速率**并标注约值**、无指标节点显示 `—`。**`0 row/s` 与 `—` 必须视觉可区分** | ✅ 完成 | `g2-batch-dag.png`：700/234 两输出 + `+1`、未绑定 `—`；`g2-stream-dag.png`：约 22.8 row/s；单测断言 `0.0 row/s` 与 `—` 分离。前端 23/23、lint、antd lint、build 通过 |
 
@@ -155,7 +155,7 @@ Tab 在浏览器里可见且项目下拉可用。
 
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| **W3-1** | 流作业累计量后台聚合 | G2 | 累计表 + 定时任务（幂等键 = 作业 id + 周期） | 单测：**同一周期重复执行不重复累加**；**重启后从游标继续**。浏览器验证：流节点出现「已处理约 N 条」并标注约值 | ✅ 完成 | 新增游标累计表 + 周期去重账本（迁移 2.3.1），事务内周期去重与游标 CAS；JDK 21 定向后端测试 29/29（含 H2 真实 SQL 的重复周期/重启续跑）；`g3-stream-processed-approx.png` 显示「已处理约 1,234,567 条」 |
+| **W3-1** | 流作业累计量后台聚合 | G2 | 累计表 + 定时任务（幂等键 = 作业 id + 周期） | 单测：**同一周期重复执行不重复累加**；**重启后从游标继续**。浏览器验证：流节点出现「已处理约 N 条」并标注约值 | ✅ 完成 | 新增游标累计表 + 周期去重账本（迁移 2.3.1），事务内周期去重与游标 CAS；复审后空窗口不伪造零值而是刷新调度次序让出名额，pending 按最久未处理顺序公平调度，未追平完整分钟时不暴露部分累计量；JDK 21 相关后端测试 51/51；`g3-stream-processed-approx.png` 显示「已处理约 1,234,567 条」 |
 | **W3-2** | 端到端验收：批场景 | G2 | 按实施方案 §7.1 走查 | 逐表核对行数；**再跑一次后，旧实例仍显示它自己那一次的量** | ✅ 完成 | 合成 SPARK 工作流二次运行：新任务实例 10 SUCCESS；`ds-1-6` 与 `ds-1-10` 分别独立绑定 7 个 run，旧/新实例输出均逐表保持 700/234 行与 6346/2733 B；两次运行落在不同 Worker |
 | **W3-3** | 端到端验收：流场景 + 降级 | G2 | 按实施方案 §7.2 / §7.3 走查 | 流速率刷新正常；**四类降级**（未配置令牌 / 令牌失效 / DS 不可达 / 未按约定接入）各自的提示可区分，且**都不是 500** | ⛔ 阻塞 | 前端定向测试 5 文件 10/10；`g3-degrade-{token-missing,token-invalid,ds-unavailable,not-bound}.png` 四类提示均可区分、带重试/接入引导且无 500。实机 Collector 仍因 `json: unsupported value: NaN` 持续丢批，流指标最新样本滞后约 24 分钟，无法诚实完成 15 秒实时刷新复验 |
 
@@ -175,6 +175,17 @@ Tab 在浏览器里可见且项目下拉可用。
 
 ---
 
+## 5.2 复审修复记录
+
+| 范围 | 修复 | 验证证据 |
+|---|---|---|
+| 后端分层 | Controller 改为依赖 `service/ds` 接口，实现迁入 `service/impl/ds`；批、流指标拆为独立 provider，调度服务只负责分派 | JDK 21 相关后端测试 51/51；Checkstyle 与 Spotless 通过 |
+| 指标准确性 | 双 reporter 不再相加，优先使用 OTLP delta；查询只取完整分钟；仅 `taskExecuteType=STREAM` 或 `FLINK_STREAM` 判为流任务 | `DsTaskMetricsServiceTest`、`DsWorkflowServiceTest` 回归通过 |
+| 累计诚实性 | 空样本周期不记零、不推进，只刷新调度次序；`LIMIT 64` 按最久未处理顺序轮转；游标未追平最新完整分钟时只返回 `since`，不返回部分 `processedApprox` | `DsStreamMetricAccumulatorTest` 4/4，`DsTaskMetricsServiceTest` 4/4 |
+| 前端契约 | service/test/mock 收拢到 `DsWorkflow/`；增加当前页发布状态筛选和 DS 原生 Web UI 外链 | Vitest 6 文件 29/29，`npm run lint`、Ant Design lint、生产构建通过；`review-{release-filter,ds-link}.png` |
+
+---
+
 ## 6. 实施中发现的偏差（**发现即追加，不要攒**）
 
 > 与设计文档不符的事实、被否证的假设、判据不合理之处，都记在这里。
@@ -182,7 +193,7 @@ Tab 在浏览器里可见且项目下拉可用。
 
 | 日期 | 任务 | 现象 | 影响 | 处置 |
 |---|---|---|---|---|
-| 2026-08-25 | W2-D2 | DS 3.4.1 原生 `FLINK_STREAM` 插件不会替换 SQL `rawScript` 内的 `${system.task.instance.id}`，作业名保留字面量 | 原生任务无法按约定前缀绑定；已产生的错误命名合成 Job 已精确取消 | 沙箱改用 Shell→SQL Client 且任务定义标记 `taskExecuteType=STREAM`；后端优先据此判流，`FLINK*` taskType 仍作为兼容路径 |
+| 2026-08-25 | W2-D2 | DS 3.4.1 原生 `FLINK_STREAM` 插件不会替换 SQL `rawScript` 内的 `${system.task.instance.id}`，作业名保留字面量 | 原生任务无法按约定前缀绑定；已产生的错误命名合成 Job 已精确取消 | 沙箱改用 Shell→SQL Client 且任务定义标记 `taskExecuteType=STREAM`；后端仅以 `taskExecuteType=STREAM` 或明确的 `FLINK_STREAM` taskType 判流，普通 FLINK 批任务保持批路径 |
 | 2026-08-25 | W2-D2 | 实测期间 OTel Collector 在 15:11 后持续出现 exporter failure，Doris 新鲜指标停止推进，但本次合成 Job 的 15:09–15:11 样本已完整落库 | 后续实时刷新验收会受共享环境故障影响；不能通过扩大查询窗口伪装为健康 | 不重启共享 Collector；W2 用已落库的同一 JobID 样本核对两个完整分钟桶，W3 实时刷新待环境恢复后复验 |
 | 2026-08-25 | W3-1 | DS `appLink` 恒空且 YARN/Standalone 的 JobManager REST 端点没有可从任务实例稳定反查的契约 | 无法按设计直接读取 Flink REST `start-time`；累计量本身仍只能从首个可用 delta 开始重建 | `since` 与初始游标改取 Doris 中该 JobID 的首个 OTel 样本并明确为 first observed；不伪造引擎启动时间，后续若补齐 JobManager 端点契约再切回 REST |
 | 2026-08-25 | W3-3 | Collector exporter 的实际根因为 `json: unsupported value: NaN`，持续重试后 `Dropping data`；指标最新样本实测滞后约 24 分钟 | 实时流速率与累计游标都无法获得新鲜 delta，15 秒轮询只能重复旧值 | 遵守共享环境红线，不重启/改配置；四类降级已完成，W3-3 与 G3 保持阻塞，待 Collector 恢复后只需复验流刷新 |
