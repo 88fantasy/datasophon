@@ -111,7 +111,7 @@ Wave 3（累计聚合 + 端到端验收，3 个任务）
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
 | **W1-B1** | `DS/service_ddl.json` 新增 `apiToken` | G0 | 参数定义（非必填、默认空） | **新装**集群的配置页出现该参数并可保存 | ✅ 完成 | `jq empty package/raw/meta/datacluster-physical/DS/service_ddl.json`；上述 19/19 中 `DsDdlLoadTest` 3/3，断言默认空、可见且不写入节点配置 |
-| **W1-B2** | 现存实例的参数兜底合并 | W1-B1 | 照既有网关配置服务的做法补合并逻辑 | **已安装**的 DS 实例（升级场景）在配置页也能看到该参数——这是最容易漏的一条，须单独验 | ✅ 完成 | 上述 19/19；`DsConfigServiceTest` 验证旧实例 DDL 兜底，`ServiceInstallServiceImplTest` 验证保存平台参数不误标重启、运行配置仍标重启 |
+| **W1-B2** | 现存实例的参数兜底合并 | W1-B1 | 照既有网关配置服务的做法补合并逻辑 | **已安装**的 DS 实例（升级场景）在配置页也能看到该参数——这是最容易漏的一条，须单独验 | ⛔ 阻塞 | 上述 19/19；`DsConfigServiceTest` 验证旧实例 DDL 兜底，`ServiceInstallServiceImplTest` 验证保存平台参数不误标重启、运行配置仍标重启。**2026-08-25 Claude 实机验证：单测全过但真实升级场景不生效**——已装实例配置页仍只有 33 项，`apiToken` 不出现。真因是新 DDL 未上传沙箱 Nexus（详见障碍记录）。手工补传 + 重启后配置项 33→34、参数正常出现，但**代码之外缺「DDL 变更如何进入元数据存储」的交付定义，该条退回** |
 
 > W1-B1/B2 都改 `service_ddl.json` 与配置服务，**必须串行**，不要与线 A/C 抢同一文件。
 
@@ -202,6 +202,12 @@ Tab 在浏览器里可见且项目下拉可用。
 | 2026-08-25 | W3-3 | **NaN 故障源定位到 `ddh-02` 的 Collector**（非 ddh-01）：1593 次 `unsupported value: NaN` + 124 次 `Dropping data`，全部集中在 `doris` exporter 的 `metrics` 信号；今日分三波（10 时 109 / 11 时 233 / 15 时 1189） | 一个坏数据点使整批 8192 条一起被丢，表现为「所有指标同时间歇性缺样本」，极易误判为网络抖动 | 见下一行的模板级修复 |
 | 2026-08-25 | W3-3 | 配置里已有两条 NaN 过滤器（`drop_empty_summary` / `drop_zk_decaying_summary`），但注释自承：Summary 被观测过之后再因滑动窗口衰减出 NaN 的情况**覆盖不到**，且 OTTL 读不了 `quantile_values`，只能逐个硬编码指标名 | 打地鼠模式：每个新服务引入的 Summary 都可能再次打挂整条 pipeline，且只在故障后才被发现 | **改为隔离爆炸半径**：`OTELCOLLECTOR/templates/otelcol.ftl` 把 Summary 拆到独立 `metrics/summary` pipeline + 独立 `doris/summary` exporter 实例（独立 sending_queue 与 consumer），NaN 只能炸掉 Summary 自身批次，炸不到 Sum/Gauge。新增 `filter/drop_summary` 与 `filter/keep_summary_only` 两条互补过滤器保证不重不漏。`OtelcolTemplateTest` 13/13 通过（含新增的隔离结构断言）。**尚未下发到沙箱**（需重启 Collector，遵守共享环境红线） |
 | 2026-08-25 | — | 顺带闭合一条历史遗留：`ddh-02` Collector 进程启动于 `Fri Aug 14 18:44:21`，与此前测得的 8-14 丢数窗口（17:02→**18:44**）结束时刻吻合 | 该窗口此前记为「根因未定位」 | 认定为该 Collector 不可用期。**保留不确定性**：当时测得的是 22% 部分丢失而非全丢，且 18:44 之前的日志已随进程重启被覆盖，完整机制缺证据 |
+| 2026-08-25 | 部署 | **只换 `datasophon-api` jar 起不来**：`NoClassDefFoundError: com/datasophon/common/k8s/config/K8sClientConfig` | 沙箱 API 停机约 3 分钟 | **api 与 common 两个 jar 必须成对部署**。本分支自 Aug 16 起有 17 个 api 提交,含整个 K8s 接管 epic,common 侧新增了类。清单原先没有这一条 |
+| 2026-08-25 | **W1-B2** | **单测通过但真实升级场景不生效**：已装 DS 实例的配置页仍只有 33 项,`apiToken` 不出现 | 批链路全链阻断——`/v2/ds/projects` 直接报「请在 DS 服务配置中填写 apiToken」 | 真因不在代码:`mergeDdlFallback` 读的是库里的 DDL(由 `LoadServiceMeta` 从 Nexus 灌入),而**新 DDL 从未上传到沙箱 Nexus**。单测里的 DDL 是构造出来的,必然含新参数,所以测不出「DDL 从哪来」这个前提。**该条应退回:缺的是「DDL 变更如何进入元数据存储」的交付定义**,否则每次新增 DDL 参数都会重演 |
+| 2026-08-25 | 部署 | DDL 传上 Nexus 后参数**仍不可见** | 需多一次重启 | `getServiceConfigFromDdl` 读 `t_ddh_frame_service` 表,不直连 meta 存储;**必须重启 API 让 `LoadServiceMeta` 重新灌库**。上传 ≠ 生效 |
+| 2026-08-25 | 部署 | 保存服务配置返回 **403 且响应体为空** | 误以为是 K8s 只读封锁(实际集群是 MANAGED,切面直接放行) | `CsrfTokenInterceptor` 要求 POST 回带 `X-XSRF-TOKEN` 头,值在登录时以同名 Cookie 下发。另一条出口:带 `token` 头走 API token 认证可跳过 CSRF |
+| 2026-08-25 | 部署 | 前端产物直接铺进 `static/` 后**首页 200 但所有 JS 404** | 页面白屏 | 生产 `publicPath = /ddh/static/`,产物结构必须是 `static/index.html` + `static/static/<assets>`,不能把 dist 平铺。另:macOS `tar czf` 会带出 216 个 `._*` AppleDouble 垃圾文件,解压后需 `find -name '._*' -delete` |
+| 2026-08-25 | **W3-2** | **批链路已用真实部署实机验证通过** | — | 实例 6 与 10 各返回 `runCount=7`、两条输出 700/234 行(6346/2733 字节),分别绑定各自的 warehouse 路径互不覆盖。`runCount=7` 直接证明按标识聚合了全部 run 而非「取最新一个」(T7 返工的核心教训) |
 
 ---
 
