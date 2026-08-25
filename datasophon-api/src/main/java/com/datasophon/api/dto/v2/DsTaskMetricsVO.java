@@ -22,22 +22,19 @@
 
 package com.datasophon.api.dto.v2;
 
+import java.util.List;
+
 import lombok.Data;
 
 @Data
-public class DsDagNodeVO {
-    private long taskCode;
-    private String name;
-    private String taskType;
-    private String taskExecuteType;
-    private String flowType;
-    private Integer taskInstanceId;
-    private String state;
-    private String startTime;
-    private String endTime;
-    private long durationSeconds;
-    private String host;
-    private int retryTimes;
-    private DsTaskMetricsVO metrics;
-    private String metricsError;
+public class DsTaskMetricsVO {
+    private String kind;
+    private Long runCount;
+    private List<DsBatchOutputVO> outputs;
+    private String jobId;
+    private String jobName;
+    private Double rowsPerSecond;
+    private Boolean approximate;
+    private Long processedApprox;
+    private String since;
 }

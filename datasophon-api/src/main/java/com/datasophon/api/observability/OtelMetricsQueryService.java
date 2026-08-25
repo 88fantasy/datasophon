@@ -82,7 +82,8 @@ public class OtelMetricsQueryService {
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
                     "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id",
-                    "job_id", "task_id", "subtask_index", "operator_name", "operation", "workload_group");
+                    "job_id", "job_name", "task_id", "subtask_index", "operator_name", "operation",
+                    "workload_group");
 
     /**
      * 仅用于「键不存在」判断的属性白名单，不参与 SELECT/GROUP BY 别名生成（与

@@ -111,7 +111,7 @@ class OtelMetricsQueryServiceTest {
     @Test
     void allowedAttrFilterKeys_includeFlinkSubtaskDimensions() {
         assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
-                .contains("task_id", "subtask_index");
+                .contains("job_name", "task_id", "subtask_index");
         String sql = OtelMetricsQueryService.buildInstantAggSql(
                 "count", false, false, null, null, null, null,
                 List.of("job_id"), "otel_metrics_sum");

@@ -1,7 +1,11 @@
+import { type ProColumns, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Alert, Button, Select, Space, Typography } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
-import { getDsProjects } from '@/services/dsWorkflow';
+import { Alert, Button, Select, Space, Tag, Typography } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getDsProjects, getDsWorkflows } from '@/services/dsWorkflow';
+import DsDagDrawer from './DsDagDrawer';
+import { formatDsTime } from './formatters';
+import InstancesTable from './InstancesTable';
 
 interface DsWorkflowPanelProps {
   clusterId: number;
@@ -15,6 +19,8 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
   const intl = useIntl();
   const [projects, setProjects] = useState<DATASOPHON.DsProject[]>([]);
   const [projectCode, setProjectCode] = useState<number>();
+  const [selectedInstance, setSelectedInstance] =
+    useState<DATASOPHON.DsWorkflowInstance>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -41,6 +47,52 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
     void loadProjects();
   }, [loadProjects]);
 
+  const columns = useMemo<ProColumns<DATASOPHON.DsWorkflowDefinition>[]>(
+    () => [
+      {
+        title: intl.formatMessage({ id: 'dsWorkflow.table.name' }),
+        dataIndex: 'name',
+      },
+      {
+        title: intl.formatMessage({ id: 'dsWorkflow.table.releaseState' }),
+        dataIndex: 'releaseState',
+        width: 130,
+        search: false,
+        render: (_, record) => (
+          <Tag color={record.releaseState === 'ONLINE' ? 'success' : 'default'}>
+            {intl.formatMessage({
+              id:
+                record.releaseState === 'ONLINE'
+                  ? 'dsWorkflow.status.online'
+                  : 'dsWorkflow.status.offline',
+            })}
+          </Tag>
+        ),
+      },
+      {
+        title: intl.formatMessage({ id: 'dsWorkflow.table.version' }),
+        dataIndex: 'version',
+        width: 90,
+        search: false,
+      },
+      {
+        title: intl.formatMessage({ id: 'dsWorkflow.table.owner' }),
+        dataIndex: 'owner',
+        width: 130,
+        search: false,
+        render: (_, record) => record.owner || '—',
+      },
+      {
+        title: intl.formatMessage({ id: 'dsWorkflow.table.updateTime' }),
+        dataIndex: 'updateTime',
+        width: 190,
+        search: false,
+        render: (_, record) => formatDsTime(record.updateTime),
+      },
+    ],
+    [intl],
+  );
+
   return (
     <div data-instance-id={instanceId} style={{ padding: '8px 0' }}>
       <div style={{ display: 'grid', gap: 24 }}>
@@ -61,7 +113,10 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
             }))}
             showSearch={{ optionFilterProp: 'label' }}
             style={{ minWidth: 280 }}
-            onChange={setProjectCode}
+            onChange={(value) => {
+              setProjectCode(value);
+              setSelectedInstance(undefined);
+            }}
           />
         </Space>
 
@@ -76,18 +131,61 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
               </Button>
             }
           />
-        ) : (
+        ) : null}
+
+        {projectCode == null && !error ? (
           <Alert
             type="info"
             showIcon
-            title={
-              projectCode == null
-                ? intl.formatMessage({ id: 'dsWorkflow.project.empty' })
-                : intl.formatMessage({ id: 'dsWorkflow.skeleton.ready' })
-            }
+            title={intl.formatMessage({ id: 'dsWorkflow.project.empty' })}
           />
-        )}
+        ) : null}
+
+        {projectCode != null ? (
+          <ProTable<DATASOPHON.DsWorkflowDefinition>
+            key={projectCode}
+            rowKey="code"
+            columns={columns}
+            params={{ projectCode }}
+            options={false}
+            pagination={{ defaultPageSize: 20, showSizeChanger: true }}
+            request={async (params) => {
+              const response = await getDsWorkflows(
+                clusterId,
+                projectCode,
+                params.current ?? 1,
+                params.pageSize ?? 20,
+                typeof params.name === 'string' ? params.name : undefined,
+              );
+              return {
+                data: response.data?.list ?? [],
+                success: response.success !== false,
+                total: response.data?.total ?? 0,
+              };
+            }}
+            expandable={{
+              expandedRowRender: (record) => (
+                <InstancesTable
+                  clusterId={clusterId}
+                  projectCode={projectCode}
+                  workflowCode={record.code}
+                  onOpen={setSelectedInstance}
+                />
+              ),
+            }}
+          />
+        ) : null}
       </div>
+
+      {projectCode != null ? (
+        <DsDagDrawer
+          clusterId={clusterId}
+          projectCode={projectCode}
+          instance={selectedInstance}
+          open={selectedInstance != null}
+          onClose={() => setSelectedInstance(undefined)}
+        />
+      ) : null}
     </div>
   );
 };

@@ -23,6 +23,7 @@
 package com.datasophon.api.ds;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import com.datasophon.api.dto.v2.DsDagVO;
 import com.datasophon.api.dto.v2.DsPageVO;
+import com.datasophon.api.dto.v2.DsTaskMetricsVO;
 import com.datasophon.api.dto.v2.DsWorkflowDefinitionVO;
 import com.datasophon.api.dto.v2.DsWorkflowInstanceVO;
 
@@ -44,8 +46,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 class DsWorkflowServiceTest {
 
     private final DsApiClient client = mock(DsApiClient.class);
+    private final DsTaskMetricsService taskMetricsService = mock(DsTaskMetricsService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final DsWorkflowService service = new DsWorkflowService(client, objectMapper, Runnable::run);
+    private final DsWorkflowService service =
+            new DsWorkflowService(client, taskMetricsService, objectMapper, Runnable::run, Runnable::run);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -118,6 +122,47 @@ class DsWorkflowServiceTest {
                     assertThat(node.getRetryTimes()).isEqualTo(1);
                 });
         assertThat(dag.getLocations()).isEmpty();
+    }
+
+    @Test
+    void isolatesOneNodeMetricsFailureAndKeepsOtherNodeComplete() throws Exception {
+        when(client.get(eq(7), eq("projects/99/workflow-instances/8"), anyMap()))
+                .thenReturn(json("""
+                        {"id":8,"workflowDefinitionCode":101,"name":"mixed-flow","state":"RUNNING_EXECUTION",
+                        "dagData":{"taskDefinitionList":[
+                        {"code":1001,"name":"batch","taskType":"SPARK"},
+                        {"code":1002,"name":"stream","taskType":"SHELL"}],
+                        "workflowTaskRelationList":[{"preTaskCode":1001,"postTaskCode":1002}]}}
+                        """));
+        when(client.get(eq(7), eq("projects/99/workflow-instances/8/tasks"), anyMap()))
+                .thenReturn(json("""
+                        {"taskList":[
+                        {"id":11,"taskCode":1001,"state":"SUCCESS","taskExecuteType":"BATCH"},
+                        {"id":12,"taskCode":1002,"state":"RUNNING_EXECUTION","taskExecuteType":"STREAM"}]}
+                        """));
+        DsTaskMetricsVO batchMetrics = new DsTaskMetricsVO();
+        batchMetrics.setKind("BATCH");
+        when(taskMetricsService.metrics(eq(7), any())).thenAnswer(invocation -> {
+            com.datasophon.api.dto.v2.DsDagNodeVO node = invocation.getArgument(1);
+            if (node.getTaskInstanceId() == 12) {
+                throw new IllegalStateException("synthetic Doris failure");
+            }
+            return batchMetrics;
+        });
+
+        DsDagVO dag = service.dag(7, 99, 8);
+
+        assertThat(dag.getNodes()).filteredOn(node -> node.getTaskInstanceId() == 11).singleElement()
+                .satisfies(node -> {
+                    assertThat(node.getMetrics()).isSameAs(batchMetrics);
+                    assertThat(node.getMetricsError()).isNull();
+                });
+        assertThat(dag.getNodes()).filteredOn(node -> node.getTaskInstanceId() == 12).singleElement()
+                .satisfies(node -> {
+                    assertThat(node.getFlowType()).isEqualTo("STREAM");
+                    assertThat(node.getMetrics()).isNull();
+                    assertThat(node.getMetricsError()).isEqualTo("LOOKUP_FAILED");
+                });
     }
 
     private JsonNode json(String value) throws Exception {

@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,15 +58,21 @@ public class DsWorkflowService {
     private static final Pattern DURATION_SECONDS = Pattern.compile("(\\d+)");
 
     private final DsApiClient client;
+    private final DsTaskMetricsService taskMetricsService;
     private final ObjectMapper objectMapper;
     private final Executor masterExecutor;
+    private final Executor dsMetricsExecutor;
 
     public DsWorkflowService(DsApiClient client,
+                             DsTaskMetricsService taskMetricsService,
                              ObjectMapper objectMapper,
-                             @Qualifier("masterExecutor") Executor masterExecutor) {
+                             @Qualifier("masterExecutor") Executor masterExecutor,
+                             @Qualifier("dsMetricsExecutor") Executor dsMetricsExecutor) {
         this.client = client;
+        this.taskMetricsService = taskMetricsService;
         this.objectMapper = objectMapper;
         this.masterExecutor = masterExecutor;
+        this.dsMetricsExecutor = dsMetricsExecutor;
     }
 
     public DsPageVO<DsProjectVO> projects(Integer clusterId) {
@@ -146,7 +153,6 @@ public class DsWorkflowService {
             node.setTaskCode(taskCode);
             node.setName(text(definition, "name"));
             node.setTaskType(text(definition, "taskType"));
-            node.setFlowType("FLINK".equalsIgnoreCase(node.getTaskType()) ? "STREAM" : "BATCH");
             if (task != null) {
                 node.setTaskExecuteType(text(task, "taskExecuteType"));
                 node.setTaskInstanceId(task.path("id").isNumber() ? task.path("id").asInt() : null);
@@ -157,8 +163,12 @@ public class DsWorkflowService {
                 node.setHost(text(task, "host"));
                 node.setRetryTimes(task.path("retryTimes").asInt());
             }
+            node.setFlowType(isStreamTask(node.getTaskType(), node.getTaskExecuteType())
+                    ? "STREAM"
+                    : "BATCH");
             nodes.add(node);
         }
+        enrichMetrics(clusterId, nodes);
 
         List<DsDagEdgeVO> edges = new ArrayList<>();
         for (JsonNode relation : instance.at("/dagData/workflowTaskRelationList")) {
@@ -174,6 +184,50 @@ public class DsWorkflowService {
         dag.setEdges(edges);
         dag.setLocations(locations(instance.path("locations")));
         return dag;
+    }
+
+    private void enrichMetrics(Integer clusterId, List<DsDagNodeVO> nodes) {
+        List<CompletableFuture<Void>> futures = nodes.stream()
+                .filter(node -> node.getTaskInstanceId() != null)
+                .map(node -> metricsFuture(clusterId, node))
+                .toList();
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+    }
+
+    private CompletableFuture<Void> metricsFuture(Integer clusterId, DsDagNodeVO node) {
+        try {
+            return CompletableFuture
+                    .supplyAsync(() -> taskMetricsService.metrics(clusterId, node), dsMetricsExecutor)
+                    .orTimeout(3, TimeUnit.SECONDS)
+                    .handle((metrics, error) -> {
+                        if (error == null) {
+                            node.setMetrics(metrics);
+                        } else {
+                            Throwable cause = rootCause(error);
+                            node.setMetricsError(cause instanceof DsTaskMetricsService.NotBoundException
+                                    ? "NOT_BOUND"
+                                    : "LOOKUP_FAILED");
+                        }
+                        return (Void) null;
+                    });
+        } catch (RuntimeException rejected) {
+            node.setMetricsError("LOOKUP_FAILED");
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private static boolean isStreamTask(String taskType, String taskExecuteType) {
+        return "STREAM".equalsIgnoreCase(taskExecuteType)
+                || taskType != null && taskType.toUpperCase().startsWith("FLINK");
+    }
+
+    private static Throwable rootCause(Throwable error) {
+        Throwable cause = error;
+        while ((cause instanceof CompletionException || cause instanceof java.util.concurrent.ExecutionException)
+                && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 
     private List<DsDagLocationVO> locations(JsonNode raw) {

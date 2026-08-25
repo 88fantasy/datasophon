@@ -63,14 +63,15 @@ export default {
       data: { list: projects, total: projects.length, pageNo: 1, pageSize: 200 },
     });
   },
-  'GET /ddh/api/v2/ds/workflows': (_req: Request, res: Response) => {
+  'GET /ddh/api/v2/ds/workflows': (req: Request, res: Response) => {
+    const streaming = String(req.query.projectCode) === '900002';
     res.json({
       success: true,
       data: {
         list: [
           {
-            code: 800001,
-            name: '合成工作流',
+            code: streaming ? 800002 : 800001,
+            name: streaming ? '合成流工作流' : '合成批工作流',
             version: 1,
             releaseState: 'ONLINE',
             owner: 'readonly',
@@ -111,16 +112,90 @@ export default {
     res.json({
       success: true,
       data: {
-        instance: { id: 810001, name: '合成工作流-20260825102001', state: 'SUCCESS' },
+        instance: { id: 810001, name: '合成批工作流-20260825102001', state: 'SUCCESS' },
         nodes: [
           {
             taskCode: 820001,
-            name: 'synthetic-shell',
-            taskType: 'SHELL',
+            name: 'synthetic-spark-batch',
+            taskType: 'SPARK',
             taskExecuteType: 'BATCH',
             flowType: 'BATCH',
             taskInstanceId: 830001,
             state: 'SUCCESS',
+            metrics: {
+              kind: 'BATCH',
+              runCount: 7,
+              outputs: [
+                { name: 'synthetic/source_700', rowCount: 700, size: 7096 },
+                { name: 'synthetic/target_234', rowCount: 234, size: 3450 },
+                { name: 'synthetic/audit_1', rowCount: 1, size: 128 },
+              ],
+            },
+          },
+          {
+            taskCode: 820002,
+            name: 'synthetic-unbound-shell',
+            taskType: 'SHELL',
+            taskExecuteType: 'BATCH',
+            flowType: 'BATCH',
+            taskInstanceId: 830002,
+            state: 'SUCCESS',
+            metricsError: 'NOT_BOUND',
+          },
+        ],
+        edges: [{ from: 820001, to: 820002 }],
+        locations: [],
+      },
+    });
+  },
+  'GET /ddh/api/v2/ds/workflows/800002/instances': (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      data: {
+        list: [
+          {
+            id: 810002,
+            workflowCode: 800002,
+            name: '合成流工作流-20260825110001',
+            state: 'RUNNING_EXECUTION',
+            startTime: '2026-08-25T11:00:01',
+            durationSeconds: 3600,
+            host: 'synthetic-worker:1234',
+            commandType: 'START_PROCESS',
+            dryRun: false,
+          },
+        ],
+        total: 1,
+        pageNo: 1,
+        pageSize: 10,
+      },
+    });
+  },
+  'GET /ddh/api/v2/ds/instances/810002/dag': (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      data: {
+        instance: {
+          id: 810002,
+          name: '合成流工作流-20260825110001',
+          state: 'RUNNING_EXECUTION',
+        },
+        nodes: [
+          {
+            taskCode: 820003,
+            name: 'synthetic-flink-stream',
+            taskType: 'FLINK_STREAM',
+            taskExecuteType: 'STREAM',
+            flowType: 'STREAM',
+            taskInstanceId: 830003,
+            state: 'RUNNING_EXECUTION',
+            metrics: {
+              kind: 'STREAM',
+              jobId: '0123456789abcdef0123456789abcdef',
+              jobName: 'ds-7-830003-synthetic-stream',
+              rowsPerSecond: 22.8,
+              approximate: true,
+            },
           },
         ],
         edges: [],
