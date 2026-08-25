@@ -88,6 +88,11 @@ public class GravitinoLineageClient {
         return response;
     }
 
+    public JsonNode getRunByExternalKey(long clusterId, String externalRunKey) {
+        return get(clusterId, "lineage/run/by-external-key/" + encode(externalRunKey),
+                Map.of(), NodeInjection.NONE);
+    }
+
     public JsonNode post(long clusterId, String resource) {
         return exchange(clusterId, resource, Map.of(), "POST");
     }

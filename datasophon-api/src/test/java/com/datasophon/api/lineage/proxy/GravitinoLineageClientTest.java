@@ -49,6 +49,7 @@ class GravitinoLineageClientTest {
     private final GravitinoLineageEndpointResolver resolver =
             mock(GravitinoLineageEndpointResolver.class);
     private final AtomicReference<String> rawQuery = new AtomicReference<>();
+    private final AtomicReference<String> rawPath = new AtomicReference<>();
     private final AtomicReference<String> authorizationHeader = new AtomicReference<>();
     private HttpServer server;
     private GravitinoLineageClient client;
@@ -66,6 +67,10 @@ class GravitinoLineageClientTest {
         server.createContext("/api/lineage/job/9", exchange -> respond(exchange, 200,
                 "{\"id\":9,\"jobName\":\"flink-lineage-verify.t6_cdc_prod_20260807\","
                         + "\"engine\":\"UNKNOWN\",\"jobType\":\"UNKNOWN\",\"state\":\"RUNNING\"}"));
+        server.createContext("/api/lineage/run/by-external-key/", exchange -> {
+            rawPath.set(exchange.getRequestURI().getRawPath());
+            respond(exchange, 200, "{\"runId\":\"run-1\",\"outputs\":[]}");
+        });
         server.createContext("/api/lineage/bad-request", exchange -> respond(exchange, 400, "{\"message\":\"bad depth\"}"));
         server.createContext("/api/lineage/crash", exchange -> respond(exchange, 500, "{\"message\":\"boom\"}"));
         server.createContext("/api/lineage/broken-node", exchange -> respond(exchange, 200,
@@ -94,6 +99,15 @@ class GravitinoLineageClientTest {
         assertThat(job.path("clusterId").asLong()).isEqualTo(7L);
         assertThat(job.path("engine").asText()).isEqualTo("FLINK");
         assertThat(job.path("jobType").asText()).isEqualTo("STREAMING");
+    }
+
+    @Test
+    void encodesExternalRunKeyAsOnePathSegment() {
+        JsonNode run = client.getRunByExternalKey(7L, "DSTI 99887766");
+
+        assertThat(run.path("runId").asText()).isEqualTo("run-1");
+        assertThat(rawPath.get())
+                .isEqualTo("/api/lineage/run/by-external-key/DSTI%2099887766");
     }
 
     @Test

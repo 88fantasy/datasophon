@@ -60,6 +60,7 @@ class LineageV2ControllerTest {
                 any(NodeInjection.class))).thenReturn(response);
         when(client.getJob(7L, 9L)).thenReturn(response);
         when(client.post(7L, "lineage/rebuild")).thenReturn(response);
+        when(client.getRunByExternalKey(7L, "DSTI-99887766")).thenReturn(response);
 
         assertThat(controller.tables(7L, 1, 20, null, null, null, null)).isSameAs(response);
         assertThat(controller.graph(7L, 2L, 3, "both", "n:2:both:g8")).isSameAs(response);
@@ -68,9 +69,11 @@ class LineageV2ControllerTest {
         assertThat(controller.job(7L, 9L)).isSameAs(response);
         assertThat(controller.impact(7L, 2L, 3)).isSameAs(response);
         assertThat(controller.rebuild(7L).getStatusCode().value()).isEqualTo(202);
+        assertThat(controller.externalRun(7L, "DSTI-99887766")).isSameAs(response);
 
         verify(client).getJob(7L, 9L);
         verify(client).post(7L, "lineage/rebuild");
+        verify(client).getRunByExternalKey(7L, "DSTI-99887766");
     }
 
     @Test
