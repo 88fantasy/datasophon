@@ -207,8 +207,34 @@ public class OtelcolTemplateTest {
         // 见 docs/monitoring/zookeeper-otel-verification.md)
         assertTrue(yaml.contains("filter/drop_empty_summary:"));
         assertTrue(yaml.contains("metric.type == METRIC_DATA_TYPE_SUMMARY and count == 0"));
+        // 该过滤器现在挂在隔离出来的 metrics/summary pipeline 上（见 isolates_summary_metrics_*）
         assertTrue(yaml.contains(
-                "processors: [memory_limiter, filter/drop_empty_summary, filter/drop_zk_decaying_summary, batch]"));
+                "processors: [memory_limiter, filter/keep_summary_only, filter/drop_empty_summary, "
+                        + "filter/drop_zk_decaying_summary, batch]"));
+    }
+
+    /**
+     * 前两条 filter 都是「按已知来源逐个排除」，只能事后补：任何新服务引入会衰减出 NaN 的 Summary，
+     * 都会让 dorisexporter 整批序列化失败，把同一 pipeline 里的 Sum/Gauge 一起打挂
+     * （2026-08-25 沙箱实测：NaN 报错 1531 次、Dropping data 124 次，Flink numRecordsIn 同步断流）。
+     * 因此把 Summary 拆到独立 pipeline，并给它独立的 exporter 实例（独立 sending_queue 与 consumer），
+     * 使 NaN 的爆炸半径收敛到 Summary 自身。本测试锁住这个隔离结构不被改回去。
+     */
+    @Test
+    public void isolates_summary_metrics_into_dedicated_pipeline_and_exporter() throws Exception {
+        String yaml = render("doris");
+
+        // 主 pipeline 必须把 Summary 摘出去，且不再挂 Summary 专用过滤器
+        assertTrue(yaml.contains("processors: [memory_limiter, filter/drop_summary, batch]"));
+        // 两个过滤器互补，保证数据不重不漏
+        assertTrue(yaml.contains("filter/drop_summary:"));
+        assertTrue(yaml.contains("filter/keep_summary_only:"));
+        assertTrue(yaml.contains("metric.type == METRIC_DATA_TYPE_SUMMARY'"));
+        assertTrue(yaml.contains("metric.type != METRIC_DATA_TYPE_SUMMARY'"));
+        // 独立 pipeline 与独立 exporter 实例
+        assertTrue(yaml.contains("metrics/summary:"));
+        assertTrue(yaml.contains("doris/summary:"));
+        assertTrue(yaml.contains("exporters: [doris/summary]"));
     }
 
     @Test
