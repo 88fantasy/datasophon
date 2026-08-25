@@ -54,6 +54,10 @@ import com.alibaba.fastjson2.JSONObject;
 public class ServiceConfigUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ServiceConfigUtils.class);
+    private static final String DS_SERVICE_NAME = "DS";
+    private static final Map<String, String> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS = Map.of(
+            "aws.s3.access.key.id", "${ROOT.Rustfs.access_key}",
+            "aws.s3.access.key.secret", "${ROOT.Rustfs.secret_key}");
 
     private ServiceConfigUtils() {
     }
@@ -146,6 +150,7 @@ public class ServiceConfigUtils {
 
     public static Map<String, String> createMergeVariables(Integer clusterId, String serviceName, List<ServiceConfig> serviceConfigs) {
         Map<String, String> variables = new HashMap<>(GlobalVariables.getVariables(clusterId));
+        applyPlatformManagedConfigValues(serviceName, serviceConfigs, variables);
         serviceConfigs.forEach(config -> {
             String name = config.getName();
             // 如果存在占位符，则忽略(即不支持递归占位符)。如果全局变量，也忽略(有可能已经被系统特殊逻辑处理）
@@ -158,6 +163,19 @@ public class ServiceConfigUtils {
             }
         });
         return variables;
+    }
+
+    static void applyPlatformManagedConfigValues(
+                                                 String serviceName,
+                                                 List<ServiceConfig> serviceConfigs,
+                                                 Map<String, String> globalVariables) {
+        if (!DS_SERVICE_NAME.equals(serviceName)) {
+            return;
+        }
+        serviceConfigs.stream()
+                .filter(config -> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
+                .forEach(config -> config.setValue(
+                        globalVariables.get(DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.get(config.getName()))));
     }
 
     private static void replaceVariable(List<ServiceConfig> serviceConfigs, Map<String, String> variables) {

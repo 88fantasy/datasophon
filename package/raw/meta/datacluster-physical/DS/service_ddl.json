@@ -109,6 +109,51 @@
             "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-shell-3.4.1.jar",
+            "to": "api-server/libs/dolphinscheduler-task-shell-3.4.1.jar",
+            "md5": "e8237f0066be38aaf00d4595bca5f2f0"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-spark-3.4.1.jar",
+            "to": "api-server/libs/dolphinscheduler-task-spark-3.4.1.jar",
+            "md5": "365c3a7a921b577d6a006b0bf308c02e"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-flink-3.4.1.jar",
+            "to": "api-server/libs/dolphinscheduler-task-flink-3.4.1.jar",
+            "md5": "0657164010884427189eb5b539ec7e0c"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "to": "api-server/libs/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "md5": "c6b93698cd08c67645f2ac1457d73c98"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-sql-3.4.1.jar",
+            "to": "api-server/libs/dolphinscheduler-task-sql-3.4.1.jar",
+            "md5": "ae2bc09add275703a889394fdbd74238"
+          }
         }
       ]
     },
@@ -217,6 +262,51 @@
             "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-shell-3.4.1.jar",
+            "to": "master-server/libs/dolphinscheduler-task-shell-3.4.1.jar",
+            "md5": "e8237f0066be38aaf00d4595bca5f2f0"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-spark-3.4.1.jar",
+            "to": "master-server/libs/dolphinscheduler-task-spark-3.4.1.jar",
+            "md5": "365c3a7a921b577d6a006b0bf308c02e"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-flink-3.4.1.jar",
+            "to": "master-server/libs/dolphinscheduler-task-flink-3.4.1.jar",
+            "md5": "0657164010884427189eb5b539ec7e0c"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "to": "master-server/libs/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "md5": "c6b93698cd08c67645f2ac1457d73c98"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-sql-3.4.1.jar",
+            "to": "master-server/libs/dolphinscheduler-task-sql-3.4.1.jar",
+            "md5": "ae2bc09add275703a889394fdbd74238"
+          }
         }
       ]
     },
@@ -319,13 +409,58 @@
           }
         },
         {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-shell-3.4.1.jar",
+            "to": "worker-server/libs/dolphinscheduler-task-shell-3.4.1.jar",
+            "md5": "e8237f0066be38aaf00d4595bca5f2f0"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-spark-3.4.1.jar",
+            "to": "worker-server/libs/dolphinscheduler-task-spark-3.4.1.jar",
+            "md5": "365c3a7a921b577d6a006b0bf308c02e"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-flink-3.4.1.jar",
+            "to": "worker-server/libs/dolphinscheduler-task-flink-3.4.1.jar",
+            "md5": "0657164010884427189eb5b539ec7e0c"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "to": "worker-server/libs/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "md5": "c6b93698cd08c67645f2ac1457d73c98"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "plugin/dolphinscheduler-task-sql-3.4.1.jar",
+            "to": "worker-server/libs/dolphinscheduler-task-sql-3.4.1.jar",
+            "md5": "ae2bc09add275703a889394fdbd74238"
+          }
+        },
+        {
           "type": "PRE_INSTALL",
           "action": "s3Sync",
           "params": {
             "bucket": "${DS.aws.s3.bucket.name}",
             "endpoint": "${DS.aws.s3.endpoint}",
-            "accessKey": "${DS.aws.s3.access.key.id}",
-            "secretKey": "${DS.aws.s3.access.key.secret}"
+            "accessKey": "${ROOT.Rustfs.access_key}",
+            "secretKey": "${ROOT.Rustfs.secret_key}"
           }
         }
       ]
@@ -434,8 +569,8 @@
           "params": {
             "bucket": "${DS.aws.s3.bucket.name}",
             "endpoint": "${DS.aws.s3.endpoint}",
-            "accessKey": "${DS.aws.s3.access.key.id}",
-            "secretKey": "${DS.aws.s3.access.key.secret}"
+            "accessKey": "${ROOT.Rustfs.access_key}",
+            "secretKey": "${ROOT.Rustfs.secret_key}"
           }
         }
       ]
@@ -632,11 +767,11 @@
       "name": "aws.s3.access.key.id",
       "description": "",
       "label": "aws.s3.access.key.id",
-      "hidden": false,
+      "hidden": true,
       "required": true,
       "type": "input",
       "defaultValue": "${ROOT.Rustfs.access_key}",
-      "configurableInWizard": true,
+      "configurableInWizard": false,
       "register": false
     },
     {
@@ -644,11 +779,11 @@
       "name": "aws.s3.access.key.secret",
       "description": "",
       "label": "aws.s3.access.key.secret",
-      "hidden": false,
+      "hidden": true,
       "required": true,
       "type": "input",
       "defaultValue": "${ROOT.Rustfs.secret_key}",
-      "configurableInWizard": true,
+      "configurableInWizard": false,
       "register": false
     },
     {

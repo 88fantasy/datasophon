@@ -84,8 +84,8 @@ Wave 3（累计聚合 + 端到端验收，3 个任务）
 
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| **W0-1** | 修复 DS 分发包缺任务插件 | — | 分发包中补入官方任务插件（至少 shell / spark / flink / flink-stream / sql），三类角色目录（api / master / worker）均需具备 | **全新安装**一套 DS 后，通过 Open API 成功创建一条 SHELL 任务的工作流定义（`code=0`）；服务端日志无 `Cannot find TaskChannel` | ⬜ | |
-| **W0-2** | 修复 DS 的对象存储凭据漂移 | — | 从 `DS/service_ddl.json` 侧取值，消除与对象存储服务各存一份的结构 | DS 的 **api / master / worker 逐一重启**后均能正常启动，日志无 `signature does not match`；重新下发配置后凭据仍正确 | ⬜ | |
+| **W0-1** | 修复 DS 分发包缺任务插件 | — | 分发包中补入官方任务插件（至少 shell / spark / flink / flink-stream / sql），三类角色目录（api / master / worker）均需具备 | **全新安装**一套 DS 后，通过 Open API 成功创建一条 SHELL 任务的工作流定义（`code=0`）；服务端日志无 `Cannot find TaskChannel` | ✅ 完成 | `JAVA_HOME=... ./mvnw -s ~/.m2/setting.xml -pl datasophon-common,datasophon-grpc-api,datasophon-ui-v2,datasophon-api -Dskip.installnodenpm -Dskip.npm -Dtest=DsDdlLoadTest,DdlMetaServiceImplTest,ServiceConfigUtilsTest -DfailIfNoTests=false clean test`：7/7；隔离全新安装 `g0-result.json`：create/release/start 均 `code=0`，SHELL=SUCCESS；api/master/worker 各 5 个插件，禁用日志命中 0 |
+| **W0-2** | 修复 DS 的对象存储凭据漂移 | — | 从 `DS/service_ddl.json` 侧取值，消除与对象存储服务各存一份的结构 | DS 的 **api / master / worker 逐一重启**后均能正常启动，日志无 `signature does not match`；重新下发配置后凭据仍正确 | ✅ 完成 | 同上 7/7；隔离环境先用历史 Worker 配置复现 `SignatureDoesNotMatch`，统一重新下发 ROOT 投影后 api/master/worker/alert 逐一重启 PASS，`forbiddenLogMatches=0`；临时角色/目录/数据库已清理，共享 DS 健康 200 |
 
 **门禁 G0**：在一套**全新安装**的 DS 上，能创建工作流定义、能上线、能执行到 SUCCESS，
 且四类角色都重启过一遍仍正常。
@@ -168,7 +168,7 @@ Tab 在浏览器里可见且项目下拉可用。
 
 | 门禁 | 日期 | 验证人 | 结果 | 备注 |
 |---|---|---|---|---|
-| G0 | | | ⬜ | |
+| G0 | 2026-08-25 | Codex | ✅ | 合成 SHELL 数据；隔离全新安装创建→上线→运行 SUCCESS，四角色重启通过；`.scratch/ds-workflow-tab/g0-{result,role-restart}.json` |
 | G1 | | | ⬜ | |
 | G2 | | | ⬜ | |
 | G3 | | | ⬜ | |

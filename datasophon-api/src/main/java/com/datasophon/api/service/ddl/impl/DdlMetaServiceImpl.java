@@ -35,6 +35,7 @@ import com.datasophon.common.model.k8s.K8sServiceInfo;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
+import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
@@ -86,6 +87,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service("ddlMetaService")
 public class DdlMetaServiceImpl implements DdlMetaService {
+
+    private static final String DS_SERVICE_NAME = "DS";
+    private static final Set<String> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS = Set.of(
+            "aws.s3.access.key.id", "aws.s3.access.key.secret");
 
     @Autowired
     private PropertyResolver propertyResolver;
@@ -350,13 +355,14 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             }
 
             ClusterServiceRoleGroupConfig config = roleGroupService.getRoleGroupConfigByServiceId(serviceInstance.getId());
-            updateServiceRoleGroupConfig(config, parameters);
+            Map<String, String> globalVariables = GlobalVariables.getVariables(cluster.getId());
+            updateServiceRoleGroupConfig(serviceName, config, parameters, globalVariables);
 
             Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceInstance.getId());
             if (roleGroupId != null) {
                 ClusterServiceRoleGroupConfig cacheConfig = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
                 if (cacheConfig != null && !config.getId().equals(cacheConfig.getId())) {
-                    updateServiceRoleGroupConfig(config, parameters);
+                    updateServiceRoleGroupConfig(serviceName, cacheConfig, parameters, globalVariables);
                 }
             }
 
@@ -368,13 +374,49 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         }
     }
 
-    private void updateServiceRoleGroupConfig(ClusterServiceRoleGroupConfig config, List<ServiceConfig> parameters) {
+    private void updateServiceRoleGroupConfig(
+                                              String serviceName,
+                                              ClusterServiceRoleGroupConfig config,
+                                              List<ServiceConfig> parameters,
+                                              Map<String, String> globalVariables) {
         String configJson = config.getConfigJson();
         List<ServiceConfig> serviceConfigs = JSONArray.parseArray(configJson, ServiceConfig.class);
         ServiceConfigUtils.addAll(serviceConfigs, parameters);
+        refreshPlatformManagedConfigValues(serviceName, serviceConfigs, parameters, globalVariables);
         // 更新服务实例的配置
         config.setConfigJson(JSONObject.toJSONString(serviceConfigs));
         roleGroupConfigService.updateById(config);
+    }
+
+    static void refreshPlatformManagedConfigValues(
+                                                   String serviceName,
+                                                   List<ServiceConfig> savedConfigs,
+                                                   List<ServiceConfig> metadataConfigs,
+                                                   Map<String, String> globalVariables) {
+        if (!DS_SERVICE_NAME.equals(serviceName)) {
+            return;
+        }
+        Map<String, ServiceConfig> metadataByName = metadataConfigs.stream()
+                .filter(config -> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.contains(config.getName()))
+                .collect(Collectors.toMap(ServiceConfig::getName, config -> config));
+        savedConfigs.stream()
+                .filter(config -> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.contains(config.getName()))
+                .forEach(config -> {
+                    ServiceConfig metadataConfig = metadataByName.get(config.getName());
+                    if (metadataConfig != null) {
+                        Object metadataValue = metadataConfig.getValue() != null
+                                ? metadataConfig.getValue()
+                                : metadataConfig.getDefaultValue();
+                        Object resolvedValue = metadataValue instanceof String stringValue
+                                ? PlaceholderUtils.replacePlaceholders(
+                                        stringValue, globalVariables, Constants.REGEX_VARIABLE)
+                                : metadataValue;
+                        config.setValue(resolvedValue);
+                        config.setDefaultValue(resolvedValue);
+                        config.setHidden(metadataConfig.isHidden());
+                        config.setConfigurableInWizard(metadataConfig.isConfigurableInWizard());
+                    }
+                });
     }
 
     private void buildServiceEntity(FrameInfoEntity frameInfo, String serviceName, String serviceDdl,
