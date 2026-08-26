@@ -6,6 +6,7 @@ export default {
   'dsWorkflow.skeleton.ready': '项目已切换，工作流定义将在下方加载',
   'dsWorkflow.retry': '重试',
   'dsWorkflow.dag.title': '工作流实例 DAG',
+  'dsWorkflow.dag.backToList': '返回列表',
   'dsWorkflow.table.name': '工作流名称',
   'dsWorkflow.table.releaseState': '上线状态',
   'dsWorkflow.table.version': '版本',

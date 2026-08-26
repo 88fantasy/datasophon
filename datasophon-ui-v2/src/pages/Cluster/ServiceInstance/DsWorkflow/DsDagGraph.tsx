@@ -1,6 +1,7 @@
 import { Graph, type GraphData } from '@antv/g6';
 import { useIntl } from '@umijs/max';
 import { useEffect, useMemo, useRef } from 'react';
+import { useFillViewportHeight } from '@/pages/Cluster/_shared/useFillViewportHeight';
 import { FLOWING_LINEAGE_EDGE } from '@/pages/Cluster/Lineage/flowingLineageEdge';
 import {
   formatOutputSize,
@@ -64,6 +65,7 @@ function nodeLabel(
 const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
   const intl = useIntl();
   const containerRef = useRef<HTMLDivElement>(null);
+  const graphRef = useRef<Graph>(undefined);
   const labels = useMemo(
     () => ({
       approximate: intl.formatMessage({ id: 'dsWorkflow.metric.approximate' }),
@@ -79,6 +81,10 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
     }),
     [intl],
   );
+  const graphHeight = useFillViewportHeight(containerRef, [dag, labels], {
+    minHeight: 580,
+    onHeightChange: () => graphRef.current?.resize(),
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -157,15 +163,19 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
         : { type: 'antv-dagre', rankdir: 'LR', nodesep: 24, ranksep: 76 },
       behaviors: ['drag-canvas', 'zoom-canvas', 'drag-element'],
     });
+    graphRef.current = graph;
     void Promise.resolve(graph.render()).then(() =>
       graph.fitView({ when: 'overflow' }),
     );
     return () => {
       graph.destroy();
+      graphRef.current = undefined;
     };
   }, [dag, labels]);
 
-  return <div ref={containerRef} style={{ height: 580, width: '100%' }} />;
+  return (
+    <div ref={containerRef} style={{ height: graphHeight, width: '100%' }} />
+  );
 };
 
 export default DsDagGraph;

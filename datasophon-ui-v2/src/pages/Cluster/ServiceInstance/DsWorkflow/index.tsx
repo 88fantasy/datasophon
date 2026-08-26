@@ -1,8 +1,7 @@
 import { type ProColumns, ProTable } from '@ant-design/pro-components';
-import { useIntl } from '@umijs/max';
+import { history, useIntl } from '@umijs/max';
 import { Alert, Button, Select, Space, Tag, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import DsDagDrawer from './DsDagDrawer';
 import { classifyDsError, type DsErrorKind } from './errors';
 import { formatDsTime } from './formatters';
 import InstancesTable from './InstancesTable';
@@ -22,8 +21,6 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
   const intl = useIntl();
   const [projects, setProjects] = useState<DATASOPHON.DsProject[]>([]);
   const [projectCode, setProjectCode] = useState<number>();
-  const [selectedInstance, setSelectedInstance] =
-    useState<DATASOPHON.DsWorkflowInstance>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<DsErrorKind>();
   const [releaseStateFilter, setReleaseStateFilter] = useState('ALL');
@@ -137,10 +134,7 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
             }))}
             showSearch={{ optionFilterProp: 'label' }}
             style={{ minWidth: 280 }}
-            onChange={(value) => {
-              setProjectCode(value);
-              setSelectedInstance(undefined);
-            }}
+            onChange={setProjectCode}
           />
           <Select<string>
             aria-label={intl.formatMessage({
@@ -225,23 +219,17 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
                   clusterId={clusterId}
                   projectCode={projectCode}
                   workflowCode={record.code}
-                  onOpen={setSelectedInstance}
+                  onOpen={(instance) =>
+                    history.push(
+                      `/cluster/${clusterId}/service/${instanceId}/ds-workflow/${projectCode}/${instance.id}`,
+                    )
+                  }
                 />
               ),
             }}
           />
         ) : null}
       </div>
-
-      {projectCode != null ? (
-        <DsDagDrawer
-          clusterId={clusterId}
-          projectCode={projectCode}
-          instance={selectedInstance}
-          open={selectedInstance != null}
-          onClose={() => setSelectedInstance(undefined)}
-        />
-      ) : null}
     </div>
   );
 };

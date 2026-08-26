@@ -9,10 +9,13 @@ import {
   getDsWorkflows,
 } from './service';
 
+const { historyPush } = vi.hoisted(() => ({ historyPush: vi.fn() }));
+
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({
     formatMessage: ({ id }: { id: string }) => id,
   }),
+  history: { push: historyPush },
 }));
 
 vi.mock('@ant-design/pro-components', () => ({
@@ -124,20 +127,6 @@ vi.mock('antd', () => ({
   },
 }));
 
-vi.mock('./DsDagDrawer', () => ({
-  default: ({
-    open,
-    instance,
-  }: {
-    open: boolean;
-    instance?: { name: string };
-  }) => (
-    <div data-testid="dag-drawer" data-open={open}>
-      {instance?.name}
-    </div>
-  ),
-}));
-
 vi.mock('./service', () => ({
   getDsProjects: vi.fn(),
   getDsWorkflows: vi.fn(),
@@ -195,28 +184,21 @@ describe('DsWorkflowPanel tree table', () => {
     });
   });
 
-  it('loads definitions, lazily loads instances, and only opens an instance row', async () => {
+  it('loads definitions, lazily loads instances, and navigates to the DAG page on row click', async () => {
     render(<DsWorkflowPanel clusterId={7} instanceId={33} />);
 
     await screen.findByText('synthetic workflow');
     expect(getDsWorkflowInstances).not.toHaveBeenCalled();
-    expect(screen.getByTestId('dag-drawer')).toHaveAttribute(
-      'data-open',
-      'false',
-    );
+    expect(historyPush).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByText('expand-800001'));
     await screen.findByText('synthetic instance');
     expect(getDsWorkflowInstances).toHaveBeenCalledWith(7, 1001, 800001);
-    expect(screen.getByTestId('dag-drawer')).toHaveAttribute(
-      'data-open',
-      'false',
-    );
+    expect(historyPush).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId('row-810001'));
-    expect(screen.getByTestId('dag-drawer')).toHaveAttribute(
-      'data-open',
-      'true',
+    expect(historyPush).toHaveBeenCalledWith(
+      '/cluster/7/service/33/ds-workflow/1001/810001',
     );
   });
 

@@ -15,6 +15,7 @@ vi.mock('@antv/g6', () => ({
     }
     render = renderSpy;
     fitView = vi.fn();
+    resize = vi.fn();
     destroy = destroySpy;
   },
 }));

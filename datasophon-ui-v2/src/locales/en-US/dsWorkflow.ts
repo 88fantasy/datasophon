@@ -7,6 +7,7 @@ export default {
     'Project changed; workflow definitions will load below',
   'dsWorkflow.retry': 'Retry',
   'dsWorkflow.dag.title': 'Workflow Instance DAG',
+  'dsWorkflow.dag.backToList': 'Back to list',
   'dsWorkflow.table.name': 'Workflow Name',
   'dsWorkflow.table.releaseState': 'Release State',
   'dsWorkflow.table.version': 'Version',

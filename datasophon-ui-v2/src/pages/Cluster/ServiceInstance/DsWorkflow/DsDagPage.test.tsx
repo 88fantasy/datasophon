@@ -1,18 +1,19 @@
 import { act, render } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import DsDagDrawer from './DsDagDrawer';
+import ClusterContext from '@/context/ClusterContext';
+import DsDagPage from './DsDagPage';
 import { getDsDag } from './service';
+
+const { historyPush } = vi.hoisted(() => ({ historyPush: vi.fn() }));
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({ formatMessage: ({ id }: { id: string }) => id }),
-}));
-
-vi.mock('antd', () => ({
-  Alert: ({ title }: { title: ReactNode }) => <div>{title}</div>,
-  Drawer: ({ open, children }: { open: boolean; children: ReactNode }) =>
-    open ? <div>{children}</div> : null,
-  Spin: () => <div>loading</div>,
+  useParams: () => ({
+    instanceId: '33',
+    projectCode: '1001',
+    workflowInstanceId: '810001',
+  }),
+  history: { push: historyPush },
 }));
 
 vi.mock('./DsDagGraph', () => ({ default: () => <div>graph</div> }));
@@ -34,7 +35,15 @@ const dag: DATASOPHON.DsDag = {
   locations: [],
 };
 
-describe('DsDagDrawer polling', () => {
+function renderPage() {
+  return render(
+    <ClusterContext.Provider value={{ clusterId: 7 } as never}>
+      <DsDagPage />
+    </ClusterContext.Provider>,
+  );
+}
+
+describe('DsDagPage polling', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.mocked(getDsDag).mockResolvedValue({ success: true, data: dag });
@@ -45,17 +54,10 @@ describe('DsDagDrawer polling', () => {
     vi.clearAllMocks();
   });
 
-  it('polls every 15 seconds only while the drawer is open', async () => {
-    const { rerender } = render(
-      <DsDagDrawer
-        clusterId={7}
-        projectCode={99}
-        instance={instance}
-        open
-        onClose={vi.fn()}
-      />,
-    );
+  it('fetches the DAG for the route params and polls every 15 seconds until unmounted', async () => {
+    const { unmount } = renderPage();
     await act(async () => Promise.resolve());
+    expect(getDsDag).toHaveBeenCalledWith(7, 1001, 810001);
     expect(getDsDag).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -64,19 +66,19 @@ describe('DsDagDrawer polling', () => {
     });
     expect(getDsDag).toHaveBeenCalledTimes(2);
 
-    rerender(
-      <DsDagDrawer
-        clusterId={7}
-        projectCode={99}
-        instance={instance}
-        open={false}
-        onClose={vi.fn()}
-      />,
-    );
+    unmount();
     await act(async () => {
       vi.advanceTimersByTime(30_000);
       await Promise.resolve();
     });
     expect(getDsDag).toHaveBeenCalledTimes(2);
+  });
+
+  it('navigates back to the service instance page', async () => {
+    const { getByText } = renderPage();
+    await act(async () => Promise.resolve());
+
+    getByText('dsWorkflow.dag.backToList').click();
+    expect(historyPush).toHaveBeenCalledWith('/cluster/7/service/33');
   });
 });
