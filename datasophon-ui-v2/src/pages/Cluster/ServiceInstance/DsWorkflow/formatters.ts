@@ -1,13 +1,13 @@
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
 import { formatBytes } from '@/pages/Cluster/Lineage/lineageFormatters';
 
-dayjs.extend(utc);
-
+// DS Open API 返回的 updateTime/startTime 本身就是服务器本地时间（无时区后缀），
+// 不是 UTC——之前用 dayjs.utc(value).local() 把它当 UTC 解析再转本地，凭空多算了
+// 一个时区偏移（实测 +8 小时）。这里直接按本地时间解析，不做时区假设。
 export function formatDsTime(value?: string): string {
   if (!value) return '—';
-  const parsed = dayjs.utc(value);
-  return parsed.isValid() ? parsed.local().format('YYYY-MM-DD HH:mm:ss') : '—';
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : '—';
 }
 
 export function formatDuration(seconds?: number): string {
