@@ -8,6 +8,9 @@ export default {
   'dsWorkflow.retry': 'Retry',
   'dsWorkflow.dag.title': 'Workflow Instance DAG',
   'dsWorkflow.dag.backToList': 'Back to list',
+  'dsWorkflow.dag.structureChanged':
+    'Workflow structure has changed (tasks added or removed)',
+  'dsWorkflow.dag.refreshCanvas': 'Refresh canvas',
   'dsWorkflow.table.name': 'Workflow Name',
   'dsWorkflow.table.releaseState': 'Release State',
   'dsWorkflow.table.version': 'Version',

@@ -7,6 +7,8 @@ export default {
   'dsWorkflow.retry': '重试',
   'dsWorkflow.dag.title': '工作流实例 DAG',
   'dsWorkflow.dag.backToList': '返回列表',
+  'dsWorkflow.dag.structureChanged': '工作流结构已变化（新增/减少了任务节点）',
+  'dsWorkflow.dag.refreshCanvas': '刷新画布',
   'dsWorkflow.table.name': '工作流名称',
   'dsWorkflow.table.releaseState': '上线状态',
   'dsWorkflow.table.version': '版本',
