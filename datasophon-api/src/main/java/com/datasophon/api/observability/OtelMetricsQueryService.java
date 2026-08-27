@@ -290,8 +290,11 @@ public class OtelMetricsQueryService {
     /** Returns the first observed sample for one Flink job. */
     public Optional<Instant> queryFirstSampleAt(Integer clusterId, String metric, String jobId, String table) {
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
+        // UNIX_TIMESTAMP() 把 timestamp 列按会话时区（如 Asia/Shanghai）转成时区无关的纪元秒，
+        // 与本文件其它查询方法一致；直接 SELECT timestamp 再在 Java 侧猜测驱动返回类型的时区语义
+        // 曾经把本地墙钟值误当 UTC 处理，多算 8 小时。
         Map<String, Object> row = createReader(clusterId).sql("""
-                SELECT MIN(timestamp) AS first_sample
+                SELECT MIN(UNIX_TIMESTAMP(timestamp)) AS first_sample
                 FROM otel.%s
                 WHERE metric_name = :metric AND attributes['job_id'] = :jobId
                 """.formatted(otelTable))
@@ -299,14 +302,8 @@ public class OtelMetricsQueryService {
                 .param("jobId", jobId)
                 .query()
                 .singleRow();
-        Object value = row.get("first_sample");
-        if (value instanceof java.sql.Timestamp timestamp) {
-            return Optional.of(timestamp.toInstant());
-        }
-        if (value instanceof java.time.LocalDateTime localDateTime) {
-            return Optional.of(localDateTime.toInstant(java.time.ZoneOffset.UTC));
-        }
-        return Optional.empty();
+        Number value = (Number) row.get("first_sample");
+        return value == null ? Optional.empty() : Optional.of(Instant.ofEpochSecond(value.longValue()));
     }
 
     /** Sums OTLP delta samples in the half-open interval {@code [start, end)}. */

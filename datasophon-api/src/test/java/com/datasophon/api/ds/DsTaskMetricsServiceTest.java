@@ -190,14 +190,41 @@ class DsTaskMetricsServiceTest {
                 .thenReturn(PrometheusMatrixResult.of(List.of(
                         new MatrixSeries(Map.of("job_id", JOB_ID),
                                 List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
+        // 落后 10 分钟，超过 STALE_AFTER(5 分钟) 的容忍窗口——累加器长期没有追上，应隐藏。
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName))
+                .thenReturn(Optional.of(new StreamMetricCursor(
+                        7, JOB_ID, jobName, NOW.minusSeconds(86_400), NOW.minusSeconds(600), 1234)));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getProcessedApprox()).isNull();
+        assertThat(metrics.getSince()).isEqualTo("2026-08-24T06:00:00Z");
+    }
+
+    @Test
+    void showsLifetimeTotalWhenCursorLagIsWithinStaleTolerance() {
+        String jobName = "ds-7-12-synthetic-stream";
+        when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),
+                eq("max"), eq(1.0), eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "job_name"))))
+                .thenReturn(PrometheusVectorResult.of(List.of(
+                        new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                                new Object[]{NOW.getEpochSecond(), "1"}))));
+        when(queryService.queryRangeSum(eq(7), anyString(), isNull(), anyDouble(), eq(".+"), eq(".+"),
+                eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()), eq(List.of("job_id")),
+                anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
+        // 落后 60 秒——仅一个累加批处理周期，仍在容忍窗口内，应正常展示。这正是修复前
+        // 的行为缺陷：旧实现要求游标恰好追上“当前这一分钟”，导致这种正常延迟也被隐藏。
         when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName))
                 .thenReturn(Optional.of(new StreamMetricCursor(
                         7, JOB_ID, jobName, NOW.minusSeconds(86_400), NOW.minusSeconds(60), 1234)));
 
         DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
 
-        assertThat(metrics.getProcessedApprox()).isNull();
-        assertThat(metrics.getSince()).isEqualTo("2026-08-24T06:00:00Z");
+        assertThat(metrics.getProcessedApprox()).isEqualTo(1234);
     }
 
     private static DsDagNodeVO node(int taskInstanceId, String flowType) {

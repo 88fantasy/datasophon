@@ -29,6 +29,7 @@ import com.datasophon.api.observability.PrometheusMatrixResult;
 import com.datasophon.api.observability.PrometheusVectorResult;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -44,6 +45,9 @@ import org.springframework.stereotype.Component;
 public class DsStreamMetricsProvider {
 
     private static final long STREAM_RATE_WINDOW_SECONDS = 60;
+    // DsStreamMetricAccumulator 每 60 秒批量把游标推进一次；容忍窗口必须明显大于这个批处理
+    // 周期，否则游标"追上当前分钟"这个条件在实践中几乎永远不成立，累计值会一直被隐藏。
+    private static final Duration STALE_AFTER = Duration.ofMinutes(5);
     private static final MetricSource[] STREAM_DISCOVERY_METRICS = {
             new MetricSource("flink.taskmanager.job.task.operator.numRecordsOut", "sum", true),
             new MetricSource("flink_taskmanager_job_task_operator_numRecordsOut", "gauge", false)
@@ -110,8 +114,11 @@ public class DsStreamMetricsProvider {
 
     private void applyAccumulated(DsTaskMetricsVO metrics, StreamMetricCursor cursor) {
         metrics.setSince(cursor.since().toString());
-        Instant completedThrough = clock.instant().truncatedTo(ChronoUnit.MINUTES);
-        if (!cursor.cursor().isBefore(completedThrough)) {
+        // 游标落后太久（长期没有新的真实采样把它推进）时隐藏总量，避免展示一个还没
+        // 追上积压周期的不完整数字；但阈值必须留出比累加任务批处理周期更宽松的余量
+        // （STALE_AFTER），否则“游标是否新鲜”这个判断在正常延迟下也会一直不成立。
+        Instant staleBefore = clock.instant().truncatedTo(ChronoUnit.MINUTES).minus(STALE_AFTER);
+        if (!cursor.cursor().isBefore(staleBefore)) {
             metrics.setProcessedApprox(cursor.processedApprox());
         }
     }
