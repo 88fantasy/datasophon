@@ -211,9 +211,13 @@ public class DsWorkflowServiceImpl implements DsWorkflowService {
                             node.setMetrics(metrics);
                         } else {
                             Throwable cause = rootCause(error);
-                            node.setMetricsError(cause instanceof DsTaskMetricsService.NotBoundException
-                                    ? "NOT_BOUND"
-                                    : "LOOKUP_FAILED");
+                            if (cause instanceof DsTaskMetricsService.JobEndedException) {
+                                node.setMetricsError("JOB_ENDED");
+                            } else if (cause instanceof DsTaskMetricsService.NotBoundException) {
+                                node.setMetricsError("NOT_BOUND");
+                            } else {
+                                node.setMetricsError("LOOKUP_FAILED");
+                            }
                         }
                         return (Void) null;
                     });

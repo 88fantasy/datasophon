@@ -47,6 +47,7 @@ export default {
   'dsWorkflow.error.unavailable': 'The DS Open API is currently unavailable',
   'dsWorkflow.error.notBound':
     'This task has not adopted the platform metrics convention',
+  'dsWorkflow.status.jobEnded': 'Stream job ended',
   'dsWorkflow.config.guide':
     'Issue a token for a dedicated read-only DS account and save it in service settings',
 };

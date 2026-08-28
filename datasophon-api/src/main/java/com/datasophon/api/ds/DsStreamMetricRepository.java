@@ -67,6 +67,19 @@ public class DsStreamMetricRepository {
                 clusterId, jobId).stream().findFirst();
     }
 
+    public Optional<StreamMetricCursor> findLatestByJobNamePrefix(Integer clusterId, String jobNamePrefix) {
+        return jdbcTemplate.query("""
+                SELECT cluster_id, job_id, job_name, since_time, cursor_time, processed_approx
+                FROM t_ddh_ds_stream_metric_job
+                WHERE cluster_id = ? AND job_name LIKE ?
+                ORDER BY since_time DESC, job_id DESC
+                LIMIT 1
+                """, (rs, rowNum) -> mapCursor(rs.getInt("cluster_id"), rs.getString("job_id"),
+                rs.getString("job_name"), rs.getTimestamp("since_time"),
+                rs.getTimestamp("cursor_time"), rs.getLong("processed_approx")),
+                clusterId, jobNamePrefix + "%").stream().findFirst();
+    }
+
     public List<StreamMetricCursor> findPending(Instant before, int limit) {
         return jdbcTemplate.query("""
                 SELECT cluster_id, job_id, job_name, since_time, cursor_time, processed_approx

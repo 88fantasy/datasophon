@@ -107,6 +107,16 @@ describe('DsDagGraph node labels', () => {
           retryTimes: 0,
           metricsError: 'NOT_BOUND',
         },
+        {
+          taskCode: 4,
+          name: 'ended',
+          taskType: 'FLINK_STREAM',
+          flowType: 'STREAM',
+          state: 'SUCCESS',
+          durationSeconds: 1,
+          retryTimes: 0,
+          metricsError: 'JOB_ENDED',
+        },
       ],
       edges: [
         { from: 1, to: 2 },
@@ -129,6 +139,9 @@ describe('DsDagGraph node labels', () => {
     );
     expect(labelText({ data: dag.nodes[2] })).toContain(
       'dsWorkflow.error.notBound',
+    );
+    expect(labelText({ data: dag.nodes[3] })).toContain(
+      'dsWorkflow.status.jobEnded',
     );
     expect(options?.node.style.labelMaxLines).toBe(7);
     expect(

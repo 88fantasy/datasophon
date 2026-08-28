@@ -167,6 +167,29 @@ class DsWorkflowServiceTest {
     }
 
     @Test
+    void mapsEndedStreamJobToNeutralMetricsState() throws Exception {
+        when(client.get(eq(7), eq("projects/99/workflow-instances/8"), anyMap()))
+                .thenReturn(json("""
+                        {"id":8,"workflowDefinitionCode":101,"name":"stream-flow","state":"SUCCESS",
+                        "dagData":{"taskDefinitionList":[
+                        {"code":1001,"name":"stream","taskType":"FLINK_STREAM"}],
+                        "workflowTaskRelationList":[]}}
+                        """));
+        when(client.get(eq(7), eq("projects/99/workflow-instances/8/tasks"), anyMap()))
+                .thenReturn(json("""
+                        {"taskList":[
+                        {"id":12,"taskCode":1001,"state":"SUCCESS","taskExecuteType":"STREAM"}]}
+                        """));
+        when(taskMetricsService.metrics(eq(7), any()))
+                .thenThrow(new DsTaskMetricsService.JobEndedException());
+
+        DsDagVO dag = service.dag(7, 99, 8);
+
+        assertThat(dag.getNodes()).singleElement()
+                .satisfies(node -> assertThat(node.getMetricsError()).isEqualTo("JOB_ENDED"));
+    }
+
+    @Test
     void keepsFlinkBatchTaskOnBatchMetricsPath() throws Exception {
         when(client.get(eq(7), eq("projects/99/workflow-instances/8"), anyMap()))
                 .thenReturn(json("""

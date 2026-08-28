@@ -306,24 +306,40 @@ public class OtelMetricsQueryService {
         return value == null ? Optional.empty() : Optional.of(Instant.ofEpochSecond(value.longValue()));
     }
 
+    /** Returns whether a Flink job-name sample exists in the bounded historical window. */
+    public boolean hasJobNameSample(Integer clusterId, String metric, String jobNameRegex,
+                                    Instant since, String table) {
+        String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
+        return !createReader(clusterId).sql(buildHasJobNameSampleSql(otelTable))
+                .param("metric", metric)
+                .param("jobNameRegex", jobNameRegex)
+                .param("since", java.sql.Timestamp.from(since))
+                .query()
+                .listOfRows()
+                .isEmpty();
+    }
+
     /** Sums OTLP delta samples in the half-open interval {@code [start, end)}. */
     public DeltaSummary queryDeltaSummary(Integer clusterId, String metric, String jobId,
-                                          Instant start, Instant end, String table) {
+                                          Instant start, Instant end,
+                                          Map<String, String> filtersRegex, String table) {
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
-        Map<String, Object> row = createReader(clusterId).sql("""
+        StringBuilder sql = new StringBuilder("""
                 SELECT COALESCE(SUM(value), 0) AS delta_value, COUNT(*) AS sample_count
                 FROM otel.%s
                 WHERE metric_name = :metric
                   AND attributes['job_id'] = :jobId
                   AND timestamp >= :start
                   AND timestamp < :end
-                """.formatted(otelTable))
+                """.formatted(otelTable));
+        appendAttrFilters(sql, Map.of(), Map.of(), filtersRegex, Map.of());
+        JdbcClient.StatementSpec spec = createReader(clusterId).sql(sql.toString())
                 .param("metric", metric)
                 .param("jobId", jobId)
                 .param("start", java.sql.Timestamp.from(start))
-                .param("end", java.sql.Timestamp.from(end))
-                .query()
-                .singleRow();
+                .param("end", java.sql.Timestamp.from(end));
+        spec = bindAttrFilterParams(spec, Map.of(), Map.of(), filtersRegex, Map.of());
+        Map<String, Object> row = spec.query().singleRow();
         Number value = (Number) row.get("delta_value");
         Number sampleCount = (Number) row.get("sample_count");
         return new DeltaSummary(value == null ? 0 : value.doubleValue(),
@@ -592,11 +608,14 @@ public class OtelMetricsQueryService {
         String fn = "max".equalsIgnoreCase(agg) ? "MAX" : ("count".equalsIgnoreCase(agg) ? "COUNT" : "SUM");
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
+        String sampleTimestampSelect = groupByKeys.isEmpty() ? "" : ", UNIX_TIMESTAMP(timestamp) AS sample_ts";
+        String sampleTimestampCol = groupByKeys.isEmpty() ? "" : ", sample_ts";
         StringBuilder inner = new StringBuilder(
-                "SELECT value" + extraCols + "\n"
+                "SELECT value" + extraCols + sampleTimestampCol + "\n"
                         + "FROM (\n"
                         + "  SELECT value"
                         + extraSelect
+                        + sampleTimestampSelect
                         + ",\n"
                         + "         ROW_NUMBER() OVER(\n"
                         + "           PARTITION BY " + INST_EXPR + ",\n"
@@ -612,9 +631,21 @@ public class OtelMetricsQueryService {
         appendAttrFilters(inner, filters, filtersNe, filtersRegex, filtersNotRegex);
         inner.append("\n) latest\n"
                 + "WHERE rn = 1");
+        String sampledAt = groupByKeys.isEmpty() ? "UNIX_TIMESTAMP(NOW())" : "MAX(sample_ts)";
         return "SELECT " + (groupByKeys.isEmpty() ? "" : String.join(", ", groupByKeys) + ", ")
-                + fn + "(value) AS value, UNIX_TIMESTAMP(NOW()) AS ts FROM (" + inner + ") t"
+                + fn + "(value) AS value, " + sampledAt + " AS ts FROM (" + inner + ") t"
                 + (groupByKeys.isEmpty() ? "" : " GROUP BY " + String.join(", ", groupByKeys));
+    }
+
+    static String buildHasJobNameSampleSql(String otelTable) {
+        return """
+                SELECT 1 AS matched
+                FROM otel.%s
+                WHERE metric_name = :metric
+                  AND CAST(attributes['job_name'] AS STRING) REGEXP :jobNameRegex
+                  AND timestamp >= :since
+                LIMIT 1
+                """.formatted(otelTable);
     }
 
     private static List<String> instantSeriesAttrKeys(List<String> groupByKeys) {

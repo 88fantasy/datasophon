@@ -48,6 +48,7 @@ function nodeLabel(
   processedLabel: string,
   itemsLabel: string,
   notBoundLabel: string,
+  jobEndedLabel: string,
 ): string {
   const header = `${node.name}\n${node.taskType} · ${statusLabel}`;
   if (node.metrics?.kind === 'STREAM') {
@@ -73,8 +74,11 @@ function nodeLabel(
     }
     return `${header}\n${lines.join('\n')}`;
   }
-  return node.metricsError === 'NOT_BOUND'
-    ? `${header}\n— ${notBoundLabel}`
+  if (node.metricsError === 'NOT_BOUND') {
+    return `${header}\n— ${notBoundLabel}`;
+  }
+  return node.metricsError === 'JOB_ENDED'
+    ? `${header}\n— ${jobEndedLabel}`
     : `${header}\n—`;
 }
 
@@ -117,6 +121,7 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
       processed: intl.formatMessage({ id: 'dsWorkflow.metric.processed' }),
       items: intl.formatMessage({ id: 'dsWorkflow.metric.items' }),
       notBound: intl.formatMessage({ id: 'dsWorkflow.error.notBound' }),
+      jobEnded: intl.formatMessage({ id: 'dsWorkflow.status.jobEnded' }),
       status: (state?: string) =>
         intl.formatMessage({
           id: `dsWorkflow.state.${state ?? 'UNKNOWN'}`,
@@ -191,6 +196,7 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
               labels.processed,
               labels.items,
               labels.notBound,
+              labels.jobEnded,
             );
           },
           labelPlacement: 'center',

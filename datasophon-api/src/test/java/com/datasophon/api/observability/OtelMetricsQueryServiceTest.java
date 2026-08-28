@@ -76,6 +76,28 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void groupedInstantAggReturnsLatestRealSampleTimePerGroup() {
+        String sql = OtelMetricsQueryService.buildInstantAggSql(
+                "max", false, false, Map.of(), Map.of(), Map.of("job_name", "^ds-7-12-.*$"), Map.of(),
+                List.of("job_id", "job_name"), "otel_metrics_sum");
+
+        assertThat(sql).contains("UNIX_TIMESTAMP(timestamp) AS sample_ts");
+        assertThat(sql).contains("MAX(sample_ts) AS ts");
+        assertThat(sql).doesNotContain("UNIX_TIMESTAMP(NOW()) AS ts");
+    }
+
+    @Test
+    void historicalJobBindingQueryUsesBoundedJobNameRegex() {
+        String sql = OtelMetricsQueryService.buildHasJobNameSampleSql("otel_metrics_sum");
+
+        assertThat(sql).contains("FROM otel.otel_metrics_sum");
+        assertThat(sql).contains("metric_name = :metric");
+        assertThat(sql).contains("CAST(attributes['job_name'] AS STRING) REGEXP :jobNameRegex");
+        assertThat(sql).contains("timestamp >= :since");
+        assertThat(sql).contains("LIMIT 1");
+    }
+
+    @Test
     void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
         String countSql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("vol_name", "prod-fs"), null,

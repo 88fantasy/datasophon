@@ -48,6 +48,7 @@ public class DsStreamMetricsProvider {
     // DsStreamMetricAccumulator 每 60 秒批量把游标推进一次；容忍窗口必须明显大于这个批处理
     // 周期，否则游标"追上当前分钟"这个条件在实践中几乎永远不成立，累计值会一直被隐藏。
     private static final Duration STALE_AFTER = Duration.ofMinutes(5);
+    private static final Duration HISTORICAL_BINDING_LOOKBACK = Duration.ofDays(30);
     private static final MetricSource[] STREAM_DISCOVERY_METRICS = {
             new MetricSource("flink.taskmanager.job.task.operator.numRecordsOut", "sum", true),
             new MetricSource("flink_taskmanager_job_task_operator_numRecordsOut", "gauge", false)
@@ -72,6 +73,10 @@ public class DsStreamMetricsProvider {
     }
 
     public DsTaskMetricsVO metrics(Integer clusterId, int taskInstanceId) {
+        return metrics(clusterId, taskInstanceId, false);
+    }
+
+    public DsTaskMetricsVO metrics(Integer clusterId, int taskInstanceId, boolean taskEnded) {
         String prefix = DsBatchMetricsProvider.externalKey(clusterId, taskInstanceId) + "-";
         String jobNameRegex = "^" + prefix + ".*$";
         List<StreamJob> candidates = new ArrayList<>();
@@ -96,9 +101,18 @@ public class DsStreamMetricsProvider {
         }
         StreamJob selected = candidates.stream()
                 .max(Comparator.comparingLong(StreamJob::sampledAt).thenComparing(StreamJob::jobId))
-                .orElseThrow(DsTaskMetricsService.NotBoundException::new);
+                .orElse(null);
+        if (selected == null) {
+            if (taskEnded && hasHistoricalBinding(clusterId, prefix, jobNameRegex)) {
+                throw new DsTaskMetricsService.JobEndedException();
+            }
+            throw new DsTaskMetricsService.NotBoundException();
+        }
         Double rowsPerSecond = streamRate(clusterId, selected.jobId(), sampledAt, selectedMetric);
         if (rowsPerSecond == null) {
+            if (taskEnded) {
+                throw new DsTaskMetricsService.JobEndedException();
+            }
             throw new IllegalStateException("Flink job rate is unavailable");
         }
         DsTaskMetricsVO metrics = new DsTaskMetricsVO();
@@ -110,6 +124,19 @@ public class DsStreamMetricsProvider {
         streamMetricAccumulator.registerAndRead(clusterId, selected.jobId(), selected.jobName())
                 .ifPresent(cursor -> applyAccumulated(metrics, cursor));
         return metrics;
+    }
+
+    private boolean hasHistoricalBinding(Integer clusterId, String prefix, String jobNameRegex) {
+        if (streamMetricAccumulator.hasRegisteredJob(clusterId, prefix)) {
+            return true;
+        }
+        Instant since = clock.instant().minus(HISTORICAL_BINDING_LOOKBACK);
+        for (MetricSource metric : STREAM_DISCOVERY_METRICS) {
+            if (queryService.hasJobNameSample(clusterId, metric.name(), jobNameRegex, since, metric.table())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void applyAccumulated(DsTaskMetricsVO metrics, StreamMetricCursor cursor) {
@@ -128,13 +155,16 @@ public class DsStreamMetricsProvider {
         long start = end - 2 * STREAM_RATE_WINDOW_SECONDS;
         long inclusiveEnd = end - 1;
         String jobIdRegex = "^(?:" + jobId + ")$";
+        Map<String, String> sinkJobFilter = Map.of(
+                "job_id", jobIdRegex,
+                "operator_name", DsStreamMetricAccumulator.SINK_OPERATOR_REGEX);
         PrometheusMatrixResult result = metric.deltaSamples()
                 ? queryService.queryRangeSum(clusterId, metric.name(), null,
                         1.0 / STREAM_RATE_WINDOW_SECONDS, ".+", ".+", Map.of(), Map.of(),
-                        Map.of("job_id", jobIdRegex), Map.of(), List.of("job_id"),
+                        sinkJobFilter, Map.of(), List.of("job_id"),
                         start, inclusiveEnd, STREAM_RATE_WINDOW_SECONDS, metric.table(), 0.5, null)
                 : queryService.queryRange(clusterId, metric.name(), "1m", 1.0,
-                        ".+", ".+", Map.of(), Map.of(), Map.of("job_id", jobIdRegex), Map.of(),
+                        ".+", ".+", Map.of(), Map.of(), sinkJobFilter, Map.of(),
                         List.of("job_id"), start, inclusiveEnd, STREAM_RATE_WINDOW_SECONDS,
                         metric.table(), 0.5, null);
         for (PrometheusMatrixResult.MatrixSeries series : result.result()) {

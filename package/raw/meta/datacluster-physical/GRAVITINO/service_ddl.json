@@ -467,12 +467,12 @@
       "name": "gravitino.lineage.storage.externalRunKeys",
       "label": "血缘外部运行标识键",
       "description": "按顺序从 spark_properties.properties 读取外部任务实例标识，多个键用逗号分隔",
-      "required": true,
+      "required": false,
       "configType": "map",
       "type": "input",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "spark.datasophon.dsTaskInstanceId"
+      "defaultValue": ""
     },
     {
       "name": "javaHome",

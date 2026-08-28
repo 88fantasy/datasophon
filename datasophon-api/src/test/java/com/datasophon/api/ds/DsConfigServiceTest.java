@@ -51,6 +51,27 @@ class DsConfigServiceTest {
                         org.assertj.core.groups.Tuple.tuple("apiToken", ""));
     }
 
+    @Test
+    void backfillsApiTokenWhenStoredDdlPredatesParameter() {
+        ServiceInstallService installService = mock(ServiceInstallService.class);
+        DsConfigService configService = new DsConfigService(installService);
+        when(installService.getServiceConfigFromDdl(7, "DS"))
+                .thenReturn(List.of(config("apiServerPort", "12345")));
+
+        List<ServiceConfig> effective = configService.mergeDdlFallback(
+                7, List.of(config("apiServerPort", "12346")));
+
+        assertThat(effective).extracting(ServiceConfig::getName, ServiceConfig::getValue)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("apiServerPort", "12346"),
+                        org.assertj.core.groups.Tuple.tuple("apiToken", ""));
+        ServiceConfig apiToken = effective.get(1);
+        assertThat(apiToken.getDefaultValue()).isEqualTo("");
+        assertThat(apiToken.isRequired()).isFalse();
+        assertThat(apiToken.getRegister()).isFalse();
+        assertThat(apiToken.isConfigurableInWizard()).isTrue();
+    }
+
     private static ServiceConfig config(String name, String value) {
         ServiceConfig config = new ServiceConfig();
         config.setName(name);

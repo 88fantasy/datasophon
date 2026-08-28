@@ -26,7 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.ds.DsStreamMetricRepository.StreamMetricCursor;
@@ -96,9 +98,19 @@ class DsStreamMetricAccumulatorTest {
     }
 
     @Test
+    void findsHistoricalRegistrationByDsTaskPrefix() {
+        assertThat(repository.findLatestByJobNamePrefix(7, "ds-7-12-"))
+                .get()
+                .extracting(StreamMetricCursor::jobId)
+                .isEqualTo(JOB_ID);
+        assertThat(repository.findLatestByJobNamePrefix(7, "ds-7-13-"))
+                .isEmpty();
+    }
+
+    @Test
     void newAccumulatorContinuesFromPersistedCursorAfterRestart() {
         OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
-        when(queryService.queryDeltaSummary(anyInt(), anyString(), anyString(), any(), any(), anyString()))
+        when(queryService.queryDeltaSummary(anyInt(), anyString(), anyString(), any(), any(), any(), anyString()))
                 .thenAnswer(invocation -> {
                     Instant start = invocation.getArgument(3);
                     return start.equals(Instant.parse("2026-08-25T00:00:00Z"))
@@ -123,7 +135,7 @@ class DsStreamMetricAccumulatorTest {
     @Test
     void emptyObservedPeriodYieldsWithoutRecordingAHealthyZero() {
         OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
-        when(queryService.queryDeltaSummary(anyInt(), anyString(), anyString(), any(), any(), anyString()))
+        when(queryService.queryDeltaSummary(anyInt(), anyString(), anyString(), any(), any(), any(), anyString()))
                 .thenReturn(new DeltaSummary(0, 0));
         DsStreamMetricAccumulator accumulator = new DsStreamMetricAccumulator(
                 repository, queryService, Clock.fixed(Instant.parse("2026-08-25T01:00:00Z"), ZoneOffset.UTC));
@@ -135,6 +147,8 @@ class DsStreamMetricAccumulatorTest {
         assertThat(result.processedApprox()).isZero();
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM t_ddh_ds_stream_metric_period", Integer.class)).isZero();
+        verify(queryService).queryDeltaSummary(eq(7), eq(DsStreamMetricAccumulator.METRIC), eq(JOB_ID),
+                any(), any(), eq(java.util.Map.of("operator_name", ".*(Writer|Committer).*")), eq("sum"));
     }
 
     @Test

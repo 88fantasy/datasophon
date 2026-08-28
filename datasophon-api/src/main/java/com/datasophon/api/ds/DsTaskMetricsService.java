@@ -25,11 +25,15 @@ package com.datasophon.api.ds;
 import com.datasophon.api.dto.v2.DsDagNodeVO;
 import com.datasophon.api.dto.v2.DsTaskMetricsVO;
 
+import java.util.Set;
+
 import org.springframework.stereotype.Service;
 
 /** Dispatches a DS task instance to its batch or streaming metric provider. */
 @Service
 public class DsTaskMetricsService {
+
+    private static final Set<String> TERMINAL_STATES = Set.of("SUCCESS", "FAILURE", "KILL", "STOP");
 
     private final DsBatchMetricsProvider batchMetricsProvider;
     private final DsStreamMetricsProvider streamMetricsProvider;
@@ -45,11 +49,20 @@ public class DsTaskMetricsService {
             throw new NotBoundException();
         }
         return "STREAM".equals(node.getFlowType())
-                ? streamMetricsProvider.metrics(clusterId, node.getTaskInstanceId())
+                ? streamMetricsProvider.metrics(clusterId, node.getTaskInstanceId(), isEnded(node))
                 : batchMetricsProvider.metrics(clusterId, node.getTaskInstanceId());
     }
 
+    private static boolean isEnded(DsDagNodeVO node) {
+        return (node.getEndTime() != null && !node.getEndTime().isBlank())
+                || (node.getState() != null && TERMINAL_STATES.contains(node.getState()));
+    }
+
     public static class NotBoundException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+    }
+
+    public static class JobEndedException extends RuntimeException {
         private static final long serialVersionUID = 1L;
     }
 }

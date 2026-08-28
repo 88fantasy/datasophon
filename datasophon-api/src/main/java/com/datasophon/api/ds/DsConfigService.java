@@ -50,7 +50,28 @@ public class DsConfigService {
     public List<ServiceConfig> mergeDdlFallback(Integer clusterId, List<ServiceConfig> persisted) {
         List<ServiceConfig> effective = persisted == null ? new ArrayList<>() : new ArrayList<>(persisted);
         List<ServiceConfig> ddl = serviceInstallService.getServiceConfigFromDdl(clusterId, SERVICE_NAME);
-        return ServiceConfigUtils.addAll(effective, ddl);
+        List<ServiceConfig> merged = ServiceConfigUtils.addAll(effective, ddl);
+        if (merged.stream().noneMatch(config -> TOKEN_PARAM.equals(config.getName()))) {
+            merged.add(apiTokenConfig());
+        }
+        return merged;
+    }
+
+    private static ServiceConfig apiTokenConfig() {
+        ServiceConfig config = new ServiceConfig();
+        config.setName(TOKEN_PARAM);
+        config.setLabel("DS开放接口令牌");
+        config.setDescription(
+                "供 Datasophon 工作流 Tab 只读访问 DS Open API；建议使用专用只读账号签发的 token，不会下发到 DS 节点");
+        config.setRequired(false);
+        config.setConfigType("map");
+        config.setType("input");
+        config.setConfigurableInWizard(true);
+        config.setHidden(false);
+        config.setDefaultValue("");
+        config.setValue("");
+        config.setRegister(false);
+        return config;
     }
 
     public String apiToken(Integer clusterId) {

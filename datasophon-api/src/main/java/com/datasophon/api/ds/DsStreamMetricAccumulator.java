@@ -44,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DsStreamMetricAccumulator {
 
     static final String METRIC = "flink.taskmanager.job.task.operator.numRecordsOut";
+    static final String SINK_OPERATOR_REGEX = ".*(Writer|Committer).*";
     private static final Duration MAX_PERIOD = Duration.ofHours(1);
     private static final int MAX_JOBS_PER_RUN = 64;
 
@@ -77,6 +78,10 @@ public class DsStreamMetricAccumulator {
         return Optional.of(repository.register(clusterId, jobId, jobName, firstSample.get()));
     }
 
+    public boolean hasRegisteredJob(Integer clusterId, String jobNamePrefix) {
+        return repository.findLatestByJobNamePrefix(clusterId, jobNamePrefix).isPresent();
+    }
+
     @Scheduled(initialDelayString = "${datasophon.ds.stream-metric.initial-delay-ms:60000}", fixedDelayString = "${datasophon.ds.stream-metric.interval-ms:60000}")
     public void collectScheduled() {
         collectUntil(clock.instant());
@@ -103,7 +108,8 @@ public class DsStreamMetricAccumulator {
             return;
         }
         DeltaSummary summary = queryService.queryDeltaSummary(
-                cursor.clusterId(), METRIC, cursor.jobId(), cursor.cursor(), periodEnd, "sum");
+                cursor.clusterId(), METRIC, cursor.jobId(), cursor.cursor(), periodEnd,
+                java.util.Map.of("operator_name", SINK_OPERATOR_REGEX), "sum");
         if (summary.sampleCount() == 0) {
             repository.markAttempted(cursor);
             return;

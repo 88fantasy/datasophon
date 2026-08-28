@@ -43,5 +43,6 @@ export default {
   'dsWorkflow.error.tokenInvalid': 'DS apiToken 已失效',
   'dsWorkflow.error.unavailable': 'DS Open API 暂不可用',
   'dsWorkflow.error.notBound': '任务尚未按平台约定接入指标',
+  'dsWorkflow.status.jobEnded': '流任务已结束',
   'dsWorkflow.config.guide': '请使用 DS 专用只读账号签发令牌并填写到服务配置中',
 };

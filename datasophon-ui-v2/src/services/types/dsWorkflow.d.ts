@@ -70,7 +70,7 @@ declare namespace DATASOPHON {
     host?: string;
     retryTimes: number;
     metrics?: DsTaskMetrics;
-    metricsError?: 'NOT_BOUND' | 'LOOKUP_FAILED';
+    metricsError?: 'NOT_BOUND' | 'JOB_ENDED' | 'LOOKUP_FAILED';
   }
 
   interface DsDagEdge {
