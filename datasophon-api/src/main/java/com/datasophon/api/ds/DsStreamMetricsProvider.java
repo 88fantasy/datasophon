@@ -126,7 +126,8 @@ public class DsStreamMetricsProvider {
         metrics.setJobName(selected.jobName());
         metrics.setRowsPerSecond(rowsPerSecond);
         metrics.setApproximate(true);
-        streamMetricAccumulator.registerAndRead(clusterId, selected.jobId(), selected.jobName())
+        streamMetricAccumulator
+                .registerAndRead(clusterId, selected.jobId(), selected.jobName(), selectedMetric.deltaSamples())
                 .ifPresent(cursor -> applyAccumulated(metrics, cursor));
         return metrics;
     }

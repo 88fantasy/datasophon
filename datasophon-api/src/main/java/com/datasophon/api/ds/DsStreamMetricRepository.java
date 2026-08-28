@@ -118,6 +118,28 @@ public class DsStreamMetricRepository {
         return Boolean.TRUE.equals(applied);
     }
 
+    /**
+     * Advances the cursor past a window that stayed empty, without touching the running total.
+     *
+     * <p>没有增量可记，所以不写幂等台账；游标自身的 CAS 已经能防止并发重复推进。
+     */
+    public void skipEmptyPeriod(StreamMetricCursor cursor, Instant periodEnd) {
+        jdbcTemplate.update("""
+                UPDATE t_ddh_ds_stream_metric_job
+                SET cursor_time = ?
+                WHERE cluster_id = ? AND job_id = ? AND cursor_time = ?
+                """, Timestamp.from(periodEnd), cursor.clusterId(), cursor.jobId(),
+                Timestamp.from(cursor.cursor()));
+    }
+
+    /** Drops idempotency-ledger rows whose window closed before {@code before}. */
+    public int purgePeriodsBefore(Instant before) {
+        return jdbcTemplate.update("""
+                DELETE FROM t_ddh_ds_stream_metric_period
+                WHERE period_end < ?
+                """, Timestamp.from(before));
+    }
+
     public void markAttempted(StreamMetricCursor cursor) {
         jdbcTemplate.update("""
                 UPDATE t_ddh_ds_stream_metric_job

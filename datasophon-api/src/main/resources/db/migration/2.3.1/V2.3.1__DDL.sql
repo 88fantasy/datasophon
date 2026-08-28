@@ -18,5 +18,6 @@ CREATE TABLE `t_ddh_ds_stream_metric_period` (
     `period_end` datetime(3) NOT NULL COMMENT 'Exclusive period end',
     `delta_value` bigint NOT NULL COMMENT 'Observed delta sum in this period',
     `create_time` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    PRIMARY KEY (`cluster_id`, `job_id`, `period_start`)
+    PRIMARY KEY (`cluster_id`, `job_id`, `period_start`),
+    KEY `idx_ds_stream_metric_period_end` (`period_end`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DS streaming metric idempotency ledger';

@@ -93,8 +93,20 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("FROM otel.otel_metrics_sum");
         assertThat(sql).contains("metric_name = :metric");
         assertThat(sql).contains("CAST(attributes['job_name'] AS STRING) REGEXP :jobNameRegex");
-        assertThat(sql).contains("timestamp >= :since");
+        // 时间边界必须绑纪元秒交给 FROM_UNIXTIME，绑 java.sql.Timestamp 会引入驱动侧时区。
+        assertThat(sql).contains("timestamp >= FROM_UNIXTIME(:since)");
         assertThat(sql).contains("LIMIT 1");
+    }
+
+    @Test
+    void deltaSummaryQueryConvertsBothBoundsServerSide() {
+        String sql = OtelMetricsQueryService.buildDeltaSummarySql(
+                "otel_metrics_sum", Map.of("operator_name", ".*(Writer|Committer).*"));
+
+        assertThat(sql).contains("FROM otel.otel_metrics_sum");
+        assertThat(sql).contains("timestamp >= FROM_UNIXTIME(:start)");
+        assertThat(sql).contains("timestamp < FROM_UNIXTIME(:end)");
+        assertThat(sql).contains("CAST(attributes['operator_name'] AS STRING) REGEXP :afr_operator_name");
     }
 
     @Test

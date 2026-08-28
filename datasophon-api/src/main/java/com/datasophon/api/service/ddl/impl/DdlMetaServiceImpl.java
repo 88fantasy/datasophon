@@ -36,7 +36,6 @@ import com.datasophon.common.model.k8s.K8sServiceInfo;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
-import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
@@ -400,19 +399,17 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                 .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
                 .forEach(config -> {
                     ServiceConfig metadataConfig = metadataByName.get(config.getName());
-                    if (metadataConfig != null) {
-                        Object metadataValue = metadataConfig.getValue() != null
-                                ? metadataConfig.getValue()
-                                : metadataConfig.getDefaultValue();
-                        Object resolvedValue = metadataValue instanceof String stringValue
-                                ? PlaceholderUtils.replacePlaceholders(
-                                        stringValue, globalVariables, Constants.REGEX_VARIABLE)
-                                : metadataValue;
-                        config.setValue(resolvedValue);
-                        config.setDefaultValue(resolvedValue);
-                        config.setHidden(metadataConfig.isHidden());
-                        config.setConfigurableInWizard(metadataConfig.isConfigurableInWizard());
+                    if (metadataConfig == null) {
+                        return;
                     }
+                    // 展示元数据始终跟随 DDL；凭据本身只有解析出非空值时才覆盖，
+                    // 解析不出来时保留既有值（语义与 ServiceConfigUtils 那条路径共用 DsManagedConfig.resolve）。
+                    config.setHidden(metadataConfig.isHidden());
+                    config.setConfigurableInWizard(metadataConfig.isConfigurableInWizard());
+                    DsManagedConfig.resolve(config.getName(), globalVariables).ifPresent(resolved -> {
+                        config.setValue(resolved);
+                        config.setDefaultValue(resolved);
+                    });
                 });
     }
 

@@ -58,7 +58,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 public class DsWorkflowServiceImpl implements DsWorkflowService {
 
-    private static final Pattern DURATION_SECONDS = Pattern.compile("(\\d+)");
+    // DS 3.4 DateUtils.format2Duration 输出形如 "16s" / "1m 30s" / "2h 3m 5s" / "1d 2h"，
+    // 分量为零时整段省略。只取第一个数字会把 "1m 30s" 读成 1 秒。
+    private static final Pattern DURATION_TOKEN = Pattern.compile("(\\d+)\\s*([dhms])");
+    private static final Pattern DURATION_BARE_NUMBER = Pattern.compile("(\\d+)");
 
     private final DsApiClient client;
     private final DsTaskMetricsService taskMetricsService;
@@ -297,8 +300,32 @@ public class DsWorkflowServiceImpl implements DsWorkflowService {
         if (duration.isNumber()) {
             return duration.asLong();
         }
-        Matcher matcher = DURATION_SECONDS.matcher(duration.asText());
-        return matcher.find() ? Long.parseLong(matcher.group(1)) : 0;
+        return parseDuration(duration.asText());
+    }
+
+    private static long parseDuration(String text) {
+        if (StringUtils.isBlank(text)) {
+            return 0;
+        }
+        Matcher tokens = DURATION_TOKEN.matcher(text);
+        long seconds = 0;
+        boolean matched = false;
+        while (tokens.find()) {
+            matched = true;
+            long value = Long.parseLong(tokens.group(1));
+            seconds += switch (tokens.group(2)) {
+                case "d" -> value * 86400;
+                case "h" -> value * 3600;
+                case "m" -> value * 60;
+                default -> value;
+            };
+        }
+        if (matched) {
+            return seconds;
+        }
+        // 无单位时按秒处理，兼容 DS 直接返回裸数字字符串的情况。
+        Matcher bare = DURATION_BARE_NUMBER.matcher(text);
+        return bare.find() ? Long.parseLong(bare.group(1)) : 0;
     }
 
     private static JsonNode join(CompletableFuture<JsonNode> future) {

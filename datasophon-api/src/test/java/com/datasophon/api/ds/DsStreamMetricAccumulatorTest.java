@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -164,6 +165,60 @@ class DsStreamMetricAccumulatorTest {
         assertThat(repository.findPending(Instant.parse("2026-08-25T03:00:00Z"), 1))
                 .extracting(StreamMetricCursor::jobId)
                 .containsExactly(unprocessedJobId);
+    }
+
+    @Test
+    void emptyWindowPastItsGraceAdvancesTheCursorInsteadOfStallingForever() {
+        // 游标 00:00，窗口上限 01:00。时钟已到 03:00，说明 [00:00,01:00) 再也不会变大，
+        // 此前的实现会把游标永久钉死在这里，累计值从此不再更新。
+        OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
+        when(queryService.queryDeltaSummary(anyInt(), anyString(), anyString(), any(), any(), any(), anyString()))
+                .thenReturn(new DeltaSummary(0, 0));
+        DsStreamMetricAccumulator accumulator = new DsStreamMetricAccumulator(
+                repository, queryService, Clock.fixed(Instant.parse("2026-08-25T03:00:00Z"), ZoneOffset.UTC));
+
+        accumulator.collectScheduled();
+        assertThat(repository.find(7, JOB_ID).orElseThrow().cursor())
+                .isEqualTo(Instant.parse("2026-08-25T01:00:00Z"));
+
+        accumulator.collectScheduled();
+        assertThat(repository.find(7, JOB_ID).orElseThrow().cursor())
+                .isEqualTo(Instant.parse("2026-08-25T02:00:00Z"));
+
+        // 跳过空窗不写台账，也不污染累计值。
+        assertThat(repository.find(7, JOB_ID).orElseThrow().processedApprox()).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM t_ddh_ds_stream_metric_period", Integer.class)).isZero();
+    }
+
+    @Test
+    void cumulativeGaugeSourceIsNotRegisteredForAccumulation() {
+        OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
+        DsStreamMetricAccumulator accumulator = new DsStreamMetricAccumulator(
+                repository, queryService, Clock.fixed(Instant.parse("2026-08-25T01:00:00Z"), ZoneOffset.UTC));
+
+        assertThat(accumulator.registerAndRead(7, "ffffffffffffffffffffffffffffffff", "ds-7-14-stream", false))
+                .isEmpty();
+        verify(queryService, never()).queryFirstSampleAt(anyInt(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void purgeDropsLedgerRowsWhoseWindowClosedBeforeTheRetentionBoundary() {
+        StreamMetricCursor cursor = repository.find(7, JOB_ID).orElseThrow();
+        repository.accumulate(cursor, Instant.parse("2026-08-25T01:00:00Z"), 60);
+        DsStreamMetricAccumulator accumulator = new DsStreamMetricAccumulator(
+                repository, mock(OtelMetricsQueryService.class),
+                Clock.fixed(Instant.parse("2026-08-25T01:00:00Z"), ZoneOffset.UTC));
+
+        accumulator.purgeBefore(Instant.parse("2026-08-25T00:30:00Z"));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM t_ddh_ds_stream_metric_period", Integer.class)).isEqualTo(1);
+
+        accumulator.purgeBefore(Instant.parse("2026-08-25T02:00:00Z"));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM t_ddh_ds_stream_metric_period", Integer.class)).isZero();
+        // 累计值只存在 job 行上，清理台账不能把它一起抹掉。
+        assertThat(repository.find(7, JOB_ID).orElseThrow().processedApprox()).isEqualTo(60);
     }
 
     private DsStreamMetricRepository newRepository() {

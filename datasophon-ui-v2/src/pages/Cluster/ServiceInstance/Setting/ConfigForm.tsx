@@ -36,15 +36,12 @@ interface ConfigFormProps {
   /** ProFormList 嵌套时传入上级 name 路径前缀 */
   namePrefix?: (string | number)[];
   className?: string;
-  /** 'wizard'：安装向导场景，hidden 字段若标记 configurableInWizard 仍需渲染；默认 'settings' */
-  context?: 'settings' | 'wizard';
 }
 
 const ConfigForm: React.FC<ConfigFormProps> = ({
   templateData,
   className = '',
   namePrefix,
-  context = 'settings',
 }) => {
   const { token } = theme.useToken();
 
@@ -285,11 +282,14 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
   return (
     <div className={className}>
       {templateData
+        // hidden 单独出现不足以判定「不该渲染」：各服务 DDL 里 hidden 的参数
+        // （fs.trash.interval、advertised.listeners、ZK server.N 等）绝大多数同时标了
+        // configurableInWizard，运维在设置页确实要改。只有平台托管、用户不该录入的项
+        // （DS 的 S3 凭据）才是 hidden 且非 configurableInWizard，两个场景一并隐藏。
         .filter(
           (item) =>
             item?.enabled !== false &&
-            (!item.hidden ||
-              (context === 'wizard' && item.configurableInWizard)),
+            !(item.hidden && !item.configurableInWizard),
         )
         .map((item) => {
           const fieldName = namePrefix

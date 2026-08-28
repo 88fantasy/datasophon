@@ -24,6 +24,7 @@ package com.datasophon.api.ds;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -85,7 +86,7 @@ class DsTaskMetricsServiceTest {
                 anyMap(), anyMap(), anyMap(), anyMap(), anyList(), anyLong(), anyLong(), anyLong(),
                 anyString(), anyDouble(), isNull()))
                 .thenReturn(PrometheusMatrixResult.of(List.of()));
-        when(streamMetricAccumulator.registerAndRead(anyInt(), anyString(), anyString()))
+        when(streamMetricAccumulator.registerAndRead(anyInt(), anyString(), anyString(), anyBoolean()))
                 .thenReturn(Optional.empty());
     }
 
@@ -127,7 +128,7 @@ class DsTaskMetricsServiceTest {
                 .thenReturn(PrometheusMatrixResult.of(List.of(
                         new MatrixSeries(Map.of("job_id", JOB_ID),
                                 List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "22.8"})))));
-        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName))
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName, true))
                 .thenReturn(Optional.of(new StreamMetricCursor(
                         7, JOB_ID, jobName, NOW.minusSeconds(600), NOW, 1234)));
 
@@ -220,7 +221,7 @@ class DsTaskMetricsServiceTest {
                         new MatrixSeries(Map.of("job_id", JOB_ID),
                                 List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
         // 落后 10 分钟，超过 STALE_AFTER(5 分钟) 的容忍窗口——累加器长期没有追上，应隐藏。
-        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName))
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName, true))
                 .thenReturn(Optional.of(new StreamMetricCursor(
                         7, JOB_ID, jobName, NOW.minusSeconds(86_400), NOW.minusSeconds(600), 1234)));
 
@@ -247,7 +248,7 @@ class DsTaskMetricsServiceTest {
                                 List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
         // 落后 60 秒——仅一个累加批处理周期，仍在容忍窗口内，应正常展示。这正是修复前
         // 的行为缺陷：旧实现要求游标恰好追上“当前这一分钟”，导致这种正常延迟也被隐藏。
-        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName))
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName, true))
                 .thenReturn(Optional.of(new StreamMetricCursor(
                         7, JOB_ID, jobName, NOW.minusSeconds(86_400), NOW.minusSeconds(60), 1234)));
 

@@ -306,14 +306,20 @@ public class OtelMetricsQueryService {
         return value == null ? Optional.empty() : Optional.of(Instant.ofEpochSecond(value.longValue()));
     }
 
-    /** Returns whether a Flink job-name sample exists in the bounded historical window. */
+    /**
+     * Returns whether a Flink job-name sample exists in the bounded historical window.
+     *
+     * <p>时间边界一律绑纪元秒并由 {@code FROM_UNIXTIME} 在服务端转换，与本文件其它查询一致。
+     * 绑 {@code java.sql.Timestamp} 会让驱动按 API 进程的 JVM 时区渲染，而 Doris 会话时区未必相同，
+     * 两者不一致时窗口会整体偏移。
+     */
     public boolean hasJobNameSample(Integer clusterId, String metric, String jobNameRegex,
                                     Instant since, String table) {
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
         return !createReader(clusterId).sql(buildHasJobNameSampleSql(otelTable))
                 .param("metric", metric)
                 .param("jobNameRegex", jobNameRegex)
-                .param("since", java.sql.Timestamp.from(since))
+                .param("since", since.getEpochSecond())
                 .query()
                 .listOfRows()
                 .isEmpty();
@@ -324,20 +330,12 @@ public class OtelMetricsQueryService {
                                           Instant start, Instant end,
                                           Map<String, String> filtersRegex, String table) {
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
-        StringBuilder sql = new StringBuilder("""
-                SELECT COALESCE(SUM(value), 0) AS delta_value, COUNT(*) AS sample_count
-                FROM otel.%s
-                WHERE metric_name = :metric
-                  AND attributes['job_id'] = :jobId
-                  AND timestamp >= :start
-                  AND timestamp < :end
-                """.formatted(otelTable));
-        appendAttrFilters(sql, Map.of(), Map.of(), filtersRegex, Map.of());
-        JdbcClient.StatementSpec spec = createReader(clusterId).sql(sql.toString())
+        JdbcClient.StatementSpec spec = createReader(clusterId)
+                .sql(buildDeltaSummarySql(otelTable, filtersRegex))
                 .param("metric", metric)
                 .param("jobId", jobId)
-                .param("start", java.sql.Timestamp.from(start))
-                .param("end", java.sql.Timestamp.from(end));
+                .param("start", start.getEpochSecond())
+                .param("end", end.getEpochSecond());
         spec = bindAttrFilterParams(spec, Map.of(), Map.of(), filtersRegex, Map.of());
         Map<String, Object> row = spec.query().singleRow();
         Number value = (Number) row.get("delta_value");
@@ -639,13 +637,26 @@ public class OtelMetricsQueryService {
                 + (groupByKeys.isEmpty() ? "" : " GROUP BY " + String.join(", ", groupByKeys));
     }
 
+    static String buildDeltaSummarySql(String otelTable, Map<String, String> filtersRegex) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT COALESCE(SUM(value), 0) AS delta_value, COUNT(*) AS sample_count
+                FROM otel.%s
+                WHERE metric_name = :metric
+                  AND attributes['job_id'] = :jobId
+                  AND timestamp >= FROM_UNIXTIME(:start)
+                  AND timestamp < FROM_UNIXTIME(:end)
+                """.formatted(otelTable));
+        appendAttrFilters(sql, Map.of(), Map.of(), filtersRegex, Map.of());
+        return sql.toString();
+    }
+
     static String buildHasJobNameSampleSql(String otelTable) {
         return """
                 SELECT 1 AS matched
                 FROM otel.%s
                 WHERE metric_name = :metric
                   AND CAST(attributes['job_name'] AS STRING) REGEXP :jobNameRegex
-                  AND timestamp >= :since
+                  AND timestamp >= FROM_UNIXTIME(:since)
                 LIMIT 1
                 """.formatted(otelTable);
     }

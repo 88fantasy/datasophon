@@ -63,6 +63,20 @@ class ServiceConfigUtilsTest {
         assertEquals("service-owned", value(configs, "aws.s3.access.key.id"));
     }
 
+    @Test
+    void keepsExistingCredentialWhenTheGlobalVariableIsMissingOrBlank() {
+        // conf/api.properties 里 rustfs.secret_key 默认为空；无条件覆盖会静默清空运维填的凭据。
+        List<ServiceConfig> configs = new ArrayList<>(List.of(
+                config("aws.s3.access.key.id", "operator-access"),
+                config("aws.s3.access.key.secret", "operator-secret")));
+
+        ServiceConfigUtils.applyPlatformManagedConfigValues(
+                "DS", configs, Map.of("${ROOT.Rustfs.secret_key}", "   "));
+
+        assertEquals("operator-access", value(configs, "aws.s3.access.key.id"));
+        assertEquals("operator-secret", value(configs, "aws.s3.access.key.secret"));
+    }
+
     private static ServiceConfig config(String name, String value) {
         ServiceConfig config = new ServiceConfig();
         config.setName(name);

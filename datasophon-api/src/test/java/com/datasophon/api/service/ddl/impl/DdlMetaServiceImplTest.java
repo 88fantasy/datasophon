@@ -36,20 +36,40 @@ class DdlMetaServiceImplTest {
 
     @Test
     void refreshesDsManagedCredentialsWhenMetadataIsReloaded() {
+        // 真实 DDL 里这两项的值恒为占位符，实际凭据来自集群全局变量。
         List<ServiceConfig> saved = new ArrayList<>(List.of(
                 config("aws.s3.access.key.id", "stale-access"),
                 config("aws.s3.access.key.secret", "stale-secret"),
                 config("aws.s3.bucket.name", "custom-bucket")));
         List<ServiceConfig> metadata = List.of(
-                config("aws.s3.access.key.id", "current-access"),
-                config("aws.s3.access.key.secret", "current-secret"),
+                config("aws.s3.access.key.id", "${ROOT.Rustfs.access_key}"),
+                config("aws.s3.access.key.secret", "${ROOT.Rustfs.secret_key}"),
                 config("aws.s3.bucket.name", "metadata-bucket"));
 
-        DdlMetaServiceImpl.refreshPlatformManagedConfigValues("DS", saved, metadata, Map.of());
+        DdlMetaServiceImpl.refreshPlatformManagedConfigValues("DS", saved, metadata, Map.of(
+                "${ROOT.Rustfs.access_key}", "current-access",
+                "${ROOT.Rustfs.secret_key}", "current-secret"));
 
         assertEquals("current-access", value(saved, "aws.s3.access.key.id"));
         assertEquals("current-secret", value(saved, "aws.s3.access.key.secret"));
         assertEquals("custom-bucket", value(saved, "aws.s3.bucket.name"));
+    }
+
+    @Test
+    void keepsExistingCredentialWhenTheGlobalVariableIsMissingOrBlank() {
+        // conf/api.properties 里 rustfs.secret_key 默认就是空值，无条件覆盖会把运维填的凭据抹掉。
+        List<ServiceConfig> saved = new ArrayList<>(List.of(
+                config("aws.s3.access.key.id", "operator-access"),
+                config("aws.s3.access.key.secret", "operator-secret")));
+        List<ServiceConfig> metadata = List.of(
+                config("aws.s3.access.key.id", "${ROOT.Rustfs.access_key}"),
+                config("aws.s3.access.key.secret", "${ROOT.Rustfs.secret_key}"));
+
+        DdlMetaServiceImpl.refreshPlatformManagedConfigValues("DS", saved, metadata,
+                Map.of("${ROOT.Rustfs.secret_key}", ""));
+
+        assertEquals("operator-access", value(saved, "aws.s3.access.key.id"));
+        assertEquals("operator-secret", value(saved, "aws.s3.access.key.secret"));
     }
 
     @Test

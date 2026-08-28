@@ -171,8 +171,13 @@ public class ServiceConfigUtils {
         }
         serviceConfigs.stream()
                 .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
-                .forEach(config -> config.setValue(
-                        globalVariables.get(DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.get(config.getName()))));
+                .forEach(config -> DsManagedConfig.resolve(config.getName(), globalVariables)
+                        .ifPresentOrElse(
+                                config::setValue,
+                                () -> logger.warn(
+                                        "Keeping the existing value of DS config {}: global variable {} is missing or blank",
+                                        config.getName(),
+                                        DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.get(config.getName()))));
     }
 
     private static void replaceVariable(List<ServiceConfig> serviceConfigs, Map<String, String> variables) {

@@ -215,6 +215,27 @@ class DsWorkflowServiceTest {
         });
     }
 
+    @Test
+    void parsesCompositeDurationsNotJustTheLeadingNumber() throws Exception {
+        // DS 3.4 DateUtils.format2Duration 输出的是 d/h/m/s 复合串，只有纯秒场景才是单个数字。
+        assertThat(durationSecondsOfInstance("16s")).isEqualTo(16);
+        assertThat(durationSecondsOfInstance("1m 30s")).isEqualTo(90);
+        assertThat(durationSecondsOfInstance("2h 3m 5s")).isEqualTo(7385);
+        assertThat(durationSecondsOfInstance("1d 2h")).isEqualTo(93600);
+        assertThat(durationSecondsOfInstance("5m")).isEqualTo(300);
+        assertThat(durationSecondsOfInstance("42")).isEqualTo(42);
+        assertThat(durationSecondsOfInstance("")).isZero();
+    }
+
+    private long durationSecondsOfInstance(String duration) throws Exception {
+        when(client.get(eq(7), eq("projects/99/workflow-instances"), anyMap()))
+                .thenReturn(json("""
+                        {"totalList":[{"id":8,"workflowDefinitionCode":101,"name":"batch-flow-1",
+                        "state":"SUCCESS","duration":"%s"}],"total":1}
+                        """.formatted(duration)));
+        return service.instances(7, 99, 101, 10).getList().get(0).getDurationSeconds();
+    }
+
     private JsonNode json(String value) throws Exception {
         return objectMapper.readTree(value);
     }

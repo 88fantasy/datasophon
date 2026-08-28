@@ -57,7 +57,7 @@ declare namespace DATASOPHON {
     required: boolean;
     enabled: boolean;
     hidden?: boolean;
-    /** 安装向导中是否仍需暴露该字段（即使 hidden 为 true） */
+    /** 是否允许运维录入。hidden 且非 configurableInWizard 的项由平台托管，前端一律不渲染 */
     configurableInWizard?: boolean;
     type: string;
     configType?: string;

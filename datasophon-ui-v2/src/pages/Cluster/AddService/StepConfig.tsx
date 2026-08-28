@@ -86,7 +86,6 @@ const StepConfig: React.FC<Props> = ({
             <ConfigForm
               templateData={templateMap[svc.serviceName] ?? []}
               namePrefix={[svc.serviceName]}
-              context="wizard"
             />
           ),
         }))}
