@@ -108,6 +108,7 @@ class DsDdlLoadTest {
                 .orElseThrow(() -> new AssertionError("parameter not found: apiToken"));
 
         assertFalse(apiToken.getBooleanValue("required"));
+        assertEquals("password", apiToken.getString("type"));
         assertEquals("", apiToken.getString("defaultValue"));
         assertFalse(apiToken.getBooleanValue("register"));
         assertTrue(apiToken.getString("description").contains("不会下发"));

@@ -692,7 +692,7 @@
       "hidden": false,
       "required": false,
       "configType": "map",
-      "type": "input",
+      "type": "password",
       "defaultValue": "",
       "configurableInWizard": true,
       "register": false

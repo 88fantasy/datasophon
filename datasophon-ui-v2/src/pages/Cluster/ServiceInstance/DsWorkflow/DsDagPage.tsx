@@ -3,7 +3,9 @@ import { Alert, Button, Space, Spin } from 'antd';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import DsDagGraph from './DsDagGraph';
+import { classifyDsError, type DsErrorKind } from './errors';
 import { getDsDag } from './service';
+import styles from './DsWorkflow.module.less';
 
 const DsDagPage: React.FC = () => {
   const intl = useIntl();
@@ -18,7 +20,7 @@ const DsDagPage: React.FC = () => {
 
   const [dag, setDag] = useState<DATASOPHON.DsDag>();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<DsErrorKind>();
 
   const loadDag = useCallback(async () => {
     if (!clusterId) return;
@@ -30,9 +32,9 @@ const DsDagPage: React.FC = () => {
         numericWorkflowInstanceId,
       );
       setDag(response.data);
-      setError(false);
-    } catch {
-      setError(true);
+      setError(undefined);
+    } catch (requestError) {
+      setError(classifyDsError(requestError));
     } finally {
       setLoading(false);
     }
@@ -45,8 +47,8 @@ const DsDagPage: React.FC = () => {
   }, [loadDag]);
 
   return (
-    <div style={{ padding: 16 }}>
-      <Space wrap style={{ marginBottom: 12 }}>
+    <div className={styles.dagPage}>
+      <Space wrap className={styles.dagHeader}>
         <Button
           onClick={() =>
             history.push(`/cluster/${clusterId}/service/${instanceId}`)
@@ -63,7 +65,12 @@ const DsDagPage: React.FC = () => {
         <Alert
           showIcon
           type="error"
-          title={intl.formatMessage({ id: 'dsWorkflow.error.unavailable' })}
+          title={intl.formatMessage({ id: `dsWorkflow.error.${error}` })}
+          action={
+            <Button size="small" onClick={() => void loadDag()}>
+              {intl.formatMessage({ id: 'dsWorkflow.retry' })}
+            </Button>
+          }
         />
       ) : null}
       {loading && !dag ? <Spin /> : null}

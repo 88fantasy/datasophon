@@ -6,6 +6,7 @@ import { classifyDsError, type DsErrorKind } from './errors';
 import { formatDsTime } from './formatters';
 import InstancesTable from './InstancesTable';
 import { getDsProjects, getDsWorkflows } from './service';
+import styles from './DsWorkflow.module.less';
 
 interface DsWorkflowPanelProps {
   clusterId: number;
@@ -23,7 +24,6 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
   const [projectCode, setProjectCode] = useState<number>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<DsErrorKind>();
-  const [releaseStateFilter, setReleaseStateFilter] = useState('ALL');
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -115,8 +115,8 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
   );
 
   return (
-    <div data-instance-id={instanceId} style={{ padding: '8px 0' }}>
-      <div style={{ display: 'grid', gap: 24 }}>
+    <div data-instance-id={instanceId} className={styles.panel}>
+      <div className={styles.panelContent}>
         <Space>
           <Typography.Text strong>
             {intl.formatMessage({ id: 'dsWorkflow.project.label' })}
@@ -133,30 +133,8 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
               value: project.code,
             }))}
             showSearch={{ optionFilterProp: 'label' }}
-            style={{ minWidth: 280 }}
+            className={styles.projectSelect}
             onChange={setProjectCode}
-          />
-          <Select<string>
-            aria-label={intl.formatMessage({
-              id: 'dsWorkflow.filter.releaseState',
-            })}
-            value={releaseStateFilter}
-            options={[
-              {
-                label: intl.formatMessage({ id: 'dsWorkflow.filter.all' }),
-                value: 'ALL',
-              },
-              {
-                label: intl.formatMessage({ id: 'dsWorkflow.status.online' }),
-                value: 'ONLINE',
-              },
-              {
-                label: intl.formatMessage({ id: 'dsWorkflow.status.offline' }),
-                value: 'OFFLINE',
-              },
-            ]}
-            style={{ minWidth: 150 }}
-            onChange={setReleaseStateFilter}
           />
         </Space>
 
@@ -183,10 +161,10 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
 
         {projectCode != null ? (
           <ProTable<DATASOPHON.DsWorkflowDefinition>
-            key={`${projectCode}-${releaseStateFilter}`}
+            key={projectCode}
             rowKey="code"
             columns={columns}
-            params={{ projectCode, releaseStateFilter }}
+            params={{ projectCode }}
             options={false}
             pagination={{ defaultPageSize: 20, showSizeChanger: true }}
             request={async (params) => {
@@ -200,11 +178,7 @@ const DsWorkflowPanel: React.FC<DsWorkflowPanelProps> = ({
                 );
                 setError(undefined);
                 return {
-                  data: (response.data?.list ?? []).filter(
-                    (workflow) =>
-                      releaseStateFilter === 'ALL' ||
-                      workflow.releaseState === releaseStateFilter,
-                  ),
+                  data: response.data?.list ?? [],
                   success: response.success !== false,
                   total: response.data?.total ?? 0,
                 };

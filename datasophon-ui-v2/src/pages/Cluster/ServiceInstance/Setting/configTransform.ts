@@ -129,7 +129,7 @@ export function invokeFormatTemplateData(
 ): ConfigField[] {
   const cloned = structuredClone(originData);
   cloned
-    .filter((val) => !(!val.required && val.hidden))
+    .filter((val) => !val.hidden)
     .forEach((val) => {
       const formVal = values[val.name];
       if (invokeMapShowMultiply(val)) {

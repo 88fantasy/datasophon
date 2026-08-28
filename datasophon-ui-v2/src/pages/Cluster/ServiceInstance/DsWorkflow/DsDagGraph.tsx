@@ -10,6 +10,7 @@ import {
   formatRows,
   shortDatasetName,
 } from './formatters';
+import styles from './DsWorkflow.module.less';
 
 // 结构签名：只看节点/边的拓扑（taskCode 集合 + from-to 集合），不含 state/metrics 等
 // 会随每轮轮询变化的字段。用于区分“数据更新”（可以增量刷新，不打扰画布）与
@@ -265,10 +266,14 @@ const DsDagGraph: React.FC<DsDagGraphProps> = ({ dag }) => {
               {intl.formatMessage({ id: 'dsWorkflow.dag.refreshCanvas' })}
             </Button>
           }
-          style={{ marginBottom: 8 }}
+          className={styles.pendingStructureAlert}
         />
       ) : null}
-      <div ref={containerRef} style={{ height: graphHeight, width: '100%' }} />
+      <div
+        ref={containerRef}
+        className={styles.graph}
+        style={{ height: graphHeight }}
+      />
     </>
   );
 };

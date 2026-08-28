@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ClusterContext from '@/context/ClusterContext';
 import DsDagPage from './DsDagPage';
@@ -80,5 +80,19 @@ describe('DsDagPage polling', () => {
 
     getByText('dsWorkflow.dag.backToList').click();
     expect(historyPush).toHaveBeenCalledWith('/cluster/7/service/33');
+  });
+
+  it('keeps token errors in the page and retries the DAG request', async () => {
+    vi.mocked(getDsDag)
+      .mockRejectedValueOnce({ response: { status: 401 } })
+      .mockResolvedValueOnce({ success: true, data: dag });
+    const { getByText } = renderPage();
+
+    await act(async () => Promise.resolve());
+    expect(getByText('dsWorkflow.error.tokenInvalid')).toBeInTheDocument();
+
+    fireEvent.click(getByText('dsWorkflow.retry'));
+    await act(async () => Promise.resolve());
+    expect(getDsDag).toHaveBeenCalledTimes(2);
   });
 });

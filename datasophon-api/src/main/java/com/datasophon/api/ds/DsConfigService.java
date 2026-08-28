@@ -65,7 +65,7 @@ public class DsConfigService {
                 "供 Datasophon 工作流 Tab 只读访问 DS Open API；建议使用专用只读账号签发的 token，不会下发到 DS 节点");
         config.setRequired(false);
         config.setConfigType("map");
-        config.setType("input");
+        config.setType("password");
         config.setConfigurableInWizard(true);
         config.setHidden(false);
         config.setDefaultValue("");

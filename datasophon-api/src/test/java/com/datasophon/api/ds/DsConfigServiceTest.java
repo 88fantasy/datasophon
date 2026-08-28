@@ -66,6 +66,7 @@ class DsConfigServiceTest {
                         org.assertj.core.groups.Tuple.tuple("apiServerPort", "12346"),
                         org.assertj.core.groups.Tuple.tuple("apiToken", ""));
         ServiceConfig apiToken = effective.get(1);
+        assertThat(apiToken.getType()).isEqualTo("password");
         assertThat(apiToken.getDefaultValue()).isEqualTo("");
         assertThat(apiToken.isRequired()).isFalse();
         assertThat(apiToken.getRegister()).isFalse();

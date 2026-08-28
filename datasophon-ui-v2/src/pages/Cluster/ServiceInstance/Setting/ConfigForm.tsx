@@ -282,7 +282,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
   return (
     <div className={className}>
       {templateData
-        .filter((item) => item?.enabled !== false)
+        .filter((item) => item?.enabled !== false && !item.hidden)
         .map((item) => {
           const fieldName = namePrefix
             ? [...namePrefix, item.name].filter(Boolean)

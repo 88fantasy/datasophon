@@ -32,6 +32,7 @@ vi.mock('@ant-design/pro-components', () => ({
       expandedRowRender: (record: Record<string, unknown>) => ReactNode;
     };
     onRow?: (record: Record<string, unknown>) => { onClick?: () => void };
+    className?: string;
   }) => {
     const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
     const [expanded, setExpanded] = useState<Record<string, unknown>>();
@@ -39,7 +40,7 @@ vi.mock('@ant-design/pro-components', () => ({
       void props
         .request({ current: 1, pageSize: 20 })
         .then((result) => setRows(result.data ?? []));
-    }, [props]);
+    }, [props.request]);
     return (
       <div>
         {rows.map((row) => {
@@ -75,22 +76,31 @@ vi.mock('@ant-design/pro-components', () => ({
 }));
 
 vi.mock('antd', () => ({
-  Alert: ({ title }: { title: ReactNode }) => <div>{title}</div>,
+  Alert: ({ title, action }: { title: ReactNode; action?: ReactNode }) => (
+    <div>
+      {title}
+      {action}
+    </div>
+  ),
   Button: ({
     children,
     href,
     target,
+    onClick,
   }: {
     children: ReactNode;
     href?: string;
     target?: string;
+    onClick?: () => void;
   }) =>
     href ? (
       <a href={href} target={target}>
         {children}
       </a>
     ) : (
-      <button type="button">{children}</button>
+      <button type="button" onClick={onClick}>
+        {children}
+      </button>
     ),
   Select: ({
     value,
@@ -215,7 +225,7 @@ describe('DsWorkflowPanel tree table', () => {
     );
   });
 
-  it('filters the current workflow page by release state', async () => {
+  it('renders every workflow returned in the current DS page', async () => {
     vi.mocked(getDsWorkflows).mockResolvedValue({
       success: true,
       data: {
@@ -239,17 +249,10 @@ describe('DsWorkflowPanel tree table', () => {
       },
     });
     render(<DsWorkflowPanel clusterId={7} instanceId={33} />);
-    await screen.findByTestId('row-800001');
-
-    fireEvent.change(
-      screen.getByLabelText('dsWorkflow.filter.releaseState'),
-      { target: { value: 'OFFLINE' } },
-    );
-
+    await screen.findByText('online workflow');
     await screen.findByText('offline workflow');
-    await waitFor(() =>
-      expect(screen.queryByText('online workflow')).not.toBeInTheDocument(),
-    );
+    expect(screen.getByTestId('row-800001')).toBeInTheDocument();
+    expect(screen.getByTestId('row-800002')).toBeInTheDocument();
   });
 
   it('offers a link to the DS native Web UI', async () => {
@@ -282,7 +285,9 @@ describe('DsWorkflowPanel tree table', () => {
       'dsWorkflow.error.tokenMissing',
     ],
     [
-      { response: { status: 401, data: { errorMessage: 'DS apiToken 已失效' } } },
+      {
+        response: { status: 401, data: { errorMessage: 'DS apiToken 已失效' } },
+      },
       'dsWorkflow.error.tokenInvalid',
     ],
     [
@@ -300,5 +305,26 @@ describe('DsWorkflowPanel tree table', () => {
     render(<DsWorkflowPanel clusterId={7} instanceId={33} />);
 
     expect(await screen.findByText(expected)).toBeInTheDocument();
+  });
+
+  it('keeps instance loading errors local and retries them', async () => {
+    vi.mocked(getDsWorkflowInstances)
+      .mockRejectedValueOnce({ response: { status: 401 } })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { list: [], total: 0, pageNo: 1, pageSize: 10 },
+      });
+    render(<DsWorkflowPanel clusterId={7} instanceId={33} />);
+
+    await screen.findByText('synthetic workflow');
+    fireEvent.click(screen.getByText('expand-800001'));
+    expect(
+      await screen.findByText('dsWorkflow.error.tokenInvalid'),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('dsWorkflow.retry'));
+    await waitFor(() =>
+      expect(getDsWorkflowInstances).toHaveBeenCalledTimes(2),
+    );
   });
 });
