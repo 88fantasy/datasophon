@@ -2,6 +2,7 @@ package com.datasophon.api.service.ddl.impl;
 
 import static com.datasophon.common.Constants.FRAMEWORK_TPL;
 
+import com.datasophon.api.ds.DsManagedConfig;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
@@ -87,10 +88,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service("ddlMetaService")
 public class DdlMetaServiceImpl implements DdlMetaService {
-
-    private static final String DS_SERVICE_NAME = "DS";
-    private static final Set<String> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS = Set.of(
-            "aws.s3.access.key.id", "aws.s3.access.key.secret");
 
     @Autowired
     private PropertyResolver propertyResolver;
@@ -393,14 +390,14 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                                                    List<ServiceConfig> savedConfigs,
                                                    List<ServiceConfig> metadataConfigs,
                                                    Map<String, String> globalVariables) {
-        if (!DS_SERVICE_NAME.equals(serviceName)) {
+        if (!DsManagedConfig.SERVICE_NAME.equals(serviceName)) {
             return;
         }
         Map<String, ServiceConfig> metadataByName = metadataConfigs.stream()
-                .filter(config -> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.contains(config.getName()))
+                .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
                 .collect(Collectors.toMap(ServiceConfig::getName, config -> config));
         savedConfigs.stream()
-                .filter(config -> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.contains(config.getName()))
+                .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
                 .forEach(config -> {
                     ServiceConfig metadataConfig = metadataByName.get(config.getName());
                     if (metadataConfig != null) {

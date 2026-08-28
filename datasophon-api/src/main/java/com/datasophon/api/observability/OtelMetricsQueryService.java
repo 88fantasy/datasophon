@@ -631,6 +631,8 @@ public class OtelMetricsQueryService {
         appendAttrFilters(inner, filters, filtersNe, filtersRegex, filtersNotRegex);
         inner.append("\n) latest\n"
                 + "WHERE rn = 1");
+        // 分组查询下 ts 的语义与非分组查询不同：非分组返回查询时刻（NOW），分组返回该组内
+        // 最后一次采样时刻（MAX(sample_ts)）。调用方若需要按 key 分组又依赖 ts，注意区分。
         String sampledAt = groupByKeys.isEmpty() ? "UNIX_TIMESTAMP(NOW())" : "MAX(sample_ts)";
         return "SELECT " + (groupByKeys.isEmpty() ? "" : String.join(", ", groupByKeys) + ", ")
                 + fn + "(value) AS value, " + sampledAt + " AS ts FROM (" + inner + ") t"

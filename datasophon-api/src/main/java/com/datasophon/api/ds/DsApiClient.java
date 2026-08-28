@@ -32,8 +32,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -47,11 +49,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 public class DsApiClient {
 
+    // token/endpoint 在页面生命周期内稳定不变，短 TTL 缓存避免每次 get() 都重复 4 次数据库往返，
+    // 同时保证配置变更后能在一个轮询周期（DsDagPage 每 15s 轮询一次）左右的时间内生效。
+    private static final Duration RESOLUTION_CACHE_TTL = Duration.ofSeconds(30);
+
     private final DsEndpointResolver endpointResolver;
     private final DsConfigService configService;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final Duration requestTimeout;
+    private final Map<Integer, CachedResolution> resolutionCache = new ConcurrentHashMap<>();
 
     public DsApiClient(DsEndpointResolver endpointResolver,
                        DsConfigService configService,
@@ -69,12 +76,12 @@ public class DsApiClient {
     }
 
     public JsonNode get(Integer clusterId, String resource, Map<String, ?> query) {
-        String token = configService.apiToken(clusterId);
-        URI uri = endpointResolver.resolve(clusterId).resolve(resource + queryString(query));
+        CachedResolution resolution = resolution(clusterId);
+        URI uri = resolution.endpoint().resolve(resource + queryString(query));
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(requestTimeout)
                 .header("Accept", "application/json")
-                .header("token", token)
+                .header("token", resolution.token())
                 .GET()
                 .build();
         try {
@@ -89,6 +96,21 @@ public class DsApiClient {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "DS Open API 不可达或请求超时", e);
         }
+    }
+
+    private CachedResolution resolution(Integer clusterId) {
+        CachedResolution cached = resolutionCache.get(clusterId);
+        Instant now = Instant.now();
+        if (cached != null && cached.expiresAt().isAfter(now)) {
+            return cached;
+        }
+        CachedResolution fresh = new CachedResolution(
+                configService.apiToken(clusterId), endpointResolver.resolve(clusterId), now.plus(RESOLUTION_CACHE_TTL));
+        resolutionCache.put(clusterId, fresh);
+        return fresh;
+    }
+
+    private record CachedResolution(String token, URI endpoint, Instant expiresAt) {
     }
 
     private JsonNode validate(HttpResponse<String> response) {

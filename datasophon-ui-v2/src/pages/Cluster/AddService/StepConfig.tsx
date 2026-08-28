@@ -45,7 +45,7 @@ const StepConfig: React.FC<Props> = ({
         const converted: Record<string, DATASOPHON.ConfigField[]> = {};
         for (const { serviceName, raw } of results) {
           rawMap[serviceName] = raw;
-          converted[serviceName] = invokeHandleTemplateData(raw);
+          converted[serviceName] = invokeHandleTemplateData(raw, true);
         }
         rawConfigMapRef.current = rawMap;
         setTemplateMap(converted);
@@ -86,6 +86,7 @@ const StepConfig: React.FC<Props> = ({
             <ConfigForm
               templateData={templateMap[svc.serviceName] ?? []}
               namePrefix={[svc.serviceName]}
+              context="wizard"
             />
           ),
         }))}

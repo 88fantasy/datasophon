@@ -268,6 +268,20 @@ class DsTaskMetricsServiceTest {
     }
 
     @Test
+    void doesNotReportNotBoundForRunningTaskWithHistoricalBindingButTransientEmptyQuery() {
+        // 任务仍在 RUNNING（未传 taskEnded），但本轮发现查询恰好零行匹配——
+        // 曾经绑定过（hasJobNameSample 命中历史样本）不应被误判为“从未绑定”。
+        when(queryService.hasJobNameSample(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("^ds-7-12-.*$"),
+                eq(NOW.minusSeconds(30L * 24 * 60 * 60)), eq("sum")))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.metrics(7, node(12, "STREAM")))
+                .isNotInstanceOf(DsTaskMetricsService.NotBoundException.class)
+                .isNotInstanceOf(DsTaskMetricsService.JobEndedException.class);
+    }
+
+    @Test
     void classifiesTerminalStreamTaskWithStaleDiscoveryButNoCurrentRateAsJobEnded() {
         String jobName = "ds-7-12-ended-stream";
         when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),

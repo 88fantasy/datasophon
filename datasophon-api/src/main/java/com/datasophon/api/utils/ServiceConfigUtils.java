@@ -22,6 +22,7 @@
 
 package com.datasophon.api.utils;
 
+import com.datasophon.api.ds.DsManagedConfig;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterVariableService;
@@ -54,10 +55,6 @@ import com.alibaba.fastjson2.JSONObject;
 public class ServiceConfigUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ServiceConfigUtils.class);
-    private static final String DS_SERVICE_NAME = "DS";
-    private static final Map<String, String> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS = Map.of(
-            "aws.s3.access.key.id", "${ROOT.Rustfs.access_key}",
-            "aws.s3.access.key.secret", "${ROOT.Rustfs.secret_key}");
 
     private ServiceConfigUtils() {
     }
@@ -169,13 +166,13 @@ public class ServiceConfigUtils {
                                                  String serviceName,
                                                  List<ServiceConfig> serviceConfigs,
                                                  Map<String, String> globalVariables) {
-        if (!DS_SERVICE_NAME.equals(serviceName)) {
+        if (!DsManagedConfig.SERVICE_NAME.equals(serviceName)) {
             return;
         }
         serviceConfigs.stream()
-                .filter(config -> DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
+                .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
                 .forEach(config -> config.setValue(
-                        globalVariables.get(DS_MANAGED_OBJECT_STORAGE_CREDENTIALS.get(config.getName()))));
+                        globalVariables.get(DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.get(config.getName()))));
     }
 
     private static void replaceVariable(List<ServiceConfig> serviceConfigs, Map<String, String> variables) {

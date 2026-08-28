@@ -63,18 +63,15 @@ public class DsWorkflowServiceImpl implements DsWorkflowService {
     private final DsApiClient client;
     private final DsTaskMetricsService taskMetricsService;
     private final ObjectMapper objectMapper;
-    private final Executor masterExecutor;
     private final Executor dsMetricsExecutor;
 
     public DsWorkflowServiceImpl(DsApiClient client,
                                  DsTaskMetricsService taskMetricsService,
                                  ObjectMapper objectMapper,
-                                 @Qualifier("masterExecutor") Executor masterExecutor,
                                  @Qualifier("dsMetricsExecutor") Executor dsMetricsExecutor) {
         this.client = client;
         this.taskMetricsService = taskMetricsService;
         this.objectMapper = objectMapper;
-        this.masterExecutor = masterExecutor;
         this.dsMetricsExecutor = dsMetricsExecutor;
     }
 
@@ -141,9 +138,9 @@ public class DsWorkflowServiceImpl implements DsWorkflowService {
     public DsDagVO dag(Integer clusterId, long projectCode, int instanceId) {
         String resource = "projects/" + projectCode + "/workflow-instances/" + instanceId;
         CompletableFuture<JsonNode> instanceFuture = CompletableFuture.supplyAsync(
-                () -> client.get(clusterId, resource, Map.of()), masterExecutor);
+                () -> client.get(clusterId, resource, Map.of()), dsMetricsExecutor);
         CompletableFuture<JsonNode> tasksFuture = CompletableFuture.supplyAsync(
-                () -> client.get(clusterId, resource + "/tasks", Map.of()), masterExecutor);
+                () -> client.get(clusterId, resource + "/tasks", Map.of()), dsMetricsExecutor);
         JsonNode instance = join(instanceFuture);
         JsonNode tasks = join(tasksFuture);
 

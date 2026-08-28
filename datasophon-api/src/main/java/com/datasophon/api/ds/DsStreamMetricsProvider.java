@@ -103,8 +103,13 @@ public class DsStreamMetricsProvider {
                 .max(Comparator.comparingLong(StreamJob::sampledAt).thenComparing(StreamJob::jobId))
                 .orElse(null);
         if (selected == null) {
-            if (taskEnded && hasHistoricalBinding(clusterId, prefix, jobNameRegex)) {
-                throw new DsTaskMetricsService.JobEndedException();
+            if (hasHistoricalBinding(clusterId, prefix, jobNameRegex)) {
+                if (taskEnded) {
+                    throw new DsTaskMetricsService.JobEndedException();
+                }
+                // 仍在 RUNNING 但本轮查询零行匹配（采集短暂空档 / Flink 作业重启），
+                // 曾经绑定过说明不是"从未绑定"，不应报 NotBoundException 误导 UI。
+                throw new IllegalStateException("Flink job metrics are temporarily unavailable");
             }
             throw new DsTaskMetricsService.NotBoundException();
         }

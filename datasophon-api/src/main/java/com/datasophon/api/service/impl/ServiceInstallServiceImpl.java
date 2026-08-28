@@ -251,7 +251,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         serviceInstanceService.updateById(serviceInstanceEntity);
     }
 
-    /** DS apiToken is platform-only and absent from configFileJson, so saving only it needs no role restart. */
+    /**
+     * DS apiToken is platform-only and absent from configFileJson, so saving only it needs no role restart.
+     * TODO: 硬编码服务名分支是临时方案；下一个需要"仅改配置、无需重启"的服务应把该能力提升为
+     * DDL 层参数级属性（如 requiresRestart: false），而不是在此堆叠更多 if 分支。
+     */
     static boolean requiresRestart(String serviceName,
                                    ClusterServiceRoleGroupConfig current,
                                    ClusterServiceRoleGroupConfig next) {

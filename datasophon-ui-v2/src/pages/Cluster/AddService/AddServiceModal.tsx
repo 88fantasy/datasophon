@@ -129,7 +129,7 @@ const AddServiceModal: React.FC<Props> = ({ open, onClose }) => {
           string,
           unknown
         >;
-        const formatted = invokeFormatTemplateData(raw, svcValues);
+        const formatted = invokeFormatTemplateData(raw, svcValues, true);
         await saveServiceConfig(clusterId, {
           serviceName: svc.serviceName,
           serviceConfig: formatted,

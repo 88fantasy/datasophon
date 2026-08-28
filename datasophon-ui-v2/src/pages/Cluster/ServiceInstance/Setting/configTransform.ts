@@ -99,11 +99,17 @@ export function invokeFormatMultipleWithMapValue(value: unknown): unknown {
 /**
  * 后端 → 表单：对所有复杂类型字段做展开转换，处理完的数据可直接用作 ProForm initialValues。
  * 必须在 getServiceConfig 拿到数据后立即调用。
+ *
+ * @param isWizard 安装向导场景传 true：hidden 字段若标记 configurableInWizard 仍需转换，
+ *   否则向导中该字段会保留未解析的原始 value/defaultValue。
  */
-export function invokeHandleTemplateData(data: ConfigField[]): ConfigField[] {
+export function invokeHandleTemplateData(
+  data: ConfigField[],
+  isWizard = false,
+): ConfigField[] {
   const cloned = structuredClone(data);
   cloned
-    .filter((val) => !val.hidden)
+    .filter((val) => !val.hidden || (isWizard && val.configurableInWizard))
     .forEach((val) => {
       if (invokeMapShowMultiply(val)) {
         val.value = invokeReFormatMultiplyValue(val.value);
@@ -122,14 +128,17 @@ export function invokeHandleTemplateData(data: ConfigField[]): ConfigField[] {
 /**
  * 表单 → 后端：把 ProForm values 合并回原始 templateData 中，准备提交给 saveServiceConfig。
  * originData 须为 invokeHandleTemplateData 转换前的原始后端数据（不要传转换后的版本）。
+ *
+ * @param isWizard 安装向导场景传 true，含义同 invokeHandleTemplateData。
  */
 export function invokeFormatTemplateData(
   originData: ConfigField[],
   values: Record<string, unknown>,
+  isWizard = false,
 ): ConfigField[] {
   const cloned = structuredClone(originData);
   cloned
-    .filter((val) => !val.hidden)
+    .filter((val) => !val.hidden || (isWizard && val.configurableInWizard))
     .forEach((val) => {
       const formVal = values[val.name];
       if (invokeMapShowMultiply(val)) {

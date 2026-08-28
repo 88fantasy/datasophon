@@ -57,6 +57,8 @@ declare namespace DATASOPHON {
     required: boolean;
     enabled: boolean;
     hidden?: boolean;
+    /** 安装向导中是否仍需暴露该字段（即使 hidden 为 true） */
+    configurableInWizard?: boolean;
     type: string;
     configType?: string;
     minValue?: number;

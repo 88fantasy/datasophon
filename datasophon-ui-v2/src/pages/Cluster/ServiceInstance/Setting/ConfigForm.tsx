@@ -36,12 +36,15 @@ interface ConfigFormProps {
   /** ProFormList 嵌套时传入上级 name 路径前缀 */
   namePrefix?: (string | number)[];
   className?: string;
+  /** 'wizard'：安装向导场景，hidden 字段若标记 configurableInWizard 仍需渲染；默认 'settings' */
+  context?: 'settings' | 'wizard';
 }
 
 const ConfigForm: React.FC<ConfigFormProps> = ({
   templateData,
   className = '',
   namePrefix,
+  context = 'settings',
 }) => {
   const { token } = theme.useToken();
 
@@ -282,7 +285,12 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
   return (
     <div className={className}>
       {templateData
-        .filter((item) => item?.enabled !== false && !item.hidden)
+        .filter(
+          (item) =>
+            item?.enabled !== false &&
+            (!item.hidden ||
+              (context === 'wizard' && item.configurableInWizard)),
+        )
         .map((item) => {
           const fieldName = namePrefix
             ? [...namePrefix, item.name].filter(Boolean)

@@ -50,7 +50,7 @@ class DsWorkflowServiceTest {
     private final DsTaskMetricsService taskMetricsService = mock(DsTaskMetricsService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DsWorkflowServiceImpl service =
-            new DsWorkflowServiceImpl(client, taskMetricsService, objectMapper, Runnable::run, Runnable::run);
+            new DsWorkflowServiceImpl(client, taskMetricsService, objectMapper, Runnable::run);
 
     @BeforeEach
     void setUp() throws Exception {

@@ -31,4 +31,41 @@ describe('invokeFormatTemplateData', () => {
       }),
     ]);
   });
+
+  it('applies wizard-submitted values for hidden fields marked configurableInWizard', () => {
+    const configs = [
+      {
+        name: 'dfs.namenode.rpc-address.nn1',
+        type: 'input',
+        hidden: true,
+        configurableInWizard: true,
+        required: true,
+        value: '',
+      },
+      {
+        name: 'aws.s3.access.key.secret',
+        type: 'input',
+        hidden: true,
+        required: true,
+        value: 'platform-secret',
+      },
+    ] as DATASOPHON.ConfigField[];
+
+    const result = invokeFormatTemplateData(
+      configs,
+      { 'dfs.namenode.rpc-address.nn1': 'host1:8020' },
+      true,
+    );
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        name: 'dfs.namenode.rpc-address.nn1',
+        value: 'host1:8020',
+      }),
+      expect.objectContaining({
+        name: 'aws.s3.access.key.secret',
+        value: 'platform-secret',
+      }),
+    ]);
+  });
 });
