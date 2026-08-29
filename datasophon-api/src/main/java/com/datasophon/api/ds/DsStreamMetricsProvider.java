@@ -72,10 +72,6 @@ public class DsStreamMetricsProvider {
         this.clock = clock;
     }
 
-    public DsTaskMetricsVO metrics(Integer clusterId, int taskInstanceId) {
-        return metrics(clusterId, taskInstanceId, false);
-    }
-
     public DsTaskMetricsVO metrics(Integer clusterId, int taskInstanceId, boolean taskEnded) {
         String prefix = DsBatchMetricsProvider.externalKey(clusterId, taskInstanceId) + "-";
         String jobNameRegex = "^" + prefix + ".*$";

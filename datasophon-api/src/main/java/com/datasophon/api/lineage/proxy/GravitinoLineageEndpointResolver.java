@@ -22,20 +22,14 @@
 
 package com.datasophon.api.lineage.proxy;
 
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.ServiceInstancePortResolver;
-import com.datasophon.api.service.ServiceInstancePortResolver.RolePort;
-import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.dao.entity.ClusterHostDO;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.api.service.ServiceRoleEndpointResolver;
+import com.datasophon.api.service.ServiceRoleEndpointResolver.EndpointResolutionException;
+import com.datasophon.api.service.ServiceRoleEndpointResolver.HostPort;
 import com.datasophon.dao.enums.ServiceRoleState;
-
-import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -48,52 +42,30 @@ public class GravitinoLineageEndpointResolver {
     static final String ROLE_NAME = "GravitinoServer";
     static final String HTTP_PORT_PARAM = "gravitino.server.webserver.httpPort";
 
-    private final ClusterServiceRoleInstanceService roleService;
-    private final ClusterHostService hostService;
-    private final ServiceInstancePortResolver portResolver;
+    private final ServiceRoleEndpointResolver endpointResolver;
 
-    public GravitinoLineageEndpointResolver(ClusterServiceRoleInstanceService roleService,
-                                            ClusterHostService hostService,
-                                            ServiceInstancePortResolver portResolver) {
-        this.roleService = roleService;
-        this.hostService = hostService;
-        this.portResolver = portResolver;
+    public GravitinoLineageEndpointResolver(ServiceRoleEndpointResolver endpointResolver) {
+        this.endpointResolver = endpointResolver;
     }
 
     public URI resolve(long clusterId) {
         if (clusterId <= 0 || clusterId > Integer.MAX_VALUE) {
             throw unavailable("invalid clusterId");
         }
-        List<ClusterServiceRoleInstanceEntity> installed =
-                roleService.getServiceRoleInstanceListByClusterIdAndRoleName((int) clusterId, ROLE_NAME);
-        List<ClusterServiceRoleInstanceEntity> running = installed == null
-                ? List.of()
-                : installed.stream()
-                        .filter(Objects::nonNull)
-                        .filter(role -> ServiceRoleState.RUNNING.equals(role.getServiceRoleState()))
-                        .toList();
-        if (running.size() != 1) {
-            throw unavailable(running.isEmpty()
-                    ? "no running GravitinoServer instance"
-                    : "multiple running GravitinoServer instances");
-        }
-
-        ClusterServiceRoleInstanceEntity role = running.get(0);
-        ClusterHostDO host = hostService.getClusterHostByHostname(role.getHostname());
-        if (host == null
-                || !Objects.equals(role.getClusterId(), host.getClusterId())
-                || StringUtils.isBlank(host.getIp())) {
-            throw unavailable("GravitinoServer host is unavailable");
-        }
-
-        List<RolePort> ports = portResolver.portsOf(role).stream()
-                .filter(port -> HTTP_PORT_PARAM.equals(port.paramName()))
-                .toList();
-        if (ports.size() != 1) {
-            throw unavailable("GravitinoServer HTTP port is unavailable");
+        HostPort endpoint;
+        try {
+            endpoint = endpointResolver.resolve(
+                    (int) clusterId, ROLE_NAME, HTTP_PORT_PARAM, Set.of(ServiceRoleState.RUNNING));
+        } catch (EndpointResolutionException e) {
+            throw unavailable(switch (e.failure()) {
+                case NO_USABLE_ROLE -> "no running GravitinoServer instance";
+                case MULTIPLE_USABLE_ROLES -> "multiple running GravitinoServer instances";
+                case HOST_UNAVAILABLE -> "GravitinoServer host is unavailable";
+                case PORT_UNAVAILABLE -> "GravitinoServer HTTP port is unavailable";
+            });
         }
         try {
-            return new URI("http", null, host.getIp(), ports.get(0).port(), "/api/", null, null);
+            return new URI("http", null, endpoint.host(), endpoint.port(), "/api/", null, null);
         } catch (URISyntaxException e) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE, "invalid GravitinoServer endpoint", e);

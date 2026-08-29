@@ -22,11 +22,13 @@
 
 package com.datasophon.api.lineage.proxy;
 
+import static com.datasophon.api.utils.HttpUriUtils.encode;
+import static com.datasophon.api.utils.HttpUriUtils.resolve;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -34,7 +36,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
-import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +106,7 @@ public class GravitinoLineageClient {
                             + "gravitino.authenticator.oauth.defaultSignKey's issued token");
         }
         URI endpoint = endpointResolver.resolve(clusterId);
-        URI uri = endpoint.resolve(resource + queryString(query));
+        URI uri = resolve(endpoint, resource, query);
         HttpRequest.Builder request = HttpRequest.newBuilder(uri)
                 .timeout(requestTimeout)
                 .header("Accept", "application/json")
@@ -167,20 +168,6 @@ public class GravitinoLineageClient {
             // The status mapping remains authoritative when a proxy or servlet emits non-JSON text.
         }
         return "Gravitino lineage request failed with status " + status;
-    }
-
-    private static String queryString(Map<String, ?> query) {
-        StringJoiner values = new StringJoiner("&", "?", "");
-        query.forEach((name, value) -> {
-            if (value != null && !String.valueOf(value).isBlank()) {
-                values.add(encode(name) + "=" + encode(String.valueOf(value)));
-            }
-        });
-        return values.length() == 1 ? "" : values.toString();
-    }
-
-    private static String encode(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     /**

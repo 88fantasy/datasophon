@@ -22,11 +22,10 @@
 
 package com.datasophon.api.ds;
 
-import org.apache.commons.lang3.StringUtils;
+import static com.datasophon.api.utils.HttpUriUtils.resolve;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -34,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -77,7 +75,7 @@ public class DsApiClient {
 
     public JsonNode get(Integer clusterId, String resource, Map<String, ?> query) {
         CachedResolution resolution = resolution(clusterId);
-        URI uri = resolution.endpoint().resolve(resource + queryString(query));
+        URI uri = resolve(resolution.endpoint(), resource, query);
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(requestTimeout)
                 .header("Accept", "application/json")
@@ -141,17 +139,4 @@ public class DsApiClient {
         return root.path("data");
     }
 
-    private static String queryString(Map<String, ?> query) {
-        StringJoiner values = new StringJoiner("&", "?", "");
-        query.forEach((name, value) -> {
-            if (value != null && StringUtils.isNotBlank(String.valueOf(value))) {
-                values.add(encode(name) + "=" + encode(String.valueOf(value)));
-            }
-        });
-        return values.length() == 1 ? "" : values.toString();
-    }
-
-    private static String encode(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
-    }
 }

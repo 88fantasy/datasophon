@@ -22,8 +22,6 @@ export default {
   'dsWorkflow.table.host': '执行主机',
   'dsWorkflow.status.online': '已上线',
   'dsWorkflow.status.offline': '未上线',
-  'dsWorkflow.filter.releaseState': '上线状态筛选',
-  'dsWorkflow.filter.all': '全部状态',
   'dsWorkflow.action.openDs': '打开 DS',
   'dsWorkflow.state.SUCCESS': '成功',
   'dsWorkflow.state.RUNNING_EXECUTION': '运行中',

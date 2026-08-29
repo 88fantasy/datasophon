@@ -22,7 +22,10 @@ import {
 import { Tooltip, theme } from 'antd';
 import React from 'react';
 
-import { invokeMapShowMultiply } from './configTransform';
+import {
+  invokeMapShowMultiply,
+  isUserConfigurable,
+} from './configTransform';
 
 type ConfigField = DATASOPHON.ConfigField;
 
@@ -286,11 +289,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
         // （fs.trash.interval、advertised.listeners、ZK server.N 等）绝大多数同时标了
         // configurableInWizard，运维在设置页确实要改。只有平台托管、用户不该录入的项
         // （DS 的 S3 凭据）才是 hidden 且非 configurableInWizard，两个场景一并隐藏。
-        .filter(
-          (item) =>
-            item?.enabled !== false &&
-            !(item.hidden && !item.configurableInWizard),
-        )
+        .filter(isUserConfigurable)
         .map((item) => {
           const fieldName = namePrefix
             ? [...namePrefix, item.name].filter(Boolean)

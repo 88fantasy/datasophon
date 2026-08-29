@@ -143,7 +143,7 @@ Tab 在浏览器里可见且项目下拉可用。
 
 | ID | 任务 | 依赖 | 产出 | 验证判据 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| **W2-E1** | 树表：主行 + 子行懒加载 | G1 | ProTable + expandable | **浏览器验证**：未展开时**不发**子行请求（看 Network）；展开后加载该定义的最近实例；主行显示上线状态标记 | ✅ 完成 | ego-browser Network：展开前实例请求 0，展开后仅发 `/workflows/800001/instances?...limit=10`；主行显示「已上线」，项目切换刷新定义；复审补齐发布状态筛选与 DS 原生 Web UI 入口，截图 `review-{release-filter,ds-link}.png`；前端定向 6 文件 29/29。**2026-08-26 Claude 真实部署走查复验通过**：钩住 `fetch`/`XHR` 计数（`performance` 缓冲区 250 条已被监控页占满，会漏记，不可用作判据）——停留在 Tab 静置不展开 = `/instances` 请求 0 次；展开 1 行 = 恰好 1 次 `/v2/ds/workflows/182469955397664/instances?clusterId=1&projectCode=…&limit=10`。上线状态筛选选「未上线」→ 0 行 + 空态，还原「全部状态」→ 8 行。截图 `w51-01-workflow-tab-list.png` |
+| **W2-E1** | 树表：主行 + 子行懒加载 | G1 | ProTable + expandable | **浏览器验证**：未展开时**不发**子行请求（看 Network）；展开后加载该定义的最近实例；主行显示上线状态标记 | ✅ 完成 | ego-browser Network：展开前实例请求 0，展开后仅发 `/workflows/800001/instances?...limit=10`；主行显示「已上线」，项目切换刷新定义；复审补齐 DS 原生 Web UI 入口，截图 `review-ds-link.png`；前端定向 6 文件 29/29。**2026-08-26 Claude 真实部署走查复验通过**：钩住 `fetch`/`XHR` 计数（`performance` 缓冲区 250 条已被监控页占满，会漏记，不可用作判据）——停留在 Tab 静置不展开 = `/instances` 请求 0 次；展开 1 行 = 恰好 1 次 `/v2/ds/workflows/182469955397664/instances?clusterId=1&projectCode=…&limit=10`。主行展示上线状态徽标；列表按服务端分页结果原样展示，不做会破坏 `total` 语义的客户端筛选。截图 `w51-01-workflow-tab-list.png` |
 | **W2-E2** | Drawer + G6 DAG + 15 秒轮询 | W2-E1 | 全屏 Drawer、G6 v5 图、轮询启停 | **浏览器验证**：仅**实例行**可点开；图能正常渲染且**无幽灵起点节点**；打开后每 15 秒有一次请求、**关闭后请求停止**（Network 面板确认） | ✅ 完成 | ego-browser：主行点击不打开、实例行打开 Drawer；16s 内 DAG 请求共 2 次，关闭后再等 16s 仍为 2；画布节点 id 不含 `0`；`DsDagDrawer` fake timer 测试通过。**2026-08-26 Claude 真实部署走查复验通过**：点主行 Drawer 数 0；点实例行打开 Drawer 且标题=实例名；打开期间 48 秒内 `/v2/ds/instances/10/dag` 共 3 次，相邻间隔 **15.0s / 14.9s**；关闭后 Drawer open 数归 0，再观察 48 秒 `/dag` 请求 **0 次** |
 | **W2-E3** | 节点视觉 + 格式化 | W2-E2, W2-D1, W2-D2 | 密度卡节点、批按表分列、流显速率 | **浏览器验证 + 截图**：批节点按输出表分列（超过 2 张折叠）、流节点显示速率**并标注约值**、无指标节点显示 `—`。**`0 row/s` 与 `—` 必须视觉可区分** | ✅ 完成 | `g2-batch-dag.png`：700/234 两输出 + `+1`、未绑定 `—`；`g2-stream-dag.png`：约 22.8 row/s；单测断言 `0.0 row/s` 与 `—` 分离。前端 23/23、lint、antd lint、build 通过。**2026-08-26 Claude 真实部署走查**：批节点逐值复核通过——`codex_w2_src 700 行 / 6.2 KB`、`codex_w2_dst 234 行 / 2.7 KB`，与 §3.2 记录的 700/6346 B、234/2733 B 一致，无幽灵起点节点，截图 `w51-02-batch-dag-700-234.png`。⚠️ **流速率的实机部分未能复验**：沙箱所有 `ds-` 前缀 Flink 作业均已 cancel，现存流节点一律落在 `NOT_BOUND`（见偏差表新增条目），需 §5.2 起作业后才能验「速率 + 约值标注」与 `0 row/s` 对比 |
 
@@ -173,7 +173,7 @@ Tab 在浏览器里可见且项目下拉可用。
 | G1 | 2026-08-25 | Codex | ✅ | 全部使用合成数据；后端 19/19、前端 19/19、lint/build 通过；mock curl 四端点通过；DS/非 DS 浏览器走查与项目切换截图已存档 |
 | G2 | 2026-08-25 | Codex | ✅ | 合成数据；后端 22/22、前端 23/23、lint/build 通过；批 700/234 与流 JobID/非零速率实机核对；懒加载、15s 轮询启停及批/流 DAG 截图存档 |
 | G3 | 2026-08-25 | Codex | ⛔ | 累计幂等/续跑、批任务二次运行历史隔离、不同 Worker 与四类降级浏览器走查均通过；共享 Collector exporter 持续丢弃数据，流速率 15 秒实机刷新未通过，门禁不放行 |
-| G3（复验） | 2026-08-26 | Claude | ⛔ | **真实部署走查**（非 mock、非 dev server）：W2-E1 懒加载、W2-E2 15 秒轮询启停、W2-E3 批节点 700/234 逐值、上线状态筛选、`apiToken` 配置项 **全部通过**，截图 `w51-0{1,2,3}-*.png`。**仍不放行**，两个缺口：① W3-3 的流速率 15 秒刷新未做（需起流作业，代价见 §5.2）；② 走查中新发现「已结束流作业被误报为未按约定接入」，属 W2-E3/W3-3 判据范围内的文案缺陷 |
+| G3（复验） | 2026-08-26 | Claude | ⛔ | **真实部署走查**（非 mock、非 dev server）：W2-E1 懒加载、W2-E2 15 秒轮询启停、W2-E3 批节点 700/234 逐值、上线状态徽标、`apiToken` 配置项 **全部通过**，截图 `w51-0{1,2,3}-*.png`。**仍不放行**，两个缺口：① W3-3 的流速率 15 秒刷新未做（需起流作业，代价见 §5.2）；② 走查中新发现「已结束流作业被误报为未按约定接入」，属 W2-E3/W3-3 判据范围内的文案缺陷 |
 
 ---
 
@@ -184,7 +184,7 @@ Tab 在浏览器里可见且项目下拉可用。
 | 后端分层 | Controller 改为依赖 `service/ds` 接口，实现迁入 `service/impl/ds`；批、流指标拆为独立 provider，调度服务只负责分派 | JDK 21 相关后端测试 51/51；Checkstyle 与 Spotless 通过 |
 | 指标准确性 | 双 reporter 不再相加，优先使用 OTLP delta；查询只取完整分钟；仅 `taskExecuteType=STREAM` 或 `FLINK_STREAM` 判为流任务 | `DsTaskMetricsServiceTest`、`DsWorkflowServiceTest` 回归通过 |
 | 累计诚实性 | 空样本周期不记零、不推进，只刷新调度次序；`LIMIT 64` 按最久未处理顺序轮转；游标未追平最新完整分钟时只返回 `since`，不返回部分 `processedApprox` | `DsStreamMetricAccumulatorTest` 4/4，`DsTaskMetricsServiceTest` 4/4 |
-| 前端契约 | service/test/mock 收拢到 `DsWorkflow/`；增加当前页发布状态筛选和 DS 原生 Web UI 外链 | Vitest 6 文件 29/29，`npm run lint`、Ant Design lint、生产构建通过；`review-{release-filter,ds-link}.png` |
+| 前端契约 | service/test/mock 收拢到 `DsWorkflow/`；展示发布状态徽标并增加 DS 原生 Web UI 外链；列表不做破坏服务端分页语义的客户端筛选 | Vitest 6 文件 29/29，`npm run lint`、Ant Design lint、生产构建通过；`review-ds-link.png` |
 
 ---
 

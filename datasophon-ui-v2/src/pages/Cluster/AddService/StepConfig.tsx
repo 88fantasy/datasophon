@@ -45,7 +45,7 @@ const StepConfig: React.FC<Props> = ({
         const converted: Record<string, DATASOPHON.ConfigField[]> = {};
         for (const { serviceName, raw } of results) {
           rawMap[serviceName] = raw;
-          converted[serviceName] = invokeHandleTemplateData(raw, true);
+          converted[serviceName] = invokeHandleTemplateData(raw);
         }
         rawConfigMapRef.current = rawMap;
         setTemplateMap(converted);

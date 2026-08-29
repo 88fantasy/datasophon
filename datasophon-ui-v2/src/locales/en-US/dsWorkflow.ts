@@ -24,8 +24,6 @@ export default {
   'dsWorkflow.table.host': 'Execution Host',
   'dsWorkflow.status.online': 'Online',
   'dsWorkflow.status.offline': 'Offline',
-  'dsWorkflow.filter.releaseState': 'Release State Filter',
-  'dsWorkflow.filter.all': 'All States',
   'dsWorkflow.action.openDs': 'Open DS',
   'dsWorkflow.state.SUCCESS': 'Success',
   'dsWorkflow.state.RUNNING_EXECUTION': 'Running',

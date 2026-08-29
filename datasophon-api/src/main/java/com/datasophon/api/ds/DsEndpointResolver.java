@@ -22,20 +22,14 @@
 
 package com.datasophon.api.ds;
 
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.ServiceInstancePortResolver;
-import com.datasophon.api.service.ServiceInstancePortResolver.RolePort;
-import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.dao.entity.ClusterHostDO;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.api.service.ServiceRoleEndpointResolver;
+import com.datasophon.api.service.ServiceRoleEndpointResolver.EndpointResolutionException;
+import com.datasophon.api.service.ServiceRoleEndpointResolver.HostPort;
 import com.datasophon.dao.enums.ServiceRoleState;
-
-import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -48,55 +42,36 @@ public class DsEndpointResolver {
     static final String ROLE_NAME = "ApiServer";
     static final String HTTP_PORT_PARAM = "apiServerPort";
 
-    private final ClusterServiceRoleInstanceService roleService;
-    private final ClusterHostService hostService;
-    private final ServiceInstancePortResolver portResolver;
+    private final ServiceRoleEndpointResolver endpointResolver;
 
-    public DsEndpointResolver(ClusterServiceRoleInstanceService roleService,
-                              ClusterHostService hostService,
-                              ServiceInstancePortResolver portResolver) {
-        this.roleService = roleService;
-        this.hostService = hostService;
-        this.portResolver = portResolver;
+    public DsEndpointResolver(ServiceRoleEndpointResolver endpointResolver) {
+        this.endpointResolver = endpointResolver;
     }
 
     public URI resolve(Integer clusterId) {
         if (clusterId == null || clusterId <= 0) {
             throw unavailable("clusterId 无效");
         }
-        List<ClusterServiceRoleInstanceEntity> installed =
-                roleService.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, ROLE_NAME);
-        List<ClusterServiceRoleInstanceEntity> usable = installed == null
-                ? List.of()
-                : installed.stream()
-                        .filter(Objects::nonNull)
-                        .filter(DsEndpointResolver::isProcessHealthy)
-                        .toList();
-        if (usable.size() != 1) {
-            throw unavailable(usable.isEmpty() ? "没有可用的 DS ApiServer" : "存在多个可用的 DS ApiServer");
-        }
-
-        ClusterServiceRoleInstanceEntity role = usable.get(0);
-        ClusterHostDO host = hostService.getClusterHostByHostname(role.getHostname());
-        if (host == null || !Objects.equals(clusterId, host.getClusterId()) || StringUtils.isBlank(host.getIp())) {
-            throw unavailable("DS ApiServer 主机不可用");
-        }
-        List<RolePort> ports = portResolver.portsOf(role).stream()
-                .filter(port -> HTTP_PORT_PARAM.equals(port.paramName()))
-                .toList();
-        if (ports.size() != 1) {
-            throw unavailable("DS ApiServer 端口不可用");
+        HostPort endpoint;
+        try {
+            endpoint = endpointResolver.resolve(
+                    clusterId,
+                    ROLE_NAME,
+                    HTTP_PORT_PARAM,
+                    Set.of(ServiceRoleState.RUNNING, ServiceRoleState.EXISTS_ALARM));
+        } catch (EndpointResolutionException e) {
+            throw unavailable(switch (e.failure()) {
+                case NO_USABLE_ROLE -> "没有可用的 DS ApiServer";
+                case MULTIPLE_USABLE_ROLES -> "存在多个可用的 DS ApiServer";
+                case HOST_UNAVAILABLE -> "DS ApiServer 主机不可用";
+                case PORT_UNAVAILABLE -> "DS ApiServer 端口不可用";
+            });
         }
         try {
-            return new URI("http", null, host.getIp(), ports.get(0).port(), "/dolphinscheduler/", null, null);
+            return new URI("http", null, endpoint.host(), endpoint.port(), "/dolphinscheduler/", null, null);
         } catch (URISyntaxException e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "DS ApiServer 地址无效", e);
         }
-    }
-
-    private static boolean isProcessHealthy(ClusterServiceRoleInstanceEntity role) {
-        return role.getServiceRoleState() == ServiceRoleState.RUNNING
-                || role.getServiceRoleState() == ServiceRoleState.EXISTS_ALARM;
     }
 
     private static ResponseStatusException unavailable(String message) {

@@ -32,7 +32,7 @@ describe('invokeFormatTemplateData', () => {
     ]);
   });
 
-  it('applies wizard-submitted values for hidden fields marked configurableInWizard', () => {
+  it('applies submitted values for hidden fields marked configurableInWizard', () => {
     const configs = [
       {
         name: 'dfs.namenode.rpc-address.nn1',
@@ -49,13 +49,20 @@ describe('invokeFormatTemplateData', () => {
         required: true,
         value: 'platform-secret',
       },
+      {
+        name: 'disabled.option',
+        label: 'Disabled option',
+        type: 'input',
+        enabled: false,
+        required: false,
+        value: 'platform-value',
+      },
     ] as DATASOPHON.ConfigField[];
 
-    const result = invokeFormatTemplateData(
-      configs,
-      { 'dfs.namenode.rpc-address.nn1': 'host1:8020' },
-      true,
-    );
+    const result = invokeFormatTemplateData(configs, {
+      'dfs.namenode.rpc-address.nn1': 'host1:8020',
+      'disabled.option': 'unexpected-value',
+    });
 
     expect(result).toEqual([
       expect.objectContaining({
@@ -65,6 +72,10 @@ describe('invokeFormatTemplateData', () => {
       expect.objectContaining({
         name: 'aws.s3.access.key.secret',
         value: 'platform-secret',
+      }),
+      expect.objectContaining({
+        name: 'disabled.option',
+        value: 'platform-value',
       }),
     ]);
   });

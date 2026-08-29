@@ -20,48 +20,57 @@
  * SOFTWARE.
  */
 
-package com.datasophon.api.ds;
+package com.datasophon.api.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.ServiceInstancePortResolver;
 import com.datasophon.api.service.ServiceInstancePortResolver.RolePort;
-import com.datasophon.api.service.ServiceRoleEndpointResolver;
+import com.datasophon.api.service.ServiceRoleEndpointResolver.HostPort;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.ServiceRoleState;
 
-import java.net.URI;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-class DsEndpointResolverTest {
+class ServiceRoleEndpointResolverTest {
 
     @Test
-    void resolvesApiServerThatIsHealthyButHasAlarm() {
+    void resolvesTheUniqueRoleMatchingTheAcceptedStatesAndPortName() {
         ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
         ClusterHostService hostService = mock(ClusterHostService.class);
         ServiceInstancePortResolver portResolver = mock(ServiceInstancePortResolver.class);
-        DsEndpointResolver resolver = new DsEndpointResolver(
-                new ServiceRoleEndpointResolver(roleService, hostService, portResolver));
+        ServiceRoleEndpointResolver resolver =
+                new ServiceRoleEndpointResolver(roleService, hostService, portResolver);
 
-        ClusterServiceRoleInstanceEntity role = new ClusterServiceRoleInstanceEntity();
-        role.setClusterId(7);
-        role.setHostname("ds-api-host");
-        role.setServiceRoleState(ServiceRoleState.EXISTS_ALARM);
+        ClusterServiceRoleInstanceEntity running = role(7, "api-host", ServiceRoleState.RUNNING);
+        ClusterServiceRoleInstanceEntity stopped = role(7, "old-host", ServiceRoleState.STOP);
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "ApiServer"))
-                .thenReturn(List.of(role));
+                .thenReturn(List.of(running, stopped));
         ClusterHostDO host = new ClusterHostDO();
         host.setClusterId(7);
         host.setIp("127.0.0.1");
-        when(hostService.getClusterHostByHostname("ds-api-host")).thenReturn(host);
-        when(portResolver.portsOf(role)).thenReturn(List.of(new RolePort("apiServerPort", "API", 12345)));
+        when(hostService.getClusterHostByHostname("api-host")).thenReturn(host);
+        when(portResolver.portsOf(running)).thenReturn(List.of(
+                new RolePort("rpcPort", "RPC", 1234),
+                new RolePort("apiServerPort", "API", 12345)));
 
-        assertThat(resolver.resolve(7)).isEqualTo(URI.create("http://127.0.0.1:12345/dolphinscheduler/"));
+        HostPort result = resolver.resolve(
+                7, "ApiServer", "apiServerPort", Set.of(ServiceRoleState.RUNNING));
+
+        assertThat(result).isEqualTo(new HostPort("127.0.0.1", 12345));
+    }
+
+    private static ClusterServiceRoleInstanceEntity role(int clusterId, String hostname, ServiceRoleState state) {
+        ClusterServiceRoleInstanceEntity role = new ClusterServiceRoleInstanceEntity();
+        role.setClusterId(clusterId);
+        role.setHostname(hostname);
+        role.setServiceRoleState(state);
+        return role;
     }
 }

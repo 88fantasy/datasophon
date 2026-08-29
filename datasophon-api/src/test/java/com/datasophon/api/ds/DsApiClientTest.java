@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -48,6 +49,7 @@ class DsApiClientTest {
     private final DsEndpointResolver resolver = mock(DsEndpointResolver.class);
     private final DsConfigService configService = mock(DsConfigService.class);
     private final AtomicReference<String> tokenHeader = new AtomicReference<>();
+    private final AtomicReference<String> rawQuery = new AtomicReference<>();
     private HttpServer server;
     private DsApiClient client;
 
@@ -56,6 +58,7 @@ class DsApiClientTest {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/dolphinscheduler/ok", exchange -> {
             tokenHeader.set(exchange.getRequestHeaders().getFirst("token"));
+            rawQuery.set(exchange.getRequestURI().getRawQuery());
             respond(exchange, 200, "application/json", "{\"code\":0,\"msg\":\"success\",\"data\":{\"id\":1}}");
         });
         server.createContext("/dolphinscheduler/unauthorized", exchange -> {
@@ -87,6 +90,19 @@ class DsApiClientTest {
     void acceptsJsonAndInjectsToken() {
         assertThat(client.get(7, "ok", Map.of()).path("id").asInt()).isEqualTo(1);
         assertThat(tokenHeader.get()).isEqualTo("readonly-token");
+    }
+
+    @Test
+    void encodesQueryParametersAndSkipsBlankValues() {
+        Map<String, Object> query = new LinkedHashMap<>();
+        query.put("name", "a b");
+        query.put("symbol", "x/y");
+        query.put("blank", " ");
+        query.put("missing", null);
+
+        client.get(7, "ok", query);
+
+        assertThat(rawQuery.get()).isEqualTo("name=a%20b&symbol=x%2Fy");
     }
 
     @Test
