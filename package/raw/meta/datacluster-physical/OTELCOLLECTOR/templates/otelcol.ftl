@@ -85,6 +85,19 @@ processors:
     metrics:
       metric:
         - 'name == "election_time" or name == "fsynctime" or name == "snapshottime" or name == "jvm_pause_time_ms"'
+  # 上面两条过滤器都是「按已知来源逐个排除」，只能事后补：新服务一旦引入会衰减出 NaN 的
+  # Summary，仍会整批打挂同一 pipeline 里的 Sum/Gauge（2026-08-25 沙箱实测：某次 NaN 爆发
+  # 1531 次、124 次 Dropping data，导致 Flink numRecordsIn 等指标同步断流）。
+  # 因此把 Summary 拆到独立 pipeline + 独立 exporter 实例：NaN 只会炸掉 Summary 自己的批次，
+  # 炸不到 Sum/Gauge。下面两个过滤器互补，保证数据不重不漏。
+  filter/drop_summary:
+    metrics:
+      datapoint:
+        - 'metric.type == METRIC_DATA_TYPE_SUMMARY'
+  filter/keep_summary_only:
+    metrics:
+      datapoint:
+        - 'metric.type != METRIC_DATA_TYPE_SUMMARY'
   batch:
     send_batch_size: ${batchSize}
     timeout: 5s
@@ -100,6 +113,23 @@ processors:
 exporters:
 <#if (exporterMode!"s3") == "doris">
   doris:
+    endpoint: ${dorisEndpoint}
+    database: ${dorisDatabase}
+    username: ${dorisUser}
+    password: <#noparse>${env:OTEL_DORIS_PASSWORD}</#noparse>
+    create_schema: false
+    sending_queue:
+      enabled: true
+      storage: file_storage/queue
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+  # Summary 专用实例：与主 doris exporter 配置相同，但拥有独立的 sending_queue 与 consumer。
+  # 目的是隔离 NaN 序列化失败的重试风暴——共用一个 exporter 时，失败批次会占住 consumer 反复
+  # 重试（最长 300s），把同队列里正常的 Sum/Gauge 批次一起拖慢甚至丢弃。
+  doris/summary:
     endpoint: ${dorisEndpoint}
     database: ${dorisDatabase}
     username: ${dorisUser}
@@ -145,8 +175,12 @@ service:
   pipelines:
     metrics:
       receivers: [otlp, carbon, prometheus/self<#if (localScrapeJobsYaml!"")?has_content>, prometheus/local</#if>]
-      processors: [memory_limiter, filter/drop_empty_summary, filter/drop_zk_decaying_summary, batch]
+      processors: [memory_limiter, filter/drop_summary, batch]
       exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
+    metrics/summary:
+      receivers: [otlp, carbon, prometheus/self<#if (localScrapeJobsYaml!"")?has_content>, prometheus/local</#if>]
+      processors: [memory_limiter, filter/keep_summary_only, filter/drop_empty_summary, filter/drop_zk_decaying_summary, batch]
+      exporters: [<#if (exporterMode!"s3") == "doris">doris/summary<#else>awss3</#if>]
     metrics/host:
       receivers: [host_metrics]
       processors: [memory_limiter, resource/host_metrics, batch]

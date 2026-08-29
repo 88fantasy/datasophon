@@ -153,6 +153,10 @@ export default [
             component: './Cluster/ServiceInstance',
           },
           {
+            path: '/cluster/:clusterId/service/:instanceId/ds-workflow/:projectCode/:workflowInstanceId',
+            component: './Cluster/ServiceInstance/DsWorkflow/DsDagPage',
+          },
+          {
             path: '/cluster/:clusterId/alarm',
             component: './Cluster/AlarmManage',
           },

@@ -23,17 +23,21 @@
 package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.ds.DsConfigService;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.SaveConfigRequest;
 import com.datasophon.api.security.ImportedReadOnly;
 import com.datasophon.api.service.ClusterServiceInstanceConfigService;
+import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
+import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -70,6 +74,12 @@ public class ClusterServiceConfigV2Controller extends ApiController {
     @Autowired
     private ClusterServiceInstanceService instanceService;
 
+    @Autowired
+    private ClusterServiceInstanceRoleGroupService roleGroupService;
+
+    @Autowired
+    private DsConfigService dsConfigService;
+
     /**
      * 配置历史版本列表（降序）。
      *
@@ -77,8 +87,12 @@ public class ClusterServiceConfigV2Controller extends ApiController {
      * @param roleGroupId 角色组 ID
      */
     @GetMapping("/versions")
-    public ApiResponse<List<Integer>> versions(@PathVariable Integer instanceId,
+    public ApiResponse<List<Integer>> versions(@PathVariable Integer clusterId,
+                                               @PathVariable Integer instanceId,
                                                @RequestParam Integer roleGroupId) {
+        if (!ownsInstanceAndRoleGroup(clusterId, instanceId, roleGroupId)) {
+            return ApiResponse.fail(404, "服务实例或角色组不存在");
+        }
         Result result = configService.getConfigVersion(instanceId, roleGroupId);
         @SuppressWarnings("unchecked")
         List<Integer> versions = (List<Integer>) result.getData();
@@ -95,12 +109,20 @@ public class ClusterServiceConfigV2Controller extends ApiController {
      * @param version     版本号（可选，不传则返回最新版）
      */
     @GetMapping
-    public ApiResponse<List<ServiceConfig>> info(@PathVariable Integer instanceId,
+    public ApiResponse<List<ServiceConfig>> info(@PathVariable Integer clusterId,
+                                                 @PathVariable Integer instanceId,
                                                  @RequestParam Integer roleGroupId,
                                                  @RequestParam(required = false) Integer version) {
+        if (!ownsInstanceAndRoleGroup(clusterId, instanceId, roleGroupId)) {
+            return ApiResponse.fail(404, "服务实例或角色组不存在");
+        }
         Result result = configService.getServiceInstanceConfig(instanceId, version, roleGroupId, 1, 10000);
         @SuppressWarnings("unchecked")
         List<ServiceConfig> configs = (List<ServiceConfig>) result.getData();
+        ClusterServiceInstanceEntity instance = instanceService.getById(instanceId);
+        if (Objects.equals(DsConfigService.SERVICE_NAME, instance.getServiceName())) {
+            configs = dsConfigService.mergeDdlFallback(clusterId, configs);
+        }
         return ApiResponse.ok(configs != null ? configs : List.of());
     }
 
@@ -120,11 +142,22 @@ public class ClusterServiceConfigV2Controller extends ApiController {
                                   @PathVariable Integer instanceId,
                                   @Valid @RequestBody SaveConfigRequest req) {
         ClusterServiceInstanceEntity entity = instanceService.getById(instanceId);
-        if (entity == null) {
-            return ApiResponse.fail(404, "服务实例不存在");
+        if (!ownsInstanceAndRoleGroup(clusterId, instanceId, req.getRoleGroupId())) {
+            return ApiResponse.fail(404, "服务实例或角色组不存在");
         }
         List<ServiceConfig> configs = req.getServiceConfig();
         serviceInstallService.saveServiceConfig(clusterId, entity.getServiceName(), configs, req.getRoleGroupId());
         return ApiResponse.ok();
+    }
+
+    private boolean ownsInstanceAndRoleGroup(Integer clusterId, Integer instanceId, Integer roleGroupId) {
+        ClusterServiceInstanceEntity instance = instanceService.getById(instanceId);
+        if (instance == null || !Objects.equals(clusterId, instance.getClusterId())) {
+            return false;
+        }
+        ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleGroupId);
+        return roleGroup != null
+                && Objects.equals(clusterId, roleGroup.getClusterId())
+                && Objects.equals(instanceId, roleGroup.getServiceInstanceId());
     }
 }

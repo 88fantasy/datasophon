@@ -15,6 +15,7 @@ const {
   apisixGatewaySpy,
   valkeyDashboardSpy,
   dsDashboardSpy,
+  dsWorkflowSpy,
   dorisDashboardSpy,
   nacosDashboardSpy,
   gravitinoDashboardSpy,
@@ -28,6 +29,7 @@ const {
   apisixGatewaySpy: vi.fn(),
   valkeyDashboardSpy: vi.fn(),
   dsDashboardSpy: vi.fn(),
+  dsWorkflowSpy: vi.fn(),
   dorisDashboardSpy: vi.fn(),
   nacosDashboardSpy: vi.fn(),
   gravitinoDashboardSpy: vi.fn(),
@@ -40,6 +42,10 @@ const {
 
 vi.mock('@umijs/max', () => ({
   history: { replace: vi.fn() },
+  useIntl: () => ({
+    formatMessage: ({ id }: { id: string }) =>
+      id === 'dsWorkflow.tab' ? '工作流' : id,
+  }),
   useParams: () => routeParams,
 }));
 
@@ -187,6 +193,12 @@ vi.mock('./ApisixGateway', () => ({
   default: (props: { clusterId: number; instanceId: number }) => {
     apisixGatewaySpy(props);
     return <div>gateway config</div>;
+  },
+}));
+vi.mock('./DsWorkflow', () => ({
+  default: (props: { clusterId: number; instanceId: number }) => {
+    dsWorkflowSpy(props);
+    return <div>DS workflow project selector</div>;
   },
 }));
 vi.mock('./Instance', () => ({ default: () => <div>instances</div> }));
@@ -402,7 +414,7 @@ describe('DS service instance tabs', () => {
     await screen.findByText('DS dashboard cluster 7');
     const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
 
-    expect(tabs).toEqual(['监控', '概览', '实例', '配置']);
+    expect(tabs).toEqual(['监控', '工作流', '概览', '实例', '配置']);
     expect(screen.getByTestId('tabs')).toHaveAttribute(
       'data-active-key',
       'monitor',
@@ -413,6 +425,13 @@ describe('DS service instance tabs', () => {
         embedded: true,
       }),
     );
+
+    fireEvent.click(screen.getByRole('tab', { name: '工作流' }));
+    await screen.findByText('DS workflow project selector');
+    expect(dsWorkflowSpy).toHaveBeenCalledWith({
+      clusterId: 7,
+      instanceId: 33,
+    });
   });
 
   it('opens monitoring when navigating from another service to DS', async () => {

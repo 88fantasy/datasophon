@@ -76,6 +76,40 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void groupedInstantAggReturnsLatestRealSampleTimePerGroup() {
+        String sql = OtelMetricsQueryService.buildInstantAggSql(
+                "max", false, false, Map.of(), Map.of(), Map.of("job_name", "^ds-7-12-.*$"), Map.of(),
+                List.of("job_id", "job_name"), "otel_metrics_sum");
+
+        assertThat(sql).contains("UNIX_TIMESTAMP(timestamp) AS sample_ts");
+        assertThat(sql).contains("MAX(sample_ts) AS ts");
+        assertThat(sql).doesNotContain("UNIX_TIMESTAMP(NOW()) AS ts");
+    }
+
+    @Test
+    void historicalJobBindingQueryUsesBoundedJobNameRegex() {
+        String sql = OtelMetricsQueryService.buildHasJobNameSampleSql("otel_metrics_sum");
+
+        assertThat(sql).contains("FROM otel.otel_metrics_sum");
+        assertThat(sql).contains("metric_name = :metric");
+        assertThat(sql).contains("CAST(attributes['job_name'] AS STRING) REGEXP :jobNameRegex");
+        // 时间边界必须绑纪元秒交给 FROM_UNIXTIME，绑 java.sql.Timestamp 会引入驱动侧时区。
+        assertThat(sql).contains("timestamp >= FROM_UNIXTIME(:since)");
+        assertThat(sql).contains("LIMIT 1");
+    }
+
+    @Test
+    void deltaSummaryQueryConvertsBothBoundsServerSide() {
+        String sql = OtelMetricsQueryService.buildDeltaSummarySql(
+                "otel_metrics_sum", Map.of("operator_name", ".*(Writer|Committer).*"));
+
+        assertThat(sql).contains("FROM otel.otel_metrics_sum");
+        assertThat(sql).contains("timestamp >= FROM_UNIXTIME(:start)");
+        assertThat(sql).contains("timestamp < FROM_UNIXTIME(:end)");
+        assertThat(sql).contains("CAST(attributes['operator_name'] AS STRING) REGEXP :afr_operator_name");
+    }
+
+    @Test
     void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
         String countSql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("vol_name", "prod-fs"), null,
@@ -111,7 +145,7 @@ class OtelMetricsQueryServiceTest {
     @Test
     void allowedAttrFilterKeys_includeFlinkSubtaskDimensions() {
         assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
-                .contains("task_id", "subtask_index");
+                .contains("job_name", "task_id", "subtask_index");
         String sql = OtelMetricsQueryService.buildInstantAggSql(
                 "count", false, false, null, null, null, null,
                 List.of("job_id"), "otel_metrics_sum");

@@ -1,0 +1,317 @@
+/*
+ * MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package com.datasophon.api.ds;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.datasophon.api.ds.DsStreamMetricRepository.StreamMetricCursor;
+import com.datasophon.api.dto.v2.DsDagNodeVO;
+import com.datasophon.api.dto.v2.DsTaskMetricsVO;
+import com.datasophon.api.lineage.proxy.GravitinoLineageClient;
+import com.datasophon.api.observability.OtelMetricsQueryService;
+import com.datasophon.api.observability.PrometheusMatrixResult;
+import com.datasophon.api.observability.PrometheusMatrixResult.MatrixSeries;
+import com.datasophon.api.observability.PrometheusVectorResult;
+import com.datasophon.api.observability.PrometheusVectorResult.VectorSample;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+class DsTaskMetricsServiceTest {
+
+    private static final Instant NOW = Instant.parse("2026-08-25T06:00:00Z");
+    private static final String JOB_ID = "0123456789abcdef0123456789abcdef";
+
+    private final GravitinoLineageClient lineageClient = mock(GravitinoLineageClient.class);
+    private final OtelMetricsQueryService queryService = mock(OtelMetricsQueryService.class);
+    private final DsStreamMetricAccumulator streamMetricAccumulator = mock(DsStreamMetricAccumulator.class);
+    private final DsTaskMetricsService service = new DsTaskMetricsService(
+            new DsBatchMetricsProvider(lineageClient),
+            new DsStreamMetricsProvider(
+                    queryService, streamMetricAccumulator, Clock.fixed(NOW, ZoneOffset.UTC)));
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp() {
+        when(queryService.queryInstant(anyInt(), anyString(), anyString(), anyDouble(), anyString(), anyString(),
+                anyMap(), anyMap(), anyMap(), anyMap(), anyLong(), anyString(), anyList()))
+                .thenReturn(PrometheusVectorResult.of(List.of()));
+        when(queryService.queryRangeSum(anyInt(), anyString(), isNull(), anyDouble(), anyString(), anyString(),
+                anyMap(), anyMap(), anyMap(), anyMap(), anyList(), anyLong(), anyLong(), anyLong(),
+                anyString(), anyDouble(), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of()));
+        when(queryService.queryRange(anyInt(), anyString(), anyString(), anyDouble(), anyString(), anyString(),
+                anyMap(), anyMap(), anyMap(), anyMap(), anyList(), anyLong(), anyLong(), anyLong(),
+                anyString(), anyDouble(), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of()));
+        when(streamMetricAccumulator.registerAndRead(anyInt(), anyString(), anyString(), anyBoolean()))
+                .thenReturn(Optional.empty());
+    }
+
+    @Test
+    void mapsAllBatchOutputsWithoutSummingThem() throws Exception {
+        when(lineageClient.getRunByExternalKey(7, "ds-7-11")).thenReturn(objectMapper.readTree("""
+                {"externalRunKey":"ds-7-11","runCount":7,"outputs":[
+                {"namespace":"file","name":"synthetic/source","rowCount":700,"size":7096,"jobName":"write-a"},
+                {"namespace":"file","name":"synthetic/target","rowCount":234,"size":3450,"jobName":"write-b"}]}
+                """));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(11, "BATCH"));
+
+        assertThat(metrics.getKind()).isEqualTo("BATCH");
+        assertThat(metrics.getRunCount()).isEqualTo(7);
+        assertThat(metrics.getOutputs()).extracting("name", "rowCount", "size")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("synthetic/source", 700L, 7096L),
+                        org.assertj.core.groups.Tuple.tuple("synthetic/target", 234L, 3450L));
+    }
+
+    @Test
+    void discoversStreamJobByTaskPrefixAndCalculatesGenericOutputRate() {
+        String jobName = "ds-7-12-synthetic-stream";
+        PrometheusVectorResult discovery = PrometheusVectorResult.of(List.of(
+                new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                        new Object[]{NOW.getEpochSecond(), "1"})));
+        when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),
+                eq("max"), eq(1.0), eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(Map.of("job_name", "^ds-7-12-.*$")), eq(Map.of()), eq(NOW.getEpochSecond()),
+                eq("sum"), eq(List.of("job_id", "job_name"))))
+                .thenReturn(discovery);
+        when(queryService.queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), isNull(), eq(1.0 / 60),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(sinkJobFilter(JOB_ID)), eq(Map.of()), eq(List.of("job_id")),
+                eq(NOW.getEpochSecond() - 120), eq(NOW.getEpochSecond() - 1), eq(60L),
+                eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "22.8"})))));
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName, true))
+                .thenReturn(Optional.of(new StreamMetricCursor(
+                        7, JOB_ID, jobName, NOW.minusSeconds(600), NOW, 1234)));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getKind()).isEqualTo("STREAM");
+        assertThat(metrics.getJobId()).isEqualTo(JOB_ID);
+        assertThat(metrics.getJobName()).isEqualTo(jobName);
+        assertThat(metrics.getRowsPerSecond()).isEqualTo(22.8);
+        assertThat(metrics.getApproximate()).isTrue();
+        assertThat(metrics.getProcessedApprox()).isEqualTo(1234);
+        assertThat(metrics.getSince()).isEqualTo("2026-08-25T05:50:00Z");
+        verify(queryService).queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), isNull(), eq(1.0 / 60),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(List.of("job_id")), anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull());
+    }
+
+    @Test
+    void selectsTheCandidateWithTheNewestRealSampleTime() {
+        String oldJobId = "ffffffffffffffffffffffffffffffff";
+        String newJobId = "00000000000000000000000000000000";
+        String oldJobName = "ds-7-12-old-attempt";
+        String newJobName = "ds-7-12-new-attempt";
+        when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),
+                eq("max"), eq(1.0), eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(Map.of("job_name", "^ds-7-12-.*$")), eq(Map.of()), eq(NOW.getEpochSecond()),
+                eq("sum"), eq(List.of("job_id", "job_name"))))
+                .thenReturn(PrometheusVectorResult.of(List.of(
+                        new VectorSample(Map.of("job_id", oldJobId, "job_name", oldJobName),
+                                new Object[]{NOW.minusSeconds(60).getEpochSecond(), "1"}),
+                        new VectorSample(Map.of("job_id", newJobId, "job_name", newJobName),
+                                new Object[]{NOW.getEpochSecond(), "1"}))));
+        when(queryService.queryRangeSum(eq(7), anyString(), isNull(), anyDouble(), eq(".+"), eq(".+"),
+                eq(Map.of()), eq(Map.of()), eq(sinkJobFilter(newJobId)), eq(Map.of()), eq(List.of("job_id")),
+                anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", newJobId),
+                                List.<Object[]>of(new Object[]{NOW.minusSeconds(60).getEpochSecond(), "8"})))));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getJobId()).isEqualTo(newJobId);
+        assertThat(metrics.getJobName()).isEqualTo(newJobName);
+    }
+
+    @Test
+    void prefersOtlpDeltaReporterWhenBothReporterPathsExist() {
+        String jobName = "ds-7-12-synthetic-stream";
+        PrometheusVectorResult discovery = PrometheusVectorResult.of(List.of(
+                new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                        new Object[]{NOW.getEpochSecond(), "1"})));
+        when(queryService.queryInstant(eq(7), anyString(), eq("max"), eq(1.0), eq(".+"), eq(".+"),
+                eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()), eq(NOW.getEpochSecond()),
+                anyString(), eq(List.of("job_id", "job_name"))))
+                .thenReturn(discovery);
+        when(queryService.queryRangeSum(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), isNull(), eq(1.0 / 60),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(List.of("job_id")), anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
+        when(queryService.queryRange(eq(7),
+                eq("flink_taskmanager_job_task_operator_numRecordsOut"), eq("1m"), eq(1.0),
+                eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(List.of("job_id")), anyLong(), anyLong(), eq(60L), eq("gauge"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "20"})))));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getRowsPerSecond()).isEqualTo(10);
+    }
+
+    @Test
+    void hidesLifetimeTotalWhileHistoricalPeriodsAreStillCatchingUp() {
+        String jobName = "ds-7-12-synthetic-stream";
+        when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),
+                eq("max"), eq(1.0), eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "job_name"))))
+                .thenReturn(PrometheusVectorResult.of(List.of(
+                        new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                                new Object[]{NOW.getEpochSecond(), "1"}))));
+        when(queryService.queryRangeSum(eq(7), anyString(), isNull(), anyDouble(), eq(".+"), eq(".+"),
+                eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()), eq(List.of("job_id")),
+                anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
+        // 落后 10 分钟，超过 STALE_AFTER(5 分钟) 的容忍窗口——累加器长期没有追上，应隐藏。
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName, true))
+                .thenReturn(Optional.of(new StreamMetricCursor(
+                        7, JOB_ID, jobName, NOW.minusSeconds(86_400), NOW.minusSeconds(600), 1234)));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getProcessedApprox()).isNull();
+        assertThat(metrics.getSince()).isEqualTo("2026-08-24T06:00:00Z");
+    }
+
+    @Test
+    void showsLifetimeTotalWhenCursorLagIsWithinStaleTolerance() {
+        String jobName = "ds-7-12-synthetic-stream";
+        when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),
+                eq("max"), eq(1.0), eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()),
+                eq(NOW.getEpochSecond()), eq("sum"), eq(List.of("job_id", "job_name"))))
+                .thenReturn(PrometheusVectorResult.of(List.of(
+                        new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                                new Object[]{NOW.getEpochSecond(), "1"}))));
+        when(queryService.queryRangeSum(eq(7), anyString(), isNull(), anyDouble(), eq(".+"), eq(".+"),
+                eq(Map.of()), eq(Map.of()), anyMap(), eq(Map.of()), eq(List.of("job_id")),
+                anyLong(), anyLong(), eq(60L), eq("sum"), eq(0.5), isNull()))
+                .thenReturn(PrometheusMatrixResult.of(List.of(
+                        new MatrixSeries(Map.of("job_id", JOB_ID),
+                                List.<Object[]>of(new Object[]{NOW.getEpochSecond() - 60, "10"})))));
+        // 落后 60 秒——仅一个累加批处理周期，仍在容忍窗口内，应正常展示。这正是修复前
+        // 的行为缺陷：旧实现要求游标恰好追上“当前这一分钟”，导致这种正常延迟也被隐藏。
+        when(streamMetricAccumulator.registerAndRead(7, JOB_ID, jobName, true))
+                .thenReturn(Optional.of(new StreamMetricCursor(
+                        7, JOB_ID, jobName, NOW.minusSeconds(86_400), NOW.minusSeconds(60), 1234)));
+
+        DsTaskMetricsVO metrics = service.metrics(7, node(12, "STREAM"));
+
+        assertThat(metrics.getProcessedApprox()).isEqualTo(1234);
+    }
+
+    @Test
+    void classifiesTerminalStreamTaskWithHistoricalBindingAsJobEnded() {
+        when(queryService.hasJobNameSample(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("^ds-7-12-.*$"),
+                eq(NOW.minusSeconds(30L * 24 * 60 * 60)), eq("sum")))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.metrics(7, node(12, "STREAM", "SUCCESS")))
+                .isInstanceOf(DsTaskMetricsService.JobEndedException.class);
+    }
+
+    @Test
+    void doesNotReportNotBoundForRunningTaskWithHistoricalBindingButTransientEmptyQuery() {
+        // 任务仍在 RUNNING（未传 taskEnded），但本轮发现查询恰好零行匹配——
+        // 曾经绑定过（hasJobNameSample 命中历史样本）不应被误判为“从未绑定”。
+        when(queryService.hasJobNameSample(eq(7),
+                eq("flink.taskmanager.job.task.operator.numRecordsOut"), eq("^ds-7-12-.*$"),
+                eq(NOW.minusSeconds(30L * 24 * 60 * 60)), eq("sum")))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.metrics(7, node(12, "STREAM")))
+                .isNotInstanceOf(DsTaskMetricsService.NotBoundException.class)
+                .isNotInstanceOf(DsTaskMetricsService.JobEndedException.class);
+    }
+
+    @Test
+    void classifiesTerminalStreamTaskWithStaleDiscoveryButNoCurrentRateAsJobEnded() {
+        String jobName = "ds-7-12-ended-stream";
+        when(queryService.queryInstant(eq(7), eq("flink.taskmanager.job.task.operator.numRecordsOut"),
+                eq("max"), eq(1.0), eq(".+"), eq(".+"), eq(Map.of()), eq(Map.of()),
+                eq(Map.of("job_name", "^ds-7-12-.*$")), eq(Map.of()), eq(NOW.getEpochSecond()),
+                eq("sum"), eq(List.of("job_id", "job_name"))))
+                .thenReturn(PrometheusVectorResult.of(List.of(
+                        new VectorSample(Map.of("job_id", JOB_ID, "job_name", jobName),
+                                new Object[]{NOW.minusSeconds(180).getEpochSecond(), "1"}))));
+
+        assertThatThrownBy(() -> service.metrics(7, node(12, "STREAM", "SUCCESS")))
+                .isInstanceOf(DsTaskMetricsService.JobEndedException.class);
+    }
+
+    private static DsDagNodeVO node(int taskInstanceId, String flowType) {
+        return node(taskInstanceId, flowType, null);
+    }
+
+    private static DsDagNodeVO node(int taskInstanceId, String flowType, String state) {
+        DsDagNodeVO node = new DsDagNodeVO();
+        node.setTaskInstanceId(taskInstanceId);
+        node.setFlowType(flowType);
+        node.setState(state);
+        return node;
+    }
+
+    private static Map<String, String> sinkJobFilter(String jobId) {
+        return Map.of(
+                "job_id", "^(?:" + jobId + ")$",
+                "operator_name", ".*(Writer|Committer).*");
+    }
+}

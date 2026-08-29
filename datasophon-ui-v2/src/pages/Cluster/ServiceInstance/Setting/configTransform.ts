@@ -20,6 +20,14 @@ export function invokeMapShowMultiply(item: ConfigField): boolean {
   return ['multiple'].includes(item.type) || inputStringArray;
 }
 
+/** 与 ConfigForm 保持一致：只转换用户实际能够看到并编辑的配置项。 */
+export function isUserConfigurable(item: ConfigField): boolean {
+  return (
+    item.enabled !== false &&
+    (!item.hidden || item.configurableInWizard === true)
+  );
+}
+
 // ─── multiple/input+stringArray 类型互转 ────────────────────────────────────
 
 /** 后端 → 表单：把逗号/分号分隔字符串或普通数组转为 [{value}] 结构 */
@@ -99,11 +107,12 @@ export function invokeFormatMultipleWithMapValue(value: unknown): unknown {
 /**
  * 后端 → 表单：对所有复杂类型字段做展开转换，处理完的数据可直接用作 ProForm initialValues。
  * 必须在 getServiceConfig 拿到数据后立即调用。
+ *
  */
 export function invokeHandleTemplateData(data: ConfigField[]): ConfigField[] {
   const cloned = structuredClone(data);
   cloned
-    .filter((val) => !val.hidden)
+    .filter(isUserConfigurable)
     .forEach((val) => {
       if (invokeMapShowMultiply(val)) {
         val.value = invokeReFormatMultiplyValue(val.value);
@@ -122,6 +131,7 @@ export function invokeHandleTemplateData(data: ConfigField[]): ConfigField[] {
 /**
  * 表单 → 后端：把 ProForm values 合并回原始 templateData 中，准备提交给 saveServiceConfig。
  * originData 须为 invokeHandleTemplateData 转换前的原始后端数据（不要传转换后的版本）。
+ *
  */
 export function invokeFormatTemplateData(
   originData: ConfigField[],
@@ -129,7 +139,7 @@ export function invokeFormatTemplateData(
 ): ConfigField[] {
   const cloned = structuredClone(originData);
   cloned
-    .filter((val) => !(!val.required && val.hidden))
+    .filter(isUserConfigurable)
     .forEach((val) => {
       const formVal = values[val.name];
       if (invokeMapShowMultiply(val)) {

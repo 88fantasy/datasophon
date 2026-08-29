@@ -1,4 +1,4 @@
-import { history, useParams } from '@umijs/max';
+import { history, useIntl, useParams } from '@umijs/max';
 import type { TabsProps } from 'antd';
 import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
@@ -25,6 +25,7 @@ import {
   getServiceWebUis,
 } from '@/services/service';
 import ApisixGatewayPanel from './ApisixGateway';
+import DsWorkflowPanel from './DsWorkflow';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';
@@ -58,6 +59,7 @@ const K8S_MONITOR_DASHBOARDS: Record<
 };
 
 const ServiceInstance: React.FC = () => {
+  const intl = useIntl();
   const { clusterId, instanceId } = useParams<{
     clusterId: string;
     instanceId: string;
@@ -323,6 +325,19 @@ const ServiceInstance: React.FC = () => {
         <ApisixGatewayPanel
           clusterId={numericClusterId}
           instanceId={numericInstanceId}
+        />
+      ),
+    });
+  }
+  if (isDS) {
+    items.push({
+      key: 'dsWorkflow',
+      label: intl.formatMessage({ id: 'dsWorkflow.tab' }),
+      children: (
+        <DsWorkflowPanel
+          clusterId={numericClusterId}
+          instanceId={numericInstanceId}
+          dsWebUrl={webUis[0]?.webUrl}
         />
       ),
     });

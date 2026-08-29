@@ -75,3 +75,6 @@ conf/worker.local.properties
 datasophon-api/src/main/resources/application-local.yml
 datasophon-api/src/main/resources/application-bjsy.yml
 /.run
+
+# wayfinder 地图与过程产物（本地，不入库）
+.scratch/

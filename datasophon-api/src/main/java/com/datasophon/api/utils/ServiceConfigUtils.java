@@ -22,6 +22,7 @@
 
 package com.datasophon.api.utils;
 
+import com.datasophon.api.ds.DsManagedConfig;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterVariableService;
@@ -146,6 +147,7 @@ public class ServiceConfigUtils {
 
     public static Map<String, String> createMergeVariables(Integer clusterId, String serviceName, List<ServiceConfig> serviceConfigs) {
         Map<String, String> variables = new HashMap<>(GlobalVariables.getVariables(clusterId));
+        applyPlatformManagedConfigValues(serviceName, serviceConfigs, variables);
         serviceConfigs.forEach(config -> {
             String name = config.getName();
             // 如果存在占位符，则忽略(即不支持递归占位符)。如果全局变量，也忽略(有可能已经被系统特殊逻辑处理）
@@ -158,6 +160,24 @@ public class ServiceConfigUtils {
             }
         });
         return variables;
+    }
+
+    static void applyPlatformManagedConfigValues(
+                                                 String serviceName,
+                                                 List<ServiceConfig> serviceConfigs,
+                                                 Map<String, String> globalVariables) {
+        if (!DsManagedConfig.SERVICE_NAME.equals(serviceName)) {
+            return;
+        }
+        serviceConfigs.stream()
+                .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
+                .forEach(config -> DsManagedConfig.resolve(config.getName(), globalVariables)
+                        .ifPresentOrElse(
+                                config::setValue,
+                                () -> logger.warn(
+                                        "Keeping the existing value of DS config {}: global variable {} is missing or blank",
+                                        config.getName(),
+                                        DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.get(config.getName()))));
     }
 
     private static void replaceVariable(List<ServiceConfig> serviceConfigs, Map<String, String> variables) {

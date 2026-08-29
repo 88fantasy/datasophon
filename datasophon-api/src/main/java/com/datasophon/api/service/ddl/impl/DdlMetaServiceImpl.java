@@ -2,6 +2,7 @@ package com.datasophon.api.service.ddl.impl;
 
 import static com.datasophon.common.Constants.FRAMEWORK_TPL;
 
+import com.datasophon.api.ds.DsManagedConfig;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
@@ -350,13 +351,14 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             }
 
             ClusterServiceRoleGroupConfig config = roleGroupService.getRoleGroupConfigByServiceId(serviceInstance.getId());
-            updateServiceRoleGroupConfig(config, parameters);
+            Map<String, String> globalVariables = GlobalVariables.getVariables(cluster.getId());
+            updateServiceRoleGroupConfig(serviceName, config, parameters, globalVariables);
 
             Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceInstance.getId());
             if (roleGroupId != null) {
                 ClusterServiceRoleGroupConfig cacheConfig = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
                 if (cacheConfig != null && !config.getId().equals(cacheConfig.getId())) {
-                    updateServiceRoleGroupConfig(config, parameters);
+                    updateServiceRoleGroupConfig(serviceName, cacheConfig, parameters, globalVariables);
                 }
             }
 
@@ -368,13 +370,47 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         }
     }
 
-    private void updateServiceRoleGroupConfig(ClusterServiceRoleGroupConfig config, List<ServiceConfig> parameters) {
+    private void updateServiceRoleGroupConfig(
+                                              String serviceName,
+                                              ClusterServiceRoleGroupConfig config,
+                                              List<ServiceConfig> parameters,
+                                              Map<String, String> globalVariables) {
         String configJson = config.getConfigJson();
         List<ServiceConfig> serviceConfigs = JSONArray.parseArray(configJson, ServiceConfig.class);
         ServiceConfigUtils.addAll(serviceConfigs, parameters);
+        refreshPlatformManagedConfigValues(serviceName, serviceConfigs, parameters, globalVariables);
         // 更新服务实例的配置
         config.setConfigJson(JSONObject.toJSONString(serviceConfigs));
         roleGroupConfigService.updateById(config);
+    }
+
+    static void refreshPlatformManagedConfigValues(
+                                                   String serviceName,
+                                                   List<ServiceConfig> savedConfigs,
+                                                   List<ServiceConfig> metadataConfigs,
+                                                   Map<String, String> globalVariables) {
+        if (!DsManagedConfig.SERVICE_NAME.equals(serviceName)) {
+            return;
+        }
+        Map<String, ServiceConfig> metadataByName = metadataConfigs.stream()
+                .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
+                .collect(Collectors.toMap(ServiceConfig::getName, config -> config));
+        savedConfigs.stream()
+                .filter(config -> DsManagedConfig.OBJECT_STORAGE_CREDENTIALS.containsKey(config.getName()))
+                .forEach(config -> {
+                    ServiceConfig metadataConfig = metadataByName.get(config.getName());
+                    if (metadataConfig == null) {
+                        return;
+                    }
+                    // 展示元数据始终跟随 DDL；凭据本身只有解析出非空值时才覆盖，
+                    // 解析不出来时保留既有值（语义与 ServiceConfigUtils 那条路径共用 DsManagedConfig.resolve）。
+                    config.setHidden(metadataConfig.isHidden());
+                    config.setConfigurableInWizard(metadataConfig.isConfigurableInWizard());
+                    DsManagedConfig.resolve(config.getName(), globalVariables).ifPresent(resolved -> {
+                        config.setValue(resolved);
+                        config.setDefaultValue(resolved);
+                    });
+                });
     }
 
     private void buildServiceEntity(FrameInfoEntity frameInfo, String serviceName, String serviceDdl,

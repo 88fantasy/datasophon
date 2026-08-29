@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ServiceInstancePortResolver;
 import com.datasophon.api.service.ServiceInstancePortResolver.RolePort;
+import com.datasophon.api.service.ServiceRoleEndpointResolver;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
@@ -49,7 +50,8 @@ class GravitinoLineageEndpointResolverTest {
     private final ClusterHostService hostService = mock(ClusterHostService.class);
     private final ServiceInstancePortResolver portResolver = mock(ServiceInstancePortResolver.class);
     private final GravitinoLineageEndpointResolver resolver =
-            new GravitinoLineageEndpointResolver(roleService, hostService, portResolver);
+            new GravitinoLineageEndpointResolver(
+                    new ServiceRoleEndpointResolver(roleService, hostService, portResolver));
     private ClusterServiceRoleInstanceEntity role;
 
     @BeforeEach

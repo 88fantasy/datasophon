@@ -111,6 +111,11 @@ public class LineageV2Controller extends ApiController {
         return client.getJob(clusterId, id);
     }
 
+    @GetMapping("/run/by-external-key/{key}")
+    public JsonNode externalRun(@RequestParam long clusterId, @PathVariable String key) {
+        return client.getRunByExternalKey(clusterId, key);
+    }
+
     @GetMapping("/job-metrics")
     public Map<String, JobMetrics> jobMetrics(
                                               @RequestParam Integer clusterId,

@@ -27,11 +27,13 @@ import com.datasophon.api.observability.PrometheusVectorResult.VectorSample;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.dao.enums.ServiceRoleState;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -82,7 +84,8 @@ public class OtelMetricsQueryService {
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
                     "exporter", "receiver", "processor", "transport",
                     "area", "result", "status", "level", "cause", "cmd", "db", "direction", "app_id",
-                    "job_id", "task_id", "subtask_index", "operator_name", "operation", "workload_group");
+                    "job_id", "job_name", "task_id", "subtask_index", "operator_name", "operation",
+                    "workload_group");
 
     /**
      * 仅用于「键不存在」判断的属性白名单，不参与 SELECT/GROUP BY 别名生成（与
@@ -282,6 +285,66 @@ public class OtelMetricsQueryService {
                                                 String table, double quantile, String field) {
         return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
                 filtersRegex, filtersNotRegex, groupByKeys, start, end, step, table, quantile, field, true);
+    }
+
+    /** Returns the first observed sample for one Flink job. */
+    public Optional<Instant> queryFirstSampleAt(Integer clusterId, String metric, String jobId, String table) {
+        String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
+        // UNIX_TIMESTAMP() 把 timestamp 列按会话时区（如 Asia/Shanghai）转成时区无关的纪元秒，
+        // 与本文件其它查询方法一致；直接 SELECT timestamp 再在 Java 侧猜测驱动返回类型的时区语义
+        // 曾经把本地墙钟值误当 UTC 处理，多算 8 小时。
+        Map<String, Object> row = createReader(clusterId).sql("""
+                SELECT MIN(UNIX_TIMESTAMP(timestamp)) AS first_sample
+                FROM otel.%s
+                WHERE metric_name = :metric AND attributes['job_id'] = :jobId
+                """.formatted(otelTable))
+                .param("metric", metric)
+                .param("jobId", jobId)
+                .query()
+                .singleRow();
+        Number value = (Number) row.get("first_sample");
+        return value == null ? Optional.empty() : Optional.of(Instant.ofEpochSecond(value.longValue()));
+    }
+
+    /**
+     * Returns whether a Flink job-name sample exists in the bounded historical window.
+     *
+     * <p>时间边界一律绑纪元秒并由 {@code FROM_UNIXTIME} 在服务端转换，与本文件其它查询一致。
+     * 绑 {@code java.sql.Timestamp} 会让驱动按 API 进程的 JVM 时区渲染，而 Doris 会话时区未必相同，
+     * 两者不一致时窗口会整体偏移。
+     */
+    public boolean hasJobNameSample(Integer clusterId, String metric, String jobNameRegex,
+                                    Instant since, String table) {
+        String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
+        return !createReader(clusterId).sql(buildHasJobNameSampleSql(otelTable))
+                .param("metric", metric)
+                .param("jobNameRegex", jobNameRegex)
+                .param("since", since.getEpochSecond())
+                .query()
+                .listOfRows()
+                .isEmpty();
+    }
+
+    /** Sums OTLP delta samples in the half-open interval {@code [start, end)}. */
+    public DeltaSummary queryDeltaSummary(Integer clusterId, String metric, String jobId,
+                                          Instant start, Instant end,
+                                          Map<String, String> filtersRegex, String table) {
+        String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
+        JdbcClient.StatementSpec spec = createReader(clusterId)
+                .sql(buildDeltaSummarySql(otelTable, filtersRegex))
+                .param("metric", metric)
+                .param("jobId", jobId)
+                .param("start", start.getEpochSecond())
+                .param("end", end.getEpochSecond());
+        spec = bindAttrFilterParams(spec, Map.of(), Map.of(), filtersRegex, Map.of());
+        Map<String, Object> row = spec.query().singleRow();
+        Number value = (Number) row.get("delta_value");
+        Number sampleCount = (Number) row.get("sample_count");
+        return new DeltaSummary(value == null ? 0 : value.doubleValue(),
+                sampleCount == null ? 0 : sampleCount.longValue());
+    }
+
+    public record DeltaSummary(double value, long sampleCount) {
     }
 
     private PrometheusMatrixResult queryRange(Integer clusterId, String metric,
@@ -543,11 +606,14 @@ public class OtelMetricsQueryService {
         String fn = "max".equalsIgnoreCase(agg) ? "MAX" : ("count".equalsIgnoreCase(agg) ? "COUNT" : "SUM");
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
+        String sampleTimestampSelect = groupByKeys.isEmpty() ? "" : ", UNIX_TIMESTAMP(timestamp) AS sample_ts";
+        String sampleTimestampCol = groupByKeys.isEmpty() ? "" : ", sample_ts";
         StringBuilder inner = new StringBuilder(
-                "SELECT value" + extraCols + "\n"
+                "SELECT value" + extraCols + sampleTimestampCol + "\n"
                         + "FROM (\n"
                         + "  SELECT value"
                         + extraSelect
+                        + sampleTimestampSelect
                         + ",\n"
                         + "         ROW_NUMBER() OVER(\n"
                         + "           PARTITION BY " + INST_EXPR + ",\n"
@@ -563,9 +629,36 @@ public class OtelMetricsQueryService {
         appendAttrFilters(inner, filters, filtersNe, filtersRegex, filtersNotRegex);
         inner.append("\n) latest\n"
                 + "WHERE rn = 1");
+        // 分组查询下 ts 的语义与非分组查询不同：非分组返回查询时刻（NOW），分组返回该组内
+        // 最后一次采样时刻（MAX(sample_ts)）。调用方若需要按 key 分组又依赖 ts，注意区分。
+        String sampledAt = groupByKeys.isEmpty() ? "UNIX_TIMESTAMP(NOW())" : "MAX(sample_ts)";
         return "SELECT " + (groupByKeys.isEmpty() ? "" : String.join(", ", groupByKeys) + ", ")
-                + fn + "(value) AS value, UNIX_TIMESTAMP(NOW()) AS ts FROM (" + inner + ") t"
+                + fn + "(value) AS value, " + sampledAt + " AS ts FROM (" + inner + ") t"
                 + (groupByKeys.isEmpty() ? "" : " GROUP BY " + String.join(", ", groupByKeys));
+    }
+
+    static String buildDeltaSummarySql(String otelTable, Map<String, String> filtersRegex) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT COALESCE(SUM(value), 0) AS delta_value, COUNT(*) AS sample_count
+                FROM otel.%s
+                WHERE metric_name = :metric
+                  AND attributes['job_id'] = :jobId
+                  AND timestamp >= FROM_UNIXTIME(:start)
+                  AND timestamp < FROM_UNIXTIME(:end)
+                """.formatted(otelTable));
+        appendAttrFilters(sql, Map.of(), Map.of(), filtersRegex, Map.of());
+        return sql.toString();
+    }
+
+    static String buildHasJobNameSampleSql(String otelTable) {
+        return """
+                SELECT 1 AS matched
+                FROM otel.%s
+                WHERE metric_name = :metric
+                  AND CAST(attributes['job_name'] AS STRING) REGEXP :jobNameRegex
+                  AND timestamp >= FROM_UNIXTIME(:since)
+                LIMIT 1
+                """.formatted(otelTable);
     }
 
     private static List<String> instantSeriesAttrKeys(List<String> groupByKeys) {

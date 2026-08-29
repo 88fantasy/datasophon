@@ -34,6 +34,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
  * 为 Master 端本地 Actor 收敛后的异步执行配置：
  * <ul>
  *   <li>{@code masterExecutor} — 通用 @Async 线程池（替代 Pekka fork-join dispatcher）</li>
+ *   <li>{@code dsMetricsExecutor} — DS DAG 节点指标查询专用有界线程池</li>
  *   <li>{@code serviceHookExecutor} — 服务安装后 hook 的隔离线程池</li>
  *   <li>{@code physicalInitializationExecutor} — 物理集群节点状态并行探测线程池</li>
  *   <li>{@code taskScheduler} — 延迟/定时任务调度器（替代 actorSystem.scheduler().scheduleOnce）</li>
@@ -55,6 +56,20 @@ public class MasterAsyncConfig {
         executor.setThreadNamePrefix("master-async-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
+        return executor;
+    }
+
+    /** DS DAG 单次最多并发查询 8 个节点指标，避免慢 Doris/Gravitino 查询占满通用线程池。 */
+    @Bean("dsMetricsExecutor")
+    public Executor dsMetricsExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(64);
+        executor.setThreadNamePrefix("ds-metrics-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(10);
         executor.initialize();
         return executor;
     }

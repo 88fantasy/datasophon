@@ -23,6 +23,7 @@
 package com.datasophon.api.load;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -102,11 +103,24 @@ class GravitinoDdlLoadTest {
                 .noneMatch(parameter -> parameter.getString("name").startsWith("gravitino.lineage.http.")));
     }
 
+    @Test
+    void externalRunKeysIsOptionalAndDisabledByDefault() throws Exception {
+        JSONArray parameters = loadDdl().getJSONArray("parameters");
+        JSONObject externalRunKeys = findParameter(parameters, "gravitino.lineage.storage.externalRunKeys");
+
+        assertFalse(externalRunKeys.getBooleanValue("required"));
+        assertEquals("", externalRunKeys.getString("defaultValue"));
+    }
+
     private static String findParameterDefaultValue(JSONArray parameters, String name) {
+        return findParameter(parameters, name).getString("defaultValue");
+    }
+
+    private static JSONObject findParameter(JSONArray parameters, String name) {
         for (int i = 0; i < parameters.size(); i++) {
             JSONObject parameter = parameters.getJSONObject(i);
             if (name.equals(parameter.getString("name"))) {
-                return parameter.getString("defaultValue");
+                return parameter;
             }
         }
         throw new AssertionError("parameter not found: " + name);
