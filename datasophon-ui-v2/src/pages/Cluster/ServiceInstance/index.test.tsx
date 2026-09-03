@@ -42,6 +42,7 @@ const {
 
 vi.mock('@umijs/max', () => ({
   history: { replace: vi.fn() },
+  useAccess: () => ({ canAdmin: false }),
   useIntl: () => ({
     formatMessage: ({ id }: { id: string }) =>
       id === 'dsWorkflow.tab' ? '工作流' : id,

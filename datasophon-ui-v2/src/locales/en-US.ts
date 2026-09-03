@@ -4,6 +4,7 @@ import apisixMonitor from './en-US/apisixMonitor';
 import clusterDashboard from './en-US/clusterDashboard';
 import component from './en-US/component';
 import dolphinSchedulerMonitor from './en-US/dolphinSchedulerMonitor';
+import dorisActiveTask from './en-US/dorisActiveTask';
 import dorisMonitor from './en-US/dorisMonitor';
 import dsWorkflow from './en-US/dsWorkflow';
 import globalHeader from './en-US/globalHeader';
@@ -40,6 +41,7 @@ export default {
   ...dolphinSchedulerMonitor,
   ...dsWorkflow,
   ...dorisMonitor,
+  ...dorisActiveTask,
   ...nacosMonitor,
   ...gravitinoMonitor,
   ...nginxMonitor,
