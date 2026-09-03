@@ -93,6 +93,11 @@ public enum Status {
     NO_SERVICE_ROLE_SELECTED(10041, "No service role selected", "未选择需要安装的服务实例"),
     TWO_KYUUBISERVERS_NEED_TO_BE_DEPLOYED(10042, "two kyuubiServer deployments are required", "KyuubiServer需要两个节点"),
     THREE_ETCD_NEED_TO_BE_DEPLOYED(10043, "three etcd deployments are required", "Etcd需要三个节点"),
+    INSTANCE_MISMATCH(10200, "service instance does not belong to the cluster or is not a Doris service",
+            "服务实例不属于该集群或不是 Doris 服务"),
+    DORIS_CONNECT_FAILED(10201, "failed to connect to Doris FE", "连接 Doris FE 失败"),
+    DORIS_CAPABILITY_UNSUPPORTED(10202, "current Doris version does not support active task query",
+            "当前 Doris 版本不支持活动任务查询"),
     ;
     
     private final int code;
