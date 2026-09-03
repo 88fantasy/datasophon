@@ -56,12 +56,13 @@ public class DorisActiveTaskFacade {
 
     public DorisActiveTaskResponseVO query(Integer clusterId, Integer instanceId,
                                            DorisActiveTaskQueryDTO filter) {
+        long deadlineNanos = System.nanoTime() + DorisActiveTaskQueryService.REQUEST_TIMEOUT_MS * 1_000_000L;
         adminGuard.requireAdmin();
         instanceValidator.requireDorisInstance(clusterId, instanceId);
         try {
             DorisAdminReaderFactory.DorisAdminConnection connection = readerFactory.create(clusterId);
             return queryService.query(clusterId, connection,
-                    filter == null ? new DorisActiveTaskQueryDTO() : filter);
+                    filter == null ? new DorisActiveTaskQueryDTO() : filter, deadlineNanos);
         } catch (DorisActiveTaskQueryService.CapabilityUnsupportedException exception) {
             throw new ResponseStatusException(NOT_IMPLEMENTED,
                     Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());
@@ -71,11 +72,12 @@ public class DorisActiveTaskFacade {
     }
 
     public DorisActiveTaskVO queryDetail(Integer clusterId, Integer instanceId, String taskId) {
+        long deadlineNanos = System.nanoTime() + DorisActiveTaskQueryService.REQUEST_TIMEOUT_MS * 1_000_000L;
         adminGuard.requireAdmin();
         instanceValidator.requireDorisInstance(clusterId, instanceId);
         try {
             DorisAdminReaderFactory.DorisAdminConnection connection = readerFactory.create(clusterId);
-            return queryService.queryDetail(clusterId, connection, taskId);
+            return queryService.queryDetail(clusterId, connection, taskId, deadlineNanos);
         } catch (DorisActiveTaskQueryService.CapabilityUnsupportedException exception) {
             throw new ResponseStatusException(NOT_IMPLEMENTED,
                     Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());

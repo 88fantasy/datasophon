@@ -43,9 +43,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
@@ -86,36 +88,63 @@ public class DorisActiveTaskQueryService {
     public static final int LIST_SQL_LIMIT_BYTES = 1_024;
     public static final int DETAIL_SQL_LIMIT_BYTES = 256 * 1_024;
     public static final int RESPONSE_LIMIT = 2_000;
+    public static final int REQUEST_TIMEOUT_MS = 15_000;
 
     private static final String CLIENT_ADDRESS_FAILURE = "clientAddress";
     private static final String WORKLOAD_GROUP_FAILURE = "workloadGroup";
+    private static final int STATEMENT_TIMEOUT_MS = 10_000;
 
     private final ClusterHostService hostService;
     private final BiFunction<JdbcClient, String, List<Map<String, Object>>> rowQuery;
+    private final LongSupplier nanoTime;
 
     @Autowired
     public DorisActiveTaskQueryService(ClusterHostService hostService) {
-        this(hostService, DorisActiveTaskQueryService::queryRows);
+        this(hostService, DorisActiveTaskQueryService::queryRows, System::nanoTime);
     }
 
     DorisActiveTaskQueryService(ClusterHostService hostService,
                                 BiFunction<JdbcClient, String, List<Map<String, Object>>> rowQuery) {
+        this(hostService, rowQuery, System::nanoTime);
+    }
+
+    DorisActiveTaskQueryService(ClusterHostService hostService,
+                                BiFunction<JdbcClient, String, List<Map<String, Object>>> rowQuery,
+                                LongSupplier nanoTime) {
         this.hostService = hostService;
         this.rowQuery = rowQuery;
+        this.nanoTime = nanoTime;
     }
 
     /** Executes the four fixed statements and returns a response ready for the facade. */
     public DorisActiveTaskResponseVO query(Integer clusterId,
                                            DorisAdminReaderFactory.DorisAdminConnection connection,
                                            DorisActiveTaskQueryDTO filter) {
-        return query(clusterId, connection, filter, null);
+        return query(clusterId, connection, filter, null,
+                nanoTime.getAsLong() + REQUEST_TIMEOUT_MS * 1_000_000L);
     }
 
     /** Returns one task with the larger detail-level SQL bound. */
     public DorisActiveTaskVO queryDetail(Integer clusterId,
                                          DorisAdminReaderFactory.DorisAdminConnection connection,
                                          String taskId) {
-        return query(clusterId, connection, new DorisActiveTaskQueryDTO(), taskId).getTasks().stream()
+        return query(clusterId, connection, new DorisActiveTaskQueryDTO(), taskId,
+                nanoTime.getAsLong() + REQUEST_TIMEOUT_MS * 1_000_000L).getTasks().stream()
+                .filter(task -> taskId.equals(task.getTaskId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    DorisActiveTaskResponseVO query(Integer clusterId,
+                                    DorisAdminReaderFactory.DorisAdminConnection connection,
+                                    DorisActiveTaskQueryDTO filter, long deadlineNanos) {
+        return query(clusterId, connection, filter, null, deadlineNanos);
+    }
+
+    DorisActiveTaskVO queryDetail(Integer clusterId,
+                                  DorisAdminReaderFactory.DorisAdminConnection connection,
+                                  String taskId, long deadlineNanos) {
+        return query(clusterId, connection, new DorisActiveTaskQueryDTO(), taskId, deadlineNanos).getTasks().stream()
                 .filter(task -> taskId.equals(task.getTaskId()))
                 .findFirst()
                 .orElse(null);
@@ -124,14 +153,15 @@ public class DorisActiveTaskQueryService {
     private DorisActiveTaskResponseVO query(Integer clusterId,
                                             DorisAdminReaderFactory.DorisAdminConnection connection,
                                             DorisActiveTaskQueryDTO filter,
-                                            String detailTaskId) {
-        List<Map<String, Object>> metadata = requiredRows(connection.client(), ACTIVE_QUERIES_SQL);
-        List<Map<String, Object>> resources = requiredRows(connection.client(), BACKEND_ACTIVE_TASKS_SQL);
+                                            String detailTaskId, long deadlineNanos) {
+        List<Map<String, Object>> metadata = requiredRows(connection, ACTIVE_QUERIES_SQL, deadlineNanos);
+        List<Map<String, Object>> resources = requiredRows(connection, BACKEND_ACTIVE_TASKS_SQL, deadlineNanos);
         List<String> partialFailures = new ArrayList<>();
-        List<Map<String, Object>> processlist = optionalRows(connection.client(), PROCESSLIST_SQL,
-                CLIENT_ADDRESS_FAILURE, partialFailures);
-        List<Map<String, Object>> workloadGroups = optionalRows(connection.client(), WORKLOAD_GROUPS_SQL,
-                WORKLOAD_GROUP_FAILURE, partialFailures);
+        List<Map<String, Object>> processlist = optionalRows(connection, PROCESSLIST_SQL,
+                CLIENT_ADDRESS_FAILURE, partialFailures, deadlineNanos);
+        List<Map<String, Object>> workloadGroups = optionalRows(connection, WORKLOAD_GROUPS_SQL,
+                WORKLOAD_GROUP_FAILURE, partialFailures, deadlineNanos);
+        ensureWithinDeadline(deadlineNanos);
 
         boolean sourceTruncated = atSourceLimit(metadata) || atSourceLimit(resources)
                 || atSourceLimit(processlist) || atSourceLimit(workloadGroups);
@@ -196,9 +226,10 @@ public class DorisActiveTaskQueryService {
         return new TruncatedText(sql.substring(0, end), true);
     }
 
-    private List<Map<String, Object>> requiredRows(JdbcClient client, String sql) {
+    private List<Map<String, Object>> requiredRows(DorisAdminReaderFactory.DorisAdminConnection connection,
+                                                   String sql, long deadlineNanos) {
         try {
-            return rowQuery.apply(client, sql);
+            return rows(connection, sql, deadlineNanos);
         } catch (RuntimeException exception) {
             if (looksLikeMissingTable(exception)) {
                 throw new CapabilityUnsupportedException();
@@ -207,13 +238,39 @@ public class DorisActiveTaskQueryService {
         }
     }
 
-    private List<Map<String, Object>> optionalRows(JdbcClient client, String sql, String failure,
-                                                   List<String> partialFailures) {
+    private List<Map<String, Object>> optionalRows(DorisAdminReaderFactory.DorisAdminConnection connection,
+                                                   String sql, String failure, List<String> partialFailures,
+                                                   long deadlineNanos) {
         try {
-            return rowQuery.apply(client, sql);
+            return rows(connection, sql, deadlineNanos);
+        } catch (RequestTimeoutException exception) {
+            throw exception;
         } catch (RuntimeException exception) {
             partialFailures.add(failure);
             return List.of();
+        }
+    }
+
+    private List<Map<String, Object>> rows(DorisAdminReaderFactory.DorisAdminConnection connection,
+                                           String sql, long deadlineNanos) {
+        ensureWithinDeadline(deadlineNanos);
+        if (connection.dataSource() == null) {
+            return rowQuery.apply(connection.client(), sql);
+        }
+        long remainingNanos = deadlineNanos - nanoTime.getAsLong();
+        int timeoutSeconds = (int) Math.min(STATEMENT_TIMEOUT_MS / 1_000,
+                remainingNanos / 1_000_000_000L);
+        if (timeoutSeconds < 1) {
+            throw new RequestTimeoutException();
+        }
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(connection.dataSource());
+        jdbcTemplate.setQueryTimeout(timeoutSeconds);
+        return jdbcTemplate.queryForList(sql);
+    }
+
+    private void ensureWithinDeadline(long deadlineNanos) {
+        if (deadlineNanos - nanoTime.getAsLong() < 1_000_000_000L) {
+            throw new RequestTimeoutException();
         }
     }
 
@@ -492,6 +549,14 @@ public class DorisActiveTaskQueryService {
 
         public CapabilityUnsupportedException() {
             super(Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());
+        }
+    }
+
+    static final class RequestTimeoutException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        RequestTimeoutException() {
+            super("Doris active-task request timed out");
         }
     }
 }

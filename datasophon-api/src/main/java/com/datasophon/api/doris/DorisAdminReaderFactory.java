@@ -39,6 +39,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,7 +160,7 @@ public class DorisAdminReaderFactory {
             old.close();
         }
         return new DorisAdminConnection(JdbcClient.create(entry.dataSource()), endpoint.host(), endpoint.port(),
-                username, degraded, degradedReason);
+                username, degraded, degradedReason, entry.dataSource());
     }
 
     private Endpoint physicalEndpoint(Integer clusterId) {
@@ -246,7 +248,12 @@ public class DorisAdminReaderFactory {
     }
 
     public record DorisAdminConnection(JdbcClient client, String host, int port, String username,
-                                       boolean degraded, String degradedReason) {
+                                       boolean degraded, String degradedReason, DataSource dataSource) {
+        public DorisAdminConnection(JdbcClient client, String host, int port, String username,
+                                    boolean degraded, String degradedReason) {
+            this(client, host, port, username, degraded, degradedReason, null);
+        }
+
         public String hostPort() {
             return host + ":" + port;
         }

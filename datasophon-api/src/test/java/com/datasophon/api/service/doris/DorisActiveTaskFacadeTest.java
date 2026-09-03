@@ -25,7 +25,9 @@ package com.datasophon.api.service.doris;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -88,7 +90,7 @@ class DorisActiveTaskFacadeTest {
 
     @Test
     void mapsMissingCapabilityToNotImplemented() {
-        when(queryService.query(7, connection, new DorisActiveTaskQueryDTO()))
+        when(queryService.query(eq(7), eq(connection), eq(new DorisActiveTaskQueryDTO()), anyLong()))
                 .thenThrow(new DorisActiveTaskQueryService.CapabilityUnsupportedException());
 
         assertThatThrownBy(() -> facade.query(7, 8, null))
@@ -100,7 +102,7 @@ class DorisActiveTaskFacadeTest {
 
     @Test
     void mapsConnectionFailureToSafeBadGatewayResponse() {
-        when(queryService.query(7, connection, new DorisActiveTaskQueryDTO()))
+        when(queryService.query(eq(7), eq(connection), eq(new DorisActiveTaskQueryDTO()), anyLong()))
                 .thenThrow(new RuntimeException("jdbc:mysql://user:password@fe:9030/secret"));
 
         Throwable thrown = catchThrowable(() -> facade.query(7, 8, null));
@@ -119,7 +121,7 @@ class DorisActiveTaskFacadeTest {
     void delegatesDetailQueryAfterApplyingTheSameGuards() {
         DorisActiveTaskVO detail = new DorisActiveTaskVO();
         detail.setTaskId("q-1");
-        when(queryService.queryDetail(7, connection, "q-1")).thenReturn(detail);
+        when(queryService.queryDetail(eq(7), eq(connection), eq("q-1"), anyLong())).thenReturn(detail);
 
         assertThat(facade.queryDetail(7, 8, "q-1")).isSameAs(detail);
         verify(adminGuard).requireAdmin();

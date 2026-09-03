@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
@@ -199,6 +200,22 @@ class DorisActiveTaskQueryServiceTest {
         }
 
         assertThat(service(rows).query(7, connection(false), null).isSourceTruncated()).isTrue();
+    }
+
+    @Test
+    void enforcesOverallRequestDeadlineBetweenSourceQueries() {
+        Map<String, List<Map<String, Object>>> rows = baseRows();
+        AtomicInteger calls = new AtomicInteger();
+        long[] now = {0L};
+        DorisActiveTaskQueryService service = new DorisActiveTaskQueryService(null, (client, sql) -> {
+            calls.incrementAndGet();
+            now[0] = DorisActiveTaskQueryService.REQUEST_TIMEOUT_MS * 1_000_000L;
+            return rows.getOrDefault(sql, List.of());
+        }, () -> now[0]);
+
+        assertThatThrownBy(() -> service.query(7, connection(false), null))
+                .isInstanceOf(DorisActiveTaskQueryService.RequestTimeoutException.class);
+        assertThat(calls).hasValue(1);
     }
 
     @Test
