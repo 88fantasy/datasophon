@@ -22,6 +22,8 @@
 
 package com.datasophon.api.security;
 
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
@@ -31,8 +33,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.servlet.http.HttpServletRequest;
-
-import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 /** 仅允许系统管理员访问 Doris 活动任务查询。 */
 @Component

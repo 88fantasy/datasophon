@@ -22,14 +22,14 @@
 
 package com.datasophon.api.service.doris;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 /** 校验活动任务查询的服务实例确实属于请求集群且为 Doris。 */
 @Component

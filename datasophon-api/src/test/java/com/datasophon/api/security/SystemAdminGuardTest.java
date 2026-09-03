@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.common.Constants;
@@ -36,8 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.servlet.http.HttpServletRequest;
-
-import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 class SystemAdminGuardTest {
 

@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.service.ClusterServiceInstanceService;
@@ -34,8 +35,6 @@ import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
-
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 class DorisServiceInstanceValidatorTest {
 
@@ -76,7 +75,7 @@ class DorisServiceInstanceValidatorTest {
     }
 
     private static void assertBadRequest(
-            DorisServiceInstanceValidator validator, Integer clusterId, Integer instanceId) {
+                                         DorisServiceInstanceValidator validator, Integer clusterId, Integer instanceId) {
         assertThatThrownBy(() -> validator.requireDorisInstance(clusterId, instanceId))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
                     assertThat(exception.getStatusCode()).isEqualTo(BAD_REQUEST);

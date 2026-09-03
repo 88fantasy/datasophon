@@ -119,7 +119,7 @@ public class DorisAdminReaderFactory {
     }
 
     private DorisAdminConnection createReaderConnection(Integer clusterId, String host, int port,
-                                                         boolean degraded, String degradedReason) {
+                                                        boolean degraded, String degradedReason) {
         OtelCredentials credentials = credentialService.getOrCreate(clusterId);
         return createConnection(clusterId, new Endpoint(host, port), READER_USER,
                 credentials.readerPassword(), degraded, degradedReason);
