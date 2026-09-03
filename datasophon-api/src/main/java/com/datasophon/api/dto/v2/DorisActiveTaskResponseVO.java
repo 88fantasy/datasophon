@@ -39,6 +39,10 @@ public class DorisActiveTaskResponseVO {
     private long total;
     private int returned;
     private String connectedHostPort;
+    /** 服务端版本串（{@code @@version_comment} 原文），供页面自证连的是哪个版本。 */
+    private String serverVersion = "";
+    /** 当前 Doris 大版本确定拿不到的字段，前端据此显示「该版本不支持」而不是空值。 */
+    private List<String> unsupportedFields = List.of();
 
     public static DorisActiveTaskResponseVO empty() {
         DorisActiveTaskResponseVO response = new DorisActiveTaskResponseVO();

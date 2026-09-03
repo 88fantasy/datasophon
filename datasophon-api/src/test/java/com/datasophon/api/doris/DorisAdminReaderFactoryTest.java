@@ -49,6 +49,8 @@ import com.zaxxer.hikari.HikariDataSource;
 
 class DorisAdminReaderFactoryTest {
 
+    private static final String V4_VERSION = "Doris version doris-4.1.3-rc02-7126cf65d96";
+
     @Test
     void physicalClusterUsesRootAndExposesActualEndpoint() {
         ClusterServiceRoleInstanceService roles = mock(ClusterServiceRoleInstanceService.class);
@@ -60,7 +62,7 @@ class DorisAdminReaderFactoryTest {
         when(variables.getVariableByVariableName(7, "DORIS", "root_password"))
                 .thenReturn(variable("root_password", "root-secret"));
 
-        DorisAdminReaderFactory factory = factory(roles, variables, noExternal(), dataSource -> true);
+        DorisAdminReaderFactory factory = factory(roles, variables, noExternal(), dataSource -> V4_VERSION);
         DorisAdminReaderFactory.DorisAdminConnection connection = factory.create(7);
 
         assertThat(connection.username()).isEqualTo("root");
@@ -81,7 +83,7 @@ class DorisAdminReaderFactoryTest {
         OtelCredentialService credentials = mock(OtelCredentialService.class);
         when(credentials.getOrCreate(7)).thenReturn(new OtelCredentials("collector", "reader-secret"));
         DorisAdminReaderFactory factory = new DorisAdminReaderFactory(
-                roles, variables, credentials, provider, dataSource -> true);
+                roles, variables, credentials, provider, dataSource -> V4_VERSION);
 
         DorisAdminReaderFactory.DorisAdminConnection connection = factory.create(7);
 
@@ -102,7 +104,7 @@ class DorisAdminReaderFactoryTest {
         OtelCredentialService credentials = mock(OtelCredentialService.class);
         when(credentials.getOrCreate(7)).thenReturn(new OtelCredentials("collector", "reader-secret"));
         DorisAdminReaderFactory factory = new DorisAdminReaderFactory(
-                roles, variables, credentials, noExternal(), dataSource -> true);
+                roles, variables, credentials, noExternal(), dataSource -> V4_VERSION);
 
         DorisAdminReaderFactory.DorisAdminConnection connection = factory.create(7);
 
@@ -123,11 +125,11 @@ class DorisAdminReaderFactoryTest {
                 .thenReturn(variable("root_password", "bad-root"), variable("root_password", "good-root"));
         OtelCredentialService credentials = mock(OtelCredentialService.class);
         when(credentials.getOrCreate(7)).thenReturn(new OtelCredentials("collector", "reader-secret"));
-        DorisAdminReaderFactory.ConnectionVerifier verifier = dataSource -> {
+        DorisAdminReaderFactory.VersionProbe verifier = dataSource -> {
             if ("root".equals(dataSource.getUsername()) && "bad-root".equals(dataSource.getPassword())) {
-                return false;
+                return null;
             }
-            return true;
+            return V4_VERSION;
         };
         DorisAdminReaderFactory factory = new DorisAdminReaderFactory(
                 roles, variables, credentials, noExternal(), verifier);
@@ -152,7 +154,7 @@ class DorisAdminReaderFactoryTest {
                 .thenReturn(List.of(role("ddh-01", ServiceRoleState.RUNNING)));
         OtelCredentialService credentials = mock(OtelCredentialService.class);
         when(credentials.getOrCreate(7)).thenReturn(new OtelCredentials("collector", "reader-secret"));
-        DorisAdminReaderFactory factory = factory(roles, variables, noExternal(), dataSource -> false);
+        DorisAdminReaderFactory factory = factory(roles, variables, noExternal(), dataSource -> null);
 
         assertThatThrownBy(() -> factory.create(7))
                 .isInstanceOf(DorisAdminReaderFactory.DorisConnectionException.class)
@@ -162,7 +164,7 @@ class DorisAdminReaderFactoryTest {
     private static DorisAdminReaderFactory factory(ClusterServiceRoleInstanceService roles,
                                                    ClusterVariableService variables,
                                                    ExternalOtelDatasourceProvider provider,
-                                                   DorisAdminReaderFactory.ConnectionVerifier verifier) {
+                                                   DorisAdminReaderFactory.VersionProbe verifier) {
         OtelCredentialService credentials = mock(OtelCredentialService.class);
         when(credentials.getOrCreate(7)).thenReturn(new OtelCredentials("collector", "reader-secret"));
         return new DorisAdminReaderFactory(roles, variables, credentials, provider, verifier);

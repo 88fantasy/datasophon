@@ -32,7 +32,9 @@ import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +72,7 @@ public class DorisAdminReaderFactory {
     private final ClusterVariableService variableService;
     private final OtelCredentialService credentialService;
     private final ExternalOtelDatasourceProvider externalDatasourceProvider;
-    private final ConnectionVerifier connectionVerifier;
+    private final VersionProbe versionProbe;
     private final Map<Integer, PoolEntry> pools = new ConcurrentHashMap<>();
 
     @Autowired
@@ -79,19 +81,19 @@ public class DorisAdminReaderFactory {
                                    OtelCredentialService credentialService,
                                    ExternalOtelDatasourceProvider externalDatasourceProvider) {
         this(roleService, variableService, credentialService, externalDatasourceProvider,
-                DorisAdminReaderFactory::verifyConnection);
+                DorisAdminReaderFactory::probeVersion);
     }
 
     DorisAdminReaderFactory(ClusterServiceRoleInstanceService roleService,
                             ClusterVariableService variableService,
                             OtelCredentialService credentialService,
                             ExternalOtelDatasourceProvider externalDatasourceProvider,
-                            ConnectionVerifier connectionVerifier) {
+                            VersionProbe versionProbe) {
         this.roleService = roleService;
         this.variableService = variableService;
         this.credentialService = credentialService;
         this.externalDatasourceProvider = externalDatasourceProvider;
-        this.connectionVerifier = connectionVerifier;
+        this.versionProbe = versionProbe;
     }
 
     /**
@@ -138,8 +140,10 @@ public class DorisAdminReaderFactory {
                 return current;
             }
             HikariDataSource dataSource = newDataSource(key);
+            String serverVersion;
             try {
-                if (!connectionVerifier.verify(dataSource)) {
+                serverVersion = versionProbe.probe(dataSource);
+                if (serverVersion == null) {
                     dataSource.close();
                     throw new DorisConnectionException();
                 }
@@ -150,17 +154,20 @@ public class DorisAdminReaderFactory {
                 }
                 throw new DorisConnectionException();
             }
+            DorisVersionProfile profile = DorisVersionProfile.of(serverVersion);
+            log.info("Doris active-task reader for cluster {} connected to {} as {}, version={}, profile={}",
+                    clusterId, endpoint.hostPort(), username, serverVersion, profile);
             if (current != null) {
                 obsolete.set(current.dataSource());
             }
-            return new PoolEntry(key, dataSource);
+            return new PoolEntry(key, dataSource, profile, serverVersion);
         });
         HikariDataSource old = obsolete.get();
         if (old != null) {
             old.close();
         }
         return new DorisAdminConnection(JdbcClient.create(entry.dataSource()), endpoint.host(), endpoint.port(),
-                username, degraded, degradedReason, entry.dataSource());
+                username, degraded, degradedReason, entry.dataSource(), entry.profile(), entry.serverVersion());
     }
 
     private Endpoint physicalEndpoint(Integer clusterId) {
@@ -214,9 +221,20 @@ public class DorisAdminReaderFactory {
         return dataSource;
     }
 
-    private static boolean verifyConnection(HikariDataSource dataSource) throws SQLException {
-        try (Connection ignored = dataSource.getConnection()) {
-            return true;
+    /**
+     * 一次握手同时完成「连得上吗」与「什么版本」。
+     *
+     * <p>必须用 {@code @@version_comment}：{@code version()} 为 MySQL 协议兼容恒返回 5.7.99。
+     * 连得上但读不出版本时返回空串，由 {@link DorisVersionProfile#of(String)} 落到最新已知档位，
+     * 不因为一个探测语句失败就把整个功能判死。
+     */
+    private static String probeVersion(HikariDataSource dataSource) throws SQLException {
+        try (
+                Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery("SELECT @@version_comment")) {
+            String version = resultSet.next() ? resultSet.getString(1) : null;
+            return version == null ? "" : version;
         }
     }
 
@@ -242,16 +260,19 @@ public class DorisAdminReaderFactory {
         return entry == null ? null : entry.dataSource();
     }
 
+    /** 连接探测：返回服务端版本串；返回 {@code null} 表示连不上。 */
     @FunctionalInterface
-    interface ConnectionVerifier {
-        boolean verify(HikariDataSource dataSource) throws SQLException;
+    interface VersionProbe {
+        String probe(HikariDataSource dataSource) throws SQLException;
     }
 
     public record DorisAdminConnection(JdbcClient client, String host, int port, String username,
-                                       boolean degraded, String degradedReason, DataSource dataSource) {
+                                       boolean degraded, String degradedReason, DataSource dataSource,
+                                       DorisVersionProfile profile, String serverVersion) {
         public DorisAdminConnection(JdbcClient client, String host, int port, String username,
                                     boolean degraded, String degradedReason) {
-            this(client, host, port, username, degraded, degradedReason, null);
+            this(client, host, port, username, degraded, degradedReason, null,
+                    DorisVersionProfile.V4, "");
         }
 
         public String hostPort() {
@@ -276,6 +297,7 @@ public class DorisAdminReaderFactory {
     private record PoolKey(String host, int port, String username, String password) {
     }
 
-    private record PoolEntry(PoolKey key, HikariDataSource dataSource) {
+    private record PoolEntry(PoolKey key, HikariDataSource dataSource,
+                             DorisVersionProfile profile, String serverVersion) {
     }
 }

@@ -53,4 +53,8 @@ export interface DorisActiveTaskResponse {
   total: number;
   returned: number;
   connectedHostPort: string;
+  /** 服务端版本串（@@version_comment 原文）。 */
+  serverVersion?: string | null;
+  /** 当前 Doris 大版本确定拿不到的字段，与后端 DorisVersionProfile.unsupportedFields 一一对应。 */
+  unsupportedFields?: string[] | null;
 }

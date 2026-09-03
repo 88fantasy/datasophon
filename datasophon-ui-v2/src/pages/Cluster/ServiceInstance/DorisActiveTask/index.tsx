@@ -108,6 +108,14 @@ const DorisActiveTask: React.FC<DorisActiveTaskProps> = ({
           <Typography.Text data-testid="doris-active-task-connected-host">
             {response?.connectedHostPort || '–'}
           </Typography.Text>
+          {response?.serverVersion ? (
+            <Typography.Text
+              type="secondary"
+              data-testid="doris-active-task-server-version"
+            >
+              {response.serverVersion}
+            </Typography.Text>
+          ) : null}
           <Tag color="gold" data-experimental="queue-features">
             排队相关字段与分组排序：实验性
           </Tag>

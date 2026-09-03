@@ -12,6 +12,12 @@ const FAILURE_LABELS: Record<string, string> = {
   workloadGroup: 'Workload Group',
 };
 
+// 与后端 DorisVersionProfile.unsupportedFields 的取值一一对应。
+const UNSUPPORTED_LABELS: Record<string, string> = {
+  spillBytes: '溢写字节',
+  loadWorkloadGroup: 'Load 任务的 Workload Group',
+};
+
 const StatusBanners: React.FC<StatusBannersProps> = ({
   response,
   error,
@@ -42,6 +48,7 @@ const StatusBanners: React.FC<StatusBannersProps> = ({
   }
 
   const partialFailures = response.partialFailures ?? [];
+  const unsupportedFields = response.unsupportedFields ?? [];
   return (
     <Space
       orientation="vertical"
@@ -64,6 +71,16 @@ const StatusBanners: React.FC<StatusBannersProps> = ({
           data-status="partial"
           title={`部分数据不可用：${partialFailures
             .map((failure) => FAILURE_LABELS[failure] ?? '部分视图')
+            .join('、')}`}
+        />
+      ) : null}
+      {unsupportedFields.length > 0 ? (
+        <Alert
+          showIcon
+          type="info"
+          data-status="version-unsupported"
+          title={`当前 Doris 版本不支持以下字段，列内显示为空：${unsupportedFields
+            .map((field) => UNSUPPORTED_LABELS[field] ?? field)
             .join('、')}`}
         />
       ) : null}

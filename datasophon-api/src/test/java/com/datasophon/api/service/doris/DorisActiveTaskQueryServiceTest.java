@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.datasophon.api.doris.DorisAdminReaderFactory;
+import com.datasophon.api.doris.DorisVersionProfile;
 import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
 import com.datasophon.api.dto.v2.DorisActiveTaskResponseVO;
 import com.datasophon.api.dto.v2.DorisActiveTaskVO;
@@ -47,8 +48,8 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void fullOuterJoinKeepsQueryLoadAndResourceOnlySelect() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).add(row("QUERY_ID", "q-meta", "USER", "alice"));
-        rows.get(DorisActiveTaskQueryService.BACKEND_ACTIVE_TASKS_SQL).addAll(List.of(
+        rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(row("QUERY_ID", "q-meta", "USER", "alice"));
+        rows.get(DorisVersionProfile.V4.backendActiveTasksSql()).addAll(List.of(
                 row("QUERY_ID", "q-meta", "QUERY_TYPE", "SELECT"),
                 row("QUERY_ID", "load-1", "QUERY_TYPE", "LOAD"),
                 row("QUERY_ID", "select-only", "QUERY_TYPE", "SELECT")));
@@ -66,7 +67,7 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void sumsCurrentMemoryButUsesMaximumPeakMemory() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.BACKEND_ACTIVE_TASKS_SQL).addAll(List.of(
+        rows.get(DorisVersionProfile.V4.backendActiveTasksSql()).addAll(List.of(
                 row("QUERY_ID", "q1", "QUERY_TYPE", "SELECT", "CURRENT_USED_MEMORY_BYTES", 10L,
                         "BE_PEAK_MEMORY_BYTES", 100L),
                 row("QUERY_ID", "q1", "QUERY_TYPE", "SELECT", "CURRENT_USED_MEMORY_BYTES", 20L,
@@ -81,7 +82,7 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void loadScanBytesAndStartTimeAreNotApplicable() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.BACKEND_ACTIVE_TASKS_SQL).add(
+        rows.get(DorisVersionProfile.V4.backendActiveTasksSql()).add(
                 row("QUERY_ID", "load-1", "QUERY_TYPE", "LOAD", "TASK_TIME_MS", 4_000L,
                         "SCAN_BYTES", 0L));
 
@@ -95,7 +96,7 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void blankQueryStatusAndQueueTimesBecomeMissing() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).add(row(
+        rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(row(
                 "QUERY_ID", "q1", "QUERY_STATUS", "", "QUEUE_START_TIME", "", "QUEUE_END_TIME", " "));
 
         DorisActiveTaskVO task = service(rows).query(7, connection(false), null).getTasks().get(0);
@@ -108,7 +109,7 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void queuedTypeFilterMatchesQueuedQueriesOnly() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).addAll(List.of(
+        rows.get(DorisVersionProfile.V4.activeQueriesSql()).addAll(List.of(
                 row("QUERY_ID", "queued", "QUERY_STATUS", "Queued"),
                 row("QUERY_ID", "running", "QUERY_STATUS", "RUNNING")));
         DorisActiveTaskQueryDTO filter = new DorisActiveTaskQueryDTO();
@@ -123,8 +124,8 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void processlistOnlyUsesQueryRows() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).add(row("QUERY_ID", "q1"));
-        rows.get(DorisActiveTaskQueryService.PROCESSLIST_SQL).addAll(List.of(
+        rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(row("QUERY_ID", "q1"));
+        rows.get(DorisVersionProfile.V4.processlistSql()).addAll(List.of(
                 row("QueryId", "q1", "Command", "Sleep", "Host", "stale-host"),
                 row("QueryId", "q1", "Command", "Query", "Host", "real-host")));
 
@@ -137,7 +138,7 @@ class DorisActiveTaskQueryServiceTest {
     void truncatesUtf8SqlAtListAndDetailBoundaries() {
         String sql = "中".repeat(600);
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).add(row("QUERY_ID", "q1", "SQL", sql));
+        rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(row("QUERY_ID", "q1", "SQL", sql));
 
         DorisActiveTaskVO task = service(rows).query(7, connection(false), null).getTasks().get(0);
         DorisActiveTaskQueryService.TruncatedText detail = DorisActiveTaskQueryService.truncateSql(
@@ -160,7 +161,7 @@ class DorisActiveTaskQueryServiceTest {
     void filtersBeforeTheTwoThousandRowLimit() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
         for (int index = 0; index < DorisActiveTaskQueryService.RESPONSE_LIMIT + 1; index++) {
-            rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).add(
+            rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(
                     row("QUERY_ID", "q-" + index, "USER", index == 2_000 ? "target" : "other"));
         }
         DorisActiveTaskQueryDTO filter = new DorisActiveTaskQueryDTO();
@@ -177,7 +178,7 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void sortsByMemoryThenElapsedThenId() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.BACKEND_ACTIVE_TASKS_SQL).addAll(List.of(
+        rows.get(DorisVersionProfile.V4.backendActiveTasksSql()).addAll(List.of(
                 row("QUERY_ID", "b", "QUERY_TYPE", "LOAD", "CURRENT_USED_MEMORY_BYTES", 10L,
                         "TASK_TIME_MS", 2L),
                 row("QUERY_ID", "a", "QUERY_TYPE", "LOAD", "CURRENT_USED_MEMORY_BYTES", 10L,
@@ -195,7 +196,7 @@ class DorisActiveTaskQueryServiceTest {
     void marksAnySourceAtExactlyTwentyThousandRows() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
         for (int index = 0; index < DorisActiveTaskQueryService.SOURCE_LIMIT; index++) {
-            rows.get(DorisActiveTaskQueryService.BACKEND_ACTIVE_TASKS_SQL).add(
+            rows.get(DorisVersionProfile.V4.backendActiveTasksSql()).add(
                     row("QUERY_ID", "load-" + index, "QUERY_TYPE", "LOAD"));
         }
 
@@ -221,9 +222,9 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void reportsOptionalSourceFailureWithoutDroppingMainRows() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).add(row("QUERY_ID", "q1"));
+        rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(row("QUERY_ID", "q1"));
         BiFunction<JdbcClient, String, List<Map<String, Object>>> source = (client, sql) -> {
-            if (DorisActiveTaskQueryService.PROCESSLIST_SQL.equals(sql)) {
+            if (DorisVersionProfile.V4.processlistSql().equals(sql)) {
                 throw new IllegalStateException("processlist unavailable");
             }
             return rows.get(sql);
@@ -247,6 +248,63 @@ class DorisActiveTaskQueryServiceTest {
                 .isInstanceOf(DorisActiveTaskQueryService.CapabilityUnsupportedException.class);
     }
 
+    @Test
+    void shortensKubernetesPodFqdnToPodAndNamespace() {
+        // 实测 3.0.8 Cloud Mode 报的就是这个 96 字符的 Pod FQDN。
+        String fqdn = "doris-disaggregated-cluster-fe-0"
+                + ".doris-disaggregated-cluster-fe-internal.doris.svc.cluster.local";
+        Map<String, List<Map<String, Object>>> rows = baseRows(DorisVersionProfile.V3);
+        rows.get(DorisVersionProfile.V3.activeQueriesSql()).addAll(List.of(
+                row("QUERY_ID", "on-k8s", "FRONTEND_INSTANCE", fqdn),
+                row("QUERY_ID", "on-metal", "FRONTEND_INSTANCE", "192.168.10.131")));
+
+        List<DorisActiveTaskVO> tasks = service(rows)
+                .query(7, connection(DorisVersionProfile.V3), null).getTasks();
+
+        assertThat(tasks).extracting(DorisActiveTaskVO::getFeHost)
+                .containsExactlyInAnyOrder("doris-disaggregated-cluster-fe-0.doris", "192.168.10.131");
+    }
+
+    @Test
+    void rejectsTwoPointXBeforeIssuingAnyStatement() {
+        AtomicInteger calls = new AtomicInteger();
+        BiFunction<JdbcClient, String, List<Map<String, Object>>> source = (client, sql) -> {
+            calls.incrementAndGet();
+            return List.of();
+        };
+
+        assertThatThrownBy(() -> new DorisActiveTaskQueryService(null, source)
+                .query(7, connection(DorisVersionProfile.V2), null))
+                .isInstanceOf(DorisActiveTaskQueryService.CapabilityUnsupportedException.class);
+        assertThat(calls).hasValue(0);
+    }
+
+    @Test
+    void threePointXTakesUserFromProcesslistBecauseActiveQueriesHasNoUserColumn() {
+        Map<String, List<Map<String, Object>>> rows = baseRows(DorisVersionProfile.V3);
+        rows.get(DorisVersionProfile.V3.activeQueriesSql()).add(row("QUERY_ID", "q1"));
+        rows.get(DorisVersionProfile.V3.processlistSql())
+                .add(row("QueryId", "q1", "Command", "Query", "Host", "10.0.0.7:5555", "User", "alice"));
+
+        DorisActiveTaskVO task = service(rows).query(7, connection(DorisVersionProfile.V3), null)
+                .getTasks().get(0);
+
+        assertThat(task.getUser()).isEqualTo("alice");
+        assertThat(task.getClientAddress()).isEqualTo("10.0.0.7:5555");
+    }
+
+    @Test
+    void reportsVersionAndTheFieldsThatVersionCannotProvide() {
+        DorisActiveTaskResponseVO onThree = service(baseRows(DorisVersionProfile.V3))
+                .query(7, connection(DorisVersionProfile.V3), null);
+        DorisActiveTaskResponseVO onFour = service(baseRows(DorisVersionProfile.V4))
+                .query(7, connection(DorisVersionProfile.V4), null);
+
+        assertThat(onThree.getUnsupportedFields()).containsExactlyInAnyOrder("spillBytes", "loadWorkloadGroup");
+        assertThat(onThree.getServerVersion()).contains("doris-3.");
+        assertThat(onFour.getUnsupportedFields()).isEmpty();
+    }
+
     private static DorisActiveTaskQueryService service(Map<String, List<Map<String, Object>>> rows) {
         return new DorisActiveTaskQueryService(null, (client, sql) -> rows.getOrDefault(sql, List.of()));
     }
@@ -256,11 +314,21 @@ class DorisActiveTaskQueryServiceTest {
                 mock(JdbcClient.class), "ddh-01", 9030, "root", degraded, degraded ? "fallback" : null);
     }
 
+    private static DorisAdminReaderFactory.DorisAdminConnection connection(DorisVersionProfile profile) {
+        return new DorisAdminReaderFactory.DorisAdminConnection(
+                mock(JdbcClient.class), "doris-fe", 9030, "otel_reader", false, null, null,
+                profile, "Doris version doris-" + profile.name().charAt(1) + ".0.8");
+    }
+
     private static Map<String, List<Map<String, Object>>> baseRows() {
+        return baseRows(DorisVersionProfile.V4);
+    }
+
+    private static Map<String, List<Map<String, Object>>> baseRows(DorisVersionProfile profile) {
         Map<String, List<Map<String, Object>>> rows = new HashMap<>();
-        rows.put(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL, new ArrayList<>());
-        rows.put(DorisActiveTaskQueryService.BACKEND_ACTIVE_TASKS_SQL, new ArrayList<>());
-        rows.put(DorisActiveTaskQueryService.PROCESSLIST_SQL, new ArrayList<>());
+        rows.put(profile.activeQueriesSql(), new ArrayList<>());
+        rows.put(profile.backendActiveTasksSql(), new ArrayList<>());
+        rows.put(profile.processlistSql(), new ArrayList<>());
         rows.put(DorisActiveTaskQueryService.WORKLOAD_GROUPS_SQL, new ArrayList<>());
         return rows;
     }

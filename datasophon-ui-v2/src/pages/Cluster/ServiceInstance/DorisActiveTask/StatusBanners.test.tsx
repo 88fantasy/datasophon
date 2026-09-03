@@ -41,6 +41,20 @@ describe('StatusBanners', () => {
     ).toBeInTheDocument();
   });
 
+  it('names the fields the connected Doris version cannot provide', () => {
+    render(
+      <StatusBanners
+        response={response({
+          unsupportedFields: ['spillBytes', 'loadWorkloadGroup'],
+        })}
+      />,
+    );
+
+    const banner = screen.getByText(/当前 Doris 版本不支持以下字段/);
+    expect(banner).toHaveTextContent('溢写字节');
+    expect(banner).toHaveTextContent('Load 任务的 Workload Group');
+  });
+
   it('keeps empty and overall failure as different visual states', () => {
     const { rerender } = render(<StatusBanners response={response()} />);
     expect(screen.getByTestId('doris-active-task-status')).toHaveAttribute(

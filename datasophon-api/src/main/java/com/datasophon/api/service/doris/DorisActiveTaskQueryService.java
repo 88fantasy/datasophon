@@ -23,6 +23,7 @@
 package com.datasophon.api.service.doris;
 
 import com.datasophon.api.doris.DorisAdminReaderFactory;
+import com.datasophon.api.doris.DorisVersionProfile;
 import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
 import com.datasophon.api.dto.v2.DorisActiveTaskResponseVO;
 import com.datasophon.api.dto.v2.DorisActiveTaskVO;
@@ -55,36 +56,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class DorisActiveTaskQueryService {
 
-    public static final String ACTIVE_QUERIES_SQL = """
-            SELECT QUERY_ID, QUERY_START_TIME, QUERY_TIME_MS, WORKLOAD_GROUP_ID,
-                   FRONTEND_INSTANCE, QUEUE_START_TIME, QUEUE_END_TIME, QUERY_STATUS,
-                   `USER`, `SQL`
-            FROM information_schema.active_queries
-            LIMIT 20000;
-            """;
-
-    public static final String BACKEND_ACTIVE_TASKS_SQL = """
-            SELECT QUERY_ID, BE_ID, FE_HOST, WORKLOAD_GROUP_ID, QUERY_TYPE,
-                   TASK_TIME_MS, TASK_CPU_TIME_MS, SCAN_ROWS, SCAN_BYTES,
-                   BE_PEAK_MEMORY_BYTES, CURRENT_USED_MEMORY_BYTES,
-                   SHUFFLE_SEND_BYTES, SHUFFLE_SEND_ROWS,
-                   SPILL_WRITE_BYTES_TO_LOCAL_STORAGE, SPILL_READ_BYTES_FROM_LOCAL_STORAGE
-            FROM information_schema.backend_active_tasks
-            LIMIT 20000;
-            """;
-
-    public static final String PROCESSLIST_SQL = """
-            SELECT QueryId, Host
-            FROM information_schema.processlist
-            WHERE Command = 'Query'
-            LIMIT 20000;
-            """;
-
+    /** 三张主表的 SQL 按 Doris 大版本取自 {@link DorisVersionProfile}；本表两版列名一致，无需区分。 */
     public static final String WORKLOAD_GROUPS_SQL = """
             SELECT Id, Name FROM information_schema.workload_groups;
             """;
 
-    public static final int SOURCE_LIMIT = 20_000;
+    public static final int SOURCE_LIMIT = DorisVersionProfile.SOURCE_LIMIT;
     public static final int LIST_SQL_LIMIT_BYTES = 1_024;
     public static final int DETAIL_SQL_LIMIT_BYTES = 256 * 1_024;
     public static final int RESPONSE_LIMIT = 2_000;
@@ -154,10 +131,16 @@ public class DorisActiveTaskQueryService {
                                             DorisAdminReaderFactory.DorisAdminConnection connection,
                                             DorisActiveTaskQueryDTO filter,
                                             String detailTaskId, long deadlineNanos) {
-        List<Map<String, Object>> metadata = requiredRows(connection, ACTIVE_QUERIES_SQL, deadlineNanos);
-        List<Map<String, Object>> resources = requiredRows(connection, BACKEND_ACTIVE_TASKS_SQL, deadlineNanos);
+        DorisVersionProfile profile = connection.profile();
+        if (!profile.supported()) {
+            throw new CapabilityUnsupportedException();
+        }
+        List<Map<String, Object>> metadata =
+                requiredRows(connection, profile.activeQueriesSql(), deadlineNanos);
+        List<Map<String, Object>> resources =
+                requiredRows(connection, profile.backendActiveTasksSql(), deadlineNanos);
         List<String> partialFailures = new ArrayList<>();
-        List<Map<String, Object>> processlist = optionalRows(connection, PROCESSLIST_SQL,
+        List<Map<String, Object>> processlist = optionalRows(connection, profile.processlistSql(),
                 CLIENT_ADDRESS_FAILURE, partialFailures, deadlineNanos);
         List<Map<String, Object>> workloadGroups = optionalRows(connection, WORKLOAD_GROUPS_SQL,
                 WORKLOAD_GROUP_FAILURE, partialFailures, deadlineNanos);
@@ -167,7 +150,8 @@ public class DorisActiveTaskQueryService {
                 || atSourceLimit(processlist) || atSourceLimit(workloadGroups);
         Map<String, Map<String, Object>> queryById = indexById(metadata);
         Map<String, List<Map<String, Object>>> resourcesById = groupById(resources);
-        Map<String, String> clientsByQueryId = clientsByQueryId(processlist);
+        Map<String, String> clientsByQueryId = byQueryId(processlist, "HOST");
+        Map<String, String> usersByQueryId = byQueryId(processlist, "USER");
         Map<String, String> workloadNames = workloadNames(workloadGroups);
         Map<String, String> hostNames = hostNames(clusterId);
 
@@ -175,7 +159,7 @@ public class DorisActiveTaskQueryService {
         ids.addAll(resourcesById.keySet());
         List<TaskRecord> allTasks = ids.stream()
                 .map(id -> buildTask(id, queryById.get(id), resourcesById.getOrDefault(id, List.of()),
-                        clientsByQueryId, workloadNames, hostNames))
+                        clientsByQueryId, usersByQueryId, workloadNames, hostNames))
                 .toList();
         List<TaskRecord> filtered = allTasks.stream()
                 .filter(task -> detailTaskId == null ? matches(task, filter)
@@ -197,6 +181,8 @@ public class DorisActiveTaskQueryService {
         response.setTotal(filtered.size());
         response.setReturned(returnedTasks.size());
         response.setConnectedHostPort(connection.hostPort());
+        response.setServerVersion(connection.serverVersion());
+        response.setUnsupportedFields(profile.unsupportedFields());
         return response;
     }
 
@@ -275,8 +261,8 @@ public class DorisActiveTaskQueryService {
     }
 
     private TaskRecord buildTask(String id, Map<String, Object> metadata, List<Map<String, Object>> resourceRows,
-                                 Map<String, String> clientsByQueryId, Map<String, String> workloadNames,
-                                 Map<String, String> hostNames) {
+                                 Map<String, String> clientsByQueryId, Map<String, String> usersByQueryId,
+                                 Map<String, String> workloadNames, Map<String, String> hostNames) {
         Map<String, Object> firstResource = resourceRows.isEmpty() ? Map.of() : resourceRows.get(0);
         String queryType = text(firstResource, "QUERY_TYPE");
         boolean query = metadata != null || "SELECT".equalsIgnoreCase(queryType)
@@ -292,7 +278,9 @@ public class DorisActiveTaskQueryService {
         DorisActiveTaskVO task = new DorisActiveTaskVO();
         task.setTaskId(id);
         task.setType(type);
-        task.setUser(query && metadata != null ? text(metadata, "USER") : null);
+        // Doris 3.x 的 active_queries 没有 USER 列，退回 processlist 的同名列（4.x 取不到才会走到）。
+        String user = metadata == null ? null : text(metadata, "USER");
+        task.setUser(query ? (user == null ? usersByQueryId.get(id) : user) : null);
         task.setClientAddress(query ? clientsByQueryId.get(id) : null);
         task.setSql(query ? listSql.text() : null);
         task.setElapsedMs(elapsed);
@@ -311,7 +299,8 @@ public class DorisActiveTaskQueryService {
                 : number(metadata, "WORKLOAD_GROUP_ID");
         task.setWorkloadGroupId(workloadGroupId);
         task.setWorkloadGroupName(workloadGroupId == null ? null : workloadNames.get(String.valueOf(workloadGroupId)));
-        String rawFeHost = metadata == null ? text(firstResource, "FE_HOST") : text(metadata, "FRONTEND_INSTANCE");
+        String rawFeHost = shortenFeHost(
+                metadata == null ? text(firstResource, "FE_HOST") : text(metadata, "FRONTEND_INSTANCE"));
         task.setFeHost(metadata == null && rawFeHost != null
                 ? hostNames.getOrDefault(rawFeHost, rawFeHost)
                 : rawFeHost);
@@ -379,8 +368,14 @@ public class DorisActiveTaskQueryService {
             .thenComparing(record -> record.task().getElapsedMs(), Comparator.nullsLast(Comparator.reverseOrder()))
             .thenComparing(record -> valueOrEmpty(record.task().getTaskId()));
 
-    private Map<String, String> clientsByQueryId(List<Map<String, Object>> rows) {
-        Map<String, String> clients = new HashMap<>();
+    /**
+     * 按 QueryId 索引 processlist 的某一列。
+     *
+     * <p>{@code QueryId} 在 Sleep/EOF 连接上保留的是上一条查询的 ID，因此必须叠加
+     * {@code Command} 过滤（SQL 里已过滤一次，这里对手工构造的行再兜一次）。
+     */
+    private Map<String, String> byQueryId(List<Map<String, Object>> rows, String column) {
+        Map<String, String> values = new HashMap<>();
         for (Map<String, Object> row : rows) {
             String command = text(row, "COMMAND");
             if (command != null && !"QUERY".equalsIgnoreCase(command)) {
@@ -388,10 +383,10 @@ public class DorisActiveTaskQueryService {
             }
             String id = text(row, "QUERYID");
             if (id != null) {
-                clients.putIfAbsent(id, text(row, "HOST"));
+                values.putIfAbsent(id, text(row, column));
             }
         }
-        return clients;
+        return values;
     }
 
     private Map<String, String> workloadNames(List<Map<String, Object>> rows) {
@@ -518,6 +513,19 @@ public class DorisActiveTaskQueryService {
             }
         }
         return null;
+    }
+
+    /**
+     * K8s 上的 Doris FE 报的是 Pod FQDN
+     * {@code <pod>.<service>.<namespace>.svc.cluster.local}（实测 96 字符，会撑爆列宽），
+     * 只保留 {@code <pod>.<namespace>}。不含 {@code .svc.} 的值（IP、主机名）原样返回。
+     */
+    private static String shortenFeHost(String host) {
+        if (host == null || !host.contains(".svc.")) {
+            return host;
+        }
+        String[] parts = host.split("\\.");
+        return parts.length < 3 ? host : parts[0] + "." + parts[2];
     }
 
     private static String normalizeBlank(String value) {

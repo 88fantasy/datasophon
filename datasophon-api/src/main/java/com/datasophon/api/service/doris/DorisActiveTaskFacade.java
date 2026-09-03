@@ -32,12 +32,16 @@ import com.datasophon.api.dto.v2.DorisActiveTaskVO;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.SystemAdminGuard;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Orchestrates authorization, instance validation, connection, and active-task querying. */
 @Service
 public class DorisActiveTaskFacade {
+
+    private static final Logger log = LoggerFactory.getLogger(DorisActiveTaskFacade.class);
 
     private final SystemAdminGuard adminGuard;
     private final DorisServiceInstanceValidator instanceValidator;
@@ -67,6 +71,9 @@ public class DorisActiveTaskFacade {
             throw new ResponseStatusException(NOT_IMPLEMENTED,
                     Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());
         } catch (RuntimeException exception) {
+            // 对外只给固定文案（不泄露 jdbc 串），但真实原因必须留在日志里：
+            // Doris 3.x 的字段不兼容曾整个伪装成「连接失败」，没有这行日志就只能靠翻 schema 反推。
+            log.warn("Doris active-task query failed for cluster {} instance {}", clusterId, instanceId, exception);
             throw new ResponseStatusException(BAD_GATEWAY, Status.DORIS_CONNECT_FAILED.getMsg());
         }
     }
@@ -82,6 +89,9 @@ public class DorisActiveTaskFacade {
             throw new ResponseStatusException(NOT_IMPLEMENTED,
                     Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());
         } catch (RuntimeException exception) {
+            // 对外只给固定文案（不泄露 jdbc 串），但真实原因必须留在日志里：
+            // Doris 3.x 的字段不兼容曾整个伪装成「连接失败」，没有这行日志就只能靠翻 schema 反推。
+            log.warn("Doris active-task query failed for cluster {} instance {}", clusterId, instanceId, exception);
             throw new ResponseStatusException(BAD_GATEWAY, Status.DORIS_CONNECT_FAILED.getMsg());
         }
     }
