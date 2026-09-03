@@ -56,6 +56,23 @@ describe('useActiveTaskPolling', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
+  it('does not poll until a manual refresh when auto refresh is disabled', async () => {
+    const fetcher = vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValue('snapshot');
+    const { result } = renderHook(() =>
+      useActiveTaskPolling({ fetcher, autoRefresh: false }),
+    );
+
+    await act(async () => {});
+    expect(fetcher).not.toHaveBeenCalled();
+
+    act(() => result.current.refresh());
+    await act(async () => {});
+    expect(result.current.data).toBe('snapshot');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it('stops while hidden or inactive, preserves the snapshot, and resumes when visible', async () => {
     const fetcher = vi
       .fn<() => Promise<string>>()

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export interface UseActiveTaskPollingOptions<T> {
   fetcher: () => Promise<T>;
   active?: boolean;
+  autoRefresh?: boolean;
   intervalMs?: number;
 }
 
@@ -19,6 +20,7 @@ const DEFAULT_INTERVAL_MS = 10_000;
 export function useActiveTaskPolling<T>({
   fetcher,
   active = true,
+  autoRefresh = true,
   intervalMs = DEFAULT_INTERVAL_MS,
 }: UseActiveTaskPollingOptions<T>): ActiveTaskPollingResult<T> {
   const fetcherRef = useRef(fetcher);
@@ -70,13 +72,14 @@ export function useActiveTaskPolling<T>({
     };
 
     const start = () => {
-      if (!active || document.hidden || timer !== undefined) return;
+      if (!autoRefresh || !active || document.hidden || timer !== undefined)
+        return;
       refresh();
       timer = setInterval(refresh, intervalMs);
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden || !active) stop();
+      if (document.hidden || !active || !autoRefresh) stop();
       else start();
     };
 
@@ -86,7 +89,7 @@ export function useActiveTaskPolling<T>({
       stop();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [active, intervalMs, refresh]);
+  }, [active, autoRefresh, intervalMs, refresh]);
 
   return { data, error, loading, lastUpdatedAt, refresh };
 }
