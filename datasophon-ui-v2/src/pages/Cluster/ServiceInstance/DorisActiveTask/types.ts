@@ -21,6 +21,7 @@ export interface DorisActiveTask {
   user?: string | null;
   clientAddress?: string | null;
   sql?: string | null;
+  detailSql?: string | null;
   elapsedMs?: number | null;
   startTime?: string | null;
   currentMemoryBytes?: number | null;

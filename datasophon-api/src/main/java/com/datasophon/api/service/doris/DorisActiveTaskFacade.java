@@ -28,6 +28,7 @@ import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import com.datasophon.api.doris.DorisAdminReaderFactory;
 import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
 import com.datasophon.api.dto.v2.DorisActiveTaskResponseVO;
+import com.datasophon.api.dto.v2.DorisActiveTaskVO;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.SystemAdminGuard;
 
@@ -61,6 +62,20 @@ public class DorisActiveTaskFacade {
             DorisAdminReaderFactory.DorisAdminConnection connection = readerFactory.create(clusterId);
             return queryService.query(clusterId, connection,
                     filter == null ? new DorisActiveTaskQueryDTO() : filter);
+        } catch (DorisActiveTaskQueryService.CapabilityUnsupportedException exception) {
+            throw new ResponseStatusException(NOT_IMPLEMENTED,
+                    Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());
+        } catch (RuntimeException exception) {
+            throw new ResponseStatusException(BAD_GATEWAY, Status.DORIS_CONNECT_FAILED.getMsg());
+        }
+    }
+
+    public DorisActiveTaskVO queryDetail(Integer clusterId, Integer instanceId, String taskId) {
+        adminGuard.requireAdmin();
+        instanceValidator.requireDorisInstance(clusterId, instanceId);
+        try {
+            DorisAdminReaderFactory.DorisAdminConnection connection = readerFactory.create(clusterId);
+            return queryService.queryDetail(clusterId, connection, taskId);
         } catch (DorisActiveTaskQueryService.CapabilityUnsupportedException exception) {
             throw new ResponseStatusException(NOT_IMPLEMENTED,
                     Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());

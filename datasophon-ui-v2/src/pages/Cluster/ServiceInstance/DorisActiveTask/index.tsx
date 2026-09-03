@@ -6,7 +6,7 @@ import styles from './DorisActiveTask.module.less';
 import FilterBar from './FilterBar';
 import { useActiveTaskPolling } from './hooks/useActiveTaskPolling';
 import StatusBanners from './StatusBanners';
-import { getDorisActiveTasks } from './service';
+import { getDorisActiveTaskDetail, getDorisActiveTasks } from './service';
 import TaskDetailDrawer from './TaskDetailDrawer';
 import type {
   DorisActiveTaskQuery,
@@ -81,6 +81,19 @@ const DorisActiveTask: React.FC<DorisActiveTaskProps> = ({
     setFilters(nextFilters);
   };
 
+  const handleOpen = (task: DorisActiveTaskRow) => {
+    setSelectedTask(task);
+    if (task.type.toUpperCase() === 'LOAD') return;
+    void getDorisActiveTaskDetail(clusterId, instanceId, task.taskId)
+      .then((detailResponse) => {
+        if (getApiFailureMessage(detailResponse) || !detailResponse.data) return;
+        setSelectedTask((current) =>
+          current?.taskId === task.taskId ? detailResponse.data : current,
+        );
+      })
+      .catch(() => undefined);
+  };
+
   return (
     <div
       ref={anchorRef}
@@ -121,7 +134,7 @@ const DorisActiveTask: React.FC<DorisActiveTaskProps> = ({
           <ActiveTaskTable
             tasks={response.tasks}
             loading={polling.loading}
-            onOpen={setSelectedTask}
+            onOpen={handleOpen}
           />
         ) : null}
         <TaskDetailDrawer

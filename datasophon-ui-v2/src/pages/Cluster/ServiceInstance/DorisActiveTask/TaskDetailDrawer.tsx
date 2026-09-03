@@ -59,10 +59,11 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   onClose,
 }) => {
   const isLoad = task?.type.toUpperCase() === 'LOAD';
+  const returnedSql = task?.detailSql ?? task?.sql;
 
   const copyReturnedSql = async () => {
-    if (!task?.sql) return;
-    await navigator.clipboard.writeText(task.sql);
+    if (!returnedSql) return;
+    await navigator.clipboard.writeText(returnedSql);
   };
 
   return (
@@ -108,7 +109,7 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             </Descriptions.Item>
           </Descriptions>
 
-          {!isLoad && task.sql != null ? (
+          {!isLoad && returnedSql != null ? (
             <section data-testid="doris-active-task-sql">
               <Typography.Title level={5}>SQL</Typography.Title>
               {task.truncated ? (
@@ -119,7 +120,7 @@ const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 />
               ) : null}
               <Typography.Paragraph copyable={false} ellipsis={false}>
-                <pre>{task.sql}</pre>
+                <pre>{returnedSql}</pre>
               </Typography.Paragraph>
               <Button onClick={() => void copyReturnedSql()}>
                 复制当前返回内容

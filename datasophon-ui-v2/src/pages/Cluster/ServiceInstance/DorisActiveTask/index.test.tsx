@@ -23,6 +23,7 @@ vi.mock('./hooks/useActiveTaskPolling', () => ({
 
 vi.mock('./service', () => ({
   getDorisActiveTasks: vi.fn(),
+  getDorisActiveTaskDetail: vi.fn(),
 }));
 
 vi.mock('./ActiveTaskTable', () => ({

@@ -8,6 +8,7 @@ const query: DorisActiveTask = {
   type: 'QUERY',
   user: 'alice',
   sql: 'select * from orders',
+  detailSql: 'select * from orders where customer_id = 42',
   truncated: true,
   beDetails: [
     {
@@ -45,7 +46,7 @@ describe('TaskDetailDrawer', () => {
       screen.getByText('SQL 已截断，复制内容仅包含当前返回内容'),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '复制当前返回内容' }));
-    expect(writeText).toHaveBeenCalledWith(query.sql);
+    expect(writeText).toHaveBeenCalledWith(query.detailSql);
   });
 
   it('keeps resource details for Load without exposing an SQL drawer', () => {

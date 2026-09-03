@@ -26,8 +26,10 @@ import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
 import com.datasophon.api.dto.v2.DorisActiveTaskResponseVO;
+import com.datasophon.api.dto.v2.DorisActiveTaskVO;
 import com.datasophon.api.service.doris.DorisActiveTaskFacade;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,5 +53,12 @@ public class DorisActiveTaskController extends ApiController {
                                                               @PathVariable Integer instanceId,
                                                               @RequestBody(required = false) DorisActiveTaskQueryDTO query) {
         return ApiResponse.ok(facade.query(clusterId, instanceId, query));
+    }
+
+    @GetMapping("/active-tasks/{taskId}")
+    public ApiResponse<DorisActiveTaskVO> activeTaskDetail(@PathVariable Integer clusterId,
+                                                           @PathVariable Integer instanceId,
+                                                           @PathVariable String taskId) {
+        return ApiResponse.ok(facade.queryDetail(clusterId, instanceId, taskId));
     }
 }

@@ -38,6 +38,7 @@ import com.datasophon.api.controller.v2.V2ApiExceptionHandler;
 import com.datasophon.api.doris.DorisAdminReaderFactory;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
+import com.datasophon.api.dto.v2.DorisActiveTaskVO;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.SystemAdminGuard;
 
@@ -112,5 +113,16 @@ class DorisActiveTaskFacadeTest {
         assertThat(response.getStatusCode()).isEqualTo(BAD_GATEWAY);
         assertThat(response.getBody().getErrorMessage()).isEqualTo(Status.DORIS_CONNECT_FAILED.getMsg());
         assertThat(response.getBody().getErrorMessage()).doesNotContain("jdbc:");
+    }
+
+    @Test
+    void delegatesDetailQueryAfterApplyingTheSameGuards() {
+        DorisActiveTaskVO detail = new DorisActiveTaskVO();
+        detail.setTaskId("q-1");
+        when(queryService.queryDetail(7, connection, "q-1")).thenReturn(detail);
+
+        assertThat(facade.queryDetail(7, 8, "q-1")).isSameAs(detail);
+        verify(adminGuard).requireAdmin();
+        verify(instanceValidator).requireDorisInstance(7, 8);
     }
 }

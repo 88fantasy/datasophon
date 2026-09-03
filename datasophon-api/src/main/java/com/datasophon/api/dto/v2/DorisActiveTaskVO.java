@@ -35,6 +35,7 @@ public class DorisActiveTaskVO {
     private String user;
     private String clientAddress;
     private String sql;
+    private String detailSql;
     private Long elapsedMs;
     private String startTime;
     private Long currentMemoryBytes;

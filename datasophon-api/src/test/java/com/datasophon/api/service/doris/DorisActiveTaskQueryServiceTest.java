@@ -31,6 +31,7 @@ import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
 import com.datasophon.api.dto.v2.DorisActiveTaskResponseVO;
 import com.datasophon.api.dto.v2.DorisActiveTaskVO;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -144,7 +145,13 @@ class DorisActiveTaskQueryServiceTest {
         assertThat(task.getSql().getBytes(java.nio.charset.StandardCharsets.UTF_8).length)
                 .isLessThanOrEqualTo(DorisActiveTaskQueryService.LIST_SQL_LIMIT_BYTES);
         assertThat(task.getSql().charAt(task.getSql().length() - 1)).isEqualTo('中');
-        assertThat(task.getTruncated()).isTrue();
+        assertThat(task.getDetailSql()).isNull();
+
+        DorisActiveTaskVO detailTask = service(rows).queryDetail(7, connection(false), "q1");
+        assertThat(detailTask.getDetailSql()).isEqualTo(sql);
+        assertThat(detailTask.getDetailSql().getBytes(StandardCharsets.UTF_8).length)
+                .isLessThanOrEqualTo(DorisActiveTaskQueryService.DETAIL_SQL_LIMIT_BYTES);
+        assertThat(detailTask.getTruncated()).isFalse();
         assertThat(detail.truncated()).isFalse();
     }
 

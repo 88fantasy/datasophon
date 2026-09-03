@@ -108,6 +108,25 @@ public class DorisActiveTaskQueryService {
     public DorisActiveTaskResponseVO query(Integer clusterId,
                                            DorisAdminReaderFactory.DorisAdminConnection connection,
                                            DorisActiveTaskQueryDTO filter) {
+        return query(clusterId, connection, filter, false);
+    }
+
+    /** Returns one task with the larger detail-level SQL bound. */
+    public DorisActiveTaskVO queryDetail(Integer clusterId,
+                                         DorisAdminReaderFactory.DorisAdminConnection connection,
+                                         String taskId) {
+        DorisActiveTaskQueryDTO filter = new DorisActiveTaskQueryDTO();
+        filter.setKeyword(taskId);
+        return query(clusterId, connection, filter, true).getTasks().stream()
+                .filter(task -> taskId.equals(task.getTaskId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private DorisActiveTaskResponseVO query(Integer clusterId,
+                                            DorisAdminReaderFactory.DorisAdminConnection connection,
+                                            DorisActiveTaskQueryDTO filter,
+                                            boolean includeDetailSql) {
         List<Map<String, Object>> metadata = requiredRows(connection.client(), ACTIVE_QUERIES_SQL);
         List<Map<String, Object>> resources = requiredRows(connection.client(), BACKEND_ACTIVE_TASKS_SQL);
         List<String> partialFailures = new ArrayList<>();
@@ -128,7 +147,7 @@ public class DorisActiveTaskQueryService {
         ids.addAll(resourcesById.keySet());
         List<TaskRecord> allTasks = ids.stream()
                 .map(id -> buildTask(id, queryById.get(id), resourcesById.getOrDefault(id, List.of()),
-                        clientsByQueryId, workloadNames, hostNames))
+                        clientsByQueryId, workloadNames, hostNames, includeDetailSql))
                 .toList();
         List<TaskRecord> filtered = allTasks.stream()
                 .filter(task -> matches(task, filter))
@@ -201,7 +220,7 @@ public class DorisActiveTaskQueryService {
 
     private TaskRecord buildTask(String id, Map<String, Object> metadata, List<Map<String, Object>> resourceRows,
                                  Map<String, String> clientsByQueryId, Map<String, String> workloadNames,
-                                 Map<String, String> hostNames) {
+                                 Map<String, String> hostNames, boolean includeDetailSql) {
         Map<String, Object> firstResource = resourceRows.isEmpty() ? Map.of() : resourceRows.get(0);
         String queryType = text(firstResource, "QUERY_TYPE");
         boolean query = metadata != null || "SELECT".equalsIgnoreCase(queryType)
@@ -209,6 +228,7 @@ public class DorisActiveTaskQueryService {
         String type = query ? "QUERY" : "LOAD";
         String fullSql = metadata == null ? null : text(metadata, "SQL");
         TruncatedText listSql = truncateSql(fullSql, LIST_SQL_LIMIT_BYTES);
+        TruncatedText detailSql = includeDetailSql ? truncateSql(fullSql, DETAIL_SQL_LIMIT_BYTES) : null;
         Long elapsed = metadata == null ? max(resourceRows, "TASK_TIME_MS") : number(metadata, "QUERY_TIME_MS");
         if (elapsed == null && metadata != null) {
             elapsed = max(resourceRows, "TASK_TIME_MS");
@@ -220,6 +240,7 @@ public class DorisActiveTaskQueryService {
         task.setUser(query && metadata != null ? text(metadata, "USER") : null);
         task.setClientAddress(query ? clientsByQueryId.get(id) : null);
         task.setSql(query ? listSql.text() : null);
+        task.setDetailSql(query && detailSql != null ? detailSql.text() : null);
         task.setElapsedMs(elapsed);
         task.setStartTime(metadata == null ? null : text(metadata, "QUERY_START_TIME"));
         task.setCurrentMemoryBytes(sum(resourceRows, "CURRENT_USED_MEMORY_BYTES"));
@@ -243,7 +264,7 @@ public class DorisActiveTaskQueryService {
         task.setQueryStatus(metadata == null ? null : text(metadata, "QUERY_STATUS"));
         task.setQueueStartTime(metadata == null ? null : text(metadata, "QUEUE_START_TIME"));
         task.setQueueEndTime(metadata == null ? null : text(metadata, "QUEUE_END_TIME"));
-        task.setTruncated(listSql.truncated());
+        task.setTruncated(detailSql == null ? listSql.truncated() : detailSql.truncated());
         task.setBeDetails(resourceRows.stream()
                 .map(row -> beDetail(row, query))
                 .toList());
