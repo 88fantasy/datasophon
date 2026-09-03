@@ -235,7 +235,9 @@ public class DorisActiveTaskQueryService {
         task.setWorkloadGroupId(workloadGroupId);
         task.setWorkloadGroupName(workloadGroupId == null ? null : workloadNames.get(String.valueOf(workloadGroupId)));
         String rawFeHost = metadata == null ? text(firstResource, "FE_HOST") : text(metadata, "FRONTEND_INSTANCE");
-        task.setFeHost(metadata == null ? hostNames.getOrDefault(rawFeHost, rawFeHost) : rawFeHost);
+        task.setFeHost(metadata == null && rawFeHost != null
+                ? hostNames.getOrDefault(rawFeHost, rawFeHost)
+                : rawFeHost);
         task.setQueryStatus(metadata == null ? null : text(metadata, "QUERY_STATUS"));
         task.setQueueStartTime(metadata == null ? null : text(metadata, "QUEUE_START_TIME"));
         task.setQueueEndTime(metadata == null ? null : text(metadata, "QUEUE_END_TIME"));
@@ -268,7 +270,7 @@ public class DorisActiveTaskQueryService {
         }
         if (filter.getTypes() != null && !filter.getTypes().isEmpty()
                 && filter.getTypes().stream().noneMatch(type -> type != null
-                && type.equalsIgnoreCase(task.getType()))) {
+                        && type.equalsIgnoreCase(task.getType()))) {
             return false;
         }
         if (!contains(lower(filter.getUser()), task.getUser())
@@ -302,7 +304,7 @@ public class DorisActiveTaskQueryService {
 
     private Map<String, String> workloadNames(List<Map<String, Object>> rows) {
         return rows.stream()
-                .map(row -> new String[] {text(row, "ID"), text(row, "NAME")})
+                .map(row -> new String[]{text(row, "ID"), text(row, "NAME")})
                 .filter(entry -> entry[0] != null && entry[1] != null)
                 .collect(Collectors.toMap(entry -> entry[0], entry -> entry[1], (first, ignored) -> first));
     }

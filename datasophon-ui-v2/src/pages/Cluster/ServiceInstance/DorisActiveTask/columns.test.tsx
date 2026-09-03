@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ColumnType } from 'antd/es/table';
 import {
   ACTIVE_TASK_COLUMNS,
   displayValue,
@@ -41,7 +42,8 @@ const queryWithMissingClient: DorisActiveTask = {
 
 function rendered(dataIndex: string, task: DorisActiveTask): unknown {
   const column = ACTIVE_TASK_COLUMNS.find(
-    (candidate) => candidate.dataIndex === dataIndex,
+    (candidate): candidate is ColumnType<DorisActiveTask> =>
+      'dataIndex' in candidate && candidate.dataIndex === dataIndex,
   );
   if (!column?.render) throw new Error(`missing column ${dataIndex}`);
   return column.render(task[dataIndex as keyof DorisActiveTask], task, 0);
@@ -49,8 +51,8 @@ function rendered(dataIndex: string, task: DorisActiveTask): unknown {
 
 describe('Doris active task columns', () => {
   it('does not expose the removed database or progress columns', () => {
-    const fields = ACTIVE_TASK_COLUMNS.map((column) =>
-      String(column.dataIndex),
+    const fields = ACTIVE_TASK_COLUMNS.flatMap((column) =>
+      'dataIndex' in column ? [String(column.dataIndex)] : [],
     );
     const titles = ACTIVE_TASK_COLUMNS.map((column) => String(column.title));
 
