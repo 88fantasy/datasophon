@@ -40,9 +40,9 @@ public class DorisActiveTaskController extends ApiController {
 
     @PostMapping("/active-tasks")
     public ApiResponse<DorisActiveTaskResponseVO> activeTasks(
-            @PathVariable Integer clusterId,
-            @PathVariable Integer instanceId,
-            @RequestBody(required = false) DorisActiveTaskQueryDTO query) {
+                                                              @PathVariable Integer clusterId,
+                                                              @PathVariable Integer instanceId,
+                                                              @RequestBody(required = false) DorisActiveTaskQueryDTO query) {
         return ApiResponse.ok(DorisActiveTaskResponseVO.empty());
     }
 }
