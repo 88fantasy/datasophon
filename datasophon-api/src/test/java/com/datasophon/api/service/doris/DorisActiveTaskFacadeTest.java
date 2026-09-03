@@ -24,6 +24,8 @@ package com.datasophon.api.service.doris;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,7 +38,6 @@ import com.datasophon.api.controller.v2.V2ApiExceptionHandler;
 import com.datasophon.api.doris.DorisAdminReaderFactory;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
-import com.datasophon.api.dto.v2.DorisActiveTaskResponseVO;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.SystemAdminGuard;
 
@@ -67,7 +68,7 @@ class DorisActiveTaskFacadeTest {
     void preservesForbiddenStatusFromTheAdminGuard() {
         ResponseStatusException forbidden = new ResponseStatusException(
                 FORBIDDEN, Status.USER_NO_OPERATION_PERM.getMsg());
-        when(adminGuard.requireAdmin()).thenThrow(forbidden);
+        doThrow(forbidden).when(adminGuard).requireAdmin();
 
         assertThatThrownBy(() -> facade.query(7, 8, null)).isSameAs(forbidden);
         verify(instanceValidator, never()).requireDorisInstance(7, 8);
@@ -101,8 +102,9 @@ class DorisActiveTaskFacadeTest {
         when(queryService.query(7, connection, new DorisActiveTaskQueryDTO()))
                 .thenThrow(new RuntimeException("jdbc:mysql://user:password@fe:9030/secret"));
 
-        ResponseStatusException exception = (ResponseStatusException) assertThatThrownBy(
-                () -> facade.query(7, 8, null)).isInstanceOf(ResponseStatusException.class).actual();
+        Throwable thrown = catchThrowable(() -> facade.query(7, 8, null));
+        assertThat(thrown).isInstanceOf(ResponseStatusException.class);
+        ResponseStatusException exception = (ResponseStatusException) thrown;
         assertThat(exception.getStatusCode()).isEqualTo(BAD_GATEWAY);
         assertThat(exception.getReason()).isEqualTo(Status.DORIS_CONNECT_FAILED.getMsg());
 
