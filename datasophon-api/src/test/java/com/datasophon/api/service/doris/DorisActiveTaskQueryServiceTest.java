@@ -104,6 +104,21 @@ class DorisActiveTaskQueryServiceTest {
     }
 
     @Test
+    void queuedTypeFilterMatchesQueuedQueriesOnly() {
+        Map<String, List<Map<String, Object>>> rows = baseRows();
+        rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).addAll(List.of(
+                row("QUERY_ID", "queued", "QUERY_STATUS", "Queued"),
+                row("QUERY_ID", "running", "QUERY_STATUS", "RUNNING")));
+        DorisActiveTaskQueryDTO filter = new DorisActiveTaskQueryDTO();
+        filter.setTypes(List.of("QUEUED"));
+
+        DorisActiveTaskResponseVO response = service(rows).query(7, connection(false), filter);
+
+        assertThat(response.getTasks()).extracting(DorisActiveTaskVO::getTaskId)
+                .containsExactly("queued");
+    }
+
+    @Test
     void processlistOnlyUsesQueryRows() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
         rows.get(DorisActiveTaskQueryService.ACTIVE_QUERIES_SQL).add(row("QUERY_ID", "q1"));

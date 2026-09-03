@@ -270,7 +270,7 @@ public class DorisActiveTaskQueryService {
         }
         if (filter.getTypes() != null && !filter.getTypes().isEmpty()
                 && filter.getTypes().stream().noneMatch(type -> type != null
-                        && type.equalsIgnoreCase(task.getType()))) {
+                        && matchesType(type, task))) {
             return false;
         }
         if (!contains(lower(filter.getUser()), task.getUser())
@@ -279,6 +279,14 @@ public class DorisActiveTaskQueryService {
         }
         return atLeast(task.getCurrentMemoryBytes(), filter.getMinMemoryBytes())
                 && atLeast(task.getElapsedMs(), filter.getMinElapsedMs());
+    }
+
+    private boolean matchesType(String type, DorisActiveTaskVO task) {
+        if ("QUEUED".equalsIgnoreCase(type)) {
+            return "QUERY".equalsIgnoreCase(task.getType())
+                    && "QUEUED".equalsIgnoreCase(task.getQueryStatus());
+        }
+        return type.equalsIgnoreCase(task.getType());
     }
 
     private static final Comparator<TaskRecord> TASK_ORDER = Comparator
