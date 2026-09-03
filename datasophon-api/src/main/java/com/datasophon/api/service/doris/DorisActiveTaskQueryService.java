@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
@@ -92,6 +93,7 @@ public class DorisActiveTaskQueryService {
     private final ClusterHostService hostService;
     private final BiFunction<JdbcClient, String, List<Map<String, Object>>> rowQuery;
 
+    @Autowired
     public DorisActiveTaskQueryService(ClusterHostService hostService) {
         this(hostService, DorisActiveTaskQueryService::queryRows);
     }
