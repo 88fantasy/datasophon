@@ -23,6 +23,7 @@
 package com.datasophon.api.service.doris;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,7 +31,11 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.service.ClusterServiceInstanceService;
+import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
+import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
+
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,12 +44,14 @@ import org.springframework.web.server.ResponseStatusException;
 class DorisServiceInstanceValidatorTest {
 
     private ClusterServiceInstanceService service;
+    private K8sServiceInstanceService k8sService;
     private DorisServiceInstanceValidator validator;
 
     @BeforeEach
     void setUp() {
         service = mock(ClusterServiceInstanceService.class);
-        validator = new DorisServiceInstanceValidator(service);
+        k8sService = mock(K8sServiceInstanceService.class);
+        validator = new DorisServiceInstanceValidator(service, k8sService);
     }
 
     @Test
@@ -74,6 +81,38 @@ class DorisServiceInstanceValidatorTest {
         assertBadRequest(validator, 7, 44);
     }
 
+    @Test
+    void allowsK8sDorisInstanceFromTheSameCluster() {
+        when(k8sService.getVoById(44))
+                .thenReturn(Optional.of(k8sInstance(7, "doris-disaggregated")));
+
+        assertThatCode(() -> validator.requireDorisInstance(7, 44)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void allowsK8sCoupledDorisInstanceFromTheSameCluster() {
+        when(k8sService.getVoById(44))
+                .thenReturn(Optional.of(k8sInstance(7, "doris-coupled")));
+
+        assertThatCode(() -> validator.requireDorisInstance(7, 44)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void rejectsNonDorisK8sInstance() {
+        when(k8sService.getVoById(44))
+                .thenReturn(Optional.of(k8sInstance(7, "nacos")));
+
+        assertBadRequest(validator, 7, 44);
+    }
+
+    @Test
+    void rejectsK8sInstanceFromAnotherCluster() {
+        when(k8sService.getVoById(44))
+                .thenReturn(Optional.of(k8sInstance(8, "doris-disaggregated")));
+
+        assertBadRequest(validator, 7, 44);
+    }
+
     private static void assertBadRequest(
                                          DorisServiceInstanceValidator validator, Integer clusterId, Integer instanceId) {
         assertThatThrownBy(() -> validator.requireDorisInstance(clusterId, instanceId))
@@ -85,6 +124,13 @@ class DorisServiceInstanceValidatorTest {
 
     private static ClusterServiceInstanceEntity instance(Integer clusterId, String serviceName) {
         ClusterServiceInstanceEntity instance = new ClusterServiceInstanceEntity();
+        instance.setClusterId(clusterId);
+        instance.setServiceName(serviceName);
+        return instance;
+    }
+
+    private static K8sServiceInstanceVO k8sInstance(Integer clusterId, String serviceName) {
+        K8sServiceInstanceVO instance = new K8sServiceInstanceVO();
         instance.setClusterId(clusterId);
         instance.setServiceName(serviceName);
         return instance;

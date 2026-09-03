@@ -26,6 +26,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.service.ClusterServiceInstanceService;
+import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 
 import org.springframework.stereotype.Component;
@@ -36,19 +37,34 @@ import org.springframework.web.server.ResponseStatusException;
 public class DorisServiceInstanceValidator {
 
     private final ClusterServiceInstanceService serviceInstanceService;
+    private final K8sServiceInstanceService k8sServiceInstanceService;
 
-    public DorisServiceInstanceValidator(ClusterServiceInstanceService serviceInstanceService) {
+    public DorisServiceInstanceValidator(ClusterServiceInstanceService serviceInstanceService,
+                                         K8sServiceInstanceService k8sServiceInstanceService) {
         this.serviceInstanceService = serviceInstanceService;
+        this.k8sServiceInstanceService = k8sServiceInstanceService;
     }
 
     public ClusterServiceInstanceEntity requireDorisInstance(Integer clusterId, Integer instanceId) {
         ClusterServiceInstanceEntity instance = instanceId == null
                 ? null
                 : serviceInstanceService.getById(instanceId);
-        if (clusterId == null || instance == null || !clusterId.equals(instance.getClusterId())
-                || !"DORIS".equalsIgnoreCase(instance.getServiceName())) {
-            throw new ResponseStatusException(BAD_REQUEST, Status.INSTANCE_MISMATCH.getMsg());
+        if (clusterId != null && instance != null && clusterId.equals(instance.getClusterId())
+                && "DORIS".equalsIgnoreCase(instance.getServiceName())) {
+            return instance;
         }
-        return instance;
+        if (clusterId != null && instanceId != null
+                && k8sServiceInstanceService.getVoById(instanceId)
+                        .filter(k8sInstance -> clusterId.equals(k8sInstance.getClusterId())
+                                && isK8sDoris(k8sInstance.getServiceName()))
+                        .isPresent()) {
+            return null;
+        }
+        throw new ResponseStatusException(BAD_REQUEST, Status.INSTANCE_MISMATCH.getMsg());
+    }
+
+    private static boolean isK8sDoris(String serviceName) {
+        return "doris-coupled".equalsIgnoreCase(serviceName)
+                || "doris-disaggregated".equalsIgnoreCase(serviceName);
     }
 }
