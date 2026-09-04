@@ -1,4 +1,4 @@
-import { history, useIntl, useParams } from '@umijs/max';
+import { history, useAccess, useIntl, useParams } from '@umijs/max';
 import type { TabsProps } from 'antd';
 import { Button, Dropdown, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
@@ -25,6 +25,7 @@ import {
   getServiceWebUis,
 } from '@/services/service';
 import ApisixGatewayPanel from './ApisixGateway';
+import DorisActiveTask from './DorisActiveTask';
 import DsWorkflowPanel from './DsWorkflow';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
@@ -58,6 +59,9 @@ const K8S_MONITOR_DASHBOARDS: Record<
   zookeeper: ZooKeeperDashboard,
 };
 
+/** 活动任务 Tab 适用的 K8s Doris chart（存算一体 / 存算分离）。 */
+const K8S_DORIS_CHARTS: string[] = ['doris-coupled', 'doris-disaggregated'];
+
 const ServiceInstance: React.FC = () => {
   const intl = useIntl();
   const { clusterId, instanceId } = useParams<{
@@ -69,6 +73,8 @@ const ServiceInstance: React.FC = () => {
 
   const clusterCtx = useContext(ClusterContext);
   const isK8s = clusterCtx?.clusterInfo?.archType === 'k8s';
+  const access = useAccess?.() as { canAdmin?: boolean } | undefined;
+  const canAdmin = Boolean(access?.canAdmin);
 
   // ── 物理集群状态 ───────────────────────────────────────
   const [serviceInfo, setServiceInfo] =
@@ -196,6 +202,9 @@ const ServiceInstance: React.FC = () => {
 
   // ── K8s 实例页：资源 Tab（动态）+ 配置 Tab ─────────────────────────
   if (isK8s) {
+    const isDoris = K8S_DORIS_CHARTS.includes(
+      k8sInstance?.serviceName?.toLowerCase() ?? '',
+    );
     const K8sMonitorDashboard = k8sInstance?.serviceName
       ? K8S_MONITOR_DASHBOARDS[k8sInstance.serviceName.toLowerCase()]
       : undefined;
@@ -211,6 +220,20 @@ const ServiceInstance: React.FC = () => {
                   embedded
                   job={k8sInstance?.metricsJob}
                   monitorProfile={k8sInstance?.monitorProfile}
+                />
+              ),
+            },
+          ]
+        : []),
+      ...(isDoris && canAdmin
+        ? [
+            {
+              key: 'dorisActiveTask',
+              label: intl.formatMessage({ id: 'dorisActiveTask.tab' }),
+              children: (
+                <DorisActiveTask
+                  clusterId={numericClusterId}
+                  instanceId={numericInstanceId}
                 />
               ),
             },
@@ -315,6 +338,18 @@ const ServiceInstance: React.FC = () => {
       key: 'monitor',
       label: '监控',
       children: primaryMonitor,
+    });
+  }
+  if (isDoris && canAdmin) {
+    items.push({
+      key: 'dorisActiveTask',
+      label: intl.formatMessage({ id: 'dorisActiveTask.tab' }),
+      children: (
+        <DorisActiveTask
+          clusterId={numericClusterId}
+          instanceId={numericInstanceId}
+        />
+      ),
     });
   }
   if (isApisix) {

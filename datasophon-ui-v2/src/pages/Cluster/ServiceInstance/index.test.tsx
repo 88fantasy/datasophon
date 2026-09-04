@@ -24,6 +24,7 @@ const {
   kyuubiDashboardSpy,
   juicefsDashboardSpy,
   routeParams,
+  accessState,
 } = vi.hoisted(() => ({
   apisixDashboardSpy: vi.fn(),
   apisixGatewaySpy: vi.fn(),
@@ -38,13 +39,19 @@ const {
   kyuubiDashboardSpy: vi.fn(),
   juicefsDashboardSpy: vi.fn(),
   routeParams: { clusterId: '7', instanceId: '9' },
+  accessState: { canAdmin: false },
 }));
 
 vi.mock('@umijs/max', () => ({
   history: { replace: vi.fn() },
+  useAccess: () => accessState,
   useIntl: () => ({
     formatMessage: ({ id }: { id: string }) =>
-      id === 'dsWorkflow.tab' ? '工作流' : id,
+      id === 'dsWorkflow.tab'
+        ? '工作流'
+        : id === 'dorisActiveTask.tab'
+          ? '活动任务'
+          : id,
   }),
   useParams: () => routeParams,
 }));
@@ -483,6 +490,7 @@ describe('DS service instance tabs', () => {
 describe('DORIS service instance tabs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    accessState.canAdmin = false;
     routeParams.clusterId = '7';
     routeParams.instanceId = '44';
     vi.mocked(getServiceInstance).mockResolvedValue({
@@ -517,6 +525,27 @@ describe('DORIS service instance tabs', () => {
         embedded: true,
       }),
     );
+  });
+
+  it('shows the activity tab after monitoring for admins', async () => {
+    accessState.canAdmin = true;
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('Doris dashboard cluster 7');
+
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      '监控',
+      '活动任务',
+      '概览',
+      '实例',
+      '配置',
+    ]);
   });
 });
 
