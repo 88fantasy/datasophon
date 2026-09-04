@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -195,7 +194,7 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void marksAnySourceAtExactlyTwentyThousandRows() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
-        for (int index = 0; index < DorisActiveTaskQueryService.SOURCE_LIMIT; index++) {
+        for (int index = 0; index < DorisVersionProfile.SOURCE_LIMIT; index++) {
             rows.get(DorisVersionProfile.V4.backendActiveTasksSql()).add(
                     row("QUERY_ID", "load-" + index, "QUERY_TYPE", "LOAD"));
         }
@@ -208,7 +207,7 @@ class DorisActiveTaskQueryServiceTest {
         Map<String, List<Map<String, Object>>> rows = baseRows();
         AtomicInteger calls = new AtomicInteger();
         long[] now = {0L};
-        DorisActiveTaskQueryService service = new DorisActiveTaskQueryService(null, (client, sql) -> {
+        DorisActiveTaskQueryService service = new DorisActiveTaskQueryService(null, (client, sql, args) -> {
             calls.incrementAndGet();
             now[0] = DorisActiveTaskQueryService.REQUEST_TIMEOUT_MS * 1_000_000L;
             return rows.getOrDefault(sql, List.of());
@@ -223,7 +222,7 @@ class DorisActiveTaskQueryServiceTest {
     void reportsOptionalSourceFailureWithoutDroppingMainRows() {
         Map<String, List<Map<String, Object>>> rows = baseRows();
         rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(row("QUERY_ID", "q1"));
-        BiFunction<JdbcClient, String, List<Map<String, Object>>> source = (client, sql) -> {
+        DorisActiveTaskQueryService.RowQuery source = (client, sql, args) -> {
             if (DorisVersionProfile.V4.processlistSql().equals(sql)) {
                 throw new IllegalStateException("processlist unavailable");
             }
@@ -239,7 +238,7 @@ class DorisActiveTaskQueryServiceTest {
 
     @Test
     void rejectsMissingRequiredTableAsCapabilityError() {
-        BiFunction<JdbcClient, String, List<Map<String, Object>>> source = (client, sql) -> {
+        DorisActiveTaskQueryService.RowQuery source = (client, sql, args) -> {
             throw new IllegalStateException("Table information_schema.active_queries doesn't exist");
         };
 
@@ -268,7 +267,7 @@ class DorisActiveTaskQueryServiceTest {
     @Test
     void rejectsTwoPointXBeforeIssuingAnyStatement() {
         AtomicInteger calls = new AtomicInteger();
-        BiFunction<JdbcClient, String, List<Map<String, Object>>> source = (client, sql) -> {
+        DorisActiveTaskQueryService.RowQuery source = (client, sql, args) -> {
             calls.incrementAndGet();
             return List.of();
         };
@@ -305,8 +304,33 @@ class DorisActiveTaskQueryServiceTest {
         assertThat(onFour.getUnsupportedFields()).isEmpty();
     }
 
+    @Test
+    void detailPushesTaskIdIntoSqlAsBoundParameter() {
+        Map<String, List<Map<String, Object>>> rows = baseRows();
+        rows.get(DorisVersionProfile.V4.activeQueriesSql()).add(row("QUERY_ID", "q1", "SQL", "select 1"));
+        Map<String, Object[]> issued = new HashMap<>();
+        DorisActiveTaskQueryService.RowQuery capturing = (client, sql, args) -> {
+            issued.put(sql, args);
+            return rows.getOrDefault(sql, List.of());
+        };
+
+        new DorisActiveTaskQueryService(null, capturing).queryDetail(7, connection(false), "q1");
+
+        // 两张会随负载涨到 SOURCE_LIMIT 的表必须走带 WHERE 的变体，且 taskId 以绑定参数下发，
+        // 不拼进 SQL 文本（3.0.8 与 4.1.3 均实测 WHERE QUERY_ID 生效）。
+        assertThat(issued).containsKeys(DorisVersionProfile.V4.activeQueriesByIdSql(),
+                DorisVersionProfile.V4.backendActiveTasksByIdSql());
+        assertThat(issued).doesNotContainKeys(DorisVersionProfile.V4.activeQueriesSql(),
+                DorisVersionProfile.V4.backendActiveTasksSql());
+        assertThat(issued.get(DorisVersionProfile.V4.activeQueriesByIdSql())).containsExactly("q1");
+        assertThat(issued.get(DorisVersionProfile.V4.backendActiveTasksByIdSql())).containsExactly("q1");
+        assertThat(DorisVersionProfile.V4.activeQueriesByIdSql()).doesNotContain("q1");
+        // 侧查表行数由连接数/配置决定（实测 3.x 1 行、4.x 6 行），不下推，故仍是无参全量。
+        assertThat(issued.get(DorisVersionProfile.V4.processlistSql())).isEmpty();
+    }
+
     private static DorisActiveTaskQueryService service(Map<String, List<Map<String, Object>>> rows) {
-        return new DorisActiveTaskQueryService(null, (client, sql) -> rows.getOrDefault(sql, List.of()));
+        return new DorisActiveTaskQueryService(null, (client, sql, args) -> rows.getOrDefault(sql, List.of()));
     }
 
     private static DorisAdminReaderFactory.DorisAdminConnection connection(boolean degraded) {
@@ -326,8 +350,14 @@ class DorisActiveTaskQueryServiceTest {
 
     private static Map<String, List<Map<String, Object>>> baseRows(DorisVersionProfile profile) {
         Map<String, List<Map<String, Object>>> rows = new HashMap<>();
-        rows.put(profile.activeQueriesSql(), new ArrayList<>());
-        rows.put(profile.backendActiveTasksSql(), new ArrayList<>());
+        List<Map<String, Object>> activeQueries = new ArrayList<>();
+        List<Map<String, Object>> backendTasks = new ArrayList<>();
+        rows.put(profile.activeQueriesSql(), activeQueries);
+        rows.put(profile.backendActiveTasksSql(), backendTasks);
+        // 详情路径走带 QUERY_ID 占位符的变体，指向同一份 fixture：假数据源不模拟 SQL 过滤，
+        // 收敛到单条仍由服务自身的 detailTaskId 判断完成。
+        rows.put(profile.activeQueriesByIdSql(), activeQueries);
+        rows.put(profile.backendActiveTasksByIdSql(), backendTasks);
         rows.put(profile.processlistSql(), new ArrayList<>());
         rows.put(DorisActiveTaskQueryService.WORKLOAD_GROUPS_SQL, new ArrayList<>());
         return rows;

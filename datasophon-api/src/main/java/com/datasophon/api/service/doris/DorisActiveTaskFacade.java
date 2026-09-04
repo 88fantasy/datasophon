@@ -60,13 +60,29 @@ public class DorisActiveTaskFacade {
 
     public DorisActiveTaskResponseVO query(Integer clusterId, Integer instanceId,
                                            DorisActiveTaskQueryDTO filter) {
+        DorisActiveTaskQueryDTO effectiveFilter = filter == null ? new DorisActiveTaskQueryDTO() : filter;
+        return execute(clusterId, instanceId,
+                (connection, deadlineNanos) -> queryService.query(clusterId, connection, effectiveFilter,
+                        deadlineNanos));
+    }
+
+    public DorisActiveTaskVO queryDetail(Integer clusterId, Integer instanceId, String taskId) {
+        return execute(clusterId, instanceId,
+                (connection, deadlineNanos) -> queryService.queryDetail(clusterId, connection, taskId,
+                        deadlineNanos));
+    }
+
+    /**
+     * 鉴权 → 实例校验 → 建连 → 查询的公共外壳。
+     *
+     * <p>deadline 在鉴权与建连之前就起算，因此 15s 预算覆盖整个请求而不仅是 SQL 执行。
+     */
+    private <T> T execute(Integer clusterId, Integer instanceId, ActiveTaskAction<T> action) {
         long deadlineNanos = System.nanoTime() + DorisActiveTaskQueryService.REQUEST_TIMEOUT_MS * 1_000_000L;
         adminGuard.requireAdmin();
         instanceValidator.requireDorisInstance(clusterId, instanceId);
         try {
-            DorisAdminReaderFactory.DorisAdminConnection connection = readerFactory.create(clusterId);
-            return queryService.query(clusterId, connection,
-                    filter == null ? new DorisActiveTaskQueryDTO() : filter, deadlineNanos);
+            return action.apply(readerFactory.create(clusterId), deadlineNanos);
         } catch (DorisActiveTaskQueryService.CapabilityUnsupportedException exception) {
             throw new ResponseStatusException(NOT_IMPLEMENTED,
                     Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());
@@ -78,21 +94,8 @@ public class DorisActiveTaskFacade {
         }
     }
 
-    public DorisActiveTaskVO queryDetail(Integer clusterId, Integer instanceId, String taskId) {
-        long deadlineNanos = System.nanoTime() + DorisActiveTaskQueryService.REQUEST_TIMEOUT_MS * 1_000_000L;
-        adminGuard.requireAdmin();
-        instanceValidator.requireDorisInstance(clusterId, instanceId);
-        try {
-            DorisAdminReaderFactory.DorisAdminConnection connection = readerFactory.create(clusterId);
-            return queryService.queryDetail(clusterId, connection, taskId, deadlineNanos);
-        } catch (DorisActiveTaskQueryService.CapabilityUnsupportedException exception) {
-            throw new ResponseStatusException(NOT_IMPLEMENTED,
-                    Status.DORIS_CAPABILITY_UNSUPPORTED.getMsg());
-        } catch (RuntimeException exception) {
-            // 对外只给固定文案（不泄露 jdbc 串），但真实原因必须留在日志里：
-            // Doris 3.x 的字段不兼容曾整个伪装成「连接失败」，没有这行日志就只能靠翻 schema 反推。
-            log.warn("Doris active-task query failed for cluster {} instance {}", clusterId, instanceId, exception);
-            throw new ResponseStatusException(BAD_GATEWAY, Status.DORIS_CONNECT_FAILED.getMsg());
-        }
+    @FunctionalInterface
+    private interface ActiveTaskAction<T> {
+        T apply(DorisAdminReaderFactory.DorisAdminConnection connection, long deadlineNanos);
     }
 }

@@ -98,6 +98,8 @@ public enum DorisVersionProfile {
     private final boolean supported;
     private final String activeQueriesSql;
     private final String backendActiveTasksSql;
+    private final String activeQueriesByIdSql;
+    private final String backendActiveTasksByIdSql;
     private final String processlistSql;
     private final List<String> unsupportedFields;
 
@@ -107,6 +109,11 @@ public enum DorisVersionProfile {
         this.supported = supported;
         this.activeQueriesSql = select(activeQueriesColumns, "active_queries", null);
         this.backendActiveTasksSql = select(backendActiveTasksColumns, "backend_active_tasks", null);
+        // 详情路径把 taskId 下推到这两张表：它们是唯一会随负载涨到 SOURCE_LIMIT 的来源。
+        // 过滤列固定用 QUERY_ID —— 3.x/4.x 两个档位都声明了它，故不引入版本分叉。
+        this.activeQueriesByIdSql = select(activeQueriesColumns, "active_queries", "QUERY_ID = ?");
+        this.backendActiveTasksByIdSql =
+                select(backendActiveTasksColumns, "backend_active_tasks", "QUERY_ID = ?");
         this.processlistSql = select(processlistColumns, "processlist", "Command = 'Query'");
         this.unsupportedFields = List.copyOf(unsupportedFields);
     }
@@ -135,6 +142,16 @@ public enum DorisVersionProfile {
 
     public String backendActiveTasksSql() {
         return backendActiveTasksSql;
+    }
+
+    /** 详情路径用：同 {@link #activeQueriesSql()} 的列集，附 {@code QUERY_ID = ?} 占位符。 */
+    public String activeQueriesByIdSql() {
+        return activeQueriesByIdSql;
+    }
+
+    /** 详情路径用：同 {@link #backendActiveTasksSql()} 的列集，附 {@code QUERY_ID = ?} 占位符。 */
+    public String backendActiveTasksByIdSql() {
+        return backendActiveTasksByIdSql;
     }
 
     public String processlistSql() {

@@ -59,6 +59,9 @@ const K8S_MONITOR_DASHBOARDS: Record<
   zookeeper: ZooKeeperDashboard,
 };
 
+/** 活动任务 Tab 适用的 K8s Doris chart（存算一体 / 存算分离）。 */
+const K8S_DORIS_CHARTS: string[] = ['doris-coupled', 'doris-disaggregated'];
+
 const ServiceInstance: React.FC = () => {
   const intl = useIntl();
   const { clusterId, instanceId } = useParams<{
@@ -199,7 +202,7 @@ const ServiceInstance: React.FC = () => {
 
   // ── K8s 实例页：资源 Tab（动态）+ 配置 Tab ─────────────────────────
   if (isK8s) {
-    const isDoris = ['doris-coupled', 'doris-disaggregated'].includes(
+    const isDoris = K8S_DORIS_CHARTS.includes(
       k8sInstance?.serviceName?.toLowerCase() ?? '',
     );
     const K8sMonitorDashboard = k8sInstance?.serviceName

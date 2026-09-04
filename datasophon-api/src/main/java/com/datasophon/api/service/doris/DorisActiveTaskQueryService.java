@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
@@ -61,7 +60,6 @@ public class DorisActiveTaskQueryService {
             SELECT Id, Name FROM information_schema.workload_groups;
             """;
 
-    public static final int SOURCE_LIMIT = DorisVersionProfile.SOURCE_LIMIT;
     public static final int LIST_SQL_LIMIT_BYTES = 1_024;
     public static final int DETAIL_SQL_LIMIT_BYTES = 256 * 1_024;
     public static final int RESPONSE_LIMIT = 2_000;
@@ -72,7 +70,7 @@ public class DorisActiveTaskQueryService {
     private static final int STATEMENT_TIMEOUT_MS = 10_000;
 
     private final ClusterHostService hostService;
-    private final BiFunction<JdbcClient, String, List<Map<String, Object>>> rowQuery;
+    private final RowQuery rowQuery;
     private final LongSupplier nanoTime;
 
     @Autowired
@@ -80,13 +78,11 @@ public class DorisActiveTaskQueryService {
         this(hostService, DorisActiveTaskQueryService::queryRows, System::nanoTime);
     }
 
-    DorisActiveTaskQueryService(ClusterHostService hostService,
-                                BiFunction<JdbcClient, String, List<Map<String, Object>>> rowQuery) {
+    DorisActiveTaskQueryService(ClusterHostService hostService, RowQuery rowQuery) {
         this(hostService, rowQuery, System::nanoTime);
     }
 
-    DorisActiveTaskQueryService(ClusterHostService hostService,
-                                BiFunction<JdbcClient, String, List<Map<String, Object>>> rowQuery,
+    DorisActiveTaskQueryService(ClusterHostService hostService, RowQuery rowQuery,
                                 LongSupplier nanoTime) {
         this.hostService = hostService;
         this.rowQuery = rowQuery;
@@ -105,11 +101,8 @@ public class DorisActiveTaskQueryService {
     public DorisActiveTaskVO queryDetail(Integer clusterId,
                                          DorisAdminReaderFactory.DorisAdminConnection connection,
                                          String taskId) {
-        return query(clusterId, connection, new DorisActiveTaskQueryDTO(), taskId,
-                nanoTime.getAsLong() + REQUEST_TIMEOUT_MS * 1_000_000L).getTasks().stream()
-                .filter(task -> taskId.equals(task.getTaskId()))
-                .findFirst()
-                .orElse(null);
+        return firstTask(query(clusterId, connection, new DorisActiveTaskQueryDTO(), taskId,
+                nanoTime.getAsLong() + REQUEST_TIMEOUT_MS * 1_000_000L));
     }
 
     DorisActiveTaskResponseVO query(Integer clusterId,
@@ -121,10 +114,13 @@ public class DorisActiveTaskQueryService {
     DorisActiveTaskVO queryDetail(Integer clusterId,
                                   DorisAdminReaderFactory.DorisAdminConnection connection,
                                   String taskId, long deadlineNanos) {
-        return query(clusterId, connection, new DorisActiveTaskQueryDTO(), taskId, deadlineNanos).getTasks().stream()
-                .filter(task -> taskId.equals(task.getTaskId()))
-                .findFirst()
-                .orElse(null);
+        return firstTask(query(clusterId, connection, new DorisActiveTaskQueryDTO(), taskId, deadlineNanos));
+    }
+
+    /** 详情路径的 {@code query} 已按 taskId 过滤，结果至多一条。 */
+    private static DorisActiveTaskVO firstTask(DorisActiveTaskResponseVO response) {
+        List<DorisActiveTaskVO> tasks = response.getTasks();
+        return tasks.isEmpty() ? null : tasks.get(0);
     }
 
     private DorisActiveTaskResponseVO query(Integer clusterId,
@@ -135,10 +131,16 @@ public class DorisActiveTaskQueryService {
         if (!profile.supported()) {
             throw new CapabilityUnsupportedException();
         }
-        List<Map<String, Object>> metadata =
-                requiredRows(connection, profile.activeQueriesSql(), deadlineNanos);
-        List<Map<String, Object>> resources =
-                requiredRows(connection, profile.backendActiveTasksSql(), deadlineNanos);
+        // 详情只要一条任务：把 taskId 下推到这两张随负载增长的表，避免为一行重跑两次全量扫描。
+        // processlist / workload_groups 的行数由连接数与配置决定（ddh-01 实测 6 行 / 2 行），
+        // 不随查询数增长，因此不下推，也就不必碰 3.x 与 4.x 不同的 processlist 列名。
+        boolean detail = detailTaskId != null;
+        Object[] idArg = detail ? new Object[]{detailTaskId} : new Object[0];
+        List<Map<String, Object>> metadata = requiredRows(connection,
+                detail ? profile.activeQueriesByIdSql() : profile.activeQueriesSql(), deadlineNanos, idArg);
+        List<Map<String, Object>> resources = requiredRows(connection,
+                detail ? profile.backendActiveTasksByIdSql() : profile.backendActiveTasksSql(),
+                deadlineNanos, idArg);
         List<String> partialFailures = new ArrayList<>();
         List<Map<String, Object>> processlist = optionalRows(connection, profile.processlistSql(),
                 CLIENT_ADDRESS_FAILURE, partialFailures, deadlineNanos);
@@ -150,8 +152,8 @@ public class DorisActiveTaskQueryService {
                 || atSourceLimit(processlist) || atSourceLimit(workloadGroups);
         Map<String, Map<String, Object>> queryById = indexById(metadata);
         Map<String, List<Map<String, Object>>> resourcesById = groupById(resources);
-        Map<String, String> clientsByQueryId = byQueryId(processlist, "HOST");
-        Map<String, String> usersByQueryId = byQueryId(processlist, "USER");
+        Map<String, String> clientsByQueryId = byQueryId(processlist, "Host");
+        Map<String, String> usersByQueryId = byQueryId(processlist, "User");
         Map<String, String> workloadNames = workloadNames(workloadGroups);
         Map<String, String> hostNames = hostNames(clusterId);
 
@@ -213,9 +215,9 @@ public class DorisActiveTaskQueryService {
     }
 
     private List<Map<String, Object>> requiredRows(DorisAdminReaderFactory.DorisAdminConnection connection,
-                                                   String sql, long deadlineNanos) {
+                                                   String sql, long deadlineNanos, Object... args) {
         try {
-            return rows(connection, sql, deadlineNanos);
+            return rows(connection, sql, deadlineNanos, args);
         } catch (RuntimeException exception) {
             if (looksLikeMissingTable(exception)) {
                 throw new CapabilityUnsupportedException();
@@ -238,10 +240,10 @@ public class DorisActiveTaskQueryService {
     }
 
     private List<Map<String, Object>> rows(DorisAdminReaderFactory.DorisAdminConnection connection,
-                                           String sql, long deadlineNanos) {
+                                           String sql, long deadlineNanos, Object... args) {
         ensureWithinDeadline(deadlineNanos);
         if (connection.dataSource() == null) {
-            return rowQuery.apply(connection.client(), sql);
+            return rowQuery.apply(connection.client(), sql, args);
         }
         long remainingNanos = deadlineNanos - nanoTime.getAsLong();
         int timeoutSeconds = (int) Math.min(STATEMENT_TIMEOUT_MS / 1_000,
@@ -251,7 +253,7 @@ public class DorisActiveTaskQueryService {
         }
         JdbcTemplate jdbcTemplate = new JdbcTemplate(connection.dataSource());
         jdbcTemplate.setQueryTimeout(timeoutSeconds);
-        return jdbcTemplate.queryForList(sql);
+        return args.length == 0 ? jdbcTemplate.queryForList(sql) : jdbcTemplate.queryForList(sql, args);
     }
 
     private void ensureWithinDeadline(long deadlineNanos) {
@@ -377,11 +379,11 @@ public class DorisActiveTaskQueryService {
     private Map<String, String> byQueryId(List<Map<String, Object>> rows, String column) {
         Map<String, String> values = new HashMap<>();
         for (Map<String, Object> row : rows) {
-            String command = text(row, "COMMAND");
+            String command = text(row, "Command");
             if (command != null && !"QUERY".equalsIgnoreCase(command)) {
                 continue;
             }
-            String id = text(row, "QUERYID");
+            String id = text(row, "QueryId");
             if (id != null) {
                 values.putIfAbsent(id, text(row, column));
             }
@@ -391,7 +393,7 @@ public class DorisActiveTaskQueryService {
 
     private Map<String, String> workloadNames(List<Map<String, Object>> rows) {
         return rows.stream()
-                .map(row -> new String[]{text(row, "ID"), text(row, "NAME")})
+                .map(row -> new String[]{text(row, "Id"), text(row, "Name")})
                 .filter(entry -> entry[0] != null && entry[1] != null)
                 .collect(Collectors.toMap(entry -> entry[0], entry -> entry[1], (first, ignored) -> first));
     }
@@ -432,12 +434,20 @@ public class DorisActiveTaskQueryService {
         return result;
     }
 
-    private static List<Map<String, Object>> queryRows(JdbcClient client, String sql) {
-        return client.sql(sql).query().listOfRows();
+    private static List<Map<String, Object>> queryRows(JdbcClient client, String sql, Object... args) {
+        return args.length == 0
+                ? client.sql(sql).query().listOfRows()
+                : client.sql(sql).params(args).query().listOfRows();
+    }
+
+    /** 取数接缝：生产走 JDBC，测试注入假数据。带 args 以便详情路径参数化下推 taskId。 */
+    @FunctionalInterface
+    interface RowQuery {
+        List<Map<String, Object>> apply(JdbcClient client, String sql, Object... args);
     }
 
     private static boolean atSourceLimit(Collection<?> rows) {
-        return rows.size() == SOURCE_LIMIT;
+        return rows.size() == DorisVersionProfile.SOURCE_LIMIT;
     }
 
     private static boolean atLeast(Long value, Long minimum) {

@@ -27,6 +27,7 @@ import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.DorisActiveTaskQueryDTO;
 import com.datasophon.api.dto.v2.DorisActiveTaskResponseVO;
 import com.datasophon.api.dto.v2.DorisActiveTaskVO;
+import com.datasophon.api.security.SystemAdminGuard;
 import com.datasophon.api.service.doris.DorisActiveTaskFacade;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,9 +43,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class DorisActiveTaskController extends ApiController {
 
     private final DorisActiveTaskFacade facade;
+    private final SystemAdminGuard adminGuard;
 
-    public DorisActiveTaskController(DorisActiveTaskFacade facade) {
+    public DorisActiveTaskController(DorisActiveTaskFacade facade, SystemAdminGuard adminGuard) {
         this.facade = facade;
+        this.adminGuard = adminGuard;
     }
 
     @PostMapping("/active-tasks")
@@ -52,6 +55,7 @@ public class DorisActiveTaskController extends ApiController {
                                                               @PathVariable Integer clusterId,
                                                               @PathVariable Integer instanceId,
                                                               @RequestBody(required = false) DorisActiveTaskQueryDTO query) {
+        adminGuard.requireAdmin();
         return ApiResponse.ok(facade.query(clusterId, instanceId, query));
     }
 
@@ -59,6 +63,7 @@ public class DorisActiveTaskController extends ApiController {
     public ApiResponse<DorisActiveTaskVO> activeTaskDetail(@PathVariable Integer clusterId,
                                                            @PathVariable Integer instanceId,
                                                            @PathVariable String taskId) {
+        adminGuard.requireAdmin();
         return ApiResponse.ok(facade.queryDetail(clusterId, instanceId, taskId));
     }
 }
