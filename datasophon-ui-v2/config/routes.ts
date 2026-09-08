@@ -183,7 +183,12 @@ export default [
     ],
   },
 
-  // ─── DAG 图全屏页（layout:false，window.open 新窗口）─────────────────────
+  // ─── 拓扑 / DAG 独立全屏页（layout:false，新标签打开）─────────────────────
+  {
+    path: '/cluster/:clusterId/topology',
+    component: './Cluster/Topology',
+    layout: false,
+  },
   {
     path: '/cluster/:clusterId/dag/:dagId',
     component: './Cluster/DagGraph',

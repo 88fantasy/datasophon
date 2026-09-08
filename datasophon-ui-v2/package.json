@@ -57,6 +57,7 @@
     "react-dom": "^19.2.5",
     "react-simple-code-editor": "^0.14.1",
     "spark-md5": "^3.0.2",
+    "three": "0.185.1",
     "topojson-client": "^3.1.0"
   },
   "devDependencies": {
@@ -76,6 +77,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/react-helmet": "^6.1.11",
     "@types/spark-md5": "^3.0.5",
+    "@types/three": "0.185.4",
     "@types/topojson-client": "^3.1.5",
     "@types/topojson-specification": "^1.0.5",
     "@umijs/lint": "^4.6.51",

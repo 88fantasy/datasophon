@@ -1,5 +1,6 @@
 import {
   DeleteOutlined,
+  DeploymentUnitOutlined,
   EditOutlined,
   PlusOutlined,
   RightCircleOutlined,
@@ -133,6 +134,17 @@ const ColonyManage: React.FC = () => {
             }
           >
             进入
+          </Button>,
+          <Button
+            key="topology"
+            type="link"
+            size="small"
+            icon={<DeploymentUnitOutlined />}
+            href={`/ddh/cluster/${cluster.id}/topology`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            部署拓扑
           </Button>,
           <BuildOrEditModal
             key="edit"
