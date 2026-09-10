@@ -42,6 +42,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -265,9 +266,8 @@ public class K8sServiceImpl implements K8sService {
             String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
-            K8sResourceList<K8sDeployment> deploymentsResult = client.getDeployments(namespace, labelSelector);
             List<K8sDeploymentInfo> result = new ArrayList<>();
-            for (K8sDeployment deployment : deploymentsResult.getItems()) {
+            for (K8sDeployment deployment : fetchWithLegacyFallback(namespace, labelSelector, client::getDeployments)) {
                 result.add(deploymentToInfo(deployment));
             }
             return result;
@@ -305,6 +305,31 @@ public class K8sServiceImpl implements K8sService {
                 ? instance.getReleaseName()
                 : HelmUtils.createReleaseName(instance.getServiceName());
         return String.format("%s=%s,%s=%s", MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE, SRV_INST_ID_LABEL, releaseName);
+    }
+
+    /**
+     * 旧版 Helm chart（Helm2/Tiller 时代）只打 {@code release=<name>} 标签，不带
+     * {@code app.kubernetes.io/managed-by=Helm}（那是 Helm3 之后的约定）；因此这里直接丢弃
+     * {@link #buildLabelSelector} 拼出的 managed-by 子句，只保留按 instance 名换算出的 release
+     * 子句，并排除已有 instance 标签的资源，避免重复或跨 release 归属。
+     */
+    private String legacySelector(String labelSelector) {
+        String instanceClause = labelSelector.substring(labelSelector.indexOf(',') + 1);
+        return instanceClause.replace(SRV_INST_ID_LABEL + "=", "release=") + ",!" + SRV_INST_ID_LABEL;
+    }
+
+    /**
+     * 用主 selector 查一遍，再用 {@link #legacySelector} 兜底查一遍旧版 Helm chart 遗留资源，
+     * 结果合并返回。{@code labelSelector} 为 {@code null}（CR 接管实例，见
+     * {@link #buildLabelSelector(K8sServiceInstanceVO)}）时不做兜底查询。
+     */
+    private <T> List<T> fetchWithLegacyFallback(
+                                                String namespace, String labelSelector, BiFunction<String, String, K8sResourceList<T>> fetcher) {
+        List<T> items = new ArrayList<>(fetcher.apply(namespace, labelSelector).getItems());
+        if (labelSelector != null) {
+            items.addAll(fetcher.apply(namespace, legacySelector(labelSelector)).getItems());
+        }
+        return items;
     }
 
     /**
@@ -372,9 +397,8 @@ public class K8sServiceImpl implements K8sService {
             String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
-            K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
             List<K8sPodInfo> result = new ArrayList<>();
-            for (K8sPod pod : podsResult.getItems()) {
+            for (K8sPod pod : fetchWithLegacyFallback(namespace, labelSelector, client::getPods)) {
                 result.add(podToInfo(pod));
             }
             return result;
@@ -427,18 +451,9 @@ public class K8sServiceImpl implements K8sService {
             String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
-            K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sService> servicesResult = client.getServices(namespace, labelSelector);
             List<K8sServiceInfo> result = new ArrayList<>();
-            for (com.datasophon.common.k8s.vo.k8s.K8sService service : servicesResult.getItems()) {
+            for (com.datasophon.common.k8s.vo.k8s.K8sService service : fetchWithLegacyFallback(namespace, labelSelector, client::getServices)) {
                 result.add(serviceToInfo(service));
-            }
-            if (labelSelector != null) {
-                // 旧版 Helm chart 使用 release 标签；排除已有 instance 标签的资源，避免重复或跨 release 归属。
-                String legacySelector = labelSelector.replace(SRV_INST_ID_LABEL + "=", "release=")
-                        + ",!" + SRV_INST_ID_LABEL;
-                for (com.datasophon.common.k8s.vo.k8s.K8sService legacy : client.getServices(namespace, legacySelector).getItems()) {
-                    result.add(serviceToInfo(legacy));
-                }
             }
             return result;
         }, "获取 Service 资源列表");
@@ -503,9 +518,8 @@ public class K8sServiceImpl implements K8sService {
             String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
-            K8sResourceList<K8sIngress> ingressesResult = client.getIngresses(namespace, labelSelector);
             List<K8sIngressInfo> result = new ArrayList<>();
-            for (K8sIngress ingress : ingressesResult.getItems()) {
+            for (K8sIngress ingress : fetchWithLegacyFallback(namespace, labelSelector, client::getIngresses)) {
                 result.add(ingressToInfo(ingress));
             }
             return result;
@@ -561,9 +575,8 @@ public class K8sServiceImpl implements K8sService {
             String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
-            K8sResourceList<K8sConfigMap> configMapsResult = client.getConfigMaps(namespace, labelSelector);
             List<K8sConfigMapInfo> result = new ArrayList<>();
-            for (K8sConfigMap configMap : configMapsResult.getItems()) {
+            for (K8sConfigMap configMap : fetchWithLegacyFallback(namespace, labelSelector, client::getConfigMaps)) {
                 result.add(configMapToInfo(configMap));
             }
             return result;
@@ -706,10 +719,9 @@ public class K8sServiceImpl implements K8sService {
                     .orElseThrow(() -> new BusinessException(String.format("K8s 服务实例 %s 不存在", query.getInstanceId())));
             String namespace = instance.getNamespace();
             String labelSelector = buildLabelSelector(query.getInstanceId());
-            K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
             List<K8sEvent> allEvents = new ArrayList<>();
 
-            for (K8sPod pod : podsResult.getItems()) {
+            for (K8sPod pod : fetchWithLegacyFallback(namespace, labelSelector, client::getPods)) {
                 List<K8sEvent> podEvents = client.getEventOf(namespace, "pod/" + pod.getMetadata().getName());
                 allEvents.addAll(podEvents);
             }

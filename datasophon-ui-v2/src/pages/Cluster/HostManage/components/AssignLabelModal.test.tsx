@@ -13,8 +13,15 @@ const form = vi.hoisted(() => ({
     nodeLabel: string;
   }) => Promise<boolean>,
 }));
+const request = vi.hoisted(() => ({
+  data: [] as { id: number; nodeLabel: string; clusterId: number }[],
+  fetcher: undefined as unknown as () => Promise<{ data: unknown[] }>,
+}));
 vi.mock('@umijs/max', () => ({
-  useRequest: () => ({ data: [], refresh: vi.fn() }),
+  useRequest: (fn: () => Promise<{ data: unknown[] }>) => {
+    request.fetcher = fn;
+    return { data: request.data, refresh: vi.fn() };
+  },
 }));
 vi.mock('@/services/label', () => ({
   assignNodeLabel: vi.fn(),
@@ -52,6 +59,7 @@ function setup() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  request.data = [label];
   vi.mocked(listNodeLabels).mockResolvedValue({ data: [label] });
   vi.mocked(saveNodeLabel).mockResolvedValue({ data: undefined });
   vi.mocked(assignNodeLabel).mockResolvedValue({ data: undefined });
@@ -68,19 +76,21 @@ it('shows builtin choices without creating them and reuses an existing label', a
   expect(saveNodeLabel).not.toHaveBeenCalled();
   expect(await form.finish({ nodeLabel: 'doris' })).toBe(true);
   expect(saveNodeLabel).not.toHaveBeenCalled();
+  // 已加载的标签列表里已经有这个标签，不应该再多打一次网络请求去重新确认。
+  expect(listNodeLabels).not.toHaveBeenCalled();
   expect(assignNodeLabel).toHaveBeenCalledWith(1, 8, [2, 3]);
 });
 it('creates missing builtin and uses its persisted ID', async () => {
-  vi.mocked(listNodeLabels)
-    .mockResolvedValueOnce({ data: [] })
-    .mockResolvedValueOnce({ data: [label] });
+  request.data = [];
+  vi.mocked(listNodeLabels).mockResolvedValue({ data: [label] });
   setup();
   expect(await form.finish({ nodeLabel: 'doris' })).toBe(true);
   expect(saveNodeLabel).toHaveBeenCalledWith(1, 'doris');
+  expect(listNodeLabels).toHaveBeenCalledTimes(1);
   expect(assignNodeLabel).toHaveBeenCalledWith(1, 8, [2, 3]);
 });
 it('stops on creation business failure', async () => {
-  vi.mocked(listNodeLabels).mockResolvedValue({ data: [] });
+  request.data = [];
   vi.mocked(saveNodeLabel).mockResolvedValue({
     data: undefined,
     success: false,
@@ -102,4 +112,9 @@ it('does not report failed assignment as success', async () => {
   expect(await form.finish({ nodeLabel: 'doris' })).toBe(false);
   expect(success).not.toHaveBeenCalled();
   expect(message.success).not.toHaveBeenCalled();
+});
+it('falls back to an empty label list when the API returns a non-array data field', async () => {
+  vi.mocked(listNodeLabels).mockResolvedValueOnce({ data: {} as any });
+  setup();
+  await expect(request.fetcher()).resolves.toEqual({ data: [] });
 });

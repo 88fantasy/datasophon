@@ -12,8 +12,10 @@ import static org.mockito.Mockito.when;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.k8s.K8sClientOptionsFactory;
+import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.api.vo.k8s.K8sServiceInfo;
 import com.datasophon.common.k8s.client.KubectlClient;
+import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
@@ -47,7 +49,8 @@ class K8sServiceImplTest {
     @Test
     void includesLegacyHelmServicesAlongsideModernOnesWithDisjointSelectors() {
         String modern = "app.kubernetes.io/managed-by=Helm,app.kubernetes.io/instance=elasticsearch";
-        String legacy = "app.kubernetes.io/managed-by=Helm,release=elasticsearch,!app.kubernetes.io/instance";
+        // 旧版 Helm chart（Helm2/Tiller）不带 managed-by=Helm 标签，legacy selector 不应再 AND 上它。
+        String legacy = "release=elasticsearch,!app.kubernetes.io/instance";
         try (var clients = mockConstruction(KubectlClient.class, (client, context) -> {
             when(client.getServices("prod", modern)).thenReturn(resources("modern-service"));
             when(client.getServices("prod", legacy)).thenReturn(resources("elasticsearch-master", "elasticsearch-master-headless"));
@@ -58,6 +61,24 @@ class K8sServiceImplTest {
             verify(client).getServices("prod", modern);
             // Only missing instance labels qualify: dual-labeled resources cannot be duplicated or assigned across releases.
             verify(client).getServices("prod", legacy);
+            verify(client).close();
+            verifyNoMoreInteractions(client);
+        }
+    }
+
+    @Test
+    void appliesLegacyHelmFallbackToPodsTooNotJustServices() {
+        String modern = "app.kubernetes.io/managed-by=Helm,app.kubernetes.io/instance=elasticsearch";
+        String legacy = "release=elasticsearch,!app.kubernetes.io/instance";
+        try (var clients = mockConstruction(KubectlClient.class, (client, context) -> {
+            when(client.getPods("prod", modern)).thenReturn(podResources("modern-pod"));
+            when(client.getPods("prod", legacy)).thenReturn(podResources("elasticsearch-master-0"));
+        })) {
+            assertThat(service.listPods(config, query)).extracting(K8sPodInfo::getName)
+                    .containsExactly("modern-pod", "elasticsearch-master-0");
+            KubectlClient client = clients.constructed().getFirst();
+            verify(client).getPods("prod", modern);
+            verify(client).getPods("prod", legacy);
             verify(client).close();
             verifyNoMoreInteractions(client);
         }
@@ -82,6 +103,19 @@ class K8sServiceImplTest {
         result.setItems(java.util.Arrays.stream(names).map(name -> {
             K8sService item = new K8sService();
             K8sService.Metadata metadata = new K8sService.Metadata();
+            metadata.setName(name);
+            metadata.setNamespace("prod");
+            item.setMetadata(metadata);
+            return item;
+        }).toList());
+        return result;
+    }
+
+    private static K8sResourceList<K8sPod> podResources(String... names) {
+        K8sResourceList<K8sPod> result = new K8sResourceList<>();
+        result.setItems(java.util.Arrays.stream(names).map(name -> {
+            K8sPod item = new K8sPod();
+            K8sPod.Metadata metadata = new K8sPod.Metadata();
             metadata.setName(name);
             metadata.setNamespace("prod");
             item.setMetadata(metadata);

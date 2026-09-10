@@ -28,7 +28,7 @@ const AssignLabelModal: React.FC<Props> = ({
     const res = await listNodeLabels(clusterId);
     const failure = getApiFailureMessage(res, '标签加载失败');
     if (failure) throw new Error(failure);
-    return { data: res.data ?? [] };
+    return { data: Array.isArray(res.data) ? res.data : [] };
   });
   const labelOptions = Array.from(
     new Set([
@@ -50,10 +50,7 @@ const AssignLabelModal: React.FC<Props> = ({
       }}
       onFinish={async (values) => {
         try {
-          let res = await listNodeLabels(clusterId);
-          let failure = getApiFailureMessage(res, '标签加载失败');
-          if (failure) throw new Error(failure);
-          let label = res.data.find(
+          let label = labels.find(
             (item) => item.nodeLabel === values.nodeLabel,
           );
           if (
@@ -61,18 +58,18 @@ const AssignLabelModal: React.FC<Props> = ({
             BUILTIN_HOST_LABELS.some((item) => item.value === values.nodeLabel)
           ) {
             const saved = await saveNodeLabel(clusterId, values.nodeLabel);
-            failure = getApiFailureMessage(saved, '标签创建失败');
+            let failure = getApiFailureMessage(saved, '标签创建失败');
             if (failure) throw new Error(failure);
-            res = await listNodeLabels(clusterId);
+            const res = await listNodeLabels(clusterId);
             failure = getApiFailureMessage(res, '标签加载失败');
             if (failure) throw new Error(failure);
-            label = res.data.find(
+            label = (Array.isArray(res.data) ? res.data : []).find(
               (item) => item.nodeLabel === values.nodeLabel,
             );
           }
           if (!label) throw new Error('标签不存在，请重新选择');
           const assigned = await assignNodeLabel(clusterId, label.id, hostIds);
-          failure = getApiFailureMessage(assigned, '标签分配失败');
+          const failure = getApiFailureMessage(assigned, '标签分配失败');
           if (failure) throw new Error(failure);
           message.success('标签分配成功');
           onSuccess();

@@ -29,6 +29,9 @@ type SceneLabel = {
 const getLabelWidth = (zone?: ZoneId) =>
   zone === 'edge' ? 90 : zone ? 120 : 126;
 
+const PERSPECTIVE_DIRECTION = new THREE.Vector3(0.26, 0.88, 1.12).normalize();
+const ORTHOGRAPHIC_DIRECTION = new THREE.Vector3(0.18, 1, 0.43).normalize();
+
 function mountScene(
   host: HTMLDivElement,
   current: { current: TopologySceneProps },
@@ -79,8 +82,7 @@ function mountScene(
   const scope = current.current.scopeKey || focusZone || 'overview';
   const extent = Math.max(layout.width, layout.depth, 12);
   let perspectiveDirection =
-    views.get(`${scope}:3d`)?.direction.clone() ||
-    new THREE.Vector3(0.26, 0.88, 1.12).normalize();
+    views.get(`${scope}:3d`)?.direction.clone() || PERSPECTIVE_DIRECTION;
   const meshes: ReturnType<typeof createTopologyModels>[] = [];
   const zoneMeshes: THREE.Mesh[] = [];
   const raycaster = new THREE.Raycaster();
@@ -92,6 +94,10 @@ function mountScene(
       layout.depth + (focusZone ? 2 : 4),
       (layout.width + 4) / (width / height),
     ) * 1.08;
+  const orthoBounds = (span: number) => {
+    const left = (-span * width) / height / 2;
+    return { left, right: -left, top: span / 2, bottom: -span / 2 };
+  };
 
   const view = (): CameraView => ({
     target: controls?.target.clone() || new THREE.Vector3(),
@@ -244,28 +250,24 @@ function mountScene(
     const span = previous?.span || fittedSpan();
     const target = previous?.target || new THREE.Vector3(0, 0.45, 0);
     const distance = span / (2 * Math.tan(THREE.MathUtils.degToRad(20)));
-    camera =
-      mode === '3d'
-        ? new THREE.PerspectiveCamera(
-            40,
-            width / height,
-            0.1,
-            Math.max(2000, extent * 25),
-          )
-        : new THREE.OrthographicCamera(
-            (-span * width) / height / 2,
-            (span * width) / height / 2,
-            span / 2,
-            -span / 2,
-            0.1,
-            Math.max(2000, extent * 25),
-          );
+    const far = Math.max(2000, extent * 25);
+    if (mode === '3d') {
+      camera = new THREE.PerspectiveCamera(40, width / height, 0.1, far);
+    } else {
+      const bounds = orthoBounds(span);
+      camera = new THREE.OrthographicCamera(
+        bounds.left,
+        bounds.right,
+        bounds.top,
+        bounds.bottom,
+        0.1,
+        far,
+      );
+    }
     camera.position
       .copy(target)
       .addScaledVector(
-        mode === '3d'
-          ? perspectiveDirection
-          : new THREE.Vector3(0.18, 1, 0.43).normalize(),
+        mode === '3d' ? perspectiveDirection : ORTHOGRAPHIC_DIRECTION,
         distance,
       );
     controls = new OrbitControls(camera, canvas);
@@ -289,9 +291,7 @@ function mountScene(
     if (!camera || !controls) return;
     const span = fittedSpan();
     const direction =
-      activeMode === '3d'
-        ? new THREE.Vector3(0.26, 0.88, 1.12).normalize()
-        : new THREE.Vector3(0.18, 1, 0.43).normalize();
+      activeMode === '3d' ? PERSPECTIVE_DIRECTION : ORTHOGRAPHIC_DIRECTION;
     controls.target.set(0, 0.45, 0);
     camera.position
       .copy(controls.target)
@@ -300,11 +300,7 @@ function mountScene(
         span / (2 * Math.tan(THREE.MathUtils.degToRad(20))),
       );
     if (camera instanceof THREE.OrthographicCamera) {
-      camera.left = (-span * width) / height / 2;
-      camera.right = -camera.left;
-      camera.top = span / 2;
-      camera.bottom = -span / 2;
-      camera.zoom = 1;
+      Object.assign(camera, orthoBounds(span), { zoom: 1 });
       camera.updateProjectionMatrix();
     }
     controls.update();

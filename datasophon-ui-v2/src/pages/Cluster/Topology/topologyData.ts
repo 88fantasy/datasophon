@@ -231,7 +231,9 @@ export async function loadTopology(
                     ? 'Ready'
                     : host?.hostState === 2
                       ? 'NotReady'
-                      : '未知',
+                      : host?.hostState === 3
+                        ? '存在告警'
+                        : '未知',
               },
             ]
           : []),
@@ -448,7 +450,12 @@ export async function loadTopology(
                 continue;
               }
               const id = `k8s-service:${clusterId}:${service.namespace}:${endpoint.name}`;
-              if (snapshot.nodes.some((node) => node.id === id)) continue;
+              if (snapshot.nodes.some((node) => node.id === id)) {
+                warn(
+                  `${service.serviceName} 已跳过重复的 Service ${endpoint.name}`,
+                );
+                continue;
+              }
               const ports = servicePorts(endpoint.ports) || '端口未登记';
               snapshot.nodes.push({
                 ...base,
