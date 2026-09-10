@@ -10,17 +10,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import lombok.Data;
 import cn.hutool.core.util.StrUtil;
+import lombok.Data;
 
 /**
  * docker 命令封装客户端
  */
 @Data
 public class DockerClient {
-    
+
     private final String dockerPath;
-    
+
     public static String detectDockerPath() {
         String path = PropertyUtils.getString("docker.install_path");
         if (StrUtil.isNotBlank(path)) {
@@ -28,11 +28,11 @@ public class DockerClient {
         }
         return "docker";
     }
-    
+
     public DockerClient() {
         this.dockerPath = detectDockerPath();
     }
-    
+
     /**
      * 执行 docker 命令的基础方法
      *
@@ -42,12 +42,12 @@ public class DockerClient {
     private ExecResult execute(List<String> subCommandParts, int timeoutSeconds) {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(dockerPath);
-        
+
         commandParts.addAll(subCommandParts);
-        
+
         return ShellUtils.execWithBash(null, commandParts, timeoutSeconds);
     }
-    
+
     /**
      * 执行 docker 命令并返回输出
      *
@@ -61,7 +61,7 @@ public class DockerClient {
         }
         return result.getExecOut();
     }
-    
+
     /**
      * 通过 stdin 传递输入执行 docker 命令
      *
@@ -73,10 +73,10 @@ public class DockerClient {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(dockerPath);
         commandParts.addAll(subCommandParts);
-        
+
         return ShellUtils.execWithStdin(null, commandParts, stdinInput, timeoutSeconds);
     }
-    
+
     /**
      * 加载镜像包
      *
@@ -94,12 +94,13 @@ public class DockerClient {
             throw new DockerException(String.format("加载镜像%s失败，%s", file.getName(), result.getErrorTraceMessage()));
         }
         String hint = "Loaded image:";
-        if (result.getExecOut().startsWith(hint)) {
-            return result.getExecOut().substring(hint.length());
+        String out = StrUtil.nullToEmpty(result.getExecOut());
+        if (out.startsWith(hint)) {
+            return out.substring(hint.length());
         }
-        throw new DockerException(String.format("加载镜像%s失败，%s", file.getName(), result.getExecOut()));
+        throw new DockerException(String.format("加载镜像%s失败，%s", file.getName(), out));
     }
-    
+
     /**
      * 为镜像打标签
      *
@@ -113,7 +114,7 @@ public class DockerClient {
             throw new DockerException(String.format("为镜像%s打标签%s失败，%s", imageId, newImageId, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 删除镜像标签
      *
@@ -123,11 +124,11 @@ public class DockerClient {
         List<String> args = Arrays.asList("rmi", imageId);
         ExecResult result = execute(args, 30);
         // ignore error if image absent
-        if (!result.isSuccess() && !result.getExecOut().contains("No such image")) {
+        if (!result.isSuccess() && !StrUtil.trimToEmpty(result.getExecOut()).contains("No such image")) {
             throw new DockerException(String.format("删除镜像%s失败，%s", imageId, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 推送镜像到仓库
      *
@@ -140,7 +141,7 @@ public class DockerClient {
             throw new DockerException(String.format("推送镜像%s失败，%s", imageId, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 登录到 Docker  registry
      *
@@ -160,7 +161,7 @@ public class DockerClient {
             throw new DockerException(String.format("登录 registry%s失败，%s", registry, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 从 registry 登出
      *
@@ -173,7 +174,7 @@ public class DockerClient {
             throw new DockerException(String.format("登出 registry%s失败，%s", registry, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 删除 Docker manifest
      *
@@ -187,14 +188,14 @@ public class DockerClient {
         args.add(name);
         ExecResult result = execute(args, 30);
         if (!result.isSuccess()) {
-            if (ignoreErrorIfAbsent && result.getExecOut().contains("No such manifest")) {
+            if (ignoreErrorIfAbsent && StrUtil.trimToEmpty(result.getExecOut()).contains("No such manifest")) {
                 // 忽略错误
                 return;
             }
             throw new DockerException(String.format("删除 manifest %s 失败，%s", name, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 创建 Docker manifest
      *
@@ -219,7 +220,7 @@ public class DockerClient {
             throw new DockerException(String.format("创建 manifest %s 失败，%s", name, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 标注 Docker manifest（指定架构和操作系统）
      *
@@ -243,7 +244,7 @@ public class DockerClient {
             throw new DockerException(String.format("标注 manifest %s 的镜像%s失败，%s", name, tag, result.getErrorTraceMessage()));
         }
     }
-    
+
     /**
      * 推送 Docker manifest 到 registry
      *
@@ -263,5 +264,5 @@ public class DockerClient {
             throw new DockerException(String.format("推送 manifest %s 失败，%s", name, result.getErrorTraceMessage()));
         }
     }
-    
+
 }

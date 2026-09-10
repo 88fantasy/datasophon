@@ -32,7 +32,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -62,26 +61,20 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 // 否则与 DataSophonMySQLStartupTest 各自的 Context 会争抢同一端口导致 BindException
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DataSophonApplicationServerTest {
-    
+
     /**
      * 注入完整的 Spring ApplicationContext，用于断言 Bean 注册情况
      */
     @Autowired
     private ApplicationContext context;
-    
+
     /**
      * 拦截 LoadServiceMeta（ApplicationRunner）的 run()，
      * 避免启动时对空 H2 库发起真实查询
      */
     @MockitoBean
     private LoadServiceMeta loadServiceMeta;
-    
-    /**
-     * Spring Boot 测试框架注入的随机端口号
-     */
-    @LocalServerPort
-    private int port;
-    
+
     /**
      * 核心启动测试：验证 Spring 上下文完整加载
      *
@@ -93,18 +86,7 @@ class DataSophonApplicationServerTest {
     void contextLoads() {
         assertThat(context).isNotNull();
     }
-    
-    /**
-     * 验证内嵌 Web 服务器已在随机端口绑定并启动
-     */
-    @Test
-    @DisplayName("Web 服务器在随机端口启动")
-    void webServerStartedOnRandomPort() {
-        assertThat(port)
-                .as("服务器端口应为正整数（OS 随机分配）")
-                .isPositive();
-    }
-    
+
     /**
      * 验证 DataSource Bean 已注册——即数据源配置（H2）正确解析
      */

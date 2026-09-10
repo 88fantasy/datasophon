@@ -73,6 +73,26 @@ class OtelCollectorControllerTest {
     }
 
     @Test
+    void returnsErrorCodeWhenNodePushFails() {
+        OtelCollectorConfigService configService =
+                new OtelCollectorConfigService(null, null, null, null, null, null) {
+
+                    @Override
+                    public ExecResult pushNodeConfig(Integer clusterId, String hostname, Map<String, String> params) {
+                        ExecResult failed = new ExecResult();
+                        failed.setExecResult(false);
+                        return failed;
+                    }
+                };
+        OtelCollectorController controller = new OtelCollectorController(
+                configService, installService(List.of()), null, null);
+
+        Result result = controller.push(2, "node2", Map.of());
+
+        assertThat(result.getCode()).isEqualTo(500);
+    }
+
+    @Test
     void appliesSchemaAndUsesStagedSwitchForDorisMode() {
         AtomicBoolean schemaApplied = new AtomicBoolean();
         AtomicReference<Map<String, String>> captured = new AtomicReference<>();

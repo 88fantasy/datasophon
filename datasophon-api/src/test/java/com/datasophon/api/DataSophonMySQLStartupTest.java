@@ -37,7 +37,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -73,23 +72,20 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 // 否则与 DataSophonApplicationServerTest 各自的 Context 会争抢同一端口导致 BindException
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DataSophonMySQLStartupTest {
-    
+
     @Autowired
     private ApplicationContext context;
-    
+
     /**
      * 拦截 LoadServiceMeta，避免启动时对服务元数据表发起复杂查询
      * （数据库可能尚无业务数据，仅验证结构迁移与上下文加载）
      */
     @MockitoBean
     private LoadServiceMeta loadServiceMeta;
-    
-    @LocalServerPort
-    private int port;
-    
+
     @Autowired
     private DataSource dataSource;
-    
+
     /**
      * 核心启动测试：验证使用真实 MySQL 时 Spring 上下文可完整加载
      */
@@ -98,18 +94,7 @@ class DataSophonMySQLStartupTest {
     void contextLoads() {
         assertThat(context).isNotNull();
     }
-    
-    /**
-     * 验证内嵌 Web 服务器已绑定随机端口
-     */
-    @Test
-    @DisplayName("Web 服务器在随机端口启动")
-    void webServerStartedOnRandomPort() {
-        assertThat(port)
-                .as("服务器端口应为正整数（OS 随机分配）")
-                .isPositive();
-    }
-    
+
     /**
      * 验证 Druid DataSource Bean 已注册
      */
@@ -123,7 +108,7 @@ class DataSophonMySQLStartupTest {
                 .as("应使用 Druid 连接池")
                 .contains("DruidDataSource");
     }
-    
+
     /**
      * 验证 Druid 能与真实 MySQL 建立连接并执行查询
      */

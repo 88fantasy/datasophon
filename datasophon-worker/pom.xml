@@ -146,16 +146,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>${skipTests}</skipTests>
-                    <includes>
-                        <include>**/grpc/**Test.java</include>
-                        <include>**/hook/resource/**Test.java</include>
-                        <include>**/test/OtelcolTemplateTest.java</include>
-                        <include>**/test/ExporterScriptTemplateTest.java</include>
-                        <include>**/test/YarnEnvTemplateTest.java</include>
-                        <include>**/test/DolphinschedulerEnvTemplateTest.java</include>
-                        <include>**/test/ApisixStandaloneTemplateTest.java</include>
-                        <include>**/test/JvmOptionsTemplateTest.java</include>
-                    </includes>
                 </configuration>
             </plugin>
             <!-- 注入 git 信息 -->
