@@ -206,13 +206,41 @@ describe('loadTopology', () => {
     expect(snapshot.warnings.length).toBeGreaterThan(0);
   });
 
-  it('never loads or displays Kubernetes Nodes', async () => {
+  it('loads Kubernetes Nodes by name, preserving Ready state and ignoring physical categories', async () => {
+    vi.mocked(listClusterHosts).mockResolvedValue({
+      data: {
+        records: [
+          { ...host(0), hostname: 'control', nodeLabel: 'control-plane' },
+          { ...host(0), hostname: 'worker', nodeLabel: 'worker', hostState: 2 },
+        ],
+        total: 2,
+      },
+    });
+    const snapshot = await loadTopology({ ...cluster, archType: 'k8s' });
+    expect(listClusterHosts).toHaveBeenCalledWith(7, {
+      page: 1,
+      pageSize: 100,
+    });
+    expect(
+      snapshot.nodes.map(({ id, zone, state }) => ({ id, zone, state })),
+    ).toEqual([
+      { id: 'host:7:name:control', zone: 'k8s', state: 'running' },
+      { id: 'host:7:name:worker', zone: 'k8s', state: 'warning' },
+    ]);
+    expect(snapshot.nodes[1].details).toContainEqual({
+      label: '节点状态',
+      value: 'NotReady',
+    });
+    expect(listK8sResources).not.toHaveBeenCalled();
+  });
+
+  it('rejects unavailable Kubernetes Nodes instead of reporting an empty cluster', async () => {
     vi.mocked(listClusterHosts).mockRejectedValue(
       new Error('node access denied'),
     );
-    const snapshot = await loadTopology({ ...cluster, archType: 'k8s' });
-    expect(listClusterHosts).not.toHaveBeenCalled();
-    expect(snapshot.nodes.filter((node) => node.kind === 'host')).toEqual([]);
+    await expect(loadTopology({ ...cluster, archType: 'k8s' })).rejects.toThrow(
+      'node access denied',
+    );
   });
 
   it('hides physical hosts labeled kubernetes and reports the Service / CR source boundary', async () => {
@@ -248,7 +276,7 @@ describe('loadTopology', () => {
     expect(snapshot.warnings.length).toBeGreaterThan(0);
   });
 
-  it('shows actual Kubernetes Services and CRs without querying Pods or Nodes', async () => {
+  it('shows actual Kubernetes Services and CRs without querying Pods', async () => {
     vi.mocked(listAllK8sInstances).mockResolvedValue({
       data: [
         {
@@ -369,7 +397,12 @@ describe('loadTopology', () => {
     expect(
       snapshot.edges.filter((edge) => edge.kind === 'deployment'),
     ).toHaveLength(0);
-    expect(snapshot.nodes).toEqual([]);
+    expect(snapshot.nodes.filter((node) => node.kind === 'service')).toEqual(
+      [],
+    );
+    expect(snapshot.nodes.filter((node) => node.kind === 'host')).toHaveLength(
+      1,
+    );
     expect(snapshot.warnings.join(' ')).toContain('Service');
   });
 

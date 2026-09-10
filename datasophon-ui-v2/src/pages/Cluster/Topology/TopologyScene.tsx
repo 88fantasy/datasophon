@@ -430,7 +430,13 @@ function mountScene(
         materials.add(material);
     });
     for (const geometry of geometries) geometry.dispose();
-    for (const material of materials) material.dispose();
+    const textures = new Set<THREE.Texture>();
+    for (const material of materials) {
+      if (material instanceof THREE.MeshBasicMaterial && material.map)
+        textures.add(material.map);
+      material.dispose();
+    }
+    for (const texture of textures) texture.dispose();
     environment?.dispose();
     scene.clear();
     renderer.dispose();
@@ -573,7 +579,7 @@ function mountScene(
         zone.id,
       );
     }
-    const models = createTopologyModels(layout.nodes, theme);
+    const models = createTopologyModels(layout.nodes, theme, invalidate);
     meshes.push(models);
     scene.add(models.group);
     for (const { node, x, z } of layout.nodes) {

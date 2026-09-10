@@ -122,7 +122,7 @@ function servicePorts(value: unknown): string | undefined {
   );
 }
 
-/** 主机按 nodeLabel 唯一归属；Kubernetes 仅展示 Service / CR。 */
+/** 物理主机按 nodeLabel 归属；Kubernetes 展示节点及集群级 Service / CR。 */
 export async function loadTopology(
   cluster: DATASOPHON.ClusterResponse,
 ): Promise<TopologySnapshot> {
@@ -168,17 +168,15 @@ export async function loadTopology(
   };
 
   const inventory = await Promise.allSettled([
-    isK8s
-      ? Promise.resolve([] as DATASOPHON.HostResponse[])
-      : allPages(
-          async (page) =>
-            responseData<DATASOPHON.HostPageResponse>(
-              await listClusterHosts(clusterId, { page, pageSize: PAGE_SIZE }),
-              '主机列表',
-            ),
+    allPages(
+      async (page) =>
+        responseData<DATASOPHON.HostPageResponse>(
+          await listClusterHosts(clusterId, { page, pageSize: PAGE_SIZE }),
           '主机列表',
-          (host) => (isK8s ? host.hostname : host.id),
         ),
+      '主机列表',
+      (host) => (isK8s ? host.hostname : host.id),
+    ),
     isK8s ? listAllK8sInstances(clusterId) : listClusterServices(clusterId),
   ]);
   const hostResult = inventory[0];
@@ -197,7 +195,7 @@ export async function loadTopology(
 
   const addHost = (hostname: string) => {
     const host = hostsByName.get(hostname);
-    const zone = hostZone(host?.nodeLabel);
+    const zone = isK8s ? 'k8s' : hostZone(host?.nodeLabel);
     const resourceId =
       host && !isK8s
         ? `host:${clusterId}:${host.id}`
@@ -209,15 +207,34 @@ export async function loadTopology(
       id,
       resourceId,
       label: host?.ip || `${hostname}（IP 未登记）`,
-      subtitle: host?.nodeLabel || '未配置类别',
+      subtitle: host?.nodeLabel || (isK8s ? 'Kubernetes 节点' : '未配置类别'),
       zone,
       kind: 'host',
       source: 'inventory',
-      state: numericState(host?.hostState),
+      state:
+        isK8s && host?.hostState === 2
+          ? 'warning'
+          : numericState(host?.hostState),
       address: host?.ip || undefined,
       details: [
         { label: '主机名', value: hostname },
-        { label: '节点标签', value: host?.nodeLabel || '未配置' },
+        {
+          label: isK8s ? '节点角色' : '节点标签',
+          value: host?.nodeLabel || '未配置',
+        },
+        ...(isK8s
+          ? [
+              {
+                label: '节点状态',
+                value:
+                  host?.hostState === 1
+                    ? 'Ready'
+                    : host?.hostState === 2
+                      ? 'NotReady'
+                      : '未知',
+              },
+            ]
+          : []),
         {
           label: '部署方式',
           value: isK8s
@@ -227,8 +244,10 @@ export async function loadTopology(
         {
           label: '登记信息',
           value: host
-            ? `主机 ID ${host.id}`
-            : '仅由角色或 Pod 的节点名称确认；IP 与硬件信息未知',
+            ? isK8s
+              ? 'Kubernetes Node API'
+              : `主机 ID ${host.id}`
+            : '仅由角色的节点名称确认；IP 与硬件信息未知',
         },
         ...(host?.rack ? [{ label: '机架', value: host.rack }] : []),
         ...(host?.coreNum
@@ -465,8 +484,8 @@ export async function loadTopology(
       );
     }
   }
+  for (const host of hosts) addHost(host.hostname);
   if (!isK8s) {
-    for (const host of hosts) addHost(host.hostname);
     if (
       snapshot.nodes.some((node) => node.kind === 'host' && node.zone === 'k8s')
     )

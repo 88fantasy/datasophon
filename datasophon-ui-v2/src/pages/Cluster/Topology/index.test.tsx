@@ -236,6 +236,51 @@ describe('cluster topology page', () => {
     expect(screen.getByTestId('scene')).not.toHaveAttribute('data-zone');
   });
 
+  it('shows K8s Nodes in the overview and Service / CR at cluster level, without assigning them to a Node', async () => {
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [
+        { id: 7, clusterName: 'K8s', clusterCode: 'k8s', archType: 'k8s' },
+      ],
+    });
+    vi.mocked(loadTopology).mockResolvedValue({
+      ...snapshot,
+      nodes: [
+        { ...snapshot.nodes[0], id: 'node', zone: 'k8s', subtitle: 'worker' },
+        {
+          ...snapshot.nodes[1],
+          id: 'svc',
+          label: 'flink-rest',
+          zone: 'k8s',
+          parentId: undefined,
+        },
+        {
+          ...snapshot.nodes[1],
+          id: 'cr',
+          label: 'doris-cr',
+          zone: 'k8s',
+          parentId: undefined,
+        },
+      ],
+    });
+    await openPage();
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-nodes', 'node');
+    fireEvent.click(screen.getByRole('button', { name: '查看10.0.0.1' }));
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-nodes', 'node');
+    expect(screen.getByTestId('scene')).toHaveAttribute(
+      'data-selected',
+      'node',
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: '进入Kubernetes集群分区' }),
+    );
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-nodes', 'svc,cr');
+    fireEvent.click(screen.getByText('2D 平面'));
+    fireEvent.click(screen.getByRole('button', { name: '查看flink-rest' }));
+    expect(screen.getByTestId('plan')).toHaveAttribute('data-selected', 'svc');
+    fireEvent.click(screen.getByRole('button', { name: '集群全景' }));
+    expect(screen.getByTestId('scene')).toHaveAttribute('data-nodes', 'node');
+  });
+
   it('provides a functional 2D fallback when WebGL fails', async () => {
     await openPage();
     fireEvent.click(screen.getByRole('button', { name: '模拟 WebGL 失败' }));

@@ -233,7 +233,7 @@ export default function ClusterTopology() {
   const selectResource = (id: string | null) => {
     const node = visibleNodes.find((node) => node.id === id);
     if (node?.kind === 'cluster') enterZone(node.zone);
-    else if (node?.kind === 'host') {
+    else if (node?.kind === 'host' && node.zone !== 'k8s') {
       setHostId(node.id);
       setSelectedId(null);
       setSearch('');
@@ -389,7 +389,10 @@ export default function ClusterTopology() {
                   <span className={styles.zoneCount}>
                     {
                       nodes.filter(
-                        (node) => node.zone === zone.id && !node.parentId,
+                        (node) =>
+                          node.zone === zone.id &&
+                          !node.parentId &&
+                          (zone.id !== 'k8s' || node.kind === 'host'),
                       ).length
                     }
                   </span>
@@ -441,9 +444,19 @@ export default function ClusterTopology() {
             <div className={styles.sidebarFoot}>
               <InfoCircleOutlined />
               <span>
-                仅显示当前集群已登记资源
-                <br />
-                按节点标签归类，未配置归入“其他”
+                {cluster?.archType === 'k8s' ? (
+                  <>
+                    全景显示节点，进入 Kubernetes 查看 Service / CR
+                    <br />
+                    不展示 Pod，不推断服务所在节点
+                  </>
+                ) : (
+                  <>
+                    仅显示当前集群已登记资源
+                    <br />
+                    按节点标签归类，未配置归入“其他”
+                  </>
+                )}
               </span>
             </div>
           </aside>
@@ -591,21 +604,27 @@ export default function ClusterTopology() {
                     ? `${currentHost.label} · 服务器内部服务`
                     : focused
                       ? focused.subtitle
-                      : '子集群 → 服务器 → 服务'}
+                      : cluster?.archType === 'k8s'
+                        ? 'Kubernetes 节点全景'
+                        : '子集群 → 服务器 → 服务'}
                 </span>
                 <small>
                   {mode === '3d'
                     ? '拖拽旋转 · 滚轮缩放 · 右键平移'
                     : '拖拽平移 · 滚轮缩放'}
                   <br />
-                  点击子集群或服务器下钻 · 点击服务查看详情
+                  {cluster?.archType === 'k8s'
+                    ? '点击 Kubernetes 集群查看 Service / CR · 点击节点或服务查看详情'
+                    : '点击子集群或服务器下钻 · 点击服务查看详情'}
                 </small>
               </div>
               {snapshot && focusZone && !visibleNodes.length && (
                 <div className={styles.emptyNotice}>
                   {hostId
                     ? '此服务器暂无已登记服务'
-                    : '此子集群暂无可展示资源，请检查登记信息与类别标签。'}
+                    : focusZone === 'k8s'
+                      ? '暂无可展示的 Service / CR，请检查服务接管登记及资源读取结果。'
+                      : '此子集群暂无可展示资源，请检查登记信息与类别标签。'}
                 </div>
               )}
             </div>

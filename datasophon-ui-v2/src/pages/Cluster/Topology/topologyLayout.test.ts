@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { serviceIconFor } from '../ObservabilityCollector/serviceIcon';
 import { layoutTopology } from './topologyLayout';
 import { createTopologyModels } from './topologyModels';
 import { TOPOLOGY_ZONES, type TopologyNode } from './types';
@@ -17,6 +18,62 @@ const nodes: TopologyNode[] = Array.from({ length: 100 }, (_, index) => ({
 }));
 
 describe('topology world layout', () => {
+  it('places the resource-index icons on service roofs and reuses their textures', () => {
+    const loaded = vi.fn();
+    const load = vi
+      .spyOn(THREE.TextureLoader.prototype, 'load')
+      .mockImplementation((_src, onLoad) => {
+        const texture = new THREE.Texture<HTMLImageElement>();
+        onLoad?.(texture);
+        return texture;
+      });
+    try {
+      const services = ['mysql', 'kafka', 'minio', 'kafka'].map(
+        (serviceName, index) => ({
+          ...nodes[index],
+          id: `service-${index}`,
+          kind: 'service' as const,
+          serviceName,
+        }),
+      );
+      const layout = layoutTopology([...services, nodes[0]], null);
+      const models = createTopologyModels(layout.nodes, 'light', loaded);
+      for (const { node, x, z } of layout.nodes) {
+        const icon = models.group.getObjectByName(`service-icon:${node.id}`) as
+          | THREE.Mesh
+          | undefined;
+        if (!node.serviceName) {
+          expect(icon).toBeUndefined();
+          continue;
+        }
+        expect(icon?.position.toArray()).toEqual([
+          x,
+          node.serviceName === 'minio' ? 2.535 : 2.59,
+          z,
+        ]);
+        expect(load).toHaveBeenCalledWith(
+          serviceIconFor(node.serviceName).src,
+          loaded,
+          undefined,
+          expect.any(Function),
+        );
+        expect(
+          (icon?.material as THREE.MeshBasicMaterial).map?.colorSpace,
+        ).toBe(THREE.SRGBColorSpace);
+      }
+      expect(load).toHaveBeenCalledTimes(3);
+      expect(loaded).toHaveBeenCalledTimes(3);
+      expect(
+        (models.group.getObjectByName('service-icon:service-1') as THREE.Mesh)
+          .material,
+      ).toBe(
+        (models.group.getObjectByName('service-icon:service-3') as THREE.Mesh)
+          .material,
+      );
+    } finally {
+      load.mockRestore();
+    }
+  });
   it('retains 100 servers inside disjoint zones with room for models and labels', () => {
     const layout = layoutTopology(nodes, null);
     expect(layout.nodes).toHaveLength(100);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { serviceIconFor } from '../ObservabilityCollector/serviceIcon';
 import type { TopologyLayout } from './topologyLayout';
 import { TOPOLOGY_ZONES, type TopologyNode, type TopologyTheme } from './types';
 
@@ -177,8 +178,6 @@ function modelGeometry(kind: ModelKind) {
       for (let led = 0; led < 3; led += 1)
         disc('status', -0.11 + led * 0.11, y, 0.761, 0.019, 0.014, true);
     }
-    disc('accent', 0, 2.29, 0, 0.46, 0.035);
-    ring('trim', 0, 2.31, 0, 0.34, 0.022, true);
     for (const x of [-0.85, 0.85])
       box('trim', x, 1.32, -0.2, 0.08, 1.95, 0.13, true);
   } else if (kind === 'storage') {
@@ -217,9 +216,6 @@ function modelGeometry(kind: ModelKind) {
         box('dark', 0.821, y - 0.16 + stripe * 0.071, 0, 0.015, 0.025, 0.89);
     }
     box('trim', 0, 2.22, 0, 1.81, 0.12, 1.45, true);
-    const hex = new THREE.CylinderGeometry(0.38, 0.38, 0.045, 6);
-    add('accent', hex, 0, 2.305, 0);
-    ring('trim', 0, 2.34, 0, 0.2, 0.027, true);
   } else if (kind === 'browser') {
     box('metal', 0, 0.98, -0.1, 0.16, 1.45, 0.17, true);
     box('metal', 0, 1.65, -0.13, 1.95, 1.29, 0.15, true);
@@ -307,6 +303,7 @@ function modelGeometry(kind: ModelKind) {
 export function createTopologyModels(
   positions: TopologyLayout['nodes'],
   theme: TopologyTheme,
+  onIconLoad?: () => void,
 ) {
   const group = new THREE.Group();
   const materials: Record<Surface, THREE.MeshStandardMaterial> = {
@@ -373,6 +370,32 @@ export function createTopologyModels(
       mesh.receiveShadow = true;
       group.add(mesh);
     }
+  }
+  const iconMaterials = new Map<string, THREE.MeshBasicMaterial>();
+  const loader = new THREE.TextureLoader();
+  for (const { node, x, z } of positions) {
+    if (!node.serviceName) continue;
+    const { src } = serviceIconFor(node.serviceName);
+    let material = iconMaterials.get(src);
+    if (!material) {
+      const texture = loader.load(src, onIconLoad, undefined, (error) => {
+        console.error('拓扑服务图标加载失败', node.serviceName, error);
+      });
+      texture.colorSpace = THREE.SRGBColorSpace;
+      material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        toneMapped: false,
+      });
+      iconMaterials.set(src, material);
+    }
+    const icon = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+      material,
+    );
+    icon.name = `service-icon:${node.id}`;
+    icon.position.set(x, modelKind(node) === 'storage' ? 2.535 : 2.59, z);
+    group.add(icon);
   }
   // Dispose even unused palette entries together with the group.
   group.userData.materials = Object.values(materials);

@@ -432,6 +432,14 @@ public class K8sServiceImpl implements K8sService {
             for (com.datasophon.common.k8s.vo.k8s.K8sService service : servicesResult.getItems()) {
                 result.add(serviceToInfo(service));
             }
+            if (labelSelector != null) {
+                // 旧版 Helm chart 使用 release 标签；排除已有 instance 标签的资源，避免重复或跨 release 归属。
+                String legacySelector = labelSelector.replace(SRV_INST_ID_LABEL + "=", "release=")
+                        + ",!" + SRV_INST_ID_LABEL;
+                for (com.datasophon.common.k8s.vo.k8s.K8sService legacy : client.getServices(namespace, legacySelector).getItems()) {
+                    result.add(serviceToInfo(legacy));
+                }
+            }
             return result;
         }, "获取 Service 资源列表");
     }
