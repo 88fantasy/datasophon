@@ -1,6 +1,7 @@
 package com.datasophon.api.master.handler.k8s;
 
 import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
@@ -49,7 +50,6 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.spring.SpringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -72,9 +72,9 @@ public class ApplyServiceHandler extends ServiceHandler {
 
     public ApplyServiceHandler(CommandType commandType) {
         this.commandType = commandType;
-        namespaceService = SpringUtil.getBean(K8sClusterNamespaceService.class);
-        frameK8sServiceService = SpringUtil.getBean(FrameK8sServiceService.class);
-        k8sServiceInstanceValuesService = SpringUtil.getBean(K8sServiceInstanceValuesService.class);
+        namespaceService = Application.getBean(K8sClusterNamespaceService.class);
+        frameK8sServiceService = Application.getBean(FrameK8sServiceService.class);
+        k8sServiceInstanceValuesService = Application.getBean(K8sServiceInstanceValuesService.class);
     }
 
     @Override
@@ -258,7 +258,7 @@ public class ApplyServiceHandler extends ServiceHandler {
      * @throws IOException IO 异常
      */
     private HelmReleaseVO applyHelmChart(K8sServiceNode serviceNode, String chartPath, FrameK8sServiceEntity serviceDef, K8sServiceInstanceValues values) throws IOException {
-        ClientOptions options = SpringUtil.getBean(K8sClientOptionsFactory.class).from(config);
+        ClientOptions options = Application.getBean(K8sClientOptionsFactory.class).from(config);
         logger.info("应用 Helm Chart, Release 名称：{}, Namespace: {}", serviceDef.getServiceName(), serviceNode.getNamespace());
 
         try (HelmClient client = new HelmClient(options)) {

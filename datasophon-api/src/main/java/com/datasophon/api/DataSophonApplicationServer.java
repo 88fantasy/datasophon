@@ -25,8 +25,6 @@ package com.datasophon.api;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 
-import jakarta.annotation.PostConstruct;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -39,24 +37,23 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import cn.hutool.extra.spring.EnableSpringUtil;
+import jakarta.annotation.PostConstruct;
 
 @SpringBootApplication
 @ServletComponentScan
 @ComponentScan("com.datasophon")
 @MapperScan("com.datasophon.dao")
-@EnableSpringUtil
 @EnableScheduling
 @EnableAsync
 public class DataSophonApplicationServer extends SpringBootServletInitializer {
-    
+
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(DataSophonApplicationServer.class);
         app.setAllowBeanDefinitionOverriding(true);
         app.setAllowCircularReferences(true);
         app.run(args);
     }
-    
+
     @PostConstruct
     public void run() throws UnknownHostException {
         String hostName = InetAddress.getLocalHost().getHostName();

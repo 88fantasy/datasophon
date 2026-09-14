@@ -1,9 +1,9 @@
 package com.datasophon.api.master.handler.k8s;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.k8s.K8sClientOptionsFactory;
 import com.datasophon.api.service.k8s.K8sService;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.k8s.client.HelmClient;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
@@ -36,6 +36,6 @@ public abstract class K8sAgentHandler {
     }
 
     protected <E> E getBean(Class<E> clazz) {
-        return SpringTool.getApplicationContext().getBean(clazz);
+        return Application.getBean(clazz);
     }
 }

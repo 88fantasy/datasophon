@@ -23,6 +23,7 @@
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterServiceDashboardService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
@@ -33,7 +34,6 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.SimpleServiceConfig;
 import com.datasophon.common.utils.CollectionUtils;
@@ -261,7 +261,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
         if (!roleInstanceList.isEmpty()) {
             List<String> roleInsIds =
                     roleInstanceList.stream().map(e -> e.getId().toString()).toList();
-            SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class).deleteServiceRole(roleInsIds);
+            Application.getBean(ClusterServiceRoleInstanceService.class).deleteServiceRole(roleInsIds);
         }
         // del web uis
         webuisService.removeByServiceInsId(serviceInstanceId);

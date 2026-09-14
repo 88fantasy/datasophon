@@ -23,12 +23,12 @@
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.ClusterYarnSchedulerService;
 import com.datasophon.api.utils.ServiceConfigUtils;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.ExecResult;
@@ -46,22 +46,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RMHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(RMHandlerStrategy.class);
-    
+
     private static final String ACTIVE = "active";
-    
+
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "rm1", hosts.get(0));
         ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "rm2", hosts.get(1));
         ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "rmHost", String.join(",", hosts));
     }
-    
+
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         ClusterYarnSchedulerService schedulerService =
-                SpringTool.getApplicationContext().getBean(ClusterYarnSchedulerService.class);
+                Application.getBean(ClusterYarnSchedulerService.class);
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
@@ -95,7 +95,7 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
         }
         list.addAll(kbConfigs);
     }
-    
+
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
@@ -103,11 +103,11 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
         String commandLine;
         String yarnAclAdminUser = GlobalVariables.getValueByService(clusterId, roleInstanceEntity.getServiceName(), "yarn.admin.acl");
         String rm2 = GlobalVariables.getValueByService(clusterId, roleInstanceEntity.getServiceName(), "rm2");
-        
+
         // TODO 使用 {ROOT.XXServiceName.xx}。HADOOP_HOME使用比较多
         String hadoopHome = GlobalVariables.getValue(clusterId, "HADOOP_HOME");
         String curRm = roleInstanceEntity.getHostname().equals(rm2) ? "rm2" : "rm1";
-        
+
         if (StringUtils.isNotEmpty(yarnAclAdminUser)) {
             commandLine = String.format("sudo -u %s %s/bin/yarn rmadmin -getServiceState %s",
                     yarnAclAdminUser, hadoopHome, curRm);
@@ -117,13 +117,13 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
         }
         getRMState(roleInstanceEntity, commandLine);
     }
-    
+
     private void getRMState(ClusterServiceRoleInstanceEntity roleInstanceEntity, String commandLine) {
         ClusterServiceRoleInstanceWebuisService webuisService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
+                Application.getBean(ClusterServiceRoleInstanceWebuisService.class);
         try {
             WorkerCommandClient workerCommandClient =
-                    SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+                    Application.getBean(WorkerCommandClient.class);
             ExecResult execResult = workerCommandClient.executeCmdLine(roleInstanceEntity.getHostname(), commandLine);
             if (execResult.getExecResult()) {
                 if (execResult.getExecOut().contains(ACTIVE)) {

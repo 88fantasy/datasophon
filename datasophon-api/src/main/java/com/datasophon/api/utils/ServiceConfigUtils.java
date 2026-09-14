@@ -23,6 +23,7 @@
 package com.datasophon.api.utils;
 
 import com.datasophon.api.ds.DsManagedConfig;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterVariableService;
@@ -60,7 +61,7 @@ public class ServiceConfigUtils {
     }
 
     public static void generateClusterVariable(Integer clusterId, String serviceName, String variableName, String value) {
-        ClusterVariableService variableService = SpringTool.getApplicationContext().getBean(ClusterVariableService.class);
+        ClusterVariableService variableService = Application.getBean(ClusterVariableService.class);
         ClusterVariable clusterVariable = variableService.getVariableByVariableName(clusterId, serviceName, variableName);
         if (Objects.nonNull(clusterVariable)) {
             logger.info("update variable {} value {} to {}", variableName, clusterVariable.getVariableValue(), value);
@@ -241,7 +242,7 @@ public class ServiceConfigUtils {
     }
 
     public static ClusterInfoEntity getClusterInfo(Integer clusterId) {
-        ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
+        ClusterInfoService clusterInfoService = Application.getBean(ClusterInfoService.class);
         return clusterInfoService.getById(clusterId);
     }
 

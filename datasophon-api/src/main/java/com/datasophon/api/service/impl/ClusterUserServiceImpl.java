@@ -24,11 +24,11 @@ package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterUserGroupService;
 import com.datasophon.api.service.ClusterUserService;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.remote.CreateUnixUserCommand;
 import com.datasophon.common.command.remote.DelUnixUserCommand;
@@ -99,7 +99,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
 
         ClusterGroup mainGroup = clusterGroupMapper.selectById(mainGroupId);
         // sync to all hosts
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
             CreateUnixUserCommand createUnixUserCommand = new CreateUnixUserCommand();
             createUnixUserCommand.setUsername(username);
@@ -163,7 +163,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         userGroupService.deleteByUser(id);
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterUser.getClusterId());
         // sync to all hosts
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
             DelUnixUserCommand delUnixUserCommand = new DelUnixUserCommand();
             delUnixUserCommand.setUsername(clusterUser.getUsername());
@@ -196,7 +196,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         createUnixUserCommand.setUsername(clusterUser.getUsername());
         createUnixUserCommand.setMainGroup(mainGroup.getGroupName());
         createUnixUserCommand.setOtherGroups(otherGroup);
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         ExecResult execResult = adapter.createUnixUser(hostname, createUnixUserCommand);
         if (execResult.getExecResult()) {
             logger.info("create unix user {} success at {}", username, hostname);

@@ -23,6 +23,7 @@
 package com.datasophon.api.utils;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.Generators;
@@ -37,7 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class HadoopUtils {
-    
+
     public static ExecResult configQueueProp(ClusterInfoEntity clusterInfo,
                                              HashMap<Generators, List<ServiceConfig>> configFileMap,
                                              ClusterServiceRoleInstanceEntity roleInstanceEntity) throws Exception {
@@ -51,14 +52,14 @@ public class HadoopUtils {
         ExecResult execResult = configureHandler.handlerRequest(serviceRoleInfo);
         return execResult;
     }
-    
+
     public static ExecResult refreshQueuePropToYarn(ClusterInfoEntity clusterInfo, String hostname) {
         ArrayList<String> commands = new ArrayList<>();
         commands.add(Constants.INSTALL_PATH + Constants.SLASH
                 + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "YARN") + "/bin/yarn");
         commands.add("rmadmin");
         commands.add("-refreshQueues");
-        WorkerCommandClient client = SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+        WorkerCommandClient client = Application.getBean(WorkerCommandClient.class);
         return client.executeCmd(hostname, commands);
     }
 }

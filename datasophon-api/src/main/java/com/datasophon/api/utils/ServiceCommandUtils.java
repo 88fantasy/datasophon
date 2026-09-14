@@ -23,6 +23,7 @@
 package com.datasophon.api.utils;
 
 import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.service.ServiceCommandService;
@@ -92,17 +93,17 @@ public class ServiceCommandUtils {
 
     public static void saveServiceInstallInfo(ServiceRoleInfo serviceRoleInfo) {
         ClusterServiceInstanceService serviceInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceInstanceService.class);
+                Application.getBean(ClusterServiceInstanceService.class);
         ClusterServiceInstanceConfigService serviceInstanceConfigService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceInstanceConfigService.class);
+                Application.getBean(ClusterServiceInstanceConfigService.class);
         ClusterServiceRoleInstanceService serviceRoleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
-        ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
-        ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
+                Application.getBean(ClusterServiceRoleInstanceService.class);
+        ClusterInfoService clusterInfoService = Application.getBean(ClusterInfoService.class);
+        ClusterHostService clusterHostService = Application.getBean(ClusterHostService.class);
         ClusterServiceRoleInstanceWebuisService webuisService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
+                Application.getBean(ClusterServiceRoleInstanceWebuisService.class);
         ClusterServiceInstanceRoleGroupService roleGroupService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceInstanceRoleGroupService.class);
+                Application.getBean(ClusterServiceInstanceRoleGroupService.class);
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(serviceRoleInfo.getClusterId());
         ClusterHostDO host = clusterHostService.getClusterHostByHostname(serviceRoleInfo.getHostname());
@@ -161,7 +162,7 @@ public class ServiceCommandUtils {
             roleInstance.setNeedRestart(NeedRestart.NO);
             serviceRoleInstanceService.save(roleInstance);
             if (Constants.ZKSERVER.equalsIgnoreCase(roleInstance.getServiceRoleName())) {
-                ClusterZkService clusterZkService = SpringTool.getApplicationContext().getBean(ClusterZkService.class);
+                ClusterZkService clusterZkService = Application.getBean(ClusterZkService.class);
                 ClusterZk clusterZk = new ClusterZk();
                 clusterZk.setMyid((Integer) CacheUtils.get("zkserver_" + serviceRoleInfo.getHostname()));
                 clusterZk.setClusterId(serviceRoleInfo.getClusterId());
@@ -210,7 +211,7 @@ public class ServiceCommandUtils {
 
     public static void saveHostInstallInfo(StartWorkerMessage message, String clusterCode,
                                            ClusterHostService clusterHostService) {
-        ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
+        ClusterInfoService clusterInfoService = Application.getBean(ClusterInfoService.class);
         ClusterHostDO clusterHostDO = new ClusterHostDO();
         BeanUtil.copyProperties(message, clusterHostDO);
 
@@ -230,7 +231,7 @@ public class ServiceCommandUtils {
     public static ClusterServiceCommandHostCommandEntity handleCommandResult(String hostCommandId, Boolean execResult,
                                                                              String execOut) {
         ClusterServiceCommandHostCommandService service =
-                SpringTool.getApplicationContext().getBean(ClusterServiceCommandHostCommandService.class);
+                Application.getBean(ClusterServiceCommandHostCommandService.class);
 
         ClusterServiceCommandHostCommandEntity hostCommand = service.getByHostCommandId(hostCommandId);
         hostCommand.setCommandProgress(100);
@@ -258,7 +259,7 @@ public class ServiceCommandUtils {
         }
 
         ServiceCommandService commandService =
-                SpringTool.getApplicationContext().getBean(ServiceCommandService.class);
+                Application.getBean(ServiceCommandService.class);
         commandService.updateCommandHost(message);
 
         return hostCommand;
@@ -318,7 +319,7 @@ public class ServiceCommandUtils {
     public static void updateServiceRoleState(CommandType commandType, String serviceRoleName, String hostname,
                                               Integer clusterId, ServiceRoleState serviceRoleState) {
         ClusterServiceRoleInstanceService serviceRoleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
+                Application.getBean(ClusterServiceRoleInstanceService.class);
         ClusterServiceRoleInstanceEntity serviceRole =
                 serviceRoleInstanceService.getOneServiceRole(serviceRoleName, hostname, clusterId);
         serviceRole.setServiceRoleState(serviceRoleState);

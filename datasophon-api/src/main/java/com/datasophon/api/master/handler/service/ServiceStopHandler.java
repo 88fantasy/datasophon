@@ -22,8 +22,8 @@
 
 package com.datasophon.api.master.handler.service;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.enums.ServiceRoleType;
@@ -33,7 +33,7 @@ import com.datasophon.common.utils.ExecResult;
 import java.util.Objects;
 
 public class ServiceStopHandler extends ServiceHandler {
-    
+
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         // 停止
@@ -61,7 +61,7 @@ public class ServiceStopHandler extends ServiceHandler {
             return fail;
         }
         cmd.setPackageName(packageName);
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         ExecResult execResult = adapter.stopServiceRole(serviceRoleInfo.getHostname(), cmd);
         if (Objects.nonNull(execResult) && execResult.getExecResult()) {
             if (Objects.nonNull(getNext())) {

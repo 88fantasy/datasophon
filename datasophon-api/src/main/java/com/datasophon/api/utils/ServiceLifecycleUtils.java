@@ -22,6 +22,7 @@
 
 package com.datasophon.api.utils;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.master.handler.service.ServiceHandler;
 import com.datasophon.api.master.handler.service.ServiceInstallHandler;
@@ -122,7 +123,7 @@ public class ServiceLifecycleUtils {
         serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
         // ServiceConfigureHandler.resolvePackageName 依赖 archInfoMap 按主机架构解析安装包名，
         // 不填充会在任何主机上都报"未找到匹配 CPU 架构的安装包"（ServicePkgNameUtils.getArchInfo 直接返回 null）。
-        FrameServiceService frameServiceService = SpringTool.getApplicationContext().getBean(FrameServiceService.class);
+        FrameServiceService frameServiceService = Application.getBean(FrameServiceService.class);
         FrameServiceEntity frameServiceEntity = frameServiceService.getServiceByFrameCodeAndServiceName(
                 clusterInfo.getClusterFrame(), roleInstanceEntity.getServiceName());
         serviceRoleInfo.setArchInfoMap(ServicePkgNameUtils.getArchInfo(frameServiceEntity));

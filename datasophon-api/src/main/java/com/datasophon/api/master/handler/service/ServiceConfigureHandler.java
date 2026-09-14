@@ -22,8 +22,8 @@
 
 package com.datasophon.api.master.handler.service;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -32,7 +32,7 @@ import com.datasophon.common.utils.ExecResult;
 import java.util.Objects;
 
 public class ServiceConfigureHandler extends ServiceHandler {
-    
+
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         String packageName = resolvePackageName(serviceRoleInfo);
@@ -51,12 +51,12 @@ public class ServiceConfigureHandler extends ServiceHandler {
         cmd.setDecompressPackageName(resolveDecompressPackageName(serviceRoleInfo));
         cmd.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
-        
+
         if ("zkserver".equalsIgnoreCase(serviceRoleInfo.getName())) {
             cmd.setMyid((Integer) CacheUtils.get("zkserver_" + serviceRoleInfo.getHostname()));
         }
         cmd.setServiceRoleName(serviceRoleInfo.getName());
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         ExecResult configResult = adapter.configureServiceRole(serviceRoleInfo.getHostname(), cmd);
         if (Objects.nonNull(configResult) && configResult.getExecResult()) {
             if (Objects.nonNull(getNext())) {

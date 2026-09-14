@@ -22,9 +22,9 @@
 
 package com.datasophon.api.master.handler.service;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -35,18 +35,18 @@ import com.datasophon.common.utils.ExecResult;
 
 import java.util.Map;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ServiceStatusHandler extends ServiceHandler {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ServiceStatusHandler.class);
-    
+
     private boolean quickCheck = false;
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
@@ -65,13 +65,13 @@ public class ServiceStatusHandler extends ServiceHandler {
         cmd.setMasterHost(serviceRoleInfo.getMasterHost());
         cmd.setManagerHost(CacheUtils.getString(Constants.HOSTNAME));
         cmd.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
-        
+
         if (quickCheck) {
             cmd.setTimes(3);
         }
-        
+
         logger.info("service master host is {}", serviceRoleInfo.getMasterHost());
-        
+
         cmd.setEnableRangerPlugin(serviceRoleInfo.getEnableRangerPlugin());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
         Boolean enableKerberos = Boolean.parseBoolean(globalVariables.get("${enable" + serviceRoleInfo.getParentName() + "Kerberos}"));
@@ -87,7 +87,7 @@ public class ServiceStatusHandler extends ServiceHandler {
             return fail;
         }
         cmd.setPackageName(packageName);
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         ExecResult statusResult = adapter.serviceRoleStatus(serviceRoleInfo.getHostname(), cmd);
         return invokeNext(serviceRoleInfo, statusResult);
     }

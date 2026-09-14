@@ -23,6 +23,7 @@
 package com.datasophon.api.utils;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.common.Constants;
@@ -46,24 +47,24 @@ import org.slf4j.LoggerFactory;
 
 /** 向多台 Worker 主机并发(fan-out)下发操作的工具(原 ProcessUtils 拆出)。 */
 public class WorkerFanOutUtils {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(WorkerFanOutUtils.class);
-    
+
     private WorkerFanOutUtils() {
     }
-    
+
     public static void hdfsEcMethond(Integer serviceInstanceId, ClusterServiceRoleInstanceService roleInstanceService,
                                      TreeSet<String> list, String type, String roleName) throws Exception {
-        
+
         List<ClusterServiceRoleInstanceEntity> namenodes = roleInstanceService.lambdaQuery()
                 .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstanceId)
                 .eq(ClusterServiceRoleInstanceEntity::getServiceRoleName, roleName)
                 .list();
-        
+
         // 更新namenode节点的whitelist白名单（按主机 fan-out 并行下发）
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         WorkerCommandClient workerCommandClient =
-                SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+                Application.getBean(WorkerCommandClient.class);
         List<Runnable> tasks = new ArrayList<>(namenodes.size());
         for (ClusterServiceRoleInstanceEntity namenode : namenodes) {
             tasks.add(() -> {
@@ -87,10 +88,10 @@ public class WorkerFanOutUtils {
         }
         runConcurrently(tasks);
     }
-    
+
     public static void syncUserGroupToHosts(List<ClusterHostDO> hostList, String groupName, String operate) {
         WorkerCallAdapter workerCallAdapter =
-                SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+                Application.getBean(WorkerCallAdapter.class);
         List<Runnable> tasks = new ArrayList<>(hostList.size());
         for (ClusterHostDO hostEntity : hostList) {
             tasks.add(() -> {
@@ -111,13 +112,13 @@ public class WorkerFanOutUtils {
         }
         runConcurrently(tasks);
     }
-    
+
     /**
      * 把一组阻塞任务（通常是逐主机 gRPC 调用）fan-out 到 masterExecutor 并发执行并等待全部完成。
      * 线程池满时退化为调用线程串行执行；任一任务异常经 join 以 CompletionException 抛出。
      */
     private static void runConcurrently(List<Runnable> tasks) {
-        Executor executor = (Executor) SpringTool.getApplicationContext().getBean("masterExecutor");
+        Executor executor = Application.getBean("masterExecutor", Executor.class);
         List<CompletableFuture<Void>> futures = new ArrayList<>(tasks.size());
         for (Runnable task : tasks) {
             try {

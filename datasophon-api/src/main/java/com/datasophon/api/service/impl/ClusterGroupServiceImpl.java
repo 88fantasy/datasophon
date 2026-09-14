@@ -24,11 +24,11 @@ package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterGroupService;
 import com.datasophon.api.service.ClusterUserGroupService;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.api.utils.WorkerFanOutUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.remote.CreateUnixGroupCommand;
@@ -60,15 +60,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, ClusterGroup>
         implements
             ClusterGroupService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ClusterGroupServiceImpl.class);
-    
+
     @Autowired
     private ClusterHostService hostService;
-    
+
     @Autowired
     private ClusterUserGroupService userGroupService;
-    
+
     @Override
     public Result saveClusterGroup(Integer clusterId, String groupName) {
         if (hasRepeatGroupName(clusterId, groupName)) {
@@ -78,9 +78,9 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
         clusterGroup.setClusterId(clusterId);
         clusterGroup.setGroupName(groupName);
         this.save(clusterGroup);
-        
+
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterId);
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
             CreateUnixGroupCommand createUnixGroupCommand = new CreateUnixGroupCommand();
             createUnixGroupCommand.setGroupName(groupName);
@@ -93,10 +93,10 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
                         "create unix group " + groupName + " failed at " + clusterHost.getHostname());
             }
         }
-        
+
         return Result.success();
     }
-    
+
     private boolean hasRepeatGroupName(Integer clusterId, String groupName) {
         List<ClusterGroup> list = this.list(new QueryWrapper<ClusterGroup>()
                 .eq(Constants.CLUSTER_ID, clusterId)
@@ -106,7 +106,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
         }
         return false;
     }
-    
+
     @Override
     public void refreshUserGroupToHost(Integer clusterId) {
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterId);
@@ -115,7 +115,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
             WorkerFanOutUtils.syncUserGroupToHosts(hostList, clusterGroup.getGroupName(), "groupadd");
         }
     }
-    
+
     @Override
     public Result deleteUserGroup(Integer id) {
         ClusterGroup clusterGroup = this.getById(id);
@@ -125,7 +125,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
         }
         this.removeById(id);
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterGroup.getClusterId());
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
             DelUnixGroupCommand delUnixGroupCommand = new DelUnixGroupCommand();
             delUnixGroupCommand.setGroupName(clusterGroup.getGroupName());
@@ -138,7 +138,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
         }
         return Result.success();
     }
-    
+
     @Override
     public Result listPage(String groupName, Integer clusterId, Integer page, Integer pageSize) {
         Integer offset = (page - 1) * pageSize;
@@ -159,21 +159,21 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
                 .eq(Constants.CLUSTER_ID, clusterId));
         return Result.success(list).put(Constants.TOTAL, total);
     }
-    
+
     @Override
     public List<ClusterGroup> listAllUserGroup(Integer clusterId) {
         return this.lambdaQuery().eq(ClusterGroup::getClusterId, clusterId).list();
     }
-    
+
     @Override
     public void createUnixGroupOnHost(String hostname, String groupName) {
         createUnixGroup(hostname, groupName);
     }
-    
+
     private void createUnixGroup(String hostname, String groupName) {
         CreateUnixGroupCommand createUnixGroupCommand = new CreateUnixGroupCommand();
         createUnixGroupCommand.setGroupName(groupName);
-        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCallAdapter adapter = Application.getBean(WorkerCallAdapter.class);
         ExecResult execResult = adapter.createUnixGroup(hostname, createUnixGroupCommand);
         if (execResult.getExecResult()) {
             logger.info("create unix group success at {}", hostname);

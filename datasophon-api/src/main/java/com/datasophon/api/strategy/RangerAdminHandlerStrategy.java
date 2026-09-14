@@ -22,6 +22,7 @@
 
 package com.datasophon.api.strategy;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterInfoService;
@@ -30,7 +31,6 @@ import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.utils.ServiceConfigUtils;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -50,9 +50,9 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson2.JSON;
 
 public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(RangerAdminHandlerStrategy.class);
-    
+
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         if (!hosts.isEmpty()) {
@@ -62,7 +62,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
                     rangerAdminUrl);
         }
     }
-    
+
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
@@ -107,17 +107,17 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
         }
         list.addAll(kbConfigs);
     }
-    
+
     private void enableRangerPlugin(Integer clusterId, String serviceName, String serviceRoleName) {
         ClusterServiceInstanceService serviceInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceInstanceService.class);
+                Application.getBean(ClusterServiceInstanceService.class);
         ClusterServiceRoleInstanceService roleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
+                Application.getBean(ClusterServiceRoleInstanceService.class);
         ClusterServiceRoleGroupConfigService roleGroupConfigService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleGroupConfigService.class);
-        ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
+                Application.getBean(ClusterServiceRoleGroupConfigService.class);
+        ClusterInfoService clusterInfoService = Application.getBean(ClusterInfoService.class);
         ServiceInstallService serviceInstallService =
-                SpringTool.getApplicationContext().getBean(ServiceInstallService.class);
+                Application.getBean(ServiceInstallService.class);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String rangerAdminUrl = GlobalVariables.getValueByService(clusterId, serviceName, "rangerAdminUrl");
         ClusterServiceInstanceEntity serviceInstance =
@@ -125,15 +125,15 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
         // 查询角色组id
         List<ClusterServiceRoleInstanceEntity> roleList =
                 roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, serviceRoleName);
-        
+
         if (Objects.nonNull(roleList) && !roleList.isEmpty()) {
             Integer roleGroupId = roleList.get(0).getRoleGroupId();
-            
+
             ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
             List<ServiceConfig> serviceConfigs = JSON.parseArray(config.getConfigJson(), ServiceConfig.class);
             Map<String, ServiceConfig> map = serviceConfigs.stream()
                     .collect(Collectors.toMap(ServiceConfig::getName, serviceConfig -> serviceConfig, (v1, v2) -> v1));
-            
+
             String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + serviceName + Constants.CONFIG;
             List<ServiceConfig> configs = ServiceConfigMap.get(key);
             for (ServiceConfig parameter : configs) {
@@ -141,7 +141,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
                 if (map.containsKey(name)) {
                     parameter = map.get(name);
                 }
-                
+
                 if ("permission".equals(parameter.getConfigType())) {
                     parameter.setHidden(false);
                     parameter.setRequired(true);
@@ -152,7 +152,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
                     parameter.setRequired(true);
                     parameter.setEnabled(true);
                     parameter.setValue(true);
-                    
+
                 }
                 if ("rangerAdminUrl".equals(parameter.getName())) {
                     parameter.setHidden(false);

@@ -24,6 +24,7 @@ package com.datasophon.api.utils;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.ServiceInfoMap;
 import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.common.Constants;
@@ -46,14 +47,14 @@ import java.util.regex.Pattern;
 import cn.hutool.core.util.StrUtil;
 
 public class CheckUtils {
-    
+
     /** 巡检 statusRunner 的 gRPC deadline（秒）：周期性检测无需默认 90s，收紧避免慢 Worker 长时间占用线程。 */
     private static final long STATUS_CHECK_DEADLINE_SECONDS = 30;
-    
+
     private CheckUtils() {
         throw new IllegalStateException("CheckUtils class");
     }
-    
+
     /**
      * check username
      *
@@ -63,7 +64,7 @@ public class CheckUtils {
     public static boolean checkUserName(String userName) {
         return regexChecks(userName, Constants.REGEX_USER_NAME);
     }
-    
+
     /**
      * check email
      *
@@ -74,10 +75,10 @@ public class CheckUtils {
         if (StringUtils.isEmpty(email)) {
             return false;
         }
-        
+
         return email.length() > 5 && email.length() <= 40 && regexChecks(email, Constants.REGEX_MAIL_NAME);
     }
-    
+
     /**
      * check project description
      *
@@ -95,7 +96,7 @@ public class CheckUtils {
         }
         return result;
     }
-    
+
     /**
      * check password
      *
@@ -105,7 +106,7 @@ public class CheckUtils {
     public static boolean checkPassword(String password) {
         return StringUtils.isNotEmpty(password) && password.length() >= 2 && password.length() <= 20;
     }
-    
+
     /**
      * check phone
      * phone can be empty.
@@ -116,7 +117,7 @@ public class CheckUtils {
     public static boolean checkPhone(String phone) {
         return StringUtils.isEmpty(phone) || phone.length() == 11;
     }
-    
+
     /**
      * check params
      *
@@ -132,7 +133,7 @@ public class CheckUtils {
                 CheckUtils.checkPassword(password) &&
                 CheckUtils.checkPhone(phone);
     }
-    
+
     /**
      * regex check
      *
@@ -144,39 +145,39 @@ public class CheckUtils {
         if (StringUtils.isEmpty(str)) {
             return false;
         }
-        
+
         return pattern.matcher(str).matches();
     }
-    
+
     /**
      * statusRunner检测状态
      */
     public static void handlerServiceRoleStatusRunnerCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                                            Map<String, ClusterServiceRoleInstanceEntity> map) {
         Integer clusterId = roleInstanceEntity.getClusterId();
-        
+
         ClusterInfoEntity cluster = ServiceConfigUtils.getClusterInfo(clusterId);
         String frameCode = cluster.getClusterFrame();
-        
+
         String key = frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName() + Constants.UNDERLINE
                 + roleInstanceEntity.getServiceRoleName();
         ServiceRoleInfo serviceRoleInfo = ServiceRoleMap.get(key);
         ServiceInfo serviceInfo =
                 ServiceInfoMap.get(frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName());
-        
+
         if (serviceRoleInfo.getStatusRunner() == null
                 || StrUtil.isBlank(serviceRoleInfo.getStatusRunner().getProgram())) {
             // 不写则不执行检测命令
             return;
         }
-        
+
         String linkDirName = PkgInstallPathUtils.getLinkDirName(serviceRoleInfo);
         ArrayList<String> commandList = new ArrayList<>();
         commandList.add(linkDirName + Constants.SLASH + serviceRoleInfo.getStatusRunner().getProgram());
         commandList.addAll(serviceRoleInfo.getStatusRunner().getArgs());
         try {
             WorkerCommandClient workerCommandClient =
-                    SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+                    Application.getBean(WorkerCommandClient.class);
             ExecResult execResult = workerCommandClient.executeCmd(
                     roleInstanceEntity.getHostname(), commandList, STATUS_CHECK_DEADLINE_SECONDS);
             if (execResult.getExecResult()) {

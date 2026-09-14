@@ -22,6 +22,7 @@
 
 package com.datasophon.api.utils;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
@@ -43,17 +44,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 /** 服务角色告警历史的生成与恢复(原 ProcessUtils 拆出)。 */
 public class ServiceAlertUtils {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ServiceAlertUtils.class);
-    
+
     private ServiceAlertUtils() {
     }
-    
+
     public static void recoverAlert(ClusterServiceRoleInstanceEntity roleInstanceEntity) {
         ClusterServiceRoleInstanceService roleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
+                Application.getBean(ClusterServiceRoleInstanceService.class);
         ClusterAlertHistoryService alertHistoryService =
-                SpringTool.getApplicationContext().getBean(ClusterAlertHistoryService.class);
+                Application.getBean(ClusterAlertHistoryService.class);
         ClusterAlertHistory clusterAlertHistory = alertHistoryService.getOne(new QueryWrapper<ClusterAlertHistory>()
                 .eq(Constants.ALERT_TARGET_NAME, roleInstanceEntity.getServiceRoleName() + " Survive")
                 .eq(Constants.CLUSTER_ID, roleInstanceEntity.getClusterId())
@@ -69,23 +70,23 @@ public class ServiceAlertUtils {
             roleInstanceService.updateById(roleInstanceEntity);
         }
     }
-    
+
     public static void saveAlert(ClusterServiceRoleInstanceEntity roleInstanceEntity, String alertTargetName,
                                  AlertLevel alertLevel, String alertAdvice) {
         ClusterServiceRoleInstanceService roleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
+                Application.getBean(ClusterServiceRoleInstanceService.class);
         ClusterAlertHistoryService alertHistoryService =
-                SpringTool.getApplicationContext().getBean(ClusterAlertHistoryService.class);
+                Application.getBean(ClusterAlertHistoryService.class);
         ClusterServiceInstanceService serviceInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceInstanceService.class);
-        
+                Application.getBean(ClusterServiceInstanceService.class);
+
         logger.info("alertTargetName:{},clusterId:{},hostname:{}", alertTargetName, roleInstanceEntity.getClusterId(), roleInstanceEntity.getHostname());
         ClusterAlertHistory clusterAlertHistory = alertHistoryService.getOne(new QueryWrapper<ClusterAlertHistory>()
                 .eq(Objects.nonNull(alertTargetName), Constants.ALERT_TARGET_NAME, alertTargetName)
                 .eq(Objects.nonNull(roleInstanceEntity.getClusterId()), Constants.CLUSTER_ID, roleInstanceEntity.getClusterId())
                 .eq(Objects.nonNull(roleInstanceEntity.getHostname()), Constants.HOSTNAME, roleInstanceEntity.getHostname())
                 .eq(Objects.nonNull(alertTargetName), Constants.IS_ENABLED, 1));
-        
+
         ClusterServiceInstanceEntity serviceInstanceEntity =
                 serviceInstanceService.getById(roleInstanceEntity.getServiceId());
         if (Objects.isNull(clusterAlertHistory)) {
@@ -104,7 +105,7 @@ public class ServiceAlertUtils {
                     .isEnabled(1)
                     .serviceInstanceId(roleInstanceEntity.getServiceId())
                     .build();
-            
+
             alertHistoryService.save(clusterAlertHistory);
         }
         // update service role instance state
@@ -116,6 +117,6 @@ public class ServiceAlertUtils {
         }
         serviceInstanceService.updateById(serviceInstanceEntity);
         roleInstanceService.updateById(roleInstanceEntity);
-        
+
     }
 }

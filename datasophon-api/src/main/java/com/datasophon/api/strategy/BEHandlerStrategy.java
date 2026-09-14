@@ -22,10 +22,10 @@
 
 package com.datasophon.api.strategy;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ServiceAlertUtils;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.model.ProcInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.OlapUtils;
@@ -74,7 +74,7 @@ public class BEHandlerStrategy implements ServiceRoleStrategy {
 
     private void resolveProcInfoAlert(String serviceRoleName, List<ProcInfo> frontends,
                                       Map<String, ClusterServiceRoleInstanceEntity> map) {
-        ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
+        ClusterHostService clusterHostService = Application.getBean(ClusterHostService.class);
         for (ProcInfo frontend : frontends) {
             ClusterHostDO clusterHostDO = clusterHostService.getClusterHostByIp(frontend.getIp());
             frontend.setHostName(clusterHostDO.getHostname());

@@ -22,11 +22,11 @@
 
 package com.datasophon.api.strategy;
 
+import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.utils.ServiceConfigUtils;
-import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.ServiceConfig;
@@ -45,9 +45,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 
 public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ZkServerHandlerStrategy.class);
-    
+
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         // 保存zkUrls到全局变量
@@ -58,14 +58,14 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
         String hbaseZkUrls = String.join(",", hosts);
         ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "zkHostsUrl", hbaseZkUrls);
     }
-    
+
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
         Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
-        
+
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
                 if ((Boolean) config.getValue()) {
@@ -76,7 +76,7 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
                 }
             }
         }
-        
+
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "ZOOKEEPER" + Constants.CONFIG;
         List<ServiceConfig> configs = ServiceConfigMap.get(key);
         ArrayList<ServiceConfig> kbConfigs = new ArrayList<>();
@@ -114,25 +114,25 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
         }
         list.addAll(kbConfigs);
     }
-    
+
     /**
      *
      */
     @Override
     public void getConfig(Integer clusterId, List<ServiceConfig> list) {
         // add server.x config
-        ClusterInfoService clusterInfoService = SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
+        ClusterInfoService clusterInfoService = Application.getBean(ClusterInfoService.class);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        
+
         String hostMapKey = clusterInfo.getClusterCode() + Constants.UNDERLINE + Constants.SERVICE_ROLE_HOST_MAPPING;
         @SuppressWarnings("unchecked")
         HashMap<String, List<String>> hostMap = (HashMap<String, List<String>>) CacheUtils.get(hostMapKey);
-        
+
         if (Objects.nonNull(hostMap)) {
             List<String> zkServers = hostMap.get("ZkServer");
-            
+
             Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
-            
+
             Integer myid = 1;
             for (String server : zkServers) {
                 ServiceConfig serviceConfig = new ServiceConfig();
@@ -158,5 +158,5 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
             }
         }
     }
-    
+
 }
