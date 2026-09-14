@@ -66,7 +66,6 @@
         <mybatis.spring.version>3.0.3</mybatis.spring.version>
         <mybatis-plus-join>1.5.2</mybatis-plus-join>
         <mysql.connector.version>8.2.0</mysql.connector.version>
-        <org.apache.sshd.version>2.9.3</org.apache.sshd.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring.boot.version>3.4.5</spring.boot.version>
@@ -83,7 +82,6 @@
         <ant.version>1.10.12</ant.version>
         <jsch.version>0.2.19</jsch.version>
         <commons-collections.version>3.2.2</commons-collections.version>
-        <eddsa.version>0.3.0</eddsa.version>
         <spotless.version>2.43.0</spotless.version>
         <spotless.scalafmt.version>3.4.3</spotless.scalafmt.version>
         <spotless.ratchetFrom>main</spotless.ratchetFrom>
@@ -156,16 +154,6 @@
                 <version>${bc.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.sshd</groupId>
-                <artifactId>sshd-core</artifactId>
-                <version>${org.apache.sshd.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.sshd</groupId>
-                <artifactId>sshd-sftp</artifactId>
-                <version>${org.apache.sshd.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
@@ -200,11 +188,6 @@
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
                 <version>${commons-collections.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.i2p.crypto</groupId>
-                <artifactId>eddsa</artifactId>
-                <version>${eddsa.version}</version>
             </dependency>
             <!-- snakeyaml version managed by Spring Boot 3 BOM -->
 
