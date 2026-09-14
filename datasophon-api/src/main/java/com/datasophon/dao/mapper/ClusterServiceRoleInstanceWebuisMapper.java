@@ -23,10 +23,13 @@
 package com.datasophon.dao.mapper;
 
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
+import com.datasophon.dao.model.WebuisVO;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.github.yulichang.base.MPJBaseMapper;
+import java.util.List;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * 集群服务角色对应web ui表 
@@ -34,6 +37,7 @@ import com.github.yulichang.base.MPJBaseMapper;
  * @author gaodayu
  */
 @Mapper
-public interface ClusterServiceRoleInstanceWebuisMapper extends MPJBaseMapper<ClusterServiceRoleInstanceWebuis> {
-    
+public interface ClusterServiceRoleInstanceWebuisMapper extends BaseMapper<ClusterServiceRoleInstanceWebuis> {
+
+    List<WebuisVO> selectWebUisWithIp(Integer serviceInstanceId);
 }

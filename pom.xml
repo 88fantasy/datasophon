@@ -64,7 +64,6 @@
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <mybatis.spring.version>3.0.3</mybatis.spring.version>
-        <mybatis-plus-join>1.5.2</mybatis-plus-join>
         <mysql.connector.version>8.2.0</mysql.connector.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -116,11 +115,6 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.yulichang</groupId>
-                <artifactId>mybatis-plus-join-boot-starter</artifactId>
-                <version>${mybatis-plus-join}</version>
             </dependency>
             <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>

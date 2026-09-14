@@ -26,5 +26,12 @@
 
 <mapper namespace="com.datasophon.dao.mapper.ClusterServiceRoleInstanceWebuisMapper">
 
+    <select id="selectWebUisWithIp" resultType="com.datasophon.dao.model.WebuisVO">
+        SELECT w.id, w.service_role_instance_id, w.web_url, w.service_instance_id, w.name, h.ip
+        FROM t_ddh_cluster_service_role_instance_webuis w
+        INNER JOIN t_ddh_cluster_service_role_instance r ON r.id = w.service_role_instance_id
+        INNER JOIN t_ddh_cluster_host h ON h.hostname = r.hostname
+        WHERE w.service_instance_id = #{serviceInstanceId}
+    </select>
 
 </mapper>

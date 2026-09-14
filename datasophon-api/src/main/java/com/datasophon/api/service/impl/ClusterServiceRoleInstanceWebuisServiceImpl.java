@@ -27,8 +27,6 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.ClusterHostDO;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 import com.datasophon.dao.mapper.ClusterServiceInstanceMapper;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceWebuisMapper;
@@ -43,7 +41,6 @@ import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.github.yulichang.wrapper.MPJLambdaWrapper;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
@@ -65,18 +62,7 @@ public class ClusterServiceRoleInstanceWebuisServiceImpl
     @Override
     public Result getWebUis(Integer serviceInstanceId) {
 
-        MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis> wrapper = new MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis>()
-                .selectAll(ClusterServiceRoleInstanceWebuis.class)
-                .select(ClusterHostDO::getIp)
-                .innerJoin(ClusterServiceRoleInstanceEntity.class, ClusterServiceRoleInstanceEntity::getId, ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId)
-                .innerJoin(ClusterHostDO.class, ClusterHostDO::getHostname, ClusterServiceRoleInstanceEntity::getHostname)
-                .eq(ClusterServiceRoleInstanceWebuis::getServiceInstanceId, serviceInstanceId);
-
-        List<WebuisVO> list = getBaseMapper().selectJoinList(WebuisVO.class, wrapper);
-
-        // List<ClusterServiceRoleInstanceWebuis> list = this.list(
-        // new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
-        // .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
+        List<WebuisVO> list = getBaseMapper().selectWebUisWithIp(serviceInstanceId);
         Integer clusterId = clusterServiceInstanceMapper.selectById(serviceInstanceId).getClusterId();
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         return Result.success(list.stream().peek(ui -> {
