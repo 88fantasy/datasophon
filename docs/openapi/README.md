@@ -60,7 +60,7 @@ export JAVA_HOME=/path/to/jdk-21
 |---|---|
 | `http://127.0.0.1:8080/ddh/v3/api-docs` | 默认动态 OpenAPI JSON |
 | `http://127.0.0.1:8080/ddh/v3/api-docs/internal` | `/internal/**` 分组 |
-| `http://127.0.0.1:8080/ddh/doc.html` | Knife4j 页面 |
+| `http://127.0.0.1:8080/ddh/swagger-ui/index.html` | Swagger UI 页面 |
 
 动态文档扫描 `com.datasophon.api.controller`，因此包含传统 API、v2 API、可观测、血缘和内部 Controller。实际可见内容仍取决于应用是否成功启动及相关条件 Bean。
 

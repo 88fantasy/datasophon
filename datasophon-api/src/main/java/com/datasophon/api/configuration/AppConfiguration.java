@@ -137,7 +137,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/service/install/download*"));
         if (enableOpenApi) {
             loginRegistration.excludePathPatterns(
-                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**",
                     "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
         }
 
@@ -167,7 +167,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/service/install/download*"));
         if (enableOpenApi) {
             csrfRegistration.excludePathPatterns(
-                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**",
                     "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
         }
 
@@ -179,7 +179,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns("/internal/**");
         if (enableOpenApi) {
             basicValidRegistration.excludePathPatterns(
-                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**",
                     "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
         }
     }
