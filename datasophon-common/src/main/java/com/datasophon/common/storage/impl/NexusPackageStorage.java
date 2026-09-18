@@ -23,18 +23,28 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.digest.DigestUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author zhanghuangbin
  */
 @Slf4j
 public class NexusPackageStorage extends NexusStorageSupport implements PackageStorage {
-    
+
     private static final Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
-    
+
+    private final String localPackageDir;
+
+    public NexusPackageStorage() {
+        this(Constants.MASTER_MANAGE_PACKAGE_PATH);
+    }
+
+    NexusPackageStorage(String localPackageDir) {
+        this.localPackageDir = localPackageDir;
+    }
+
     @Override
     @SuppressWarnings("deprecated")
     public void moveToStorage(File src, boolean includeDir) throws IOException {
@@ -48,19 +58,19 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
                     relative = src.getName() + "/" + relative;
                 }
                 relative = PathUtils.unixStyle(relative);
-                
+
                 log.info("upload {} to raw repo, path: {}", path, relative);
                 NexusFileUtils.uploadFileToRawRepo(relative, path.toFile());
                 return FileVisitResult.CONTINUE;
             }
-            
+
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
                 throw exc;
             }
         });
     }
-    
+
     @Override
     @SuppressWarnings("deprecated")
     public void moveToStorage(File file, Function<File, String> relativePathHandler) throws IOException {
@@ -70,21 +80,21 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
         if (!file.isFile()) {
             throw new IllegalArgumentException(file.getAbsolutePath() + " is not file");
         }
-        
+
         String relativePath = relativePathHandler.apply(file);
         relativePath = PathUtils.unixStyle(relativePath);
-        
+
         log.info("upload {} to raw repo, path: {}", file, relativePath);
         NexusFileUtils.uploadFileToRawRepo(relativePath, file);
     }
-    
+
     @Override
     @SuppressWarnings("deprecated")
     public String readPackageMd5(String packageName) {
         ensureNexusEnable();
         String fileName = getPkgMd5FileName(packageName);
         String path = "packages/" + fileName;
-        
+
         log.info("read the md5 of package:{}", packageName);
         try {
             String md5 = NexusFileUtils.downloadAsString(NexusFileUtils.getNexusRawObjectUrl(path));
@@ -96,37 +106,37 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             throw new RuntimeException(e);
         }
     }
-    
+
     private String getPkgMd5FileName(String packageName) {
         return packageName.endsWith(".md5") ? packageName : packageName + ".md5";
     }
-    
+
     @Override
     public DownloadResult downloadPackageToLocal(String packageName) {
         return doDownload(packageName, () -> readPackageMd5(packageName));
     }
-    
+
     @Override
     @SuppressWarnings("deprecated")
     public DownloadResult downloadResourceToLocal(String resourceName) {
-        return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo(resourceName));
+        return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo("packages/" + resourceName));
     }
-    
+
     @Override
     @SuppressWarnings("deprecated")
     public void deletePackage(String packageName) {
-        File pkgFile = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName).toFile();
+        File pkgFile = Paths.get(localPackageDir, packageName).toFile();
         if (pkgFile.exists()) {
             pkgFile.delete();
         }
-        File md5File = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, getPkgMd5FileName(packageName)).toFile();
+        File md5File = Paths.get(localPackageDir, getPkgMd5FileName(packageName)).toFile();
         if (md5File.exists()) {
             md5File.delete();
         }
         NexusFileUtils.removeFileFromRawRepo("/packages/" + packageName);
         NexusFileUtils.removeFileFromRawRepo("/packages/" + getPkgMd5FileName(packageName));
     }
-    
+
     @SuppressWarnings("deprecated")
     private DownloadResult doDownload(String resourceName, Supplier<String> remoteResourceMd5) {
         ensureNexusEnable();
@@ -135,7 +145,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             lock.lock();
             DownloadResult result = new DownloadResult();
             result.setMd5(remoteResourceMd5.get());
-            File file = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, resourceName).toFile();
+            File file = Paths.get(localPackageDir, resourceName).toFile();
             boolean needDownload;
             if (!file.exists()) {
                 needDownload = true;
@@ -149,7 +159,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
                 if (file.exists()) {
                     file.delete();
                 }
-                file = FileUtil.newFile(file.getAbsolutePath());
+                FileUtil.mkParentDirs(file);
                 try (FileOutputStream out = new FileOutputStream(file)) {
                     NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), out);
                 } catch (FileNotFoundException e) {
@@ -160,7 +170,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             } else {
                 log.info("package {} exists, we do need to download", resourceName);
             }
-            
+
             result.setChange(needDownload);
             result.setTarget(file.getAbsolutePath());
             return result;
@@ -169,5 +179,5 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             lock.unlock();
         }
     }
-    
+
 }
