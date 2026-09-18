@@ -25,6 +25,69 @@
     "status": "public"
   },
   {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "dolphinscheduler-storage-s3-3.4.1-shade.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/org/apache/dolphinscheduler/dolphinscheduler-storage-s3/3.4.1/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+    "status": "public",
+    "subDir": "plugins/ds"
+  },
+  {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "dolphinscheduler-task-shell-3.4.1.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/org/apache/dolphinscheduler/dolphinscheduler-task-shell/3.4.1/dolphinscheduler-task-shell-3.4.1.jar",
+    "status": "public",
+    "subDir": "plugins/ds"
+  },
+  {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "dolphinscheduler-task-spark-3.4.1.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/org/apache/dolphinscheduler/dolphinscheduler-task-spark/3.4.1/dolphinscheduler-task-spark-3.4.1.jar",
+    "status": "public",
+    "subDir": "plugins/ds"
+  },
+  {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "dolphinscheduler-task-flink-3.4.1.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/org/apache/dolphinscheduler/dolphinscheduler-task-flink/3.4.1/dolphinscheduler-task-flink-3.4.1.jar",
+    "status": "public",
+    "subDir": "plugins/ds"
+  },
+  {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "dolphinscheduler-task-flink-stream-3.4.1.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/org/apache/dolphinscheduler/dolphinscheduler-task-flink-stream/3.4.1/dolphinscheduler-task-flink-stream-3.4.1.jar",
+    "status": "public",
+    "subDir": "plugins/ds"
+  },
+  {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "dolphinscheduler-task-sql-3.4.1.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/org/apache/dolphinscheduler/dolphinscheduler-task-sql/3.4.1/dolphinscheduler-task-sql-3.4.1.jar",
+    "status": "public",
+    "subDir": "plugins/ds"
+  },
+  {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "dolphinscheduler-task-seatunnel-3.4.1.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/org/apache/dolphinscheduler/dolphinscheduler-task-seatunnel/3.4.1/dolphinscheduler-task-seatunnel-3.4.1.jar",
+    "status": "public",
+    "subDir": "plugins/ds"
+  },
+  {
     "service": "DORIS",
     "arch": "x86_64",
     "packageName": "apache-doris-4.1.3-bin-x64.tar.gz",
