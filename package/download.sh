@@ -72,6 +72,15 @@ if dir_filter and dir_filter not in VALID_DIRS:
     print(f"ERROR: --dir 取值必须是 {sorted(VALID_DIRS)} 之一，收到 {dir_filter!r}", file=sys.stderr)
     sys.exit(1)
 
+# 可选 "subDir"（如 "plugins/seatunnel"）只对 raw 生效：raw/packages/<subDir>/<packageName>
+for pkg in pkgs:
+    sub_dir = pkg.get("subDir")
+    if sub_dir is None:
+        continue
+    if not isinstance(sub_dir, str) or not sub_dir or sub_dir.startswith("/") or ".." in sub_dir.split("/"):
+        print(f"ERROR: {pkg.get('packageName')} 的 subDir 必须是不含 '..' 的非空相对路径，收到 {sub_dir!r}", file=sys.stderr)
+        sys.exit(1)
+
 # 目录结构与 upload/registry.go repositoryUploadBatch 对齐：
 #   yum/<arch>/<os>/*.rpm
 #   apt/<arch>/<os>/*.deb
@@ -121,7 +130,7 @@ def dest_dir_for(pkg, rtype):
         return os.path.join(pkg_dir, "docker")
     if rtype == "base":
         return os.path.join(pkg_dir, "base")
-    return os.path.join(pkg_dir, "raw", "packages")
+    return os.path.join(pkg_dir, "raw", "packages", pkg.get("subDir", ""))
 
 def compute_md5(path):
     h = hashlib.md5()
