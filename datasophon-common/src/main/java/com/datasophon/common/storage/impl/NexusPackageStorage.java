@@ -119,7 +119,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     @Override
     @SuppressWarnings("deprecated")
     public DownloadResult downloadResourceToLocal(String resourceName) {
-        return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo("packages/" + resourceName));
+        return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo("/packages/" + resourceName));
     }
 
     @Override

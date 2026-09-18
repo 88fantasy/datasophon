@@ -89,7 +89,8 @@ class NexusPackageStorageTest {
 
         assertEquals(1, rawClient.queries.size());
         assertEquals("/packages", rawClient.queries.get(0).getGroup());
-        assertEquals("packages/spark-3.4.2-yarn-shuffle.jar", rawClient.queries.get(0).getName());
+        // 已在 ddh Nexus 上实测，name 必须带前导 /（不带时搜索结果为 0 条）
+        assertEquals("/packages/spark-3.4.2-yarn-shuffle.jar", rawClient.queries.get(0).getName());
         assertEquals(CONTENT_MD5, result.getMd5());
     }
 
@@ -99,7 +100,8 @@ class NexusPackageStorageTest {
 
         assertEquals(1, rawClient.queries.size());
         assertEquals("/packages/plugins/seatunnel", rawClient.queries.get(0).getGroup());
-        assertEquals("packages/plugins/seatunnel/connector-jdbc.jar", rawClient.queries.get(0).getName());
+        // 已在 ddh Nexus 上实测，name 必须带前导 /（不带时搜索结果为 0 条）
+        assertEquals("/packages/plugins/seatunnel/connector-jdbc.jar", rawClient.queries.get(0).getName());
     }
 
     @Test
