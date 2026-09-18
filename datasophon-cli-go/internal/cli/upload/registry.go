@@ -413,7 +413,7 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				} else {
 					dir = "/" + dir
 				}
-				if repoType == "raw" && dir == "/packages" && strings.HasSuffix(path, ".md5") {
+				if repoType == "raw" && isPackagesDir(dir) && strings.HasSuffix(path, ".md5") {
 					return nil
 				}
 				if needsRawMD5Sidecar(repoType, path, dir) {
@@ -559,10 +559,17 @@ func refreshLocalMD5Sidecar(filePath string) error {
 }
 
 // needsRawMD5Sidecar 判断 filePath 是否属于需要 .md5 sidecar 的安装包：raw 仓库
-// packages/ 目录下、且自身不是 .md5 文件。meta/模板/SQL 等元数据文件不需要——Worker
-// 侧下载安装包前才会对 packages/<file>.md5 发起真实 GET 校验，其余文件不受影响。
+// packages/ 目录（含 plugins/** 等子目录）下、且自身不是 .md5 文件。meta/模板/SQL 等
+// 元数据文件不需要——Worker 侧下载安装包前才会对 packages/<file>.md5 发起真实 GET 校验，
+// 其余文件不受影响。
 func needsRawMD5Sidecar(repoType, filePath, directory string) bool {
-	return repoType == "raw" && directory == "/packages" && !strings.HasSuffix(filePath, ".md5")
+	return repoType == "raw" && isPackagesDir(directory) && !strings.HasSuffix(filePath, ".md5")
+}
+
+// isPackagesDir 判断 directory 是否为 /packages 或其子目录；/packagesX 这类仅字符串前缀
+// 相同的目录不算。
+func isPackagesDir(directory string) bool {
+	return directory == "/packages" || strings.HasPrefix(directory, "/packages/")
 }
 
 // uploadFile 用 multipart/form-data 上传单个文件到 Nexus 内部 UI 接口。
