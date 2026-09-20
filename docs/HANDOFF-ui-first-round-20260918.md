@@ -2,7 +2,7 @@
 
 ## 续接状态：2026-09-20 09:30（Asia/Shanghai）
 
-继续在 `/Users/pro/.codex/worktrees/ui-first-round/datasophon`、`codex/ui-first-round` 工作，未提交、推送、合并或部署。以下为最新增量，9 月 18 日结果保留为历史证据。
+继续在 `/Users/pro/.codex/worktrees/ui-first-round/datasophon`、`codex/ui-cluster-dashboard-optimization` 工作，未提交、推送、合并或部署。以下为最新增量，9 月 18 日结果保留为历史证据。
 
 - 独立审查发现并修复两项问题：服务详情异步查询在切群、卸载或再次点击后仍可能跳回旧目标；概要接口失败会把成功但为空的告警列表误标为失败。
 - 服务跳转增加请求序号和生命周期失效保护；`useClusterSummary` 分别暴露 `summaryFailed` / `alertsFailed`，两个面板只使用对应失败标记，顶部继续汇总错误。
