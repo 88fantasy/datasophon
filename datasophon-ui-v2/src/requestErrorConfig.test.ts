@@ -84,6 +84,35 @@ describe('requestErrorConfig', () => {
       expect(() => {
         errorHandler(error, opts);
       }).toThrow('Test error');
+      expect(message.error).not.toHaveBeenCalled();
+      expect(message.warning).not.toHaveBeenCalled();
+      expect(notification.open).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      { response: { status: 401 } },
+      { name: 'BizError', info: { showType: 9 } },
+    ])('preserves authentication redirects when local feedback skips global alerts: %j', (details) => {
+      const original = window.location;
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { href: '/ddh/cluster/1/overview' },
+      });
+      const error = Object.assign(new Error('expired'), details);
+      try {
+        expect(() => errorHandler(error, { skipErrorHandler: true })).toThrow(
+          error,
+        );
+        expect(window.location.href).toBe('/ddh/user/login');
+        expect(message.error).not.toHaveBeenCalled();
+        expect(message.warning).not.toHaveBeenCalled();
+        expect(notification.open).not.toHaveBeenCalled();
+      } finally {
+        Object.defineProperty(window, 'location', {
+          configurable: true,
+          value: original,
+        });
+      }
     });
 
     it('should handle SILENT showType', () => {

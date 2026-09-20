@@ -103,4 +103,52 @@ describe('useClusterSummary', () => {
     expect(result.current.recentAlerts).toEqual([]);
     expect(result.current.error).toBe('alerts unavailable');
   });
+  it.each([
+    'summary',
+    'alerts',
+  ])('marks only the failed %s request when the other result is empty, and clears flags on recovery', async (failed) => {
+    mocks.getClusterDashboardSummary.mockResolvedValue({
+      data: { serviceHealth: [] },
+    });
+    mocks.getRecentAlerts.mockResolvedValue({ data: [] });
+    const failedRequest =
+      failed === 'summary'
+        ? mocks.getClusterDashboardSummary
+        : mocks.getRecentAlerts;
+    failedRequest.mockRejectedValueOnce(new Error('unavailable'));
+    const { result, rerender } = renderHook(
+      ({ refreshKey }) => useClusterSummary({ clusterId: 1, refreshKey }),
+      { initialProps: { refreshKey: 0 } },
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.summaryFailed).toBe(failed === 'summary');
+    expect(result.current.alertsFailed).toBe(failed === 'alerts');
+    expect(result.current.error).toBe('unavailable');
+    expect(result.current.recentAlerts).toEqual([]);
+    rerender({ refreshKey: 1 });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.summaryFailed).toBe(false);
+    expect(result.current.alertsFailed).toBe(false);
+    expect(result.current.error).toBeUndefined();
+  });
+
+  it('does not preserve another cluster summary when new requests fail', async () => {
+    mocks.getClusterDashboardSummary.mockResolvedValue({
+      data: { stats: { hostTotal: 5 } },
+    });
+    mocks.getRecentAlerts.mockResolvedValue({ data: [{ id: 1 }] });
+    const { result, rerender } = renderHook(
+      ({ clusterId }) => useClusterSummary({ clusterId, refreshKey: 0 }),
+      { initialProps: { clusterId: 1 } },
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    mocks.getClusterDashboardSummary.mockRejectedValue(
+      new Error('unavailable'),
+    );
+    mocks.getRecentAlerts.mockRejectedValue(new Error('unavailable'));
+    rerender({ clusterId: 2 });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.summary).toBeUndefined();
+    expect(result.current.recentAlerts).toEqual([]);
+  });
 });

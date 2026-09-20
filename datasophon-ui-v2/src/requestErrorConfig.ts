@@ -41,7 +41,17 @@ export const errorConfig: RequestConfig = {
     },
     // 错误接收及处理
     errorHandler: (error: any, opts: any) => {
-      if (opts?.skipErrorHandler) throw error;
+      if (opts?.skipErrorHandler) {
+        // 页面自行展示普通错误时，认证失效仍须跳转登录。
+        if (
+          error.response?.status === 401 ||
+          (error.name === 'BizError' &&
+            error.info?.showType === ErrorShowType.REDIRECT)
+        ) {
+          window.location.href = '/ddh/user/login';
+        }
+        throw error;
+      }
       // 我们的 errorThrower 抛出的错误。
       if (error.name === 'BizError') {
         const errorInfo: ResponseStructure | undefined = error.info;

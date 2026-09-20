@@ -107,3 +107,49 @@ describe('useDorisDashboardData failures', () => {
     expect(result.current).toMatchObject({ instant: {}, series: {} });
   });
 });
+
+it('passes the opt-in to all panel request types while reporting every failed panel', async () => {
+  vi.clearAllMocks();
+  mocks.queryDorisInstant.mockRejectedValue(new Error('offline'));
+  mocks.queryDorisRange.mockRejectedValue(new Error('offline'));
+  mocks.fetchDorisNodeCount.mockRejectedValue(new Error('offline'));
+  const descriptors: Record<string, DorisPanelDescriptor> = {
+    instant: {
+      type: 'instant',
+      metric: 'cpu',
+      denominatorMetric: 'total',
+      agg: 'sum',
+    },
+    nodes: { type: 'node-count', roleName: 'worker' },
+    range: { type: 'range-stat', metric: 'cpu', rate: '5m' },
+    series: {
+      type: 'multi-range',
+      queries: [
+        { label: 'ratio', metric: 'cpu', denominatorMetric: 'total' },
+        { label: 'raw', metric: 'cpu' },
+      ],
+    },
+  };
+  const panelIds = Object.keys(descriptors);
+  const { result } = renderHook(() =>
+    useDorisDashboardData({
+      panelDescriptors: descriptors,
+      panelIds,
+      instance: '.+',
+      timeRange: '1h',
+      clusterId: 1,
+      refreshKey: 0,
+      skipErrorHandler: true,
+    }),
+  );
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  expect(result.current.failedPanelIds.sort()).toEqual(panelIds.sort());
+  for (const mock of [mocks.queryDorisInstant, mocks.queryDorisRange]) {
+    expect(mock).toHaveBeenCalled();
+    for (const call of mock.mock.calls)
+      expect(call[1]).toEqual({ skipErrorHandler: true });
+  }
+  expect(mocks.fetchDorisNodeCount).toHaveBeenCalledWith('worker', 1, {
+    skipErrorHandler: true,
+  });
+});

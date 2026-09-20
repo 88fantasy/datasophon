@@ -47,6 +47,7 @@ interface ServiceHealthPanelProps {
   viewMoreLabel: string;
   data: DATASOPHON.ClusterDashboardServiceHealth[];
   onViewMore: () => void;
+  onOpenService: (serviceName: string) => void;
   height?: number;
 }
 
@@ -57,6 +58,7 @@ const ServiceHealthPanel: FC<ServiceHealthPanelProps> = ({
   viewMoreLabel,
   data,
   onViewMore,
+  onOpenService,
   height = 260,
 }) => {
   const columns: ColumnsType<DATASOPHON.ClusterDashboardServiceHealth> = [
@@ -64,7 +66,14 @@ const ServiceHealthPanel: FC<ServiceHealthPanelProps> = ({
       title: columnLabels.service,
       dataIndex: 'label',
       ellipsis: true,
-      render: (label: string, row) => label || row.serviceName,
+      render: (label: string, row) => (
+        <Typography.Link
+          title={label || row.serviceName}
+          onClick={() => onOpenService(row.serviceName)}
+        >
+          {label || row.serviceName}
+        </Typography.Link>
+      ),
     },
     {
       title: columnLabels.roles,
@@ -115,7 +124,7 @@ const ServiceHealthPanel: FC<ServiceHealthPanelProps> = ({
         dataSource={data}
         pagination={false}
         size="small"
-        scroll={{ y: height - 48 }}
+        scroll={{ x: 640, y: height - 48 }}
         locale={{ emptyText }}
       />
     </MonitorPanelCard>

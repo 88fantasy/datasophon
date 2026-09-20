@@ -6,6 +6,8 @@ import {
   FundProjectionScreenOutlined,
   HistoryOutlined,
   ImportOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   NodeIndexOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -14,7 +16,17 @@ import {
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { history, Outlet, useIntl, useLocation, useParams } from '@umijs/max';
-import { Badge, Button, Dropdown, Layout, Menu, Spin, Tag } from 'antd';
+import {
+  Alert,
+  Badge,
+  Breadcrumb,
+  Button,
+  Dropdown,
+  Layout,
+  Menu,
+  Spin,
+  Tag,
+} from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import { listClusters } from '@/services/cluster';
@@ -158,6 +170,9 @@ const ClusterLayout: React.FC = () => {
     null,
   );
   const [clusterLoading, setClusterLoading] = useState(true);
+  const [clusterError, setClusterError] = useState(false);
+  const [clusterRetry, setClusterRetry] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
 
   // ── 部署/添加服务弹窗可见状态 ─────────────────────────────
   const [manifestModalOpen, setManifestModalOpen] = useState(false);
@@ -167,6 +182,8 @@ const ClusterLayout: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     setClusterLoading(true);
+    setClusterError(false);
+    setClusterInfo(null);
     listClusters()
       .then((res) => {
         if (cancelled) return;
@@ -174,7 +191,7 @@ const ClusterLayout: React.FC = () => {
         setClusterInfo(list.find((c) => c.id === numericClusterId) ?? null);
       })
       .catch(() => {
-        /* global error handler */
+        if (!cancelled) setClusterError(true);
       })
       .finally(() => {
         if (!cancelled) setClusterLoading(false);
@@ -182,7 +199,7 @@ const ClusterLayout: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [numericClusterId]);
+  }, [numericClusterId, clusterRetry]);
 
   // ── K8s 集群没有集群看板页，落到 /overview 时兜底回主机管理 ────────
   useEffect(() => {
@@ -194,60 +211,55 @@ const ClusterLayout: React.FC = () => {
     }
   }, [clusterInfo?.archType, location.pathname, numericClusterId]);
 
-  // ── 物理集群：服务列表轮询（3 秒间隔）────────────────────────────
+  // ── 服务状态：后台暂停轮询，慢请求完成前不重复发送 ───────────────
   const [serviceList, setServiceList] = useState<
     DATASOPHON.ServiceInstanceInfo[]
   >([]);
-
-  useEffect(() => {
-    if (clusterInfo?.archType === 'k8s') return; // K8s 由独立 effect 处理
-
-    let cancelled = false;
-    const fetchServices = async () => {
-      try {
-        const res = await listClusterServices(numericClusterId);
-        if (!cancelled) {
-          setServiceList(Array.isArray(res) ? res : (res.data ?? []));
-        }
-      } catch {
-        /* global error handler */
-      }
-    };
-
-    fetchServices();
-    const timer = setInterval(fetchServices, 3000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [numericClusterId, clusterInfo?.archType]);
-
-  // ── K8s 集群：实例列表轮询（3 秒间隔，单次请求覆盖全部 namespace）──
   const [k8sInstances, setK8sInstances] = useState<
     DATASOPHON.K8sServiceInstanceVO[]
   >([]);
+  const [servicesError, setServicesError] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
-    if (clusterInfo?.archType !== 'k8s') return;
+    setServiceList([]);
+    setK8sInstances([]);
+    setServicesError(false);
+    setLastUpdated(null);
+    if (!clusterInfo || clusterInfo.id !== numericClusterId) return;
 
     let cancelled = false;
-    const fetchK8s = async () => {
+    let pending = false;
+    const refresh = async () => {
+      if (cancelled || pending || document.hidden) return;
+      pending = true;
       try {
-        const res = await listAllK8sInstances(numericClusterId);
-        if (cancelled) return;
-        setK8sInstances(Array.isArray(res) ? res : (res.data ?? []));
+        if (clusterInfo.archType === 'k8s') {
+          const res = await listAllK8sInstances(numericClusterId);
+          if (cancelled) return;
+          setK8sInstances(Array.isArray(res) ? res : (res.data ?? []));
+        } else {
+          const res = await listClusterServices(numericClusterId);
+          if (cancelled) return;
+          setServiceList(Array.isArray(res) ? res : (res.data ?? []));
+        }
+        setServicesError(false);
+        setLastUpdated(new Date());
       } catch {
-        /* global error handler */
+        if (!cancelled) setServicesError(true);
+      } finally {
+        pending = false;
       }
     };
-
-    fetchK8s();
-    const timer = setInterval(fetchK8s, 3000);
+    void refresh();
+    const timer = setInterval(refresh, 3000);
+    document.addEventListener('visibilitychange', refresh);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
     };
-  }, [numericClusterId, clusterInfo?.archType]);
+  }, [numericClusterId, clusterInfo]);
 
   // ── 按 catalog 分组 ────────────────────────────────────
   const groupedServices = useMemo(() => {
@@ -347,8 +359,8 @@ const ClusterLayout: React.FC = () => {
                 key,
                 label,
                 children: instances.map((inst) => ({
-            key: `/cluster/${numericClusterId}/service/${inst.id}`,
-            label: <K8sInstanceMenuItem instance={inst} />,
+                  key: `/cluster/${numericClusterId}/service/${inst.id}`,
+                  label: <K8sInstanceMenuItem instance={inst} />,
                 })),
               },
             ]
@@ -403,7 +415,7 @@ const ClusterLayout: React.FC = () => {
   ]);
 
   // ── 渲染 ──────────────────────────────────────────────
-  if (clusterLoading) {
+  if (clusterLoading || (clusterInfo && clusterInfo.id !== numericClusterId)) {
     return (
       <div
         style={{
@@ -417,6 +429,23 @@ const ClusterLayout: React.FC = () => {
     );
   }
 
+  if (clusterError) {
+    return (
+      <PageContainer title="集群加载失败">
+        <Alert
+          type="error"
+          showIcon
+          title="集群加载失败，请检查网络后重试"
+          action={
+            <Button onClick={() => setClusterRetry((value) => value + 1)}>
+              重试
+            </Button>
+          }
+        />
+      </PageContainer>
+    );
+  }
+
   if (!clusterInfo) {
     return (
       <PageContainer title="集群不存在">
@@ -425,7 +454,21 @@ const ClusterLayout: React.FC = () => {
     );
   }
 
-  const currentPath = history.location.pathname.replace(/^\/ddh(?=\/|$)/, '');
+  const currentPath = location.pathname.replace(/^\/ddh(?=\/|$)/, '');
+  const selectedPath =
+    currentPath.match(/^\/cluster\/[^/]+\/service\/[^/]+/)?.[0] ??
+    currentPath.match(/^\/cluster\/[^/]+\/[^/]+/)?.[0] ??
+    currentPath;
+  const selectedService = [...serviceList, ...k8sInstances].find(
+    (service) =>
+      `/cluster/${numericClusterId}/service/${service.id}` === selectedPath,
+  );
+  const selectedMenu = menuItems.find((item) => item.key === selectedPath);
+  const pageTitle = selectedService
+    ? ('label' in selectedService && selectedService.label) ||
+      selectedService.serviceName
+    : selectedMenu?.label || '服务详情';
+  const clusterHome = `/cluster/${numericClusterId}/${clusterInfo.archType === 'k8s' ? 'host' : 'overview'}`;
 
   return (
     <ClusterContext.Provider
@@ -452,7 +495,16 @@ const ClusterLayout: React.FC = () => {
         childrenContentStyle={{ padding: 0 }}
       >
         <Layout className={styles.pageLayout}>
-          <Sider width={216} theme="dark" className={styles.sider}>
+          <Sider
+            width={216}
+            theme="dark"
+            className={styles.sider}
+            breakpoint="lg"
+            collapsedWidth={0}
+            collapsed={collapsed}
+            onBreakpoint={setCollapsed}
+            trigger={null}
+          >
             <div className={styles.siderBody}>
               <div className={styles.siderHeader}>
                 <span className={styles.siderEyebrow}>集群</span>
@@ -464,7 +516,7 @@ const ClusterLayout: React.FC = () => {
                 theme="dark"
                 mode="inline"
                 className={styles.menu}
-                selectedKeys={[currentPath]}
+                selectedKeys={[selectedPath]}
                 items={menuItems}
                 onClick={({ key }) => {
                   if (!key.startsWith('/')) return;
@@ -477,8 +529,70 @@ const ClusterLayout: React.FC = () => {
             <div className={styles.contentInner}>
               <div className={styles.clusterBar}>
                 <div className={styles.clusterIdentity}>
-                  <span className={styles.breadcrumb}>集群管理 / 当前集群</span>
+                  <Breadcrumb
+                    className={styles.breadcrumb}
+                    items={[
+                      {
+                        title: (
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => history.push('/colony')}
+                          >
+                            集群管理
+                          </Button>
+                        ),
+                      },
+                      {
+                        title: (
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => history.push(clusterHome)}
+                          >
+                            {clusterInfo.clusterName}
+                          </Button>
+                        ),
+                      },
+                      {
+                        title:
+                          selectedPath !== currentPath ? (
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={() => history.push(selectedPath)}
+                            >
+                              {pageTitle}
+                            </Button>
+                          ) : (
+                            pageTitle
+                          ),
+                      },
+                      ...(selectedPath !== currentPath
+                        ? [
+                            {
+                              title: currentPath.includes('/ds-workflow/')
+                                ? '工作流实例'
+                                : '详情',
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                   <div className={styles.clusterNameRow}>
+                    <Button
+                      type="text"
+                      aria-label={collapsed ? '展开集群导航' : '收起集群导航'}
+                      aria-expanded={!collapsed}
+                      icon={
+                        collapsed ? (
+                          <MenuUnfoldOutlined />
+                        ) : (
+                          <MenuFoldOutlined />
+                        )
+                      }
+                      onClick={() => setCollapsed((value) => !value)}
+                    />
                     <span className={styles.clusterName}>
                       {clusterInfo.clusterName}
                     </span>
@@ -523,6 +637,19 @@ const ClusterLayout: React.FC = () => {
                   </div>
                 )}
               </div>
+              {servicesError && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  title="服务状态刷新失败"
+                  description={
+                    lastUpdated
+                      ? `当前显示旧数据，最近成功更新于 ${lastUpdated.toLocaleTimeString()}`
+                      : '尚未获取到服务状态，将自动重试'
+                  }
+                  style={{ marginBottom: 16 }}
+                />
+              )}
               <div className={styles.outlet}>
                 <Outlet />
               </div>

@@ -105,6 +105,20 @@ describe('app getInitialState', () => {
     expect(state.fetchUserInfo).toBeDefined();
   });
 
+  it('should not fetch currentUser on the deployed /ddh login page', async () => {
+    const { getInitialState } = await import('./app');
+    mockHistory.location = {
+      pathname: '/ddh/user/login',
+      search: '?redirect=%2Fddh%2Fcluster%2F1',
+      hash: '',
+    };
+
+    const state = await getInitialState();
+
+    expect(mockQueryCurrentUser).not.toHaveBeenCalled();
+    expect(state.currentUser).toBeUndefined();
+  });
+
   it('should encode redirect path correctly on 401', async () => {
     const { getInitialState } = await import('./app');
     mockHistory.location = {
