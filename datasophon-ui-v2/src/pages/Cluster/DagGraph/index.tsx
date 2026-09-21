@@ -7,7 +7,7 @@
 import { blue, gold, green, grey, red } from '@ant-design/colors';
 import { Graph, IS_SAFARI } from '@antv/x6';
 import { request, useParams } from '@umijs/max';
-import { Button, Modal, message, Spin } from 'antd';
+import { Alert, Button, Modal, message, Spin } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDagGraph, redeployDag } from '@/services/dag';
 import { invokeGenPort, invokeGenSourceAndTarget } from './antvUtils';
@@ -165,6 +165,10 @@ const DagGraphPage: React.FC = () => {
   const graphRef = useRef<Graph | null>(null);
   const pollingRef = useRef<number | undefined>(undefined);
   const nodeMapRef = useRef<Record<string, any>>({});
+  const requestIdRef = useRef(0);
+  const [loadError, setLoadError] = useState<string>();
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number>();
 
   // 调度日志 Modal 状态
   const [scheduleLog, setScheduleLog] = useState<{
@@ -231,11 +235,17 @@ const DagGraphPage: React.FC = () => {
   // ── 数据拉取 + 渲染（update=false: 首次建图；update=true: 仅刷新状态） ────────
   const invokeLoad = useCallback(
     async (update: boolean) => {
-      if (!dagId) return;
+      if (!dagId || !graphRef.current) return;
+      cancelPolling();
+      const requestId = ++requestIdRef.current;
+      setLoading(true);
       try {
         const res = await getDagGraph(clusterId, dagId);
+        if (requestId !== requestIdRef.current) return;
         const raw = (res as any)?.data ?? res;
-        if (!raw) return;
+        if (!raw || !Array.isArray(raw.nodes) || !Array.isArray(raw.edges)) {
+          throw new Error('未返回有效的 DAG 数据');
+        }
 
         const transferred = invokeTransferData(raw as DATASOPHON.DagGraph);
         nodeMapRef.current = transferred.nodeMap;
@@ -257,6 +267,8 @@ const DagGraphPage: React.FC = () => {
         }
 
         updateAnimate();
+        setLastUpdated(Date.now());
+        setLoadError(undefined);
 
         // 存在进行中节点时继续轮询
         const hasPending =
@@ -268,10 +280,14 @@ const DagGraphPage: React.FC = () => {
           pollingRef.current = window.setTimeout(() => invokeLoad(true), 3000);
         }
       } catch (err) {
-        console.error('DagGraph load error:', err);
+        if (requestId === requestIdRef.current) {
+          setLoadError(err instanceof Error ? err.message : '请检查网络后重试');
+        }
+      } finally {
+        if (requestId === requestIdRef.current) setLoading(false);
       }
     },
-    [clusterId, dagId, updateAnimate],
+    [clusterId, dagId, updateAnimate, cancelPolling],
   );
 
   // ── 重新运行 ───────────────────────────────────────────────────────────────
@@ -314,11 +330,15 @@ const DagGraphPage: React.FC = () => {
 
   // ── 生命周期 ───────────────────────────────────────────────────────────────
   useEffect(() => {
+    setLastUpdated(undefined);
+    setLoadError(undefined);
     invokeInitGraph();
     invokeLoad(false);
     return () => {
       cancelPolling();
+      requestIdRef.current += 1;
       graphRef.current?.dispose();
+      graphRef.current = null;
     };
   }, [invokeInitGraph, invokeLoad, cancelPolling]);
 
@@ -334,6 +354,34 @@ const DagGraphPage: React.FC = () => {
     >
       {/* x6 画布容器 */}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+
+      {loadError && (
+        <Alert
+          type="warning"
+          showIcon
+          title={
+            lastUpdated
+              ? 'DAG 状态刷新失败，当前显示上次成功结果'
+              : 'DAG 状态加载失败'
+          }
+          description={`${loadError}${lastUpdated ? `；最近成功更新于 ${new Date(lastUpdated).toLocaleTimeString()}` : ''}`}
+          action={
+            <Button
+              loading={loading}
+              onClick={() => invokeLoad(lastUpdated !== undefined)}
+            >
+              重试加载
+            </Button>
+          }
+          style={{
+            position: 'absolute',
+            top: 64,
+            left: 20,
+            right: 20,
+            zIndex: 100,
+          }}
+        />
+      )}
 
       {/* 操作按钮（右上角固定） */}
       <div

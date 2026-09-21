@@ -1,6 +1,19 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import type { CSSProperties, ReactNode } from 'react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { history } from '@umijs/max';
+import {
+  Children,
+  type CSSProperties,
+  type ReactNode,
+  useContext,
+} from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import ClusterContext from '@/context/ClusterContext';
 import { listClusters } from '@/services/cluster';
 import { listAllK8sInstances } from '@/services/k8s';
 import { listClusterServices } from '@/services/service';
@@ -12,13 +25,24 @@ vi.mock('@umijs/max', () => ({
     push: vi.fn(),
     replace: vi.fn(),
   },
-  Outlet: () => <div>cluster page</div>,
+  Outlet: () => {
+    const ctx = useContext(ClusterContext);
+    return (
+      <div>
+        cluster page
+        <span data-testid="shared-services">
+          {ctx?.serviceList?.map((service) => service.id).join(',') ??
+            'unavailable'}
+        </span>
+      </div>
+    );
+  },
   useIntl: () => ({
     formatMessage: ({ defaultMessage }: { defaultMessage: string }) =>
       defaultMessage,
   }),
-  useLocation: () => ({ pathname: '/cluster/7/host' }),
-  useParams: () => ({ clusterId: '7' }),
+  useLocation: () => history.location,
+  useParams: () => ({ clusterId: history.location.pathname.split('/')[2] }),
 }));
 
 vi.mock('@ant-design/pro-components', () => ({
@@ -48,11 +72,20 @@ vi.mock('antd', async () => {
   Layout.Sider = ({
     children,
     className,
+    collapsed,
+    breakpoint,
   }: {
     children: ReactNode;
     className?: string;
+    collapsed?: boolean;
+    breakpoint?: string;
   }) => (
-    <aside className={className} data-testid="cluster-sider">
+    <aside
+      className={className}
+      data-testid="cluster-sider"
+      data-collapsed={String(collapsed)}
+      data-breakpoint={breakpoint}
+    >
       {children}
     </aside>
   );
@@ -69,23 +102,57 @@ vi.mock('antd', async () => {
   );
 
   return {
+    Alert: ({
+      title,
+      description,
+      action,
+    }: {
+      title: ReactNode;
+      description?: ReactNode;
+      action?: ReactNode;
+    }) => (
+      <div role="alert">
+        {title}
+        {description}
+        {action}
+      </div>
+    ),
+    Breadcrumb: ({ items }: { items: Array<{ title: ReactNode }> }) => (
+      <div>{Children.toArray(items.map((item) => item.title))}</div>
+    ),
     Badge: ({ status }: { status?: string }) => (
       <i data-testid="badge" data-status={status} />
     ),
-    Button: ({ children }: { children: ReactNode }) => (
-      <button type="button">{children}</button>
+    Button: ({
+      children,
+      onClick,
+      ...props
+    }: {
+      children: ReactNode;
+      onClick?: () => void;
+      [key: string]: unknown;
+    }) => (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={props['aria-label'] as string}
+      >
+        {children}
+      </button>
     ),
     Dropdown: ({ children }: { children: ReactNode }) => <>{children}</>,
     Layout,
     Menu: ({
       items,
+      selectedKeys,
     }: {
+      selectedKeys: string[];
       items: Array<{
         key?: string;
         children?: Array<{ key?: string; label?: ReactNode }>;
       }>;
     }) => (
-      <nav data-testid="cluster-menu">
+      <nav data-testid="cluster-menu" data-selected={selectedKeys.join()}>
         {items.map((item, index) => (
           // key 与 children 分开渲染：菜单项的 textContent 必须只含 key，
           // 否则按 key 断言分组的用例会被子项文本污染
@@ -269,5 +336,152 @@ describe('ClusterLayout takeover reconciliation', () => {
       .getAllByTestId('badge')
       .map((el) => el.getAttribute('data-status'));
     expect(statuses).toContain('error');
+  });
+});
+
+describe('ClusterLayout refresh and navigation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    history.location.pathname = '/cluster/7/host';
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [{ id: 7, clusterName: 'test', archType: 'physical' }],
+    } as never);
+    vi.mocked(listClusterServices).mockResolvedValue({
+      data: [{ id: 9, serviceName: 'Doris', catalog: 'MIDDLEWARE' }],
+    } as never);
+  });
+
+  it('ignores a previous cluster response when switching from physical to K8s', async () => {
+    let resolvePrevious!: (value: never) => void;
+    vi.mocked(listClusterServices).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePrevious = resolve;
+      }),
+    );
+    const view = render(<ClusterLayout />);
+    await waitFor(() => expect(listClusterServices).toHaveBeenCalledWith(7));
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [{ id: 8, clusterName: 'next', archType: 'k8s' }],
+    } as never);
+    vi.mocked(listAllK8sInstances).mockResolvedValue({
+      data: [{ id: 10, serviceName: 'Redis', catalog: 'MIDDLEWARE' }],
+    } as never);
+    history.location.pathname = '/cluster/8/host';
+    view.rerender(<ClusterLayout />);
+    await screen.findByText('Redis');
+    await act(async () => {
+      resolvePrevious({
+        data: [{ id: 9, serviceName: 'Doris', catalog: 'MIDDLEWARE' }],
+      } as never);
+    });
+    expect(screen.queryByText('Doris')).not.toBeInTheDocument();
+    expect(listClusterServices).toHaveBeenCalledTimes(1);
+    expect(listAllK8sInstances).toHaveBeenCalledWith(8);
+  });
+
+  it('shares the polled service list and clears it when switching clusters', async () => {
+    const view = render(<ClusterLayout />);
+    await waitFor(() =>
+      expect(screen.getByTestId('shared-services')).toHaveTextContent('9'),
+    );
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [{ id: 8, clusterName: 'next', archType: 'physical' }],
+    } as never);
+    let resolveNext!: (value: never) => void;
+    vi.mocked(listClusterServices).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveNext = resolve;
+      }),
+    );
+    history.location.pathname = '/cluster/8/overview';
+    view.rerender(<ClusterLayout />);
+    await waitFor(() => expect(listClusterServices).toHaveBeenCalledWith(8));
+    expect(screen.getByTestId('shared-services')).toBeEmptyDOMElement();
+    await act(async () => {
+      resolveNext({ data: [{ id: 23, serviceName: 'Doris' }] } as never);
+    });
+    expect(screen.getByTestId('shared-services')).toHaveTextContent('23');
+  });
+
+  it('lets users collapse and reopen the responsive sidebar', async () => {
+    render(<ClusterLayout />);
+    const sider = await screen.findByTestId('cluster-sider');
+    expect(sider).toHaveAttribute('data-breakpoint', 'lg');
+    fireEvent.click(screen.getByRole('button', { name: '收起集群导航' }));
+    expect(sider).toHaveAttribute('data-collapsed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: '展开集群导航' }));
+    expect(sider).toHaveAttribute('data-collapsed', 'false');
+  });
+
+  it('shows a retryable load error rather than a missing cluster', async () => {
+    vi.mocked(listClusters).mockRejectedValueOnce(new Error('offline'));
+    render(<ClusterLayout />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('集群加载失败');
+    expect(screen.queryByText(/未找到集群/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('重试'));
+    expect(await screen.findByTestId('cluster-menu')).toBeInTheDocument();
+  });
+
+  it('selects the owning service on a nested route and provides a return link', async () => {
+    history.location.pathname = '/cluster/7/service/9/ds-workflow/1/2';
+    render(<ClusterLayout />);
+    await screen.findByRole('button', { name: 'Doris' });
+    expect(screen.getByTestId('cluster-menu')).toHaveAttribute(
+      'data-selected',
+      '/cluster/7/service/9',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Doris' }));
+    expect(history.push).toHaveBeenCalledWith('/cluster/7/service/9');
+  });
+
+  it('retains services with a stale warning and pauses hidden or overlapping refreshes', async () => {
+    vi.useFakeTimers();
+    try {
+      let view!: ReturnType<typeof render>;
+      await act(async () => {
+        view = render(<ClusterLayout />);
+      });
+      vi.mocked(listClusterServices).mockRejectedValueOnce(
+        new Error('offline'),
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent('服务状态刷新失败');
+      expect(screen.getByRole('alert')).toHaveTextContent('最近成功更新');
+      expect(screen.getByText('Doris')).toBeInTheDocument();
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: true,
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6000);
+      });
+      expect(listClusterServices).toHaveBeenCalledTimes(2);
+      vi.mocked(listClusterServices).mockReturnValueOnce(new Promise(() => {}));
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: false,
+      });
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6000);
+      });
+      expect(listClusterServices).toHaveBeenCalledTimes(3);
+      view.unmount();
+      document.dispatchEvent(new Event('visibilitychange'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6000);
+      });
+      expect(listClusterServices).toHaveBeenCalledTimes(3);
+    } finally {
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: false,
+      });
+      vi.useRealTimers();
+    }
   });
 });

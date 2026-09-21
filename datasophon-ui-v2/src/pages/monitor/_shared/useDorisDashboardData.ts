@@ -42,6 +42,8 @@ export interface UseDorisDashboardDataParams {
   clusterId?: number;
   refreshKey: number;
   concurrency?: number;
+  /** 仅在调用页面提供汇总错误反馈时启用。 */
+  skipErrorHandler?: boolean;
 }
 
 export interface DorisDashboardData {
@@ -133,6 +135,7 @@ export function useDorisDashboardData({
   clusterId = 1,
   refreshKey,
   concurrency = 4,
+  skipErrorHandler,
 }: UseDorisDashboardDataParams): DorisDashboardData {
   const [data, setData] = useState<DorisDashboardData>({
     instant: {},
@@ -147,6 +150,9 @@ export function useDorisDashboardData({
 
   useEffect(() => {
     let cancelled = false;
+    const requestOptions = skipErrorHandler
+      ? { skipErrorHandler: true }
+      : undefined;
 
     async function fetchAll() {
       if (panelIds.length === 0) {
@@ -229,21 +235,24 @@ export function useDorisDashboardData({
               };
               if (def.denominatorMetric) {
                 const [numRes, denomRes] = await Promise.all([
-                  queryDorisInstant(numParams),
-                  queryDorisInstant({
-                    metric: def.denominatorMetric,
-                    agg: def.agg,
-                    scale: 1,
-                    instance,
-                    job,
-                    time: end,
-                    clusterId,
-                    table: def.denominatorTable ?? def.table,
-                    filters: def.denominatorFilters,
-                    filtersNe: def.denominatorFiltersNe,
-                    filtersRegex: def.denominatorFiltersRegex,
-                    filtersNotRegex: def.denominatorFiltersNotRegex,
-                  }),
+                  queryDorisInstant(numParams, requestOptions),
+                  queryDorisInstant(
+                    {
+                      metric: def.denominatorMetric,
+                      agg: def.agg,
+                      scale: 1,
+                      instance,
+                      job,
+                      time: end,
+                      clusterId,
+                      table: def.denominatorTable ?? def.table,
+                      filters: def.denominatorFilters,
+                      filtersNe: def.denominatorFiltersNe,
+                      filtersRegex: def.denominatorFiltersRegex,
+                      filtersNotRegex: def.denominatorFiltersNotRegex,
+                    },
+                    requestOptions,
+                  ),
                 ]);
                 const numerator = numRes?.data
                   ? vectorToScalar(numRes.data)
@@ -258,7 +267,7 @@ export function useDorisDashboardData({
                 return [id, value] as const;
               }
 
-              const res = await queryDorisInstant(numParams);
+              const res = await queryDorisInstant(numParams, requestOptions);
               return [
                 id,
                 res?.data ? vectorToScalar(res.data) : Number.NaN,
@@ -275,7 +284,11 @@ export function useDorisDashboardData({
             const def = _descriptors[id];
             if (def.type !== 'node-count') return [id, 0] as const;
             try {
-              const res = await fetchDorisNodeCount(def.roleName, clusterId);
+              const res = await fetchDorisNodeCount(
+                def.roleName,
+                clusterId,
+                requestOptions,
+              );
               return [id, res?.data ?? Number.NaN] as const;
             } catch {
               failedPanelIds.add(id);
@@ -289,22 +302,25 @@ export function useDorisDashboardData({
             const def = _descriptors[id];
             if (def.type !== 'range-stat') return [id, 0] as const;
             try {
-              const res = await queryDorisRange({
-                metric: def.metric,
-                rateWindow: def.rate,
-                scale: def.scale,
-                instance,
-                job,
-                start,
-                end,
-                step,
-                clusterId,
-                table: def.table,
-                filters: def.filters,
-                filtersNe: def.filtersNe,
-                filtersRegex: def.filtersRegex,
-                filtersNotRegex: def.filtersNotRegex,
-              });
+              const res = await queryDorisRange(
+                {
+                  metric: def.metric,
+                  rateWindow: def.rate,
+                  scale: def.scale,
+                  instance,
+                  job,
+                  start,
+                  end,
+                  step,
+                  clusterId,
+                  table: def.table,
+                  filters: def.filters,
+                  filtersNe: def.filtersNe,
+                  filtersRegex: def.filtersRegex,
+                  filtersNotRegex: def.filtersNotRegex,
+                },
+                requestOptions,
+              );
               return [
                 id,
                 matrixToLatestScalar(res?.data ?? EMPTY_MATRIX),
@@ -328,43 +344,49 @@ export function useDorisDashboardData({
                 if (q.denominatorMetric) {
                   // 比值合成：并行取分子分母，客户端逐点相除
                   const [numRes, denomRes] = await Promise.all([
-                    queryDorisRange({
-                      metric: q.metric,
-                      rateWindow: q.rate,
-                      scale: 1,
-                      instance,
-                      job,
-                      start,
-                      end,
-                      step,
-                      clusterId,
-                      table: q.table,
-                      quantile: q.quantile,
-                      field: q.field,
-                      filters: q.filters,
-                      filtersNe: q.filtersNe,
-                      filtersRegex: q.filtersRegex,
-                      filtersNotRegex: q.filtersNotRegex,
-                      groupBy: q.groupBy,
-                    }),
-                    queryDorisRange({
-                      metric: q.denominatorMetric,
-                      rateWindow: q.rate,
-                      scale: 1,
-                      instance,
-                      job,
-                      start,
-                      end,
-                      step,
-                      clusterId,
-                      table: q.denominatorTable ?? q.table,
-                      field: q.denominatorField ?? q.field,
-                      filters: q.denominatorFilters,
-                      filtersNe: q.denominatorFiltersNe,
-                      filtersRegex: q.denominatorFiltersRegex,
-                      filtersNotRegex: q.denominatorFiltersNotRegex,
-                      groupBy: q.groupBy,
-                    }),
+                    queryDorisRange(
+                      {
+                        metric: q.metric,
+                        rateWindow: q.rate,
+                        scale: 1,
+                        instance,
+                        job,
+                        start,
+                        end,
+                        step,
+                        clusterId,
+                        table: q.table,
+                        quantile: q.quantile,
+                        field: q.field,
+                        filters: q.filters,
+                        filtersNe: q.filtersNe,
+                        filtersRegex: q.filtersRegex,
+                        filtersNotRegex: q.filtersNotRegex,
+                        groupBy: q.groupBy,
+                      },
+                      requestOptions,
+                    ),
+                    queryDorisRange(
+                      {
+                        metric: q.denominatorMetric,
+                        rateWindow: q.rate,
+                        scale: 1,
+                        instance,
+                        job,
+                        start,
+                        end,
+                        step,
+                        clusterId,
+                        table: q.denominatorTable ?? q.table,
+                        field: q.denominatorField ?? q.field,
+                        filters: q.denominatorFilters,
+                        filtersNe: q.denominatorFiltersNe,
+                        filtersRegex: q.denominatorFiltersRegex,
+                        filtersNotRegex: q.denominatorFiltersNotRegex,
+                        groupBy: q.groupBy,
+                      },
+                      requestOptions,
+                    ),
                   ]);
                   const numMatrix = numRes?.data ?? EMPTY_MATRIX;
                   const denomMatrix = denomRes?.data ?? EMPTY_MATRIX;
@@ -379,25 +401,28 @@ export function useDorisDashboardData({
                 }
 
                 // 普通单指标查询
-                const res = await queryDorisRange({
-                  metric: q.metric,
-                  rateWindow: q.rate,
-                  scale: q.scale,
-                  instance,
-                  job,
-                  start,
-                  end,
-                  step,
-                  clusterId,
-                  table: q.table,
-                  quantile: q.quantile,
-                  field: q.field,
-                  filters: q.filters,
-                  filtersNe: q.filtersNe,
-                  filtersRegex: q.filtersRegex,
-                  filtersNotRegex: q.filtersNotRegex,
-                  groupBy: q.groupBy,
-                });
+                const res = await queryDorisRange(
+                  {
+                    metric: q.metric,
+                    rateWindow: q.rate,
+                    scale: q.scale,
+                    instance,
+                    job,
+                    start,
+                    end,
+                    step,
+                    clusterId,
+                    table: q.table,
+                    quantile: q.quantile,
+                    field: q.field,
+                    filters: q.filters,
+                    filtersNe: q.filtersNe,
+                    filtersRegex: q.filtersRegex,
+                    filtersNotRegex: q.filtersNotRegex,
+                    groupBy: q.groupBy,
+                  },
+                  requestOptions,
+                );
                 return {
                   label: q.label,
                   matrix: res?.data ?? EMPTY_MATRIX,
@@ -452,7 +477,16 @@ export function useDorisDashboardData({
     return () => {
       cancelled = true;
     };
-  }, [panelIds, instance, job, timeRange, clusterId, refreshKey, concurrency]);
+  }, [
+    panelIds,
+    instance,
+    job,
+    timeRange,
+    clusterId,
+    refreshKey,
+    concurrency,
+    skipErrorHandler,
+  ]);
 
   return data;
 }

@@ -37,11 +37,15 @@ import {
 } from '@/components';
 import { currentUser as queryCurrentUser } from '@/services/auth';
 import defaultSettings from '../config/defaultSettings';
-import { PUBLIC_PATH } from '../config/publicPath';
+import { APP_BASE_PATH, PUBLIC_PATH } from '../config/publicPath';
 import { errorConfig } from './requestErrorConfig';
 
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
+const normalizePath = (pathname: string) =>
+  pathname.startsWith(`${APP_BASE_PATH}/`)
+    ? pathname.slice(APP_BASE_PATH.length)
+    : pathname;
 
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
@@ -71,7 +75,7 @@ export async function getInitialState(): Promise<{
   const { location } = history;
   if (
     ![loginPath, '/user/register', '/user/register-result'].includes(
-      location.pathname,
+      normalizePath(location.pathname),
     )
   ) {
     const currentUser = await fetchUserInfo();
@@ -136,7 +140,10 @@ export const layout: RunTimeLayoutConfig = ({
     onPageChange: () => {
       const { location } = history;
       // 如果没有登录，重定向到 login
-      if (!initialState?.currentUser && location.pathname !== loginPath) {
+      if (
+        !initialState?.currentUser &&
+        normalizePath(location.pathname) !== loginPath
+      ) {
         history.replace(
           `${loginPath}?redirect=${encodeURIComponent(location.pathname + location.search + location.hash)}`,
         );

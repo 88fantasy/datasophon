@@ -43,6 +43,7 @@ interface RecentAlertsPanelProps {
   viewAllLabel: string;
   data: DATASOPHON.ClusterAlertHistoryRecord[];
   onViewAll: () => void;
+  onOpenService: (instanceId: number) => void;
   height?: number;
 }
 
@@ -54,6 +55,7 @@ const RecentAlertsPanel: FC<RecentAlertsPanelProps> = ({
   viewAllLabel,
   data,
   onViewAll,
+  onOpenService,
   height = 260,
 }) => {
   const columns: ColumnsType<DATASOPHON.ClusterAlertHistoryRecord> = [
@@ -71,6 +73,17 @@ const RecentAlertsPanel: FC<RecentAlertsPanelProps> = ({
       title: columnLabels.target,
       dataIndex: 'alertTargetName',
       ellipsis: true,
+      render: (value: string, row) =>
+        row.serviceInstanceId > 0 ? (
+          <Typography.Link
+            title={value}
+            onClick={() => onOpenService(row.serviceInstanceId)}
+          >
+            {value}
+          </Typography.Link>
+        ) : (
+          value
+        ),
     },
     {
       title: columnLabels.hostname,
@@ -98,7 +111,7 @@ const RecentAlertsPanel: FC<RecentAlertsPanelProps> = ({
         dataSource={data}
         pagination={false}
         size="small"
-        scroll={{ y: height - 48 }}
+        scroll={{ x: 640, y: height - 48 }}
         locale={{ emptyText }}
       />
     </MonitorPanelCard>

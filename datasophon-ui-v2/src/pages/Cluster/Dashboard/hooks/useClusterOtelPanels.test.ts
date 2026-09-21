@@ -70,6 +70,7 @@ describe('useClusterOtelPanels', () => {
         'CO-NET': [{ time: 1000, value: 500, series: 'receive' }],
       },
       loading: false,
+      failedPanelIds: [],
     });
   });
 
@@ -100,4 +101,65 @@ describe('useClusterOtelPanels', () => {
     expect(result.current.cpuSeries).toHaveLength(2);
     expect(result.current.networkSeries).toHaveLength(1);
   });
+  it('exposes failed panels and errors instead of hiding query failures', () => {
+    mocks.useDorisDashboardData.mockReturnValue({
+      instant: {},
+      series: {},
+      loading: false,
+      error: 'query unavailable',
+      failedPanelIds: ['CO-CPU'],
+    });
+    const { result } = renderHook(() =>
+      useClusterOtelPanels({ clusterId: 1, timeRange: '1h', refreshKey: 0 }),
+    );
+    expect(result.current.error).toBe('query unavailable');
+    expect(result.current.failedPanelIds).toEqual(['CO-CPU']);
+    expect(result.current.lastSuccessAt).toBeUndefined();
+  });
+
+  it('preserves the last complete success time when refreshing fails', () => {
+    const { result, rerender } = renderHook(() =>
+      useClusterOtelPanels({ clusterId: 1, timeRange: '1h', refreshKey: 0 }),
+    );
+    const lastSuccessAt = result.current.lastSuccessAt;
+    expect(lastSuccessAt).toEqual(expect.any(Number));
+    mocks.useDorisDashboardData.mockReturnValue({
+      instant: {},
+      series: {},
+      loading: false,
+      failedPanelIds: ['CO-CPU'],
+    });
+    rerender();
+    expect(result.current.lastSuccessAt).toBe(lastSuccessAt);
+  });
+
+  it('hides old scope data while the new scope loads or fails', () => {
+    const previous = mocks.useDorisDashboardData();
+    const { result, rerender } = renderHook(
+      ({ clusterId, timeRange }) =>
+        useClusterOtelPanels({ clusterId, timeRange, refreshKey: 0 }),
+      { initialProps: { clusterId: 1, timeRange: '1h' } },
+    );
+    rerender({ clusterId: 2, timeRange: '6h' });
+    expect(result.current.cpuSeries).toEqual([]);
+    expect(result.current.memoryPercent).toBeNaN();
+    expect(result.current.lastSuccessAt).toBeUndefined();
+    mocks.useDorisDashboardData.mockReturnValue({
+      ...previous,
+      error: 'unavailable',
+      failedPanelIds: ['CO-CPU'],
+    });
+    rerender({ clusterId: 2, timeRange: '6h' });
+    expect(result.current.cpuSeries).toEqual([]);
+    expect(result.current.lastSuccessAt).toBeUndefined();
+  });
+});
+
+it('opts into local metric error feedback for the overview', () => {
+  renderHook(() =>
+    useClusterOtelPanels({ clusterId: 1, timeRange: '1h', refreshKey: 0 }),
+  );
+  expect(mocks.useDorisDashboardData).toHaveBeenLastCalledWith(
+    expect.objectContaining({ skipErrorHandler: true }),
+  );
 });

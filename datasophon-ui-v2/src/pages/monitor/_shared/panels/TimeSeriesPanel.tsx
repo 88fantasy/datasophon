@@ -10,6 +10,8 @@ import type { TimeSeriesPoint } from '../types';
 interface TimeSeriesPanelProps {
   title: string;
   data?: TimeSeriesPoint[];
+  loading?: boolean;
+  error?: boolean;
   height?: number;
   yFormatter?: (value: number) => string;
   tooltipFormatter?: (value: number) => string;
@@ -30,6 +32,8 @@ export function baseSeriesLabel(name: string): string {
 const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   title,
   data = [],
+  loading = false,
+  error = false,
   height = 180,
   yFormatter = defaultFormatter,
   tooltipFormatter = yFormatter,
@@ -41,12 +45,20 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   if (!data.length) {
     return (
       <MonitorPanelCard title={title}>
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          className={styles.empty}
-          style={{ height }}
-          description="暂无指标数据，请检查实例筛选和 Collector 采集状态"
-        />
+        <div role="status">
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            className={styles.empty}
+            style={{ height }}
+            description={
+              loading
+                ? '正在加载指标…'
+                : error
+                  ? '指标查询失败，请重试'
+                  : '暂无指标数据，请检查实例筛选和 Collector 采集状态'
+            }
+          />
+        </div>
       </MonitorPanelCard>
     );
   }
@@ -59,9 +71,6 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
       CHART_COLORS.series[index % CHART_COLORS.series.length],
   );
 
-  const chartKey =
-    data.length > 0 ? `${data[0].time}-${data[data.length - 1].time}` : 'empty';
-
   // 单序列图对齐设计稿的柔和渐变面积填充；多序列图（如 p50/p75/p99 分位数）
   // 保持纯线条，避免半透明填充相互重叠把颜色叠脏。
   const isSingleSeries = seriesNames.length === 1;
@@ -70,7 +79,6 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   return (
     <MonitorPanelCard title={title}>
       <ChartComponent
-        key={chartKey}
         data={data}
         xField="time"
         yField="value"

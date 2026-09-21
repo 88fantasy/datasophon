@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   getClusterDashboardSummary,
   getRecentAlerts,
@@ -33,6 +33,8 @@ export interface ClusterSummaryData {
   recentAlerts: DATASOPHON.ClusterAlertHistoryRecord[];
   loading: boolean;
   error?: string;
+  summaryFailed?: boolean;
+  alertsFailed?: boolean;
 }
 
 export interface UseClusterSummaryParams {
@@ -50,6 +52,8 @@ export function useClusterSummary({
     loading: true,
   });
 
+  const previousClusterId = useRef(clusterId);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -58,7 +62,13 @@ export function useClusterSummary({
       return;
     }
 
-    setData((prev) => ({ ...prev, loading: true }));
+    const clusterChanged = previousClusterId.current !== clusterId;
+    previousClusterId.current = clusterId;
+    setData((prev) =>
+      clusterChanged
+        ? { recentAlerts: [], loading: true }
+        : { ...prev, loading: true },
+    );
 
     Promise.allSettled([
       getClusterDashboardSummary(clusterId),
@@ -92,6 +102,8 @@ export function useClusterSummary({
             ? (alertsResult.value.data ?? [])
             : prev.recentAlerts,
         loading: false,
+        summaryFailed: summaryResult.status === 'rejected',
+        alertsFailed: alertsResult.status === 'rejected',
         error: errors.length > 0 ? errors.join('; ') : undefined,
       }));
     });

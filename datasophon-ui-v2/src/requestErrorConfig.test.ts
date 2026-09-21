@@ -84,6 +84,43 @@ describe('requestErrorConfig', () => {
       expect(() => {
         errorHandler(error, opts);
       }).toThrow('Test error');
+      expect(message.error).not.toHaveBeenCalled();
+      expect(message.warning).not.toHaveBeenCalled();
+      expect(notification.open).not.toHaveBeenCalled();
+    });
+
+    describe.each([
+      true,
+      false,
+    ])('authentication redirects with skipErrorHandler=%s', (skipErrorHandler) => {
+      it.each([
+        { response: { status: 401 } },
+        { name: 'BizError', info: { showType: 9 } },
+      ])('redirects to login and preserves error handling semantics: %j', (details) => {
+        const original = window.location;
+        Object.defineProperty(window, 'location', {
+          configurable: true,
+          value: { href: '/ddh/cluster/1/overview' },
+        });
+        const error = Object.assign(new Error('expired'), details);
+        try {
+          const handle = () => errorHandler(error, { skipErrorHandler });
+          if (skipErrorHandler) {
+            expect(handle).toThrow(error);
+          } else {
+            expect(handle()).toBeUndefined();
+          }
+          expect(window.location.href).toBe('/ddh/user/login');
+          expect(message.error).not.toHaveBeenCalled();
+          expect(message.warning).not.toHaveBeenCalled();
+          expect(notification.open).not.toHaveBeenCalled();
+        } finally {
+          Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: original,
+          });
+        }
+      });
     });
 
     it('should handle SILENT showType', () => {
@@ -147,23 +184,6 @@ describe('requestErrorConfig', () => {
       });
     });
 
-    it('should handle REDIRECT showType', () => {
-      const error: any = new Error('Redirect');
-      error.name = 'BizError';
-      error.info = {
-        errorCode: 401,
-        errorMessage: 'Unauthorized',
-        showType: 9,
-      };
-
-      errorHandler(error, {});
-
-      // REDIRECT 分支不应触发任何消息/通知提示
-      expect(message.warning).not.toHaveBeenCalled();
-      expect(message.error).not.toHaveBeenCalled();
-      expect(notification.open).not.toHaveBeenCalled();
-    });
-
     it('should handle default case for unknown showType', () => {
       const error: any = new Error('Unknown type');
       error.name = 'BizError';
@@ -188,23 +208,6 @@ describe('requestErrorConfig', () => {
       errorHandler(error, {});
 
       expect(message.error).toHaveBeenCalledWith('Response status:500');
-    });
-
-    it('should redirect to login on 401', () => {
-      const original = window.location.href;
-      // jsdom 允许直接赋值 location.href
-      Object.defineProperty(window, 'location', {
-        writable: true,
-        value: { href: original },
-      });
-
-      const error: any = new Error('Unauthorized');
-      error.response = { status: 401, data: {} };
-
-      errorHandler(error, {});
-
-      expect(window.location.href).toBe('/ddh/user/login');
-      expect(message.error).not.toHaveBeenCalled();
     });
 
     it('should handle offline error', () => {

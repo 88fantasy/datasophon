@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+import { useEffect, useRef, useState } from 'react';
 import type { TimeSeriesPoint } from '../../../monitor/_shared/types';
 import { useDorisDashboardData } from '../../../monitor/_shared/useDorisDashboardData';
 import {
@@ -41,6 +42,9 @@ export interface ClusterOtelPanelsData {
   cpuSeries: TimeSeriesPoint[];
   networkSeries: TimeSeriesPoint[];
   loading: boolean;
+  error?: string;
+  failedPanelIds: string[];
+  lastSuccessAt?: number;
 }
 
 /**
@@ -74,14 +78,55 @@ export function useClusterOtelPanels({
     timeRange,
     clusterId,
     refreshKey,
+    skipErrorHandler: true,
   });
 
+  const scope = `${clusterId}:${timeRange}`;
+  const scopeData = useRef({
+    scope,
+    previousSeries: undefined as typeof data.series | undefined,
+  });
+  if (scopeData.current.scope !== scope) {
+    scopeData.current = { scope, previousSeries: data.series };
+  }
+  // The shared hook retains its previous result while loading, and on total failure.
+  const belongsToScope = scopeData.current.previousSeries !== data.series;
+  const [lastSuccess, setLastSuccess] = useState<{
+    scope: string;
+    at: number;
+  }>();
+  useEffect(() => {
+    if (
+      clusterId > 0 &&
+      belongsToScope &&
+      !data.loading &&
+      !data.error &&
+      data.failedPanelIds.length === 0
+    ) {
+      setLastSuccess({ scope, at: Date.now() });
+    }
+  }, [
+    data.series,
+    data.instant,
+    data.loading,
+    data.error,
+    data.failedPanelIds.length,
+    scope,
+    clusterId,
+    belongsToScope,
+  ]);
+  const series = belongsToScope ? data.series : {};
+  const instant = belongsToScope ? data.instant : {};
+
   return {
-    cpuPercent: averageLatestValue(data.series['CO-CPU'] ?? []),
-    memoryPercent: data.instant['CO-MEM-PCT'] ?? Number.NaN,
-    diskPercent: data.instant['CO-DISK-PCT'] ?? Number.NaN,
-    cpuSeries: data.series['CO-CPU'] ?? [],
-    networkSeries: data.series['CO-NET'] ?? [],
+    error: data.error,
+    failedPanelIds: data.failedPanelIds,
+    lastSuccessAt: lastSuccess?.scope === scope ? lastSuccess.at : undefined,
+    cpuPercent: averageLatestValue(series['CO-CPU'] ?? []),
+    memoryPercent: instant['CO-MEM-PCT'] ?? Number.NaN,
+    diskPercent: instant['CO-DISK-PCT'] ?? Number.NaN,
+    cpuSeries: series['CO-CPU'] ?? [],
+    networkSeries: series['CO-NET'] ?? [],
     loading: data.loading,
   };
 }

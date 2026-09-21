@@ -1,7 +1,7 @@
 import { ReloadOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import { Button, Select, Space, Tooltip } from 'antd';
-import { type FC, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type FC, type ReactNode, useEffect, useState } from 'react';
 import useStyles from './monitorStyles';
 import type { RefreshInterval, TimeRange } from './types';
 
@@ -85,30 +85,42 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
   ];
 
   const [countdown, setCountdown] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-
     const seconds = intervalToSeconds(refreshInterval);
     if (seconds === 0) {
       setCountdown(0);
       return;
     }
 
-    setCountdown(seconds);
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
+    let remaining = seconds;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const start = () => {
+      remaining = seconds;
+      setCountdown(remaining);
+      timer = setInterval(() => {
+        remaining -= 1;
+        if (remaining === 0) {
+          remaining = seconds;
           onRefresh();
-          return seconds;
         }
-        return prev - 1;
-      });
-    }, 1000);
+        setCountdown(remaining);
+      }, 1000);
+    };
+    const onVisibilityChange = () => {
+      clearInterval(timer);
+      setCountdown(0);
+      if (!document.hidden) {
+        onRefresh();
+        start();
+      }
+    };
+    if (!document.hidden) start();
+    else setCountdown(0);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [refreshInterval, onRefresh]);
 
@@ -147,7 +159,12 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
       />
 
       <Tooltip title={t('pages.prometheusMonitor.toolbar.refreshNow')}>
-        <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
+        <Button
+          aria-label={t('pages.prometheusMonitor.toolbar.refreshNow')}
+          icon={<ReloadOutlined />}
+          onClick={onRefresh}
+          size="small"
+        >
           {countdown > 0 ? (
             <span className={styles.toolbarCountdown}>{countdown}s</span>
           ) : null}

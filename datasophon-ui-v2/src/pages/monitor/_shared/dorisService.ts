@@ -195,15 +195,24 @@ function groupByToString(groupBy?: string[]): string | undefined {
   return groupBy.join(',');
 }
 
+/** 仅供已有页面级错误反馈的调用方禁用逐请求弹窗。 */
+export interface DorisRequestOptions {
+  skipErrorHandler?: boolean;
+}
+
 // ── API 函数 ──────────────────────────────────────────────────────────────────
 
 /** 查询指定指标的 instant 快照（对应 Prometheus /api/v1/query） */
-export function queryDorisInstant(params: DorisInstantParams) {
+export function queryDorisInstant(
+  params: DorisInstantParams,
+  options?: DorisRequestOptions,
+) {
   const { job, filters, filtersNe, filtersRegex, filtersNotRegex, ...rest } =
     params;
   return request<ApiResponse<PrometheusVector>>(
     '/observability/otel/metrics/query',
     {
+      ...options,
       method: 'GET',
       params: {
         ...rest,
@@ -218,7 +227,10 @@ export function queryDorisInstant(params: DorisInstantParams) {
 }
 
 /** 查询指定指标的时间序列（对应 Prometheus /api/v1/query_range） */
-export function queryDorisRange(params: DorisRangeParams) {
+export function queryDorisRange(
+  params: DorisRangeParams,
+  options?: DorisRequestOptions,
+) {
   const {
     filters,
     filtersNe,
@@ -232,6 +244,7 @@ export function queryDorisRange(params: DorisRangeParams) {
   return request<ApiResponse<PrometheusMatrix>>(
     '/observability/otel/metrics/query_range',
     {
+      ...options,
       method: 'GET',
       params: {
         ...rest,
@@ -262,8 +275,13 @@ export function fetchDorisLabels(metric: string, clusterId = 1, job?: string) {
 }
 
 /** 查询集群内指定角色的 RUNNING 节点数（替代 PromQL count(up==1)） */
-export function fetchDorisNodeCount(roleName: string, clusterId = 1) {
+export function fetchDorisNodeCount(
+  roleName: string,
+  clusterId = 1,
+  options?: DorisRequestOptions,
+) {
   return request<ApiResponse<number>>('/observability/otel/metrics/nodes', {
+    ...options,
     method: 'GET',
     params: { roleName, clusterId },
   });

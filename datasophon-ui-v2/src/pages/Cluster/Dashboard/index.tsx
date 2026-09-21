@@ -27,7 +27,7 @@ import {
   InboxOutlined,
 } from '@ant-design/icons';
 import { history, useIntl } from '@umijs/max';
-import { Alert, Row } from 'antd';
+import { Alert, App, Row, Typography } from 'antd';
 import { type FC, useCallback, useContext, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import {
@@ -55,6 +55,7 @@ const percentFormatter = (value: number) => `${value.toFixed(1)}%`;
 const rateFormatter = (value: number) => `${formatBytes(value)}/s`;
 
 const ClusterDashboard: FC = () => {
+  const { message } = App.useApp();
   const ctx = useContext(ClusterContext);
   const clusterId = ctx?.clusterId ?? 0;
 
@@ -75,7 +76,24 @@ const ClusterDashboard: FC = () => {
     recentAlerts,
     loading: summaryLoading,
     error: summaryError,
+    summaryFailed,
+    alertsFailed,
   } = useClusterSummary({ clusterId, refreshKey });
+
+  const openService = (serviceName: string) => {
+    const service = ctx?.serviceList?.find(
+      (item) => item.serviceName === serviceName,
+    );
+    if (service) history.push(`/cluster/${clusterId}/service/${service.id}`);
+    else message.warning('未找到对应服务实例，请刷新后重试');
+  };
+  const metricsFailed = Boolean(otel.error || otel.failedPanelIds.length);
+  const metricNames: Record<string, string> = {
+    'CO-CPU': panelTitle('cpu'),
+    'CO-NET': panelTitle('network'),
+    'CO-MEM-PCT': t('pages.clusterDashboard.resource.memory'),
+    'CO-DISK-PCT': t('pages.clusterDashboard.resource.disk'),
+  };
 
   const stats = summary?.stats;
   const changeLabel = t('pages.clusterDashboard.stat.changeLabel');
@@ -86,7 +104,6 @@ const ClusterDashboard: FC = () => {
 
   return (
     <MonitorDashboardLayout
-      key={refreshKey}
       embedded
       title={t('pages.clusterDashboard.title')}
       toolbar={
@@ -100,12 +117,33 @@ const ClusterDashboard: FC = () => {
       }
       loading={summaryLoading || otel.loading}
     >
+      {metricsFailed && (
+        <Alert
+          type="warning"
+          showIcon
+          title="监控指标查询失败"
+          description={`受影响指标：${otel.failedPanelIds.map((id) => metricNames[id] ?? id).join('、') || '全部'}。${otel.error ?? ''} 当前显示的数据可能不完整或已过期，请刷新重试。`}
+          action={
+            <Typography.Link onClick={handleRefresh}>重试</Typography.Link>
+          }
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      <Typography.Paragraph type="secondary">
+        监控指标最近完整查询成功：
+        {otel.lastSuccessAt
+          ? new Date(otel.lastSuccessAt).toLocaleString()
+          : '尚无成功记录'}
+      </Typography.Paragraph>
       {summaryError && (
         <Alert
           type="warning"
           showIcon
           title={t('pages.clusterDashboard.partialLoadError')}
-          description={summaryError}
+          description={`${summaryError}。部分数据未更新，保留的数据可能已过期。`}
+          action={
+            <Typography.Link onClick={handleRefresh}>重试</Typography.Link>
+          }
           style={{ marginBottom: 16 }}
         />
       )}
@@ -155,10 +193,63 @@ const ClusterDashboard: FC = () => {
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={12}>
+          <RecentAlertsPanel
+            title={panelTitle('recentAlerts')}
+            levelLabels={alertLevelLabels}
+            columnLabels={{
+              level: t('pages.clusterDashboard.column.level'),
+              target: t('pages.clusterDashboard.column.target'),
+              hostname: t('pages.clusterDashboard.column.hostname'),
+              createTime: t('pages.clusterDashboard.column.createTime'),
+            }}
+            emptyText={
+              alertsFailed
+                ? '告警数据查询失败，请重试'
+                : t('pages.clusterDashboard.emptyText.alerts')
+            }
+            viewAllLabel={t('pages.clusterDashboard.viewAll')}
+            data={recentAlerts}
+            onOpenService={(instanceId) =>
+              history.push(`/cluster/${clusterId}/service/${instanceId}`)
+            }
+            onViewAll={() =>
+              history.push(`/cluster/${clusterId}/alarm?tab=history`)
+            }
+          />
+        </PanelCol>
+        <PanelCol span={12}>
+          <ServiceHealthPanel
+            title={panelTitle('serviceHealth')}
+            columnLabels={{
+              service: t('pages.clusterDashboard.column.service'),
+              roles: t('pages.clusterDashboard.column.roles'),
+              health: t('pages.clusterDashboard.column.health'),
+              alertNum: t('pages.clusterDashboard.column.alertNum'),
+              state: t('pages.clusterDashboard.column.state'),
+            }}
+            emptyText={
+              summaryFailed
+                ? '服务数据查询失败，请重试'
+                : t('pages.clusterDashboard.emptyText.services')
+            }
+            viewMoreLabel={t('pages.clusterDashboard.viewMore')}
+            data={summary?.serviceHealth ?? []}
+            onOpenService={openService}
+            onViewMore={() => history.push(`/cluster/${clusterId}/service`)}
+          />
+        </PanelCol>
+      </Row>
+
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={14}>
           <TimeSeriesPanel
             title={panelTitle('cpu')}
             data={otel.cpuSeries}
+            loading={otel.loading}
+            error={
+              Boolean(otel.error) || otel.failedPanelIds.includes('CO-CPU')
+            }
             yFormatter={percentFormatter}
           />
         </PanelCol>
@@ -184,47 +275,14 @@ const ClusterDashboard: FC = () => {
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={12}>
-          <RecentAlertsPanel
-            title={panelTitle('recentAlerts')}
-            levelLabels={alertLevelLabels}
-            columnLabels={{
-              level: t('pages.clusterDashboard.column.level'),
-              target: t('pages.clusterDashboard.column.target'),
-              hostname: t('pages.clusterDashboard.column.hostname'),
-              createTime: t('pages.clusterDashboard.column.createTime'),
-            }}
-            emptyText={t('pages.clusterDashboard.emptyText.alerts')}
-            viewAllLabel={t('pages.clusterDashboard.viewAll')}
-            data={recentAlerts}
-            onViewAll={() =>
-              history.push(`/cluster/${clusterId}/alarm?tab=history`)
-            }
-          />
-        </PanelCol>
-        <PanelCol span={12}>
-          <ServiceHealthPanel
-            title={panelTitle('serviceHealth')}
-            columnLabels={{
-              service: t('pages.clusterDashboard.column.service'),
-              roles: t('pages.clusterDashboard.column.roles'),
-              health: t('pages.clusterDashboard.column.health'),
-              alertNum: t('pages.clusterDashboard.column.alertNum'),
-              state: t('pages.clusterDashboard.column.state'),
-            }}
-            emptyText={t('pages.clusterDashboard.emptyText.services')}
-            viewMoreLabel={t('pages.clusterDashboard.viewMore')}
-            data={summary?.serviceHealth ?? []}
-            onViewMore={() => history.push(`/cluster/${clusterId}/service`)}
-          />
-        </PanelCol>
-      </Row>
-
-      <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={10}>
           <TimeSeriesPanel
             title={panelTitle('network')}
             data={otel.networkSeries}
+            loading={otel.loading}
+            error={
+              Boolean(otel.error) || otel.failedPanelIds.includes('CO-NET')
+            }
             yFormatter={rateFormatter}
           />
         </PanelCol>
