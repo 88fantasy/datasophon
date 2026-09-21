@@ -166,7 +166,6 @@ const DagGraphPage: React.FC = () => {
   const pollingRef = useRef<number | undefined>(undefined);
   const nodeMapRef = useRef<Record<string, any>>({});
   const requestIdRef = useRef(0);
-  const graphLoadedRef = useRef(false);
   const [loadError, setLoadError] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number>();
@@ -268,7 +267,6 @@ const DagGraphPage: React.FC = () => {
         }
 
         updateAnimate();
-        graphLoadedRef.current = true;
         setLastUpdated(Date.now());
         setLoadError(undefined);
 
@@ -332,7 +330,6 @@ const DagGraphPage: React.FC = () => {
 
   // ── 生命周期 ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    graphLoadedRef.current = false;
     setLastUpdated(undefined);
     setLoadError(undefined);
     invokeInitGraph();
@@ -371,7 +368,7 @@ const DagGraphPage: React.FC = () => {
           action={
             <Button
               loading={loading}
-              onClick={() => invokeLoad(graphLoadedRef.current)}
+              onClick={() => invokeLoad(lastUpdated !== undefined)}
             >
               重试加载
             </Button>

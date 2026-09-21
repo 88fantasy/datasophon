@@ -28,16 +28,8 @@ import {
 } from '@ant-design/icons';
 import { history, useIntl } from '@umijs/max';
 import { Alert, App, Row, Typography } from 'antd';
-import {
-  type FC,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type FC, useCallback, useContext, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
-import { listClusterServices } from '@/services/service';
 import {
   CHART_COLORS,
   formatBytes,
@@ -88,29 +80,12 @@ const ClusterDashboard: FC = () => {
     alertsFailed,
   } = useClusterSummary({ clusterId, refreshKey });
 
-  const serviceRequest = useRef(0);
-  useEffect(
-    () => () => {
-      serviceRequest.current += 1;
-    },
-    [clusterId],
-  );
-
-  const openService = async (serviceName: string) => {
-    const requestId = ++serviceRequest.current;
-    try {
-      const response = await listClusterServices(clusterId);
-      if (requestId !== serviceRequest.current) return;
-      const services = Array.isArray(response) ? response : response.data;
-      const service = services?.find(
-        (item) => item.serviceName === serviceName,
-      );
-      if (service) history.push(`/cluster/${clusterId}/service/${service.id}`);
-      else message.warning('未找到对应服务实例，请刷新后重试');
-    } catch {
-      if (requestId !== serviceRequest.current) return;
-      message.error('服务详情加载失败，请重试');
-    }
+  const openService = (serviceName: string) => {
+    const service = ctx?.serviceList?.find(
+      (item) => item.serviceName === serviceName,
+    );
+    if (service) history.push(`/cluster/${clusterId}/service/${service.id}`);
+    else message.warning('未找到对应服务实例，请刷新后重试');
   };
   const metricsFailed = Boolean(otel.error || otel.failedPanelIds.length);
   const metricNames: Record<string, string> = {

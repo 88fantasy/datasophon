@@ -2,6 +2,7 @@
 import type { RequestConfig } from '@umijs/max';
 import { getIntl } from '@umijs/max';
 import { message, notification } from 'antd';
+import { APP_BASE_PATH } from '../config/publicPath';
 
 // 错误处理方案： 错误类型
 enum ErrorShowType {
@@ -41,17 +42,17 @@ export const errorConfig: RequestConfig = {
     },
     // 错误接收及处理
     errorHandler: (error: any, opts: any) => {
-      if (opts?.skipErrorHandler) {
-        // 页面自行展示普通错误时，认证失效仍须跳转登录。
-        if (
-          error.response?.status === 401 ||
-          (error.name === 'BizError' &&
-            error.info?.showType === ErrorShowType.REDIRECT)
-        ) {
-          window.location.href = '/ddh/user/login';
-        }
-        throw error;
+      // 页面自行展示普通错误时，认证失效仍须跳转登录。
+      if (
+        error.response?.status === 401 ||
+        (error.name === 'BizError' &&
+          error.info?.showType === ErrorShowType.REDIRECT)
+      ) {
+        window.location.href = `${APP_BASE_PATH}/user/login`;
+        if (opts?.skipErrorHandler) throw error;
+        return;
       }
+      if (opts?.skipErrorHandler) throw error;
       // 我们的 errorThrower 抛出的错误。
       if (error.name === 'BizError') {
         const errorInfo: ResponseStructure | undefined = error.info;
@@ -73,9 +74,6 @@ export const errorConfig: RequestConfig = {
                 description: errorMessage,
               });
               break;
-            case ErrorShowType.REDIRECT:
-              window.location.href = '/ddh/user/login';
-              break;
             default:
               message.error(errorMessage);
           }
@@ -83,10 +81,6 @@ export const errorConfig: RequestConfig = {
       } else if (error.response) {
         // Axios 的错误
         // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
-        if (error.response.status === 401) {
-          window.location.href = '/ddh/user/login';
-          return;
-        }
         message.error(`Response status:${error.response.status}`);
       } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
         message.error(

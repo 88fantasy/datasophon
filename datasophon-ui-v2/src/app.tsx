@@ -37,16 +37,14 @@ import {
 } from '@/components';
 import { currentUser as queryCurrentUser } from '@/services/auth';
 import defaultSettings from '../config/defaultSettings';
-import { PUBLIC_PATH } from '../config/publicPath';
+import { APP_BASE_PATH, PUBLIC_PATH } from '../config/publicPath';
 import { errorConfig } from './requestErrorConfig';
 
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
-const appBasePath =
-  PUBLIC_PATH === '/' ? '' : PUBLIC_PATH.replace(/\/static\/?$/, '');
 const normalizePath = (pathname: string) =>
-  appBasePath && pathname.startsWith(`${appBasePath}/`)
-    ? pathname.slice(appBasePath.length)
+  pathname.startsWith(`${APP_BASE_PATH}/`)
+    ? pathname.slice(APP_BASE_PATH.length)
     : pathname;
 
 /**

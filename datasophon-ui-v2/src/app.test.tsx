@@ -119,6 +119,28 @@ describe('app getInitialState', () => {
     expect(state.currentUser).toBeUndefined();
   });
 
+  it.each([
+    'development',
+    'production',
+  ])('keeps the prefixed login page public in %s', async (mode) => {
+    vi.resetModules();
+    vi.stubEnv('NODE_ENV', mode);
+    try {
+      const { getInitialState, layout } = await import('./app');
+      mockHistory.location.pathname = '/ddh/user/login';
+      const state = await getInitialState();
+      layout({
+        initialState: state,
+        setInitialState: vi.fn(),
+      } as never).onPageChange?.();
+      expect(mockQueryCurrentUser).not.toHaveBeenCalled();
+      expect(mockReplace).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it('should encode redirect path correctly on 401', async () => {
     const { getInitialState } = await import('./app');
     mockHistory.location = {

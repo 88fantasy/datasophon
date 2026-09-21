@@ -6,8 +6,14 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { history } from '@umijs/max';
-import { Children, type CSSProperties, type ReactNode } from 'react';
+import {
+  Children,
+  type CSSProperties,
+  type ReactNode,
+  useContext,
+} from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import ClusterContext from '@/context/ClusterContext';
 import { listClusters } from '@/services/cluster';
 import { listAllK8sInstances } from '@/services/k8s';
 import { listClusterServices } from '@/services/service';
@@ -19,7 +25,18 @@ vi.mock('@umijs/max', () => ({
     push: vi.fn(),
     replace: vi.fn(),
   },
-  Outlet: () => <div>cluster page</div>,
+  Outlet: () => {
+    const ctx = useContext(ClusterContext);
+    return (
+      <div>
+        cluster page
+        <span data-testid="shared-services">
+          {ctx?.serviceList?.map((service) => service.id).join(',') ??
+            'unavailable'}
+        </span>
+      </div>
+    );
+  },
   useIntl: () => ({
     formatMessage: ({ defaultMessage }: { defaultMessage: string }) =>
       defaultMessage,
@@ -360,6 +377,30 @@ describe('ClusterLayout refresh and navigation', () => {
     expect(screen.queryByText('Doris')).not.toBeInTheDocument();
     expect(listClusterServices).toHaveBeenCalledTimes(1);
     expect(listAllK8sInstances).toHaveBeenCalledWith(8);
+  });
+
+  it('shares the polled service list and clears it when switching clusters', async () => {
+    const view = render(<ClusterLayout />);
+    await waitFor(() =>
+      expect(screen.getByTestId('shared-services')).toHaveTextContent('9'),
+    );
+    vi.mocked(listClusters).mockResolvedValue({
+      data: [{ id: 8, clusterName: 'next', archType: 'physical' }],
+    } as never);
+    let resolveNext!: (value: never) => void;
+    vi.mocked(listClusterServices).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveNext = resolve;
+      }),
+    );
+    history.location.pathname = '/cluster/8/overview';
+    view.rerender(<ClusterLayout />);
+    await waitFor(() => expect(listClusterServices).toHaveBeenCalledWith(8));
+    expect(screen.getByTestId('shared-services')).toBeEmptyDOMElement();
+    await act(async () => {
+      resolveNext({ data: [{ id: 23, serviceName: 'Doris' }] } as never);
+    });
+    expect(screen.getByTestId('shared-services')).toHaveTextContent('23');
   });
 
   it('lets users collapse and reopen the responsive sidebar', async () => {

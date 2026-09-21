@@ -472,7 +472,7 @@ const ClusterLayout: React.FC = () => {
 
   return (
     <ClusterContext.Provider
-      value={{ clusterId: numericClusterId, clusterInfo }}
+      value={{ clusterId: numericClusterId, clusterInfo, serviceList }}
     >
       {clusterInfo.archType !== 'k8s' && (
         <>
