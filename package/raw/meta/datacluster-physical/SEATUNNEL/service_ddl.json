@@ -1,0 +1,578 @@
+{
+  "name": "SEATUNNEL",
+  "type": "MIDDLEWARE",
+  "label": "SeaTunnel",
+  "description": "本地 fork 88fantasy/seatunnel，bcdc44af1 构建，Zeta 引擎",
+  "sortNum": 8,
+  "version": "3.0.0-SNAPSHOT",
+  "createDecompressDir": false,
+  "dependencies": [],
+  "arch": {
+    "x86_64": {
+      "packageName": "apache-seatunnel-3.0.0-SNAPSHOT-bin.tar.gz",
+      "decompressPackageName": "apache-seatunnel-3.0.0-SNAPSHOT"
+    },
+    "aarch64": {
+      "packageName": "apache-seatunnel-3.0.0-SNAPSHOT-bin.tar.gz",
+      "decompressPackageName": "apache-seatunnel-3.0.0-SNAPSHOT"
+    }
+  },
+  "roles": [
+    {
+      "name": "SeaTunnelMaster",
+      "label": "SeaTunnelMaster",
+      "sortNum": 1,
+      "roleType": "master",
+      "cardinality": "2+",
+      "logFile": "logs/seatunnel-engine-master.out",
+      "serverPorts": [],
+      "jmxPortParam": "masterHttpPort",
+      "portParams": [
+        "masterHttpPort",
+        "masterHazelcastPort"
+      ],
+      "runAs": {},
+      "startRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "start",
+          "master"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control.sh",
+        "args": [
+          "stop",
+          "master"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "status",
+          "master"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "600",
+        "program": "control.sh",
+        "args": [
+          "restart",
+          "master"
+        ]
+      },
+      "hooks": [
+        {
+          "type": "PRE_INSTALL",
+          "action": "s3Sync",
+          "params": {
+            "bucket": "${SEATUNNEL.stateBucket}",
+            "endpoint": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}",
+            "accessKey": "${ROOT.Rustfs.access_key}",
+            "secretKey": "${ROOT.Rustfs.secret_key}",
+            "resourcePath": ""
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "__MD5_control.sh__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/seatunnel-cluster.sh",
+            "line": 19,
+            "text": "export JAVA_HOME=$JAVA_HOME8"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/seatunnel.sh",
+            "line": 19,
+            "text": "export JAVA_HOME=$JAVA_HOME8"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-jdbc-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-cdc-mysql-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-doris-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/mysql-connector-java-8.0.27.jar",
+            "to": "lib/mysql-connector-java-8.0.27.jar",
+            "md5": "__MD5_mysql-connector-java-8.0.27.jar__"
+          }
+        }
+      ]
+    },
+    {
+      "name": "SeaTunnelWorker",
+      "label": "SeaTunnelWorker",
+      "sortNum": 2,
+      "roleType": "worker",
+      "cardinality": "1+",
+      "logFile": "logs/seatunnel-engine-worker.out",
+      "serverPorts": [],
+      "jmxPortParam": "workerHttpPort",
+      "portParams": [
+        "workerHttpPort",
+        "workerHazelcastPort"
+      ],
+      "runAs": {},
+      "startRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "start",
+          "worker"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control.sh",
+        "args": [
+          "stop",
+          "worker"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "status",
+          "worker"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "600",
+        "program": "control.sh",
+        "args": [
+          "restart",
+          "worker"
+        ]
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "__MD5_control.sh__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/seatunnel-cluster.sh",
+            "line": 19,
+            "text": "export JAVA_HOME=$JAVA_HOME8"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/seatunnel.sh",
+            "line": 19,
+            "text": "export JAVA_HOME=$JAVA_HOME8"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-jdbc-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-cdc-mysql-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-doris-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/mysql-connector-java-8.0.27.jar",
+            "to": "lib/mysql-connector-java-8.0.27.jar",
+            "md5": "__MD5_mysql-connector-java-8.0.27.jar__"
+          }
+        }
+      ]
+    },
+    {
+      "name": "SeaTunnelClient",
+      "label": "SeaTunnelClient",
+      "sortNum": 3,
+      "roleType": "client",
+      "cardinality": "1+",
+      "serverPorts": [],
+      "portParams": [],
+      "runAs": {},
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/seatunnel.sh",
+            "line": 19,
+            "text": "export JAVA_HOME=$JAVA_HOME8"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-jdbc-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-cdc-mysql-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
+            "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
+            "md5": "__MD5_connector-doris-3.0.0-SNAPSHOT.jar__"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/seatunnel/mysql-connector-java-8.0.27.jar",
+            "to": "lib/mysql-connector-java-8.0.27.jar",
+            "md5": "__MD5_mysql-connector-java-8.0.27.jar__"
+          }
+        }
+      ]
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "seatunnel-master.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "seatunnel.ftl",
+        "includeParams": [
+          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "masterHttpPort"
+        ]
+      },
+      {
+        "filename": "seatunnel-worker.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "seatunnel.ftl",
+        "includeParams": [
+          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "workerHttpPort"
+        ]
+      },
+      {
+        "filename": "hazelcast-master.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "hazelcast-master.ftl",
+        "includeParams": [
+          "clusterName", "masterMembers", "workerMembers", "masterHazelcastPort", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey"
+        ]
+      },
+      {
+        "filename": "hazelcast-worker.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "hazelcast-worker.ftl",
+        "includeParams": [
+          "clusterName", "masterMembers", "workerMembers", "workerHazelcastPort"
+        ]
+      },
+      {
+        "filename": "hazelcast-client.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "hazelcast-client.ftl",
+        "includeParams": [
+          "clusterName", "masterMembers"
+        ]
+      },
+      {
+        "filename": "jvm_master_options",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "jvm_master_options.ftl",
+        "includeParams": [
+          "masterHeapGb"
+        ]
+      },
+      {
+        "filename": "jvm_worker_options",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "jvm_worker_options.ftl",
+        "includeParams": [
+          "workerHeapGb", "workerDirectMemoryGb"
+        ]
+      },
+      {
+        "filename": "seatunnel.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "seatunnel.ftl",
+        "includeParams": [
+          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "masterHttpPort"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "enabled": true,
+      "name": "masterHttpPort",
+      "port": true,
+      "description": "SeaTunnel Master REST 与 /metrics 端口",
+      "label": "Master HTTP 端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "18088",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "workerHttpPort",
+      "port": true,
+      "description": "SeaTunnel Worker REST 与 /metrics 端口",
+      "label": "Worker HTTP 端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "18089",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "masterHazelcastPort",
+      "port": true,
+      "description": "SeaTunnel Master Hazelcast 端口",
+      "label": "Master Hazelcast 端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "5801",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "workerHazelcastPort",
+      "port": true,
+      "description": "SeaTunnel Worker Hazelcast 端口",
+      "label": "Worker Hazelcast 端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "5802",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "masterHeapGb",
+      "description": "Master JVM 堆大小（GB）",
+      "label": "Master Heap (GB)",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "2",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "workerHeapGb",
+      "description": "Worker JVM 堆大小（GB）",
+      "label": "Worker Heap (GB)",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "4",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "workerDirectMemoryGb",
+      "description": "Worker JVM 直接内存大小（GB）",
+      "label": "Worker Direct Memory (GB)",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "1",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "stateBucket",
+      "description": "Checkpoint 与 IMap 共用的 S3 bucket",
+      "label": "State Bucket",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "seatunnel",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "checkpointInterval",
+      "description": "Checkpoint 间隔（毫秒）",
+      "label": "Checkpoint Interval (ms)",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "10000",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "checkpointTimeout",
+      "description": "Checkpoint 超时（毫秒）",
+      "label": "Checkpoint Timeout (ms)",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "60000",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "historyJobExpireMinutes",
+      "description": "历史作业保留时长（分钟）",
+      "label": "History Job Expire Minutes",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "1440",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "s3Endpoint",
+      "description": "RustFS S3 endpoint",
+      "label": "S3 Endpoint",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "http://${ROOT.Rustfs.__hostIp__}:${ROOT.Rustfs.__port__}",
+      "configurableInWizard": false,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "s3AccessKey",
+      "description": "RustFS S3 access key",
+      "label": "S3 Access Key",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${ROOT.Rustfs.access_key}",
+      "configurableInWizard": false,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "s3SecretKey",
+      "description": "RustFS S3 secret key",
+      "label": "S3 Secret Key",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${ROOT.Rustfs.secret_key}",
+      "configurableInWizard": false,
+      "register": false
+    }
+  ]
+}

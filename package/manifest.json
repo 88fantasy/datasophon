@@ -377,6 +377,54 @@
     "note": "私有包；尚未提供 openEuler 22.03 aarch64 制品，不能使用 x86_64 包。构建说明：package/docs/valkey/BUILD.md"
   },
   {
+    "service": "SEATUNNEL",
+    "arch": "common",
+    "packageName": "apache-seatunnel-3.0.0-SNAPSHOT-bin.tar.gz",
+    "decompressPackageName": "apache-seatunnel-3.0.0-SNAPSHOT",
+    "downloadUrl": null,
+    "status": "private",
+    "note": "fork 构建，见规格附录 B1"
+  },
+  {
+    "service": "SEATUNNEL",
+    "arch": "common",
+    "packageName": "connector-jdbc-3.0.0-SNAPSHOT.jar",
+    "decompressPackageName": null,
+    "downloadUrl": null,
+    "status": "private",
+    "note": "fork 构建，见规格附录 B1",
+    "subDir": "plugins/seatunnel"
+  },
+  {
+    "service": "SEATUNNEL",
+    "arch": "common",
+    "packageName": "connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
+    "decompressPackageName": null,
+    "downloadUrl": null,
+    "status": "private",
+    "note": "fork 构建，见规格附录 B1",
+    "subDir": "plugins/seatunnel"
+  },
+  {
+    "service": "SEATUNNEL",
+    "arch": "common",
+    "packageName": "connector-doris-3.0.0-SNAPSHOT.jar",
+    "decompressPackageName": null,
+    "downloadUrl": null,
+    "status": "private",
+    "note": "fork 构建，见规格附录 B1",
+    "subDir": "plugins/seatunnel"
+  },
+  {
+    "service": "SEATUNNEL",
+    "arch": "common",
+    "packageName": "mysql-connector-java-8.0.27.jar",
+    "decompressPackageName": null,
+    "downloadUrl": "https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.27/mysql-connector-java-8.0.27.jar",
+    "status": "public",
+    "subDir": "plugins/seatunnel"
+  },
+  {
     "service": "SPARK3",
     "arch": "common",
     "packageName": "spark-3.5.8-bin-hadoop3.tgz",
