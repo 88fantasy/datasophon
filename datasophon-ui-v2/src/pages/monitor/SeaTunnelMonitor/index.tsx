@@ -22,7 +22,7 @@
 
 import { Alert, Row, Select, Tabs } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
-import { formatBytes } from '../_shared/charts/formatters';
+import { formatBytes, formatCompact } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
 import DashboardToolbar, {
   type RefreshInterval,
@@ -32,7 +32,9 @@ import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import PanelCol from '../_shared/PanelCol';
 import StatPanel from '../_shared/panels/StatPanel';
-import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
+import TimeSeriesPanel, {
+  baseSeriesLabel,
+} from '../_shared/panels/TimeSeriesPanel';
 import { useSeaTunnelDashboard } from './hooks/useSeaTunnelDashboard';
 import {
   getSeaTunnelSegmentPanelIds,
@@ -59,7 +61,6 @@ const PANEL_TITLES: Record<string, string> = {
   'ST-C07': 'GC 耗时（ms/s）',
   'ST-C08': '线程',
   'ST-C09': 'CPU（核）',
-  'ST-C10': 'RSS 与 FD',
 };
 
 export interface SeaTunnelDashboardProps {
@@ -150,8 +151,33 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
         />
       )}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        {panelIds.map((panelId) => {
+        {panelIds.flatMap((panelId) => {
           const descriptor = PANEL_QUERIES[panelId];
+          const panelData = series[panelId] ?? [];
+
+          if (panelId === 'ST-C10') {
+            return [
+              <PanelCol span={8} key="ST-C10-RSS">
+                <TimeSeriesPanel
+                  title="RSS"
+                  data={panelData.filter(
+                    (point) => baseSeriesLabel(point.series) === 'RSS',
+                  )}
+                  yFormatter={formatBytes}
+                />
+              </PanelCol>,
+              <PanelCol span={8} key="ST-C10-FD">
+                <TimeSeriesPanel
+                  title="FD 数量"
+                  data={panelData.filter(
+                    (point) => baseSeriesLabel(point.series) !== 'RSS',
+                  )}
+                  yFormatter={formatCompact}
+                />
+              </PanelCol>,
+            ];
+          }
+
           const isStat =
             descriptor.type === 'node-count' || descriptor.type === 'instant';
 
@@ -165,11 +191,9 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
               ) : (
                 <TimeSeriesPanel
                   title={PANEL_TITLES[panelId]}
-                  data={series[panelId]}
+                  data={panelData}
                   yFormatter={
-                    panelId === 'ST-C04' ||
-                    panelId === 'ST-C05' ||
-                    panelId === 'ST-C10'
+                    panelId === 'ST-C04' || panelId === 'ST-C05'
                       ? formatBytes
                       : undefined
                   }
