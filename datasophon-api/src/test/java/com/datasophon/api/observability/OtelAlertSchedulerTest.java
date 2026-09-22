@@ -181,6 +181,78 @@ class OtelAlertSchedulerTest {
         assertThat(alerts).singleElement().asString().contains("Nexus线程死锁");
     }
 
+    @Test
+    void existingMetricRulesKeepDefaultJobFilter() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        List<ClusterAlertQuota> quotas = List.of(
+                quota("Nexus实例只读", "NEXUS", "readonly_enabled", AlertLevel.EXCEPTION,
+                        ">", 0, "Read only", "NexusRepository"),
+                quota("Nexus线程死锁", "NEXUS", "jvm_thread_states_deadlock_count", AlertLevel.EXCEPTION,
+                        ">", 0, "Thread deadlock", "NexusRepository"),
+                quota("Nexus堆内存使用率", "NEXUS", "jvm_memory_heap_usage", AlertLevel.WARN,
+                        ">", 85, "Heap high", "NexusRepository"),
+                quota("Nexus文件描述符使用率", "NEXUS", "jvm_fd_usage", AlertLevel.WARN,
+                        ">", 90, "FD high", "NexusRepository"),
+                quota("DorisBE磁盘使用率", "DORIS", "doris_be_disks_local_used_capacity", AlertLevel.EXCEPTION,
+                        ">", 85, "Disk high", "DorisBE"),
+                quota("DorisFE堆内存使用率", "DORIS", "jvm_heap_size_bytes", AlertLevel.WARN,
+                        ">", 85, "Heap high", "DorisFE"),
+                quota("Doris查询错误率", "DORIS", "doris_fe_query_err", AlertLevel.WARN,
+                        ">", 5, "Query errors", "DorisFE"));
+
+        scheduler(query, new ArrayList<>(), quotas).checkMetricRules();
+
+        assertThat(query.calls).hasSize(10).allSatisfy(call -> assertThat(call.job()).isEqualTo(".+"));
+    }
+
+    @Test
+    void seatunnelRulesUseTheirMetricJobFiltersAndRangeWindow() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        List<ClusterAlertQuota> quotas = List.of(
+                quota("SeaTunnelMaster进程存活", "SEATUNNEL", "up", AlertLevel.EXCEPTION,
+                        "<", 1, "Restart SeaTunnel master", "SeaTunnelMaster"),
+                quota("SeaTunnelWorker进程存活", "SEATUNNEL", "up", AlertLevel.EXCEPTION,
+                        "<", 1, "Restart SeaTunnel worker", "SeaTunnelWorker"),
+                quota("SeaTunnel作业失败", "SEATUNNEL", "job_count", AlertLevel.EXCEPTION,
+                        ">", 0, "Check failed SeaTunnel jobs", "SeaTunnelMaster"));
+
+        scheduler(query, new ArrayList<>(), quotas).checkMetricRules();
+
+        assertThat(query.calls).containsExactlyInAnyOrder(
+                new QueryCall("instant", "up", "^SeaTunnelMaster$", Map.of(), null),
+                new QueryCall("instant", "up", "^SeaTunnelWorker$", Map.of(), null),
+                new QueryCall("range", "job_count", "^SeaTunnelMaster$", Map.of("type", "failed"), "5m"));
+    }
+
+    @Test
+    void failedJobAlertSkipsNewMasterBaselineButFiresOnSameMasterIncrease() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        Map<String, String> oldMaster = Map.of(
+                "instance", "master-1:8080", "job", "SeaTunnelMaster", "type", "failed");
+        Map<String, String> newMaster = Map.of(
+                "instance", "master-2:8080", "job", "SeaTunnelMaster", "type", "failed");
+        query.rangeByMetric.put("job_count", matrix(series(oldMaster), series(newMaster)));
+        List<String> alerts = new ArrayList<>();
+        OtelAlertScheduler scheduler = scheduler(query, alerts, List.of(quota(
+                "SeaTunnel作业失败", "SEATUNNEL", "job_count", AlertLevel.EXCEPTION,
+                ">", 0, "Check failed SeaTunnel jobs", "SeaTunnelMaster")));
+
+        scheduler.checkMetricRules();
+
+        String rateSql = OtelMetricsQueryService.buildRangeRateSql(
+                true, true, Map.of("type", "failed"), null, List.of(), "otel_metrics_gauge");
+        assertThat(rateSql).contains("LAG(value) OVER(PARTITION BY instance, job, series_key ORDER BY ts)");
+        assertThat(alerts).isEmpty();
+
+        query.rangeByMetric.put("job_count", matrix(series(newMaster, point(160, "1.0"))));
+        scheduler.checkMetricRules();
+
+        assertThat(alerts).singleElement().asString()
+                .contains("SeaTunnel作业失败")
+                .contains("master-2:8080")
+                .contains("1.0");
+    }
+
     private static OtelAlertScheduler scheduler(AtomicReference<List<NodeOtelMetrics>> metrics,
                                                 List<String> alerts) {
         OtelMonitorService monitor = new OtelMonitorService(null, null, null) {
@@ -292,6 +364,7 @@ class OtelAlertSchedulerTest {
         private final Map<String, PrometheusVectorResult> instantByMetric = new java.util.HashMap<>();
         private final Map<String, PrometheusMatrixResult> rangeByMetric = new java.util.HashMap<>();
         private final List<String> throwMetrics = new ArrayList<>();
+        private final List<QueryCall> calls = new ArrayList<>();
 
         MutableMetricQueryService() {
             super(null, null);
@@ -301,6 +374,7 @@ class OtelAlertSchedulerTest {
         public PrometheusVectorResult queryInstant(Integer clusterId, String metric, String agg, double scale,
                                                    String instance, String job, Map<String, String> filters,
                                                    Map<String, String> filtersNe, long evalTime) {
+            calls.add(new QueryCall("instant", metric, job, filters, null));
             if (throwMetrics.contains(metric)) {
                 throw new IllegalStateException("boom");
             }
@@ -312,10 +386,15 @@ class OtelAlertSchedulerTest {
                                                  String instance, String job, Map<String, String> filters,
                                                  Map<String, String> filtersNe, List<String> groupByKeys,
                                                  long start, long end, long step, String table, double quantile) {
+            calls.add(new QueryCall("range", metric, job, filters, rateWindow));
             if (throwMetrics.contains(metric)) {
                 throw new IllegalStateException("boom");
             }
             return rangeByMetric.getOrDefault(metric, matrix());
         }
+    }
+
+    private record QueryCall(String queryType, String metric, String job,
+                             Map<String, String> filters, String rateWindow) {
     }
 }
