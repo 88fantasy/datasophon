@@ -224,6 +224,50 @@ class OtelAlertSchedulerTest {
                 new QueryCall("range", "job_count", "^SeaTunnelMaster$", Map.of("type", "failed"), "5m"));
     }
 
+    /**
+     * 存活类规则必须逐实例判定：带 agg 时 {@code buildInstantAggSql} 在 groupByKeys 为空的情况下
+     * 不加 GROUP BY，会把所有实例聚合成一行（MAX(up)），多实例服务里只要还有一个实例活着
+     * MAX 就是 1，挂掉的那个永远不会触发 "< 1"。实机复现过：停掉 3 个 SeaTunnelWorker 中的一个，
+     * up=0 持续 6 分钟仍无告警。
+     */
+    @Test
+    void livenessRuleFiresWhenOnlyOneOfSeveralInstancesIsDown() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        long ts = System.currentTimeMillis() / 1000;
+        query.instantByMetric.put("up", vector(
+                sample(Map.of("instance", "ddh-03:18089", "job", "SeaTunnelWorker"), ts, "1"),
+                sample(Map.of("instance", "ddh-04:18089", "job", "SeaTunnelWorker"), ts, "1"),
+                sample(Map.of("instance", "ddh-05:18089", "job", "SeaTunnelWorker"), ts, "0")));
+        List<String> alerts = new ArrayList<>();
+
+        scheduler(query, alerts, List.of(quota("SeaTunnelWorker进程存活", "SEATUNNEL", "up",
+                AlertLevel.EXCEPTION, "<", 1, "Restart SeaTunnel worker", "SeaTunnelWorker")))
+                .checkMetricRules();
+
+        assertThat(alerts).hasSize(1);
+        assertThat(alerts.get(0)).contains("ddh-05:18089").contains("firing");
+        assertThat(alerts.get(0)).doesNotContain("ddh-03:18089").doesNotContain("ddh-04:18089");
+        assertThat(query.aggByMetric.get("up"))
+                .as("up 规则不能带 agg，否则 SQL 全局聚合成一行，永远取到存活实例的 1")
+                .isNull();
+    }
+
+    @Test
+    void livenessRuleStaysSilentWhileEveryInstanceIsUp() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        long ts = System.currentTimeMillis() / 1000;
+        query.instantByMetric.put("up", vector(
+                sample(Map.of("instance", "ddh-02:18088", "job", "SeaTunnelMaster"), ts, "1"),
+                sample(Map.of("instance", "ddh-03:18088", "job", "SeaTunnelMaster"), ts, "1")));
+        List<String> alerts = new ArrayList<>();
+
+        scheduler(query, alerts, List.of(quota("SeaTunnelMaster进程存活", "SEATUNNEL", "up",
+                AlertLevel.EXCEPTION, "<", 1, "Restart SeaTunnel master", "SeaTunnelMaster")))
+                .checkMetricRules();
+
+        assertThat(alerts).isEmpty();
+    }
+
     @Test
     void failedJobAlertSkipsNewMasterBaselineButFiresOnSameMasterIncrease() {
         MutableMetricQueryService query = new MutableMetricQueryService();
@@ -363,6 +407,7 @@ class OtelAlertSchedulerTest {
         private PrometheusVectorResult instant = vector();
         private final Map<String, PrometheusVectorResult> instantByMetric = new java.util.HashMap<>();
         private final Map<String, PrometheusMatrixResult> rangeByMetric = new java.util.HashMap<>();
+        private final Map<String, String> aggByMetric = new java.util.HashMap<>();
         private final List<String> throwMetrics = new ArrayList<>();
         private final List<QueryCall> calls = new ArrayList<>();
 
@@ -375,6 +420,7 @@ class OtelAlertSchedulerTest {
                                                    String instance, String job, Map<String, String> filters,
                                                    Map<String, String> filtersNe, long evalTime) {
             calls.add(new QueryCall("instant", metric, job, filters, null));
+            aggByMetric.put(metric, agg);
             if (throwMetrics.contains(metric)) {
                 throw new IllegalStateException("boom");
             }

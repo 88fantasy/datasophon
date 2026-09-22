@@ -338,10 +338,15 @@ public class OtelAlertScheduler {
         specs.put("Doris查询错误率", ratio(
                 "doris_fe_query_err", "sum", "2m", null, Map.of("group", "fe"),
                 "doris_fe_query_total", "sum", null, Map.of("group", "fe"), 100d));
+        // agg 必须为 null：带 agg 时 buildInstantAggSql 在 groupByKeys 为空的情况下不加 GROUP BY，
+        // 会把所有实例聚合成一行（MAX(up)），多实例服务里只要还有一个实例活着 MAX 就是 1，
+        // 单个进程挂掉永远不会触发 "< 1"。agg 为空走 buildInstantNoAggSql，按 instance/job 分区
+        // 返回每个实例一行，才能逐实例判定存活。
+        // （既有的 Nexus/Doris 规则都是单实例服务，全局聚合与按实例聚合等价，所以没暴露这个问题。）
         specs.put("SeaTunnelMaster进程存活", gauge(
-                "up", "max", 1d, Map.of(), "^SeaTunnelMaster$"));
+                "up", null, 1d, Map.of(), "^SeaTunnelMaster$"));
         specs.put("SeaTunnelWorker进程存活", gauge(
-                "up", "max", 1d, Map.of(), "^SeaTunnelWorker$"));
+                "up", null, 1d, Map.of(), "^SeaTunnelWorker$"));
         specs.put("SeaTunnel作业失败", new OtelAlertRuleSpec(
                 "job_count", "gauge", "5m", null, Map.of("type", "failed"),
                 null, null, null, null, 1d, "^SeaTunnelMaster$"));
