@@ -29,6 +29,18 @@
 ### 1.2 三层部署边界
 
 1. **CLI 节点与控制面基础设施层**：`datasophon-cli-go` 初始化 OS、hostname、`/etc/hosts`、SSH、JDK、Nexus、MySQL、RustFS、NTP、系统依赖与离线包环境，创建 MySQL 数据库、上传 package，并创建/启动 `datasophon-api`。
+
+   启动 API 前，在 `conf/api.local.properties` 配置 MySQL 与 RustFS 参数：
+
+   ```properties
+   mysql.ip=<MYSQL_IP>
+   rustfs.ip=<RUSTFS_IP>
+   rustfs.port=<RUSTFS_S3_PORT>
+   rustfs.access_key=<RUSTFS_ACCESS_KEY>
+   rustfs.secret_key=<RUSTFS_SECRET_KEY>
+   ```
+
+   本环境中 `mysql.ip` 和 `rustfs.ip` 为 `192.168.10.131`，RustFS S3 端口为 `9040`（endpoint：`192.168.10.131:9040`）。Access key 和 secret key 使用本环境有效值，勿将真实凭据写入仓库。
 2. **DataSophon 前端集群初始化层**：API 启动后，从前端新建集群、选择框架、配置五节点清单；前端为每个节点安装 Worker 与 OTel Collector，并完成集群初始化健康检查。
 3. **DataSophon 前端 DAG 层**：仅在集群初始化通过后，从前端导入 DAG 安装其余组件；Doris FE/BE 与其余服务角色均不得写入 CLI YAML。
 
@@ -80,7 +92,7 @@ MySQL datadir 仍是 `/var/lib/mysql`（系统盘），`--installPath=/data` 不
 | SSH | `22/TCP` |
 | DataSophon API / Master gRPC / Worker gRPC | `8080/TCP`、`18081/TCP`、`18082/TCP` |
 | MySQL / Nexus / NTP / RustFS | `3306/TCP`、`8081/TCP`、`123/UDP`、`9040/TCP`、`9041/TCP` |
-| Doris FE | `18030`、`9020`、`9030`、`9010/TCP` |
+| Doris FE | `8030`、`9020`、`9030`、`9010/TCP` |
 | Doris BE | `9060`、`18040`、`8060`、`9050/TCP` |
 | APISIX / metrics | `9080/TCP`、`9091/TCP` |
 
