@@ -76,28 +76,18 @@ start() {
   nohup "$HOME_DIR/bin/seatunnel-cluster.sh" -d -r "$role" > "$out_file" 2>&1 </dev/null &
   launcher_pid=$!
   printf '%s\n' "$launcher_pid" > "$pid_file"
-  sleep 1
 
-  # seatunnel-cluster.sh -d forks the JVM and exits; store that JVM PID when it does.
-  daemon_pid=$(find_seatunnel_pid)
-  if [[ -n "$daemon_pid" ]]; then
-    printf '%s\n' "$daemon_pid" > "$pid_file"
-    log "SeaTunnel $role started as $daemon_pid"
-    return 0
-  fi
-  if kill -0 "$launcher_pid" >/dev/null 2>&1; then
-    log "SeaTunnel $role started as $launcher_pid"
-    return 0
-  fi
-
+  # seatunnel-cluster.sh -d forks the JVM and exits within seconds, so only the JVM pid
+  # is worth recording: a pid file left pointing at the launcher makes every later
+  # `status` report "not running" even though the server is up.
   for ((attempt = 0; attempt < 30; attempt++)); do
+    sleep 1
     daemon_pid=$(find_seatunnel_pid)
     if [[ -n "$daemon_pid" ]]; then
       printf '%s\n' "$daemon_pid" > "$pid_file"
       log "SeaTunnel $role started as $daemon_pid"
       return 0
     fi
-    sleep 1
   done
   rm -f "$pid_file"
   log "SeaTunnel $role did not start; see $out_file"

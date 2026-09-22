@@ -82,7 +82,7 @@
           "params": {
             "from": "script/control.sh",
             "to": "control.sh",
-            "md5": "__MD5_control.sh__"
+            "md5": "c7ef11f9ca030f4ad3bc83186ae39130"
           }
         },
         {
@@ -109,7 +109,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-jdbc-3.0.0-SNAPSHOT.jar__"
+            "md5": "798bad6cb5a10c7f93b0bf2096aa00ba"
           }
         },
         {
@@ -118,7 +118,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-cdc-mysql-3.0.0-SNAPSHOT.jar__"
+            "md5": "b369c4e9654f52d264be66a4972371f2"
           }
         },
         {
@@ -127,7 +127,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-doris-3.0.0-SNAPSHOT.jar__"
+            "md5": "050fdcafa267457a2f576477a9687f66"
           }
         },
         {
@@ -136,7 +136,7 @@
           "params": {
             "from": "plugins/seatunnel/mysql-connector-java-8.0.27.jar",
             "to": "lib/mysql-connector-java-8.0.27.jar",
-            "md5": "__MD5_mysql-connector-java-8.0.27.jar__"
+            "md5": "32d166ff407fb9ada81b76e0b1cac3a9"
           }
         }
       ]
@@ -194,7 +194,7 @@
           "params": {
             "from": "script/control.sh",
             "to": "control.sh",
-            "md5": "__MD5_control.sh__"
+            "md5": "c7ef11f9ca030f4ad3bc83186ae39130"
           }
         },
         {
@@ -221,7 +221,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-jdbc-3.0.0-SNAPSHOT.jar__"
+            "md5": "798bad6cb5a10c7f93b0bf2096aa00ba"
           }
         },
         {
@@ -230,7 +230,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-cdc-mysql-3.0.0-SNAPSHOT.jar__"
+            "md5": "b369c4e9654f52d264be66a4972371f2"
           }
         },
         {
@@ -239,7 +239,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-doris-3.0.0-SNAPSHOT.jar__"
+            "md5": "050fdcafa267457a2f576477a9687f66"
           }
         },
         {
@@ -248,7 +248,7 @@
           "params": {
             "from": "plugins/seatunnel/mysql-connector-java-8.0.27.jar",
             "to": "lib/mysql-connector-java-8.0.27.jar",
-            "md5": "__MD5_mysql-connector-java-8.0.27.jar__"
+            "md5": "32d166ff407fb9ada81b76e0b1cac3a9"
           }
         }
       ]
@@ -278,7 +278,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-jdbc-3.0.0-SNAPSHOT.jar__"
+            "md5": "798bad6cb5a10c7f93b0bf2096aa00ba"
           }
         },
         {
@@ -287,7 +287,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-cdc-mysql-3.0.0-SNAPSHOT.jar__"
+            "md5": "b369c4e9654f52d264be66a4972371f2"
           }
         },
         {
@@ -296,7 +296,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
-            "md5": "__MD5_connector-doris-3.0.0-SNAPSHOT.jar__"
+            "md5": "050fdcafa267457a2f576477a9687f66"
           }
         },
         {
@@ -305,7 +305,7 @@
           "params": {
             "from": "plugins/seatunnel/mysql-connector-java-8.0.27.jar",
             "to": "lib/mysql-connector-java-8.0.27.jar",
-            "md5": "__MD5_mysql-connector-java-8.0.27.jar__"
+            "md5": "32d166ff407fb9ada81b76e0b1cac3a9"
           }
         }
       ]
@@ -571,6 +571,45 @@
       "configType": "map",
       "type": "input",
       "defaultValue": "${ROOT.Rustfs.secret_key}",
+      "configurableInWizard": false,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "clusterName",
+      "description": "由 SeaTunnelMaster 角色策略生成，取值 seatunnel-<集群编码>；模板 hazelcast-*.yaml / seatunnel*.yaml 依赖它",
+      "label": "Hazelcast 集群名",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${SEATUNNEL.clusterName}",
+      "configurableInWizard": false,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "masterMembers",
+      "description": "由 SeaTunnelMaster 角色策略生成，形如 h1:5801,h2:5801；hazelcast member-list 与 client cluster-members 依赖它",
+      "label": "Master 成员列表",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${SEATUNNEL.masterMembers}",
+      "configurableInWizard": false,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "workerMembers",
+      "description": "由 SeaTunnelWorker 角色策略生成，形如 h3:5802,h4:5802；hazelcast member-list 依赖它",
+      "label": "Worker 成员列表",
+      "hidden": true,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${SEATUNNEL.workerMembers}",
       "configurableInWizard": false,
       "register": false
     }
