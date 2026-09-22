@@ -49,6 +49,7 @@ import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -140,6 +141,110 @@ class OtelCollectorConfigServiceTest {
 
         assertFalse(r.getExecResult());
         verify(adapter, never()).restartServiceRole(any(), any());
+    }
+
+    /**
+     * 现场复现过：carbonReceiverPort 是 OTELCOLLECTOR 装好之后才加进 DDL 的，持久化配置里没有它，
+     * otelcol.ftl 第 16 行渲染 ${carbonReceiverPort} 直接抛 "evaluated to null or missing"，
+     * 整个配置下发失败 —— 现象是 otelcol.yaml 停留在旧版本、没有 carbon receiver 段，
+     * Spark 任务流速指标静默收不到。
+     */
+    @Test
+    void service_params_fall_back_to_ddl_for_params_added_after_install() {
+        WorkerCallAdapter adapter = mock(WorkerCallAdapter.class);
+        when(adapter.configureServiceRole(eq("app1"), any())).thenReturn(ok());
+        when(adapter.restartServiceRole(eq("app1"), any())).thenReturn(ok());
+        ServiceInstallService installService = mock(ServiceInstallService.class);
+        when(installService.getServiceConfigOption(any(), any()))
+                .thenReturn(List.of(config("otelSelfMetricsPort", "8888")));
+        when(installService.getServiceConfigFromDdl(any(), any()))
+                .thenReturn(new ArrayList<>(List.of(
+                        config("otelSelfMetricsPort", "8888"),
+                        config("carbonReceiverPort", "2003"))));
+        OtelScrapeConfigBuilder builder = mock(OtelScrapeConfigBuilder.class);
+        when(builder.build(any(), any())).thenReturn("");
+        OtelCollectorConfigService svc = new OtelCollectorConfigService(adapter, installService, builder,
+                mock(ClusterServiceInstanceService.class),
+                mock(ClusterServiceInstanceRoleGroupService.class),
+                mock(ClusterServiceRoleGroupConfigService.class));
+
+        svc.pushNodeConfig(1, "app1", new HashMap<>());
+
+        assertEquals("2003", pushedParam(adapter, "carbonReceiverPort"));
+    }
+
+    /**
+     * 现场实际形态：DDL 刷新把 carbonReceiverPort 这个条目写进了持久化配置，但 value 是 null、
+     * 只有 defaultValue。这时 addAll 按名字判断"已存在"不会补，取值处若只看 value 就整个跳过，
+     * 参数凭空消失 —— 必须用 defaultValue 兜住。(ddh 沙箱 2026-09-20 实测形态)
+     */
+    @Test
+    void service_params_fall_back_to_default_when_persisted_value_is_null() {
+        WorkerCallAdapter adapter = mock(WorkerCallAdapter.class);
+        when(adapter.configureServiceRole(eq("app1"), any())).thenReturn(ok());
+        when(adapter.restartServiceRole(eq("app1"), any())).thenReturn(ok());
+        ServiceInstallService installService = mock(ServiceInstallService.class);
+        ServiceConfig valueless = new ServiceConfig();
+        valueless.setName("carbonReceiverPort");
+        valueless.setValue(null);
+        valueless.setDefaultValue("2003");
+        when(installService.getServiceConfigOption(any(), any())).thenReturn(List.of(valueless));
+        when(installService.getServiceConfigFromDdl(any(), any()))
+                .thenReturn(new ArrayList<>(List.of(config("carbonReceiverPort", "2003"))));
+        OtelScrapeConfigBuilder builder = mock(OtelScrapeConfigBuilder.class);
+        when(builder.build(any(), any())).thenReturn("");
+        OtelCollectorConfigService svc = new OtelCollectorConfigService(adapter, installService, builder,
+                mock(ClusterServiceInstanceService.class),
+                mock(ClusterServiceInstanceRoleGroupService.class),
+                mock(ClusterServiceRoleGroupConfigService.class));
+
+        svc.pushNodeConfig(1, "app1", new HashMap<>());
+
+        assertEquals("2003", pushedParam(adapter, "carbonReceiverPort"));
+    }
+
+    /** DDL 默认值只补缺口，不能把用户改过的端口盖回去。 */
+    @Test
+    void service_params_keep_persisted_value_over_ddl_default() {
+        WorkerCallAdapter adapter = mock(WorkerCallAdapter.class);
+        when(adapter.configureServiceRole(eq("app1"), any())).thenReturn(ok());
+        when(adapter.restartServiceRole(eq("app1"), any())).thenReturn(ok());
+        ServiceInstallService installService = mock(ServiceInstallService.class);
+        when(installService.getServiceConfigOption(any(), any()))
+                .thenReturn(List.of(config("carbonReceiverPort", "2999")));
+        when(installService.getServiceConfigFromDdl(any(), any()))
+                .thenReturn(new ArrayList<>(List.of(config("carbonReceiverPort", "2003"))));
+        OtelScrapeConfigBuilder builder = mock(OtelScrapeConfigBuilder.class);
+        when(builder.build(any(), any())).thenReturn("");
+        OtelCollectorConfigService svc = new OtelCollectorConfigService(adapter, installService, builder,
+                mock(ClusterServiceInstanceService.class),
+                mock(ClusterServiceInstanceRoleGroupService.class),
+                mock(ClusterServiceRoleGroupConfigService.class));
+
+        svc.pushNodeConfig(1, "app1", new HashMap<>());
+
+        assertEquals("2999", pushedParam(adapter, "carbonReceiverPort"));
+    }
+
+    private static ServiceConfig config(String name, String value) {
+        ServiceConfig c = new ServiceConfig();
+        c.setName(name);
+        c.setValue(value);
+        return c;
+    }
+
+    /** 取下发命令里 otelcol.yaml 这一份配置中指定参数的值。 */
+    private static String pushedParam(WorkerCallAdapter adapter, String name) {
+        ArgumentCaptor<GenerateServiceConfigCommand> captor =
+                ArgumentCaptor.forClass(GenerateServiceConfigCommand.class);
+        verify(adapter).configureServiceRole(eq("app1"), captor.capture());
+        return captor.getValue().getCofigFileMap().entrySet().stream()
+                .filter(e -> "otelcol.yaml".equals(e.getKey().getFilename()))
+                .flatMap(e -> e.getValue().stream())
+                .filter(c -> name.equals(c.getName()))
+                .map(c -> String.valueOf(c.getValue()))
+                .findFirst()
+                .orElse(null);
     }
 
     private static ExecResult ok() {

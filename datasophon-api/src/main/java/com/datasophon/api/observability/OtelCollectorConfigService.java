@@ -28,6 +28,7 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.utils.PackageUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -209,13 +210,30 @@ public class OtelCollectorConfigService {
         return effective;
     }
 
+    /**
+     * 已存配置叠加 DDL 兜底：服务安装后才加入 DDL 的参数(如 carbonReceiverPort)在持久化配置里要么整条缺失，
+     * 要么条目在而 value 为 null(DDL 刷新写入了条目但没有回填值)，两种形态都会让模板渲染抛
+     * "evaluated to null or missing"，整个配置下发失败 —— 现场表现为 otelcol.yaml 停在旧版本、
+     * 没有 carbon receiver 段，Spark 任务流速指标静默收不到。
+     *
+     * <p>所以两层都要兜：{@link ServiceConfigUtils#addAll} 按名字补齐整条缺失的参数(以左侧为准，
+     * 用户改过的值不会被 DDL 默认值盖回去)；取值时再用 defaultValue 兜住 value 为 null 的条目 ——
+     * 只靠前者补不了"条目在、值为空"这种形态。
+     */
     private Map<String, String> serviceParams(Integer clusterId) {
         Map<String, String> params = new HashMap<>();
         try {
-            List<ServiceConfig> configs = installService.getServiceConfigOption(clusterId, SERVICE_NAME);
+            List<ServiceConfig> persisted = installService.getServiceConfigOption(clusterId, SERVICE_NAME);
+            List<ServiceConfig> configs = ServiceConfigUtils.addAll(
+                    persisted == null ? new ArrayList<>() : new ArrayList<>(persisted),
+                    installService.getServiceConfigFromDdl(clusterId, SERVICE_NAME));
             for (ServiceConfig config : configs) {
-                if (config.getName() != null && config.getValue() != null) {
-                    params.put(config.getName(), String.valueOf(config.getValue()));
+                if (config.getName() == null) {
+                    continue;
+                }
+                Object value = config.getValue() != null ? config.getValue() : config.getDefaultValue();
+                if (value != null) {
+                    params.put(config.getName(), String.valueOf(value));
                 }
             }
         } catch (RuntimeException e) {
