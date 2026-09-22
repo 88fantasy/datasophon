@@ -23,6 +23,8 @@ const {
   zookeeperDashboardSpy,
   kyuubiDashboardSpy,
   juicefsDashboardSpy,
+  seaTunnelDashboardSpy,
+  seaTunnelJobsSpy,
   routeParams,
   accessState,
 } = vi.hoisted(() => ({
@@ -38,6 +40,8 @@ const {
   zookeeperDashboardSpy: vi.fn(),
   kyuubiDashboardSpy: vi.fn(),
   juicefsDashboardSpy: vi.fn(),
+  seaTunnelDashboardSpy: vi.fn(),
+  seaTunnelJobsSpy: vi.fn(),
   routeParams: { clusterId: '7', instanceId: '9' },
   accessState: { canAdmin: false },
 }));
@@ -101,6 +105,7 @@ vi.mock('antd', async () => {
                 key={item.key}
                 type="button"
                 role="tab"
+                data-tab-key={item.key}
                 onClick={() => setActiveKey(item.key)}
               >
                 {item.label}
@@ -160,6 +165,22 @@ vi.mock('@/pages/monitor/DolphinSchedulerMonitor', () => ({
   default: (props: { clusterId: number; embedded?: boolean }) => {
     dsDashboardSpy(props);
     return <div>DS dashboard cluster {props.clusterId}</div>;
+  },
+}));
+vi.mock('@/pages/monitor/SeaTunnelMonitor', () => ({
+  default: (props: { clusterId: number; embedded?: boolean }) => {
+    seaTunnelDashboardSpy(props);
+    return <div>SeaTunnel dashboard cluster {props.clusterId}</div>;
+  },
+}));
+vi.mock('./SeaTunnelJobs', () => ({
+  default: (props: { clusterId: number; instanceId: number }) => {
+    seaTunnelJobsSpy(props);
+    return (
+      <div>
+        SeaTunnel jobs cluster {props.clusterId} instance {props.instanceId}
+      </div>
+    );
   },
 }));
 vi.mock('@/pages/Cluster/ObservabilityCollector/MonitorTab', () => ({
@@ -484,6 +505,79 @@ describe('DS service instance tabs', () => {
       'data-active-key',
       'monitor',
     );
+  });
+});
+
+describe('SEATUNNEL service instance tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    accessState.canAdmin = false;
+    routeParams.clusterId = '7';
+    routeParams.instanceId = '77';
+    vi.mocked(getServiceInstance).mockResolvedValue({
+      data: { serviceName: 'SEATUNNEL' },
+    } as never);
+    vi.mocked(getServiceWebUis).mockResolvedValue({ data: [] } as never);
+  });
+
+  it('hides the jobs tab for non-admin users', async () => {
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('SeaTunnel dashboard cluster 7');
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      '监控',
+      '实例',
+      '配置',
+    ]);
+    expect(seaTunnelJobsSpy).not.toHaveBeenCalled();
+  });
+
+  it('mounts the monitor and jobs tabs for admins with route ids', async () => {
+    accessState.canAdmin = true;
+    render(
+      <ClusterContext.Provider
+        value={{ clusterInfo: { archType: 'physical' } } as never}
+      >
+        <ServiceInstance />
+      </ClusterContext.Provider>,
+    );
+
+    await screen.findByText('SeaTunnel dashboard cluster 7');
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      '监控',
+      '作业',
+      '实例',
+      '配置',
+    ]);
+    expect(screen.getByTestId('tabs')).toHaveAttribute(
+      'data-active-key',
+      'monitor',
+    );
+    expect(screen.getByRole('tab', { name: '作业' })).toHaveAttribute(
+      'data-tab-key',
+      'seatunnelJobs',
+    );
+    await waitFor(() =>
+      expect(seaTunnelDashboardSpy).toHaveBeenCalledWith({
+        clusterId: 7,
+        embedded: true,
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: '作业' }));
+    expect(
+      await screen.findByText('SeaTunnel jobs cluster 7 instance 77'),
+    ).toBeInTheDocument();
+    expect(seaTunnelJobsSpy).toHaveBeenCalledWith({
+      clusterId: 7,
+      instanceId: 77,
+    });
   });
 });
 

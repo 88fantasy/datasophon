@@ -40,14 +40,18 @@ import org.junit.jupiter.api.Test;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 
-import cn.hutool.crypto.SecureUtil;
-
 /** 验证 DS 分发插件与平台托管对象存储凭据。 */
 class DsDdlLoadTest {
 
     private static final String DS_META_RELATIVE = "package/raw/meta/datacluster-physical/DS";
     private static final List<String> TASK_PLUGINS = List.of("shell", "spark", "flink", "flink-stream", "sql");
     private static final List<String> TASK_PLUGIN_ROLES = List.of("ApiServer", "MasterServer", "WorkerServer");
+    private static final Map<String, String> TASK_PLUGIN_MD5 = Map.of(
+            "shell", "e8237f0066be38aaf00d4595bca5f2f0",
+            "spark", "365c3a7a921b577d6a006b0bf308c02e",
+            "flink", "0657164010884427189eb5b539ec7e0c",
+            "flink-stream", "c6b93698cd08c67645f2ac1457d73c98",
+            "sql", "ae2bc09add275703a889394fdbd74238");
 
     @Test
     void taskPluginsAreDistributedToAllRequiredRoles() throws Exception {
@@ -69,11 +73,9 @@ class DsDdlLoadTest {
             JSONArray hooks = role.getJSONArray("hooks");
             for (String plugin : TASK_PLUGINS) {
                 String jarName = "dolphinscheduler-task-" + plugin + "-3.4.1.jar";
-                JSONObject hook = findDownloadHook(hooks, serverDir + "/libs/" + jarName);
-                assertEquals("plugin/" + jarName, hook.getJSONObject("params").getString("from"));
-                File jar = new File(metaDir, "plugin/" + jarName);
-                assertTrue(jar.isFile(), "插件文件缺失: " + jar.getAbsolutePath());
-                assertEquals(SecureUtil.md5(jar), hook.getJSONObject("params").getString("md5"));
+                JSONObject hook = findNexusHook(hooks, serverDir + "/libs/" + jarName);
+                assertEquals("plugins/ds/" + jarName, hook.getJSONObject("params").getString("from"));
+                assertEquals(TASK_PLUGIN_MD5.get(plugin), hook.getJSONObject("params").getString("md5"));
             }
         }
     }
@@ -126,14 +128,14 @@ class DsDdlLoadTest {
         assertFalse(parameter.getBooleanValue("configurableInWizard"), name + " 应由平台对象存储配置投影");
     }
 
-    private static JSONObject findDownloadHook(JSONArray hooks, String target) {
+    private static JSONObject findNexusHook(JSONArray hooks, String target) {
         return hooks.stream()
                 .map(JSONObject.class::cast)
                 .filter(hook -> "POST_INSTALL".equals(hook.getString("type")))
-                .filter(hook -> "download".equals(hook.getString("action")))
+                .filter(hook -> "nexus".equals(hook.getString("action")))
                 .filter(hook -> target.equals(hook.getJSONObject("params").getString("to")))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("download hook not found: " + target));
+                .orElseThrow(() -> new AssertionError("Nexus hook not found: " + target));
     }
 
     private static JSONObject loadDdl(File metaDir) throws Exception {
