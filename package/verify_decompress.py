@@ -167,17 +167,20 @@ def main():
         manifest = json.load(f)
 
     manifest_dirty = False
+    # 带 subDir 的条目是插件 jar（raw/packages/<subDir>/），不解压，不参与校验；
+    # manifest 本身保持完整，回写时不能丢条目。
+    packages = [entry for entry in manifest if not entry.get("subDir")]
 
     # 构建 service → packageName 集合（用于多架构判断）
     service_packages = {}
-    for entry in manifest:
+    for entry in packages:
         service_packages.setdefault(entry["service"], set()).add(entry["packageName"])
 
     # packageName → (decompressPackageName, is_multi_arch, 首次出现的完整 entry，供路径路由使用)
     # 同时记录 packageName → {service: decompressPackageName}，用于跨服务一致性检查
     seen = {}
     pkg_service_decompress = {}
-    for entry in manifest:
+    for entry in packages:
         name = entry["packageName"]
         svc = entry["service"]
         decomp = entry["decompressPackageName"]

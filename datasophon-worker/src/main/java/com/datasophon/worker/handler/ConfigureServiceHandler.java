@@ -295,7 +295,11 @@ public class ConfigureServiceHandler {
                     }
                 }
         }
-        logger.info("config {} set value to {}", config.getName(), config.getValue());
+        logger.info("config {} set value to {}", config.getName(),
+                "password".equals(config.getType())
+                        || "s3AccessKey".equals(config.getName()) || "s3SecretKey".equals(config.getName())
+                                ? "<redacted>"
+                                : config.getValue());
         if (!"map".equals(config.getConfigType())) {
             String refName = StrUtil.isBlank(config.getKey()) ? config.getName() : config.getKey();
             logger.warn("配置项{}的configType不是‘map’，在模板中，需要通过key值为: itemList[$index].{} 使用", config.getName(), refName);

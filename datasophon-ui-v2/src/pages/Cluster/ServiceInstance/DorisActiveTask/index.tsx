@@ -1,6 +1,7 @@
 import { Button, Space, Tag, Typography } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getApiFailureMessage } from '@/utils/apiResponse';
+import { useTabPanelActive } from '../useTabPanelActive';
 import ActiveTaskTable from './ActiveTaskTable';
 import styles from './DorisActiveTask.module.less';
 import FilterBar from './FilterBar';
@@ -16,32 +17,6 @@ import type {
 interface DorisActiveTaskProps {
   clusterId: number;
   instanceId: number;
-}
-
-function useTabPanelActive() {
-  const anchorRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(true);
-
-  useEffect(() => {
-    const panel = anchorRef.current?.closest<HTMLElement>('[role="tabpanel"]');
-    if (!panel) return;
-
-    const update = () => {
-      setActive(
-        panel.getAttribute('aria-hidden') !== 'true' &&
-          !panel.classList.contains('ant-tabs-tabpane-hidden'),
-      );
-    };
-    update();
-    const observer = new MutationObserver(update);
-    observer.observe(panel, {
-      attributes: true,
-      attributeFilter: ['aria-hidden', 'class'],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  return { anchorRef, active };
 }
 
 const DorisActiveTask: React.FC<DorisActiveTaskProps> = ({

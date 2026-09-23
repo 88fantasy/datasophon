@@ -56,7 +56,7 @@ import com.alibaba.fastjson2.JSONObject;
 
 @Component
 public class OtelAlertScheduler {
-    
+
     private static final Logger log = LoggerFactory.getLogger(OtelAlertScheduler.class);
     private static final String QUEUE_ALERT = "OtelCollectorQueueHigh";
     private static final String SEND_FAILURE_ALERT = "OtelCollectorSendFailureRateHigh";
@@ -66,7 +66,7 @@ public class OtelAlertScheduler {
     private static final long RANGE_STEP_SECONDS = 60L;
     private static final double DEFAULT_QUANTILE = 0.95d;
     private static final Map<String, OtelAlertRuleSpec> METRIC_RULE_SPECS = metricRuleSpecs();
-    
+
     private final OtelMonitorService monitorService;
     private final ClusterInfoService clusterInfoService;
     private final ClusterAlertHistoryService alertHistoryService;
@@ -75,7 +75,7 @@ public class OtelAlertScheduler {
     private final double queueWatermark;
     private final double sendFailedRate;
     private final Set<String> firingAlerts = ConcurrentHashMap.newKeySet();
-    
+
     public OtelAlertScheduler(OtelMonitorService monitorService,
                               ClusterInfoService clusterInfoService,
                               ClusterAlertHistoryService alertHistoryService,
@@ -91,7 +91,7 @@ public class OtelAlertScheduler {
         this.queueWatermark = queueWatermark;
         this.sendFailedRate = sendFailedRate;
     }
-    
+
     @Scheduled(initialDelayString = "${datasophon.observability.otel-alert.initial-delay-ms:30000}", fixedDelayString = "${datasophon.observability.otel-alert.interval-ms:30000}")
     public void checkCollectors() {
         for (ClusterInfoEntity cluster : clusterInfoService.runningClusterList()) {
@@ -103,7 +103,7 @@ public class OtelAlertScheduler {
             }
         }
     }
-    
+
     @Scheduled(initialDelayString = "${datasophon.observability.otel-metric-alert.initial-delay-ms:60000}", fixedDelayString = "${datasophon.observability.otel-metric-alert.interval-ms:60000}")
     public void checkMetricRules() {
         List<ClusterAlertQuota> quotas = metricQuotas();
@@ -121,7 +121,7 @@ public class OtelAlertScheduler {
             }
         }
     }
-    
+
     private void evaluate(Integer clusterId, List<NodeOtelMetrics> nodes) {
         for (NodeOtelMetrics node : nodes) {
             if (!node.healthy() || node.metrics() == null) {
@@ -144,15 +144,18 @@ public class OtelAlertScheduler {
                     "Check exporter endpoint, credentials, and network connectivity");
         }
     }
-    
+
     void evaluateMetricRule(Integer clusterId, ClusterAlertQuota quota) {
         OtelAlertRuleSpec spec = METRIC_RULE_SPECS.get(quota.getAlertQuotaName());
         if (spec == null || metricsQueryService == null) {
             return;
         }
-        Map<String, MetricValue> values = spec.denomMetric == null
-                ? latestPerSeries(clusterId, spec.metric, spec.table, spec.rateWindow, spec.agg, spec.filters)
-                : ratioPerSeries(clusterId, spec);
+        Map<String, MetricValue> values = spec.increaseSeconds > 0
+                ? increasePerSeries(clusterId, spec)
+                : spec.denomMetric == null
+                        ? latestPerSeries(clusterId, spec.metric, spec.table, spec.rateWindow, spec.agg,
+                                spec.filters, spec.job)
+                        : ratioPerSeries(clusterId, spec);
         for (Map.Entry<String, MetricValue> entry : values.entrySet()) {
             MetricValue value = entry.getValue();
             double scaledValue = value.value * spec.scale;
@@ -167,13 +170,13 @@ public class OtelAlertScheduler {
                     severity(quota.getAlertLevel()));
         }
     }
-    
+
     private void updateAlert(Integer clusterId, String hostname, String alertName,
                              boolean firing, String description, String summary) {
         updateAlert(clusterId, hostname, alertName, firing, description, summary,
                 "OtelCollector", hostname + ":8888", "otelcol-self-metrics", "warning");
     }
-    
+
     private void updateAlert(Integer clusterId, String seriesKey, String alertName,
                              boolean firing, String description, String summary,
                              String serviceRoleName, String instance, String job, String severity) {
@@ -190,7 +193,7 @@ public class OtelAlertScheduler {
             firingAlerts.remove(key);
         }
     }
-    
+
     private static String alertMessage(String status, Integer clusterId, String alertName,
                                        String description, String summary, String serviceRoleName,
                                        String instance, String job, String severity) {
@@ -201,37 +204,38 @@ public class OtelAlertScheduler {
         labels.setInstance(instance);
         labels.setJob(job);
         labels.setSeverity(severity);
-        
+
         Annotations annotations = new Annotations();
         annotations.setDescription(description);
         annotations.setSummary(summary);
-        
+
         Alerts alert = new Alerts();
         alert.setStatus(status);
         alert.setLabels(labels);
         alert.setAnnotations(annotations);
-        
+
         AlertMessage message = new AlertMessage();
         message.setStatus(status);
         message.setAlerts(List.of(alert));
         return JSONObject.toJSONString(message);
     }
-    
+
     List<ClusterAlertQuota> metricQuotas() {
         if (alertQuotaService == null) {
             return Collections.emptyList();
         }
         return alertQuotaService.lambdaQuery()
-                .in(ClusterAlertQuota::getServiceCategory, "NEXUS", "DORIS")
+                .in(ClusterAlertQuota::getServiceCategory, "NEXUS", "DORIS", "SEATUNNEL")
                 .eq(ClusterAlertQuota::getQuotaState, QuotaState.RUNNING)
                 .list();
     }
-    
+
     private Map<String, MetricValue> ratioPerSeries(Integer clusterId, OtelAlertRuleSpec spec) {
         Map<String, MetricValue> numerators = latestPerSeries(
-                clusterId, spec.metric, spec.table, spec.rateWindow, spec.agg, spec.filters);
+                clusterId, spec.metric, spec.table, spec.rateWindow, spec.agg, spec.filters, spec.job);
         Map<String, MetricValue> denominators = latestPerSeries(
-                clusterId, spec.denomMetric, spec.denomTable, spec.rateWindow, spec.denomAgg, spec.denomFilters);
+                clusterId, spec.denomMetric, spec.denomTable, spec.rateWindow, spec.denomAgg,
+                spec.denomFilters, spec.job);
         Map<String, MetricValue> ratios = new LinkedHashMap<>();
         for (Map.Entry<String, MetricValue> entry : numerators.entrySet()) {
             MetricValue denom = denominators.get(entry.getKey());
@@ -242,19 +246,19 @@ public class OtelAlertScheduler {
         }
         return ratios;
     }
-    
+
     private Map<String, MetricValue> latestPerSeries(Integer clusterId, String metric, String table,
                                                      String rateWindow, String agg,
-                                                     Map<String, String> filters) {
+                                                     Map<String, String> filters, String job) {
         return rateWindow == null || rateWindow.isBlank()
-                ? latestVector(clusterId, metric, agg, filters)
-                : latestMatrix(clusterId, metric, table, rateWindow, filters);
+                ? latestVector(clusterId, metric, agg, filters, job)
+                : latestMatrix(clusterId, metric, table, rateWindow, filters, job);
     }
-    
+
     private Map<String, MetricValue> latestVector(Integer clusterId, String metric, String agg,
-                                                  Map<String, String> filters) {
+                                                  Map<String, String> filters, String job) {
         PrometheusVectorResult result = metricsQueryService.queryInstant(
-                clusterId, metric, agg, 1d, DEFAULT_INSTANCE, DEFAULT_JOB, filters, null,
+                clusterId, metric, agg, 1d, DEFAULT_INSTANCE, queryJob(job), filters, null,
                 System.currentTimeMillis() / 1000);
         Map<String, MetricValue> values = new LinkedHashMap<>();
         for (VectorSample sample : result.result()) {
@@ -262,12 +266,12 @@ public class OtelAlertScheduler {
         }
         return values;
     }
-    
+
     private Map<String, MetricValue> latestMatrix(Integer clusterId, String metric, String table,
-                                                  String rateWindow, Map<String, String> filters) {
+                                                  String rateWindow, Map<String, String> filters, String job) {
         long end = System.currentTimeMillis() / 1000;
         PrometheusMatrixResult result = metricsQueryService.queryRange(
-                clusterId, metric, rateWindow, 1d, DEFAULT_INSTANCE, DEFAULT_JOB, filters, null,
+                clusterId, metric, rateWindow, 1d, DEFAULT_INSTANCE, queryJob(job), filters, null,
                 List.of(), end - RANGE_SECONDS, end, RANGE_STEP_SECONDS, table, DEFAULT_QUANTILE);
         Map<String, MetricValue> values = new LinkedHashMap<>();
         for (MatrixSeries series : result.result()) {
@@ -279,7 +283,28 @@ public class OtelAlertScheduler {
         }
         return values;
     }
-    
+
+    private Map<String, MetricValue> increasePerSeries(Integer clusterId, OtelAlertRuleSpec spec) {
+        long end = System.currentTimeMillis() / 1000;
+        PrometheusMatrixResult result = metricsQueryService.queryRange(
+                clusterId, spec.metric, null, 1d, DEFAULT_INSTANCE, queryJob(spec.job), spec.filters, null,
+                List.of(), end - spec.increaseSeconds, end, RANGE_STEP_SECONDS, spec.table, DEFAULT_QUANTILE);
+        Map<String, MetricValue> values = new LinkedHashMap<>();
+        for (MatrixSeries series : result.result()) {
+            if (series.values().isEmpty()) {
+                continue;
+            }
+            double first = toDouble(series.values().get(0)[1]);
+            double last = toDouble(series.values().get(series.values().size() - 1)[1]);
+            values.put(seriesKey(series.metric()), new MetricValue(last - first, series.metric()));
+        }
+        return values;
+    }
+
+    private static String queryJob(String job) {
+        return job == null || job.isBlank() ? DEFAULT_JOB : job;
+    }
+
     private static boolean compare(double value, String compareMethod, Long threshold) {
         double limit = threshold == null ? 0d : threshold.doubleValue();
         return switch (compareMethod) {
@@ -288,35 +313,35 @@ public class OtelAlertScheduler {
             default -> value > limit;
         };
     }
-    
+
     private static String description(String alertName, double value, String compareMethod, Long threshold) {
         return alertName + " value is " + value + ", threshold is " + compareMethod + " " + threshold;
     }
-    
+
     private static String advice(ClusterAlertQuota quota) {
         return quota.getAlertAdvice() == null ? quota.getAlertQuotaName() : quota.getAlertAdvice();
     }
-    
+
     private static String severity(AlertLevel level) {
         return AlertLevel.EXCEPTION.equals(level) ? "critical" : "warning";
     }
-    
+
     private static String instance(Map<String, String> labels) {
         String instance = labels.get("instance");
         return instance == null || instance.isBlank() ? "unknown" : instance;
     }
-    
+
     private static String seriesKey(Map<String, String> labels) {
         return JSONObject.toJSONString(new TreeMap<>(labels));
     }
-    
+
     private static double toDouble(Object value) {
         if (value instanceof Number number) {
             return number.doubleValue();
         }
         return Double.parseDouble(Objects.toString(value));
     }
-    
+
     private static Map<String, OtelAlertRuleSpec> metricRuleSpecs() {
         Map<String, OtelAlertRuleSpec> specs = new HashMap<>();
         specs.put("Nexus实例只读", gauge("readonly_enabled", "max", 1d, Map.of()));
@@ -332,25 +357,46 @@ public class OtelAlertScheduler {
         specs.put("Doris查询错误率", ratio(
                 "doris_fe_query_err", "sum", "2m", null, Map.of("group", "fe"),
                 "doris_fe_query_total", "sum", null, Map.of("group", "fe"), 100d));
+        // agg 必须为 null：带 agg 时 buildInstantAggSql 在 groupByKeys 为空的情况下不加 GROUP BY，
+        // 会把所有实例聚合成一行（MAX(up)），多实例服务里只要还有一个实例活着 MAX 就是 1，
+        // 单个进程挂掉永远不会触发 "< 1"。agg 为空走 buildInstantNoAggSql，按 instance/job 分区
+        // 返回每个实例一行，才能逐实例判定存活。
+        // （既有的 Nexus/Doris 规则都是单实例服务，全局聚合与按实例聚合等价，所以没暴露这个问题。）
+        specs.put("SeaTunnelMaster进程存活", gauge(
+                "up", null, 1d, Map.of(), "^SeaTunnelMaster$"));
+        specs.put("SeaTunnelWorker进程存活", gauge(
+                "up", null, 1d, Map.of(), "^SeaTunnelWorker$"));
+        // job_count 是累计值；按 rate 取最后一个 60s 桶时，失败后下一桶就回落为 0，告警要么漏、要么闪断。
+        // 改为 5 分钟窗口内首尾桶之差：每次失败持续告警 5 分钟；新 master 首个样本只作基线，不会误报。
+        specs.put("SeaTunnel作业失败", new OtelAlertRuleSpec(
+                "job_count", "gauge", null, null, Map.of("type", "failed"),
+                null, null, null, null, 1d, "^SeaTunnelMaster$", 300L));
         return Collections.unmodifiableMap(specs);
     }
-    
+
     private static OtelAlertRuleSpec gauge(String metric, String agg, double scale, Map<String, String> filters) {
-        return new OtelAlertRuleSpec(metric, "gauge", null, agg, filters, null, null, null, null, scale);
+        return gauge(metric, agg, scale, filters, null);
     }
-    
+
+    private static OtelAlertRuleSpec gauge(String metric, String agg, double scale, Map<String, String> filters,
+                                           String job) {
+        return new OtelAlertRuleSpec(metric, "gauge", null, agg, filters,
+                null, null, null, null, scale, job, 0L);
+    }
+
     private static OtelAlertRuleSpec ratio(String metric, String table, String rateWindow, String agg,
                                            Map<String, String> filters, String denomMetric, String denomTable,
                                            String denomAgg, Map<String, String> denomFilters, double scale) {
         return new OtelAlertRuleSpec(metric, table, rateWindow, agg, filters,
-                denomMetric, denomTable, denomAgg, denomFilters, scale);
+                denomMetric, denomTable, denomAgg, denomFilters, scale, null, 0L);
     }
-    
+
     private record MetricValue(double value, Map<String, String> labels) {
     }
-    
+
     private record OtelAlertRuleSpec(String metric, String table, String rateWindow, String agg,
                                      Map<String, String> filters, String denomMetric, String denomTable,
-                                     String denomAgg, Map<String, String> denomFilters, double scale) {
+                                     String denomAgg, Map<String, String> denomFilters, double scale, String job,
+                                     long increaseSeconds) {
     }
 }

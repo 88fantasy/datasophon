@@ -181,6 +181,122 @@ class OtelAlertSchedulerTest {
         assertThat(alerts).singleElement().asString().contains("Nexus线程死锁");
     }
 
+    @Test
+    void existingMetricRulesKeepDefaultJobFilter() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        List<ClusterAlertQuota> quotas = List.of(
+                quota("Nexus实例只读", "NEXUS", "readonly_enabled", AlertLevel.EXCEPTION,
+                        ">", 0, "Read only", "NexusRepository"),
+                quota("Nexus线程死锁", "NEXUS", "jvm_thread_states_deadlock_count", AlertLevel.EXCEPTION,
+                        ">", 0, "Thread deadlock", "NexusRepository"),
+                quota("Nexus堆内存使用率", "NEXUS", "jvm_memory_heap_usage", AlertLevel.WARN,
+                        ">", 85, "Heap high", "NexusRepository"),
+                quota("Nexus文件描述符使用率", "NEXUS", "jvm_fd_usage", AlertLevel.WARN,
+                        ">", 90, "FD high", "NexusRepository"),
+                quota("DorisBE磁盘使用率", "DORIS", "doris_be_disks_local_used_capacity", AlertLevel.EXCEPTION,
+                        ">", 85, "Disk high", "DorisBE"),
+                quota("DorisFE堆内存使用率", "DORIS", "jvm_heap_size_bytes", AlertLevel.WARN,
+                        ">", 85, "Heap high", "DorisFE"),
+                quota("Doris查询错误率", "DORIS", "doris_fe_query_err", AlertLevel.WARN,
+                        ">", 5, "Query errors", "DorisFE"));
+
+        scheduler(query, new ArrayList<>(), quotas).checkMetricRules();
+
+        assertThat(query.calls).hasSize(10).allSatisfy(call -> assertThat(call.job()).isEqualTo(".+"));
+    }
+
+    @Test
+    void seatunnelRulesUseTheirMetricJobFiltersAndRangeWindow() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        List<ClusterAlertQuota> quotas = List.of(
+                quota("SeaTunnelMaster进程存活", "SEATUNNEL", "up", AlertLevel.EXCEPTION,
+                        "<", 1, "Restart SeaTunnel master", "SeaTunnelMaster"),
+                quota("SeaTunnelWorker进程存活", "SEATUNNEL", "up", AlertLevel.EXCEPTION,
+                        "<", 1, "Restart SeaTunnel worker", "SeaTunnelWorker"),
+                quota("SeaTunnel作业失败", "SEATUNNEL", "job_count", AlertLevel.EXCEPTION,
+                        ">", 0, "Check failed SeaTunnel jobs", "SeaTunnelMaster"));
+
+        scheduler(query, new ArrayList<>(), quotas).checkMetricRules();
+
+        assertThat(query.calls).containsExactlyInAnyOrder(
+                new QueryCall("instant", "up", "^SeaTunnelMaster$", Map.of(), null),
+                new QueryCall("instant", "up", "^SeaTunnelWorker$", Map.of(), null),
+                new QueryCall("range", "job_count", "^SeaTunnelMaster$", Map.of("type", "failed"), null));
+    }
+
+    /**
+     * 存活类规则必须逐实例判定：带 agg 时 {@code buildInstantAggSql} 在 groupByKeys 为空的情况下
+     * 不加 GROUP BY，会把所有实例聚合成一行（MAX(up)），多实例服务里只要还有一个实例活着
+     * MAX 就是 1，挂掉的那个永远不会触发 "< 1"。实机复现过：停掉 3 个 SeaTunnelWorker 中的一个，
+     * up=0 持续 6 分钟仍无告警。
+     */
+    @Test
+    void livenessRuleFiresWhenOnlyOneOfSeveralInstancesIsDown() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        long ts = System.currentTimeMillis() / 1000;
+        query.instantByMetric.put("up", vector(
+                sample(Map.of("instance", "ddh-03:18089", "job", "SeaTunnelWorker"), ts, "1"),
+                sample(Map.of("instance", "ddh-04:18089", "job", "SeaTunnelWorker"), ts, "1"),
+                sample(Map.of("instance", "ddh-05:18089", "job", "SeaTunnelWorker"), ts, "0")));
+        List<String> alerts = new ArrayList<>();
+
+        scheduler(query, alerts, List.of(quota("SeaTunnelWorker进程存活", "SEATUNNEL", "up",
+                AlertLevel.EXCEPTION, "<", 1, "Restart SeaTunnel worker", "SeaTunnelWorker")))
+                .checkMetricRules();
+
+        assertThat(alerts).hasSize(1);
+        assertThat(alerts.get(0)).contains("ddh-05:18089").contains("firing");
+        assertThat(alerts.get(0)).doesNotContain("ddh-03:18089").doesNotContain("ddh-04:18089");
+        assertThat(query.aggByMetric.get("up"))
+                .as("up 规则不能带 agg，否则 SQL 全局聚合成一行，永远取到存活实例的 1")
+                .isNull();
+    }
+
+    @Test
+    void livenessRuleStaysSilentWhileEveryInstanceIsUp() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        long ts = System.currentTimeMillis() / 1000;
+        query.instantByMetric.put("up", vector(
+                sample(Map.of("instance", "ddh-02:18088", "job", "SeaTunnelMaster"), ts, "1"),
+                sample(Map.of("instance", "ddh-03:18088", "job", "SeaTunnelMaster"), ts, "1")));
+        List<String> alerts = new ArrayList<>();
+
+        scheduler(query, alerts, List.of(quota("SeaTunnelMaster进程存活", "SEATUNNEL", "up",
+                AlertLevel.EXCEPTION, "<", 1, "Restart SeaTunnel master", "SeaTunnelMaster")))
+                .checkMetricRules();
+
+        assertThat(alerts).isEmpty();
+    }
+
+    @Test
+    void failedJobAlertSkipsNewMasterBaselineButFiresOnSameMasterIncrease() {
+        MutableMetricQueryService query = new MutableMetricQueryService();
+        Map<String, String> oldMaster = Map.of(
+                "instance", "master-1:8080", "job", "SeaTunnelMaster", "type", "failed");
+        Map<String, String> newMaster = Map.of(
+                "instance", "master-2:8080", "job", "SeaTunnelMaster", "type", "failed");
+        // 新 master 只有一个基线样本，窗口内无增量
+        query.rangeByMetric.put("job_count", matrix(series(oldMaster), series(newMaster, point(100, "3.0"))));
+        List<String> alerts = new ArrayList<>();
+        OtelAlertScheduler scheduler = scheduler(query, alerts, List.of(quota(
+                "SeaTunnel作业失败", "SEATUNNEL", "job_count", AlertLevel.EXCEPTION,
+                ">", 0, "Check failed SeaTunnel jobs", "SeaTunnelMaster")));
+
+        scheduler.checkMetricRules();
+
+        assertThat(alerts).isEmpty();
+
+        // 失败发生在较早的桶，最新桶已持平：rate 口径下这里为 0 会漏报，增量口径必须仍然告警
+        query.rangeByMetric.put("job_count", matrix(series(newMaster,
+                point(100, "3.0"), point(160, "4.0"), point(220, "4.0"))));
+        scheduler.checkMetricRules();
+
+        assertThat(alerts).singleElement().asString()
+                .contains("SeaTunnel作业失败")
+                .contains("master-2:8080")
+                .contains("1.0");
+    }
+
     private static OtelAlertScheduler scheduler(AtomicReference<List<NodeOtelMetrics>> metrics,
                                                 List<String> alerts) {
         OtelMonitorService monitor = new OtelMonitorService(null, null, null) {
@@ -291,7 +407,9 @@ class OtelAlertSchedulerTest {
         private PrometheusVectorResult instant = vector();
         private final Map<String, PrometheusVectorResult> instantByMetric = new java.util.HashMap<>();
         private final Map<String, PrometheusMatrixResult> rangeByMetric = new java.util.HashMap<>();
+        private final Map<String, String> aggByMetric = new java.util.HashMap<>();
         private final List<String> throwMetrics = new ArrayList<>();
+        private final List<QueryCall> calls = new ArrayList<>();
 
         MutableMetricQueryService() {
             super(null, null);
@@ -301,6 +419,8 @@ class OtelAlertSchedulerTest {
         public PrometheusVectorResult queryInstant(Integer clusterId, String metric, String agg, double scale,
                                                    String instance, String job, Map<String, String> filters,
                                                    Map<String, String> filtersNe, long evalTime) {
+            calls.add(new QueryCall("instant", metric, job, filters, null));
+            aggByMetric.put(metric, agg);
             if (throwMetrics.contains(metric)) {
                 throw new IllegalStateException("boom");
             }
@@ -312,10 +432,15 @@ class OtelAlertSchedulerTest {
                                                  String instance, String job, Map<String, String> filters,
                                                  Map<String, String> filtersNe, List<String> groupByKeys,
                                                  long start, long end, long step, String table, double quantile) {
+            calls.add(new QueryCall("range", metric, job, filters, rateWindow));
             if (throwMetrics.contains(metric)) {
                 throw new IllegalStateException("boom");
             }
             return rangeByMetric.getOrDefault(metric, matrix());
         }
+    }
+
+    private record QueryCall(String queryType, String metric, String job,
+                             Map<String, String> filters, String rateWindow) {
     }
 }

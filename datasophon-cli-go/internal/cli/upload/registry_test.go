@@ -1,6 +1,7 @@
 package upload
 
 import (
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -433,4 +434,79 @@ func TestUploadSpecificFiles_DryRunDoesNotHitNetwork(t *testing.T) {
 
 	assert.Equal(t, 0, fail)
 	assert.Equal(t, 1, success)
+}
+
+// TestNeedsRawMD5Sidecar 覆盖 sidecar 目录判定：/packages 及其子目录（如插件目录
+// /packages/plugins/seatunnel）需要 sidecar；仅字符串前缀相同的 /packagesX 与 meta
+// 目录不需要。
+func TestNeedsRawMD5Sidecar(t *testing.T) {
+	cases := []struct {
+		dir  string
+		want bool
+	}{
+		{"/packages", true},
+		{"/packages/plugins/seatunnel", true},
+		{"/packagesX", false},
+		{"/meta/datacluster-physical/DS", false},
+	}
+	for _, c := range cases {
+		t.Run(c.dir, func(t *testing.T) {
+			assert.Equal(t, c.want, needsRawMD5Sidecar("raw", c.dir+"/a.jar", c.dir))
+			assert.False(t, needsRawMD5Sidecar("raw", c.dir+"/a.jar.md5", c.dir), ".md5 自身不需要 sidecar")
+		})
+	}
+	assert.False(t, needsRawMD5Sidecar("yum", "/packages/a.rpm", "/packages"))
+}
+
+// TestRepositoryUploadBatch_PackagesSubDirGetsRefreshedMd5Sidecar 覆盖插件子目录场景：
+// /packages/plugins/seatunnel 下的 jar 必须按当前内容重新生成并上传 sidecar，旧 .md5
+// 不能被当成普通文件原样上传；/packagesX 与 meta 目录不生成 sidecar。
+func TestRepositoryUploadBatch_PackagesSubDirGetsRefreshedMd5Sidecar(t *testing.T) {
+	tmpDir := t.TempDir()
+	pluginDir := filepath.Join(tmpDir, "raw", "packages", "plugins", "seatunnel")
+	otherDir := filepath.Join(tmpDir, "raw", "packagesX")
+	metaDir := filepath.Join(tmpDir, "raw", "meta", "datacluster-physical", "DS")
+	for _, d := range []string{pluginDir, otherDir, metaDir} {
+		require.NoError(t, os.MkdirAll(d, 0o755))
+	}
+	jar := filepath.Join(pluginDir, "connector-jdbc-2.3.12.jar")
+	require.NoError(t, os.WriteFile(jar, []byte("jar-content"), 0o644))
+	require.NoError(t, os.WriteFile(jar+".md5", []byte("stale"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(otherDir, "foo.jar"), []byte("foo"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(metaDir, "service_ddl.json"), []byte("{}"), 0o644))
+
+	uploaded := map[string]string{} // directory/filename -> 上传内容
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/service/rest/v1/search/assets":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		case "/service/rest/internal/ui/upload/raw":
+			require.NoError(t, r.ParseMultipartForm(10<<20))
+			f, _, err := r.FormFile("asset0")
+			require.NoError(t, err)
+			defer f.Close()
+			body, err := io.ReadAll(f)
+			require.NoError(t, err)
+			key := r.MultipartForm.Value["directory"][0] + "/" + r.MultipartForm.Value["asset0.filename"][0]
+			uploaded[key] = string(body)
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	task := &UploadRegistry{ProductPackagesPath: tmpDir, Username: "admin", Password: "admin"}
+	success, fail := task.repositoryUploadBatch(server.URL)
+
+	assert.Equal(t, 0, fail)
+	assert.Equal(t, 4, success)
+	assert.Equal(t, map[string]string{
+		"/packages/plugins/seatunnel/connector-jdbc-2.3.12.jar": "jar-content",
+		// md5("jar-content")，证明 sidecar 按当前内容重新生成，而非原样上传旧的 "stale"
+		"/packages/plugins/seatunnel/connector-jdbc-2.3.12.jar.md5": "4e47b8caf44da9499c6ac5a6b0f39641\n",
+		"/packagesX/foo.jar":                             "foo",
+		"/meta/datacluster-physical/DS/service_ddl.json": "{}",
+	}, uploaded)
 }

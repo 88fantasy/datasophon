@@ -103,56 +103,65 @@
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "from": "plugins/ds/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-shell-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-shell-3.4.1.jar",
             "to": "api-server/libs/dolphinscheduler-task-shell-3.4.1.jar",
             "md5": "e8237f0066be38aaf00d4595bca5f2f0"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-spark-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-spark-3.4.1.jar",
             "to": "api-server/libs/dolphinscheduler-task-spark-3.4.1.jar",
             "md5": "365c3a7a921b577d6a006b0bf308c02e"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-flink-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-flink-3.4.1.jar",
             "to": "api-server/libs/dolphinscheduler-task-flink-3.4.1.jar",
             "md5": "0657164010884427189eb5b539ec7e0c"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-flink-stream-3.4.1.jar",
             "to": "api-server/libs/dolphinscheduler-task-flink-stream-3.4.1.jar",
             "md5": "c6b93698cd08c67645f2ac1457d73c98"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-sql-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-sql-3.4.1.jar",
             "to": "api-server/libs/dolphinscheduler-task-sql-3.4.1.jar",
             "md5": "ae2bc09add275703a889394fdbd74238"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/ds/dolphinscheduler-task-seatunnel-3.4.1.jar",
+            "to": "api-server/libs/dolphinscheduler-task-seatunnel-3.4.1.jar",
+            "md5": "d2cd741ee38d4f7a98bb3c1448612745"
           }
         }
       ]
@@ -256,56 +265,65 @@
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "from": "plugins/ds/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-shell-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-shell-3.4.1.jar",
             "to": "master-server/libs/dolphinscheduler-task-shell-3.4.1.jar",
             "md5": "e8237f0066be38aaf00d4595bca5f2f0"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-spark-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-spark-3.4.1.jar",
             "to": "master-server/libs/dolphinscheduler-task-spark-3.4.1.jar",
             "md5": "365c3a7a921b577d6a006b0bf308c02e"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-flink-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-flink-3.4.1.jar",
             "to": "master-server/libs/dolphinscheduler-task-flink-3.4.1.jar",
             "md5": "0657164010884427189eb5b539ec7e0c"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-flink-stream-3.4.1.jar",
             "to": "master-server/libs/dolphinscheduler-task-flink-stream-3.4.1.jar",
             "md5": "c6b93698cd08c67645f2ac1457d73c98"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-sql-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-sql-3.4.1.jar",
             "to": "master-server/libs/dolphinscheduler-task-sql-3.4.1.jar",
             "md5": "ae2bc09add275703a889394fdbd74238"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/ds/dolphinscheduler-task-seatunnel-3.4.1.jar",
+            "to": "master-server/libs/dolphinscheduler-task-seatunnel-3.4.1.jar",
+            "md5": "d2cd741ee38d4f7a98bb3c1448612745"
           }
         }
       ]
@@ -401,56 +419,65 @@
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "from": "plugins/ds/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-shell-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-shell-3.4.1.jar",
             "to": "worker-server/libs/dolphinscheduler-task-shell-3.4.1.jar",
             "md5": "e8237f0066be38aaf00d4595bca5f2f0"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-spark-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-spark-3.4.1.jar",
             "to": "worker-server/libs/dolphinscheduler-task-spark-3.4.1.jar",
             "md5": "365c3a7a921b577d6a006b0bf308c02e"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-flink-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-flink-3.4.1.jar",
             "to": "worker-server/libs/dolphinscheduler-task-flink-3.4.1.jar",
             "md5": "0657164010884427189eb5b539ec7e0c"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-flink-stream-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-flink-stream-3.4.1.jar",
             "to": "worker-server/libs/dolphinscheduler-task-flink-stream-3.4.1.jar",
             "md5": "c6b93698cd08c67645f2ac1457d73c98"
           }
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-task-sql-3.4.1.jar",
+            "from": "plugins/ds/dolphinscheduler-task-sql-3.4.1.jar",
             "to": "worker-server/libs/dolphinscheduler-task-sql-3.4.1.jar",
             "md5": "ae2bc09add275703a889394fdbd74238"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "from": "plugins/ds/dolphinscheduler-task-seatunnel-3.4.1.jar",
+            "to": "worker-server/libs/dolphinscheduler-task-seatunnel-3.4.1.jar",
+            "md5": "d2cd741ee38d4f7a98bb3c1448612745"
           }
         },
         {
@@ -556,9 +583,9 @@
         },
         {
           "type": "POST_INSTALL",
-          "action": "download",
+          "action": "nexus",
           "params": {
-            "from": "plugin/dolphinscheduler-storage-s3-3.4.1-shade.jar",
+            "from": "plugins/ds/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "to": "plugins/storage-plugins/dolphinscheduler-storage-s3-3.4.1-shade.jar",
             "md5": "a69654ee5b077bd6bb6db0b3628af1cb"
           }

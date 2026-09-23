@@ -12,6 +12,7 @@ import GravitinoDashboard from '@/pages/monitor/GravitinoMonitor';
 import JuiceFSDashboard from '@/pages/monitor/JuiceFSMonitor';
 import KyuubiDashboard from '@/pages/monitor/KyuubiMonitor';
 import NacosDashboard from '@/pages/monitor/NacosMonitor';
+import SeaTunnelDashboard from '@/pages/monitor/SeaTunnelMonitor';
 import ValkeyDashboard from '@/pages/monitor/ValkeyMonitor';
 import ZooKeeperDashboard from '@/pages/monitor/ZooKeeperMonitor';
 import {
@@ -30,6 +31,7 @@ import DsWorkflowPanel from './DsWorkflow';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';
+import SeaTunnelJobs from './SeaTunnelJobs';
 import SettingTab from './Setting';
 import ImportedValuesViewer from './Setting/ImportedValuesViewer';
 
@@ -303,6 +305,7 @@ const ServiceInstance: React.FC = () => {
   const isNacos = serviceInfo?.serviceName === 'NACOS';
   const isGravitino = serviceInfo?.serviceName === 'GRAVITINO';
   const isOtelCollector = serviceInfo?.serviceName === 'OTELCOLLECTOR';
+  const isSeaTunnel = serviceInfo?.serviceName === 'SEATUNNEL';
   const hasPrimaryMonitor =
     isApisix ||
     isValkey ||
@@ -310,7 +313,8 @@ const ServiceInstance: React.FC = () => {
     isDoris ||
     isNacos ||
     isGravitino ||
-    isOtelCollector;
+    isOtelCollector ||
+    isSeaTunnel;
   if (hasPrimaryMonitor) {
     let primaryMonitor: React.ReactNode = null;
     if (isApisix) {
@@ -333,11 +337,27 @@ const ServiceInstance: React.FC = () => {
       );
     } else if (isOtelCollector) {
       primaryMonitor = <MonitorTab clusterId={numericClusterId} embedded />;
+    } else if (isSeaTunnel) {
+      primaryMonitor = (
+        <SeaTunnelDashboard clusterId={numericClusterId} embedded />
+      );
     }
     items.push({
       key: 'monitor',
       label: '监控',
       children: primaryMonitor,
+    });
+  }
+  if (isSeaTunnel && canAdmin) {
+    items.push({
+      key: 'seatunnelJobs',
+      label: '作业',
+      children: (
+        <SeaTunnelJobs
+          clusterId={numericClusterId}
+          instanceId={numericInstanceId}
+        />
+      ),
     });
   }
   if (isDoris && canAdmin) {

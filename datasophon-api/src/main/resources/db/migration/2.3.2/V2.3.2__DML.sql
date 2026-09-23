@@ -1,0 +1,3 @@
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (707, 'SeaTunnelMaster进程存活', 'SEATUNNEL', 'up{job="SeaTunnelMaster"}', 2, 11, 1, 'SeaTunnel Master 进程不可用，请检查并重新启动服务', '<', 1, 1, 1, 60, 'SeaTunnelMaster', 2, '2026-09-22 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (708, 'SeaTunnelWorker进程存活', 'SEATUNNEL', 'up{job="SeaTunnelWorker"}', 2, 11, 1, 'SeaTunnel Worker 进程不可用，请检查并重新启动服务', '<', 1, 1, 1, 60, 'SeaTunnelWorker', 2, '2026-09-22 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (709, 'SeaTunnel作业失败', 'SEATUNNEL', 'job_count{job="SeaTunnelMaster",type="failed"}', 2, 11, 1, '存在失败的 SeaTunnel 作业，请查看作业日志并处理失败原因', '>', 0, 1, 1, 60, 'SeaTunnelMaster', 2, '2026-09-22 00:00:00');
