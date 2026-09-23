@@ -47,7 +47,7 @@ public class ConfigureServiceHandlerTest {
                 .getDeclaredMethod("replacePlaceholder", ServiceConfig.class, Map.class);
         method.setAccessible(true);
 
-        for (String name : new String[] {"s3AccessKey", "s3SecretKey"}) {
+        for (String name : new String[]{"s3AccessKey", "s3SecretKey"}) {
             ServiceConfig config = new ServiceConfig();
             config.setName(name);
             config.setType(Constants.INPUT);
@@ -57,5 +57,12 @@ public class ConfigureServiceHandlerTest {
             assertEquals("credential-value", config.getValue());
             verify(logger).info("config {} set value to {}", name, "<redacted>");
         }
+
+        ServiceConfig token = new ServiceConfig();
+        token.setName("lineageToken");
+        token.setType("password");
+        token.setValue("credential-value");
+        method.invoke(configureServiceHandlerUnderTest, token, Map.of());
+        verify(logger).info("config {} set value to {}", "lineageToken", "<redacted>");
     }
 }

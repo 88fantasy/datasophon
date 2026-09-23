@@ -22,9 +22,11 @@
 
 package com.datasophon.api.service.seatunnel;
 
+import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ServiceInstancePortResolver;
 import com.datasophon.api.service.ServiceInstancePortResolver.RolePort;
+import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
 import java.io.IOException;
@@ -56,42 +58,53 @@ public class SeaTunnelJobService {
     private static final int DEFAULT_MASTER_HTTP_PORT = 18088;
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
+    private final ClusterServiceInstanceService serviceInstanceService;
     private final ClusterServiceRoleInstanceService roleService;
     private final ServiceInstancePortResolver portResolver;
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3))
             .build();
 
-    public SeaTunnelJobService(ClusterServiceRoleInstanceService roleService,
+    public SeaTunnelJobService(ClusterServiceInstanceService serviceInstanceService,
+                               ClusterServiceRoleInstanceService roleService,
                                ServiceInstancePortResolver portResolver) {
+        this.serviceInstanceService = serviceInstanceService;
         this.roleService = roleService;
         this.portResolver = portResolver;
     }
 
-    public Object overview(Integer clusterId) {
-        return get(clusterId, "/overview", true);
+    public Object overview(Integer clusterId, Integer instanceId) {
+        return get(clusterId, instanceId, "/overview", true);
     }
 
-    public Object workers(Integer clusterId) {
-        return get(clusterId, "/resource/workers", false);
+    public Object workers(Integer clusterId, Integer instanceId) {
+        return get(clusterId, instanceId, "/resource/workers", false);
     }
 
-    public Object pending(Integer clusterId) {
-        return get(clusterId, "/pending-jobs", false);
+    public Object pending(Integer clusterId, Integer instanceId) {
+        return get(clusterId, instanceId, "/pending-jobs", false);
     }
 
-    public Object jobs(Integer clusterId, String state) {
+    public Object jobs(Integer clusterId, Integer instanceId, String state) {
         String path = switch (state) {
             case "running" -> "/running-jobs";
             case "finished" -> "/finished-jobs";
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "state 仅支持 running 或 finished");
         };
-        return get(clusterId, path, false);
+        return get(clusterId, instanceId, path, false);
     }
 
-    public Object jobInfo(Integer clusterId, String jobId) {
-        return get(clusterId, "/job-info/" + encodePathSegment(jobId), false);
+    public Object jobInfo(Integer clusterId, Integer instanceId, String jobId) {
+        return get(clusterId, instanceId, "/job-info/" + encodePathSegment(jobId), false);
+    }
+
+    private void requireSeaTunnelInstance(Integer clusterId, Integer instanceId) {
+        ClusterServiceInstanceEntity instance = instanceId == null ? null : serviceInstanceService.getById(instanceId);
+        if (instance == null || !Objects.equals(clusterId, instance.getClusterId())
+                || !"SEATUNNEL".equalsIgnoreCase(instance.getServiceName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "服务实例不属于该集群或不是 SeaTunnel 服务");
+        }
     }
 
     List<MasterEndpoint> masterEndpoints(Integer clusterId) {
@@ -119,8 +132,12 @@ public class SeaTunnelJobService {
                 .orElse(DEFAULT_MASTER_HTTP_PORT);
     }
 
-    private Object get(Integer clusterId, String path, boolean removeUnassignedSlot) {
+    private Object get(Integer clusterId, Integer instanceId, String path, boolean removeUnassignedSlot) {
+        requireSeaTunnelInstance(clusterId, instanceId);
         List<MasterEndpoint> masters = masterEndpoints(clusterId);
+        if (masters.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "集群未部署 SeaTunnelMaster");
+        }
         for (MasterEndpoint master : masters) {
             HttpRequest request = HttpRequest.newBuilder(uri(master, path))
                     .timeout(REQUEST_TIMEOUT)

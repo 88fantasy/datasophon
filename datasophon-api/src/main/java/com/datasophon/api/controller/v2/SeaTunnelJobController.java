@@ -49,19 +49,19 @@ public class SeaTunnelJobController extends ApiController {
     @GetMapping("/overview")
     public ApiResponse<Object> overview(@PathVariable Integer clusterId, @PathVariable Integer instanceId) {
         adminGuard.requireAdmin();
-        return ApiResponse.ok(jobService.overview(clusterId));
+        return ApiResponse.ok(jobService.overview(clusterId, instanceId));
     }
 
     @GetMapping("/workers")
     public ApiResponse<Object> workers(@PathVariable Integer clusterId, @PathVariable Integer instanceId) {
         adminGuard.requireAdmin();
-        return ApiResponse.ok(jobService.workers(clusterId));
+        return ApiResponse.ok(jobService.workers(clusterId, instanceId));
     }
 
     @GetMapping("/pending")
     public ApiResponse<Object> pending(@PathVariable Integer clusterId, @PathVariable Integer instanceId) {
         adminGuard.requireAdmin();
-        return ApiResponse.ok(jobService.pending(clusterId));
+        return ApiResponse.ok(jobService.pending(clusterId, instanceId));
     }
 
     @GetMapping("/jobs")
@@ -69,7 +69,7 @@ public class SeaTunnelJobController extends ApiController {
                                     @PathVariable Integer instanceId,
                                     @RequestParam String state) {
         adminGuard.requireAdmin();
-        return ApiResponse.ok(jobService.jobs(clusterId, state));
+        return ApiResponse.ok(jobService.jobs(clusterId, instanceId, state));
     }
 
     @GetMapping("/jobs/{jobId}")
@@ -77,6 +77,6 @@ public class SeaTunnelJobController extends ApiController {
                                        @PathVariable Integer instanceId,
                                        @PathVariable String jobId) {
         adminGuard.requireAdmin();
-        return ApiResponse.ok(jobService.jobInfo(clusterId, jobId));
+        return ApiResponse.ok(jobService.jobInfo(clusterId, instanceId, jobId));
     }
 }

@@ -82,7 +82,7 @@
           "params": {
             "from": "script/control.sh",
             "to": "control.sh",
-            "md5": "c7ef11f9ca030f4ad3bc83186ae39130"
+            "md5": "e2e67246d6f10445b2002710d6fef610"
           }
         },
         {
@@ -118,7 +118,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "71babba08936af22ca7fe385d2d0e439"
+            "md5": "a6d50cae35367c9a98cf7e5992586f86"
           }
         },
         {
@@ -194,7 +194,7 @@
           "params": {
             "from": "script/control.sh",
             "to": "control.sh",
-            "md5": "c7ef11f9ca030f4ad3bc83186ae39130"
+            "md5": "e2e67246d6f10445b2002710d6fef610"
           }
         },
         {
@@ -230,7 +230,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "71babba08936af22ca7fe385d2d0e439"
+            "md5": "a6d50cae35367c9a98cf7e5992586f86"
           }
         },
         {
@@ -287,7 +287,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "71babba08936af22ca7fe385d2d0e439"
+            "md5": "a6d50cae35367c9a98cf7e5992586f86"
           }
         },
         {
@@ -635,7 +635,7 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "defaultValue": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}/api/lineage",
+      "defaultValue": "http://${GRAVITINO.GravitinoServer.__hostIp__}:${GRAVITINO.gravitino.server.webserver.httpPort}/api/lineage",
       "configurableInWizard": true,
       "register": false
     },

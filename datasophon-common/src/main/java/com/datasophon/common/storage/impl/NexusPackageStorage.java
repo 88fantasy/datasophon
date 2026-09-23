@@ -140,9 +140,10 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     @SuppressWarnings("deprecated")
     private DownloadResult doDownload(String resourceName, Supplier<String> remoteResourceMd5) {
         ensureNexusEnable();
+        // 锁对象常驻不回收（数量以包名为界）：解锁前 remove 会让后到线程拿到新锁，与仍在等旧锁的线程同时进入临界区
         Lock lock = LOCK_MAP.computeIfAbsent(resourceName, k -> new ReentrantLock());
+        lock.lock();
         try {
-            lock.lock();
             DownloadResult result = new DownloadResult();
             result.setMd5(remoteResourceMd5.get());
             File file = Paths.get(localPackageDir, resourceName).toFile();
@@ -175,7 +176,6 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             result.setTarget(file.getAbsolutePath());
             return result;
         } finally {
-            LOCK_MAP.remove(resourceName);
             lock.unlock();
         }
     }

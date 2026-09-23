@@ -80,10 +80,20 @@ class NexusResourceStrategyTest {
 
     @Test
     void skipsDownloadWhenTargetMd5Matches() throws IOException {
+        assertSkipsDownload(CONTENT_MD5);
+    }
+
+    /** 下载后的校验不区分大小写，已存在跳过的判断也必须一致，否则大写 md5 会每次重下。 */
+    @Test
+    void skipsDownloadWhenDeclaredMd5IsUpperCase() throws IOException {
+        assertSkipsDownload(CONTENT_MD5.toUpperCase());
+    }
+
+    private void assertSkipsDownload(String declaredMd5) throws IOException {
         Path target = tempDir.resolve("install/jars/paimon-spark-3.5-1.2.0.jar");
         Files.createDirectories(target.getParent());
         Files.write(target, CONTENT);
-        HookContext context = newContext("plugins/paimon-spark-3.5-1.2.0.jar", "jars/paimon-spark-3.5-1.2.0.jar", CONTENT_MD5);
+        HookContext context = newContext("plugins/paimon-spark-3.5-1.2.0.jar", "jars/paimon-spark-3.5-1.2.0.jar", declaredMd5);
 
         try (
                 MockedStatic<PkgInstallPathUtils> installPath = mockStatic(PkgInstallPathUtils.class);

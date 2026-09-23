@@ -23,8 +23,12 @@ log_file=$LOG_DIR/control-$role.log
 out_file=$LOG_DIR/seatunnel-$role.out
 
 mkdir -p "$PID_DIR" "$LOG_DIR"
-exec 200>"$PID_DIR/control.lock"
-flock -w 60 200 || { echo "another control.sh operation holds the lock, giving up"; exit 1; }
+# 按角色加锁：同机 master/worker 互不阻塞；status 只读不加锁。
+# 等待上限要覆盖一次完整 stop（STOP_TIMEOUT + SIGKILL 收尾），否则并发 restart 会误报失败。
+if [[ "$action" != status ]]; then
+  exec 200>"$PID_DIR/control-$role.lock"
+  flock -w $((STOP_TIMEOUT + 30)) 200 || { echo "another control.sh $role operation holds the lock, giving up"; exit 1; }
+fi
 
 log() {
   printf '%s %s\n' "$(date '+%F %T')" "$*" | tee -a "$log_file"
@@ -64,7 +68,7 @@ start() {
   local launcher_pid daemon_pid attempt
   if is_running; then
     log "SeaTunnel $role is already running as $(read_pid)"
-    return 1
+    return 0
   fi
 
   [[ -x "$HOME_DIR/bin/seatunnel-cluster.sh" ]] || { log "missing executable bin/seatunnel-cluster.sh"; return 1; }

@@ -115,7 +115,10 @@ describe('SeaTunnelJobs', () => {
         jobId: 'job-1',
         jobName: 'daily-load',
         jobStatus: 'RUNNING',
-        metrics: { readRows: '12' },
+        metrics: {
+          readRows: '12',
+          TableSourceReceivedCount: { 'db.t1': '15' },
+        },
       }),
     );
   });
@@ -187,6 +190,7 @@ describe('SeaTunnelJobs', () => {
 
     expect(getSeaTunnelJobInfo).toHaveBeenCalledWith(7, 8, 'job-1');
     expect(await screen.findByText('12')).toBeInTheDocument();
+    expect(screen.getByText('{"db.t1":"15"}')).toBeInTheDocument();
   });
 
   it('ignores an older job list response after switching states', async () => {
@@ -254,6 +258,15 @@ describe('SeaTunnelJobs', () => {
     expect(screen.getByText('作业详情：job-2')).toBeInTheDocument();
     expect(screen.getByText('fresh-detail')).toBeInTheDocument();
     expect(screen.queryByText('stale-detail')).not.toBeInTheDocument();
+  });
+
+  it('lets the user expand the pending panel when no job is queued', async () => {
+    renderVisibleTab();
+
+    const header = await screen.findByRole('button', { name: /排队作业/ });
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('renders an en dash for fields missing from Zeta responses', async () => {

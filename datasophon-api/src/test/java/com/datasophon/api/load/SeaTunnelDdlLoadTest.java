@@ -25,6 +25,7 @@ package com.datasophon.api.load;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -47,6 +48,7 @@ import com.alibaba.fastjson2.JSONObject;
 import cn.hutool.crypto.SecureUtil;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import freemarker.template.TemplateException;
 
 /**
  * SEATUNNEL 服务元数据的可渲染性校验。
@@ -77,7 +79,9 @@ class SeaTunnelDdlLoadTest {
             "${ROOT.Rustfs.__hostIp__}", "192.168.10.131",
             "${ROOT.Rustfs.__port__}", "9040",
             "${ROOT.Rustfs.access_key}", "test-ak",
-            "${ROOT.Rustfs.secret_key}", "test-sk");
+            "${ROOT.Rustfs.secret_key}", "test-sk",
+            "${GRAVITINO.GravitinoServer.__hostIp__}", "192.168.10.132",
+            "${GRAVITINO.gravitino.server.webserver.httpPort}", "8090");
 
     @Test
     void everyIncludeParamIsDeclaredAsParameter() throws Exception {
@@ -150,6 +154,37 @@ class SeaTunnelDdlLoadTest {
     }
 
     @Test
+    void lineageUrlResolvesToGravitinoWhenInstalled() throws Exception {
+        assertTrue(renderAll(loadDdl()).get("seatunnel.yaml")
+                .contains("url: http://192.168.10.132:8090/api/lineage"));
+    }
+
+    /** 实机复现：token 默认为空时渲染出 {@code auth_token: }（YAML null），SeaTunnel master 启动即 Fatal。 */
+    @Test
+    void emptyLineageTokenOmitsAuthTokenEntry() throws Exception {
+        for (String file : List.of("seatunnel-master.yaml", "seatunnel-worker.yaml", "seatunnel.yaml")) {
+            Map<?, ?> openlineage = (Map<?, ?>) ((Map<?, ?>) ((Map<?, ?>) new Yaml()
+                    .load(renderAll(loadDdl()).get(file))).get("seatunnel")).get("engine");
+            openlineage = (Map<?, ?>) openlineage.get("openlineage");
+            assertFalse(openlineage.containsKey("auth_token"), file + " 不应输出空的 auth_token");
+        }
+    }
+
+    /** DDL 不硬依赖 GRAVITINO/Rustfs：未安装时占位符留在默认值里，必须显式失败而不是把字面量写进配置。 */
+    @Test
+    void unresolvedGravitinoOrRustfsPlaceholderFailsRendering() throws Exception {
+        Map<String, String> noGravitino = new HashMap<>(CLUSTER_VARIABLES);
+        noGravitino.remove("${GRAVITINO.GravitinoServer.__hostIp__}");
+        TemplateException lineage = assertThrows(TemplateException.class, () -> renderAll(loadDdl(), noGravitino));
+        assertTrue(lineage.getMessage().contains("lineageUrl is required"));
+
+        Map<String, String> noRustfs = new HashMap<>(CLUSTER_VARIABLES);
+        noRustfs.remove("${ROOT.Rustfs.__port__}");
+        TemplateException s3 = assertThrows(TemplateException.class, () -> renderAll(loadDdl(), noRustfs));
+        assertTrue(s3.getMessage().contains("s3Endpoint is unresolved"));
+    }
+
+    @Test
     void controlScriptHookMd5MatchesTheScriptOnDisk() throws Exception {
         File script = new File(metaDir(), "script/control.sh");
         assertTrue(script.isFile(), "control.sh 缺失: " + script.getAbsolutePath());
@@ -170,6 +205,10 @@ class SeaTunnelDdlLoadTest {
 
     /** 复刻 includeParams 过滤 → defaultValue 回填 → 占位符替换 → FreeMarker 渲染。 */
     private Map<String, String> renderAll(JSONObject ddl) throws Exception {
+        return renderAll(ddl, CLUSTER_VARIABLES);
+    }
+
+    private Map<String, String> renderAll(JSONObject ddl, Map<String, String> variables) throws Exception {
         Map<String, JSONObject> parameters = ddl.getJSONArray("parameters").stream()
                 .map(JSONObject.class::cast)
                 .collect(Collectors.toMap(p -> p.getString("name"), p -> p, (a, b) -> a, LinkedHashMap::new));
@@ -188,7 +227,7 @@ class SeaTunnelDdlLoadTest {
                 }
                 // ServiceInstallServiceImpl#applyDefaultValues: value 为空时回落 defaultValue
                 Object value = parameter.get("value") != null ? parameter.get("value") : parameter.get("defaultValue");
-                data.put(name, resolvePlaceholders(String.valueOf(value)));
+                data.put(name, resolvePlaceholders(String.valueOf(value), variables));
             }
             Template template = config.getTemplate(generator.getString("templateName"));
             StringWriter out = new StringWriter();
@@ -198,9 +237,9 @@ class SeaTunnelDdlLoadTest {
         return rendered;
     }
 
-    private static String resolvePlaceholders(String value) {
+    private static String resolvePlaceholders(String value, Map<String, String> variables) {
         String resolved = value;
-        for (Map.Entry<String, String> variable : CLUSTER_VARIABLES.entrySet()) {
+        for (Map.Entry<String, String> variable : variables.entrySet()) {
             resolved = resolved.replace(variable.getKey(), variable.getValue());
         }
         return resolved;

@@ -41,6 +41,12 @@ function display(value?: string | null) {
   return value == null || value === '' ? '–' : value;
 }
 
+function metricText(value: unknown) {
+  return value != null && typeof value === 'object'
+    ? JSON.stringify(value)
+    : display(value == null ? null : String(value));
+}
+
 function responseData<T>(
   response: DATASOPHON.ApiResponse<T>,
   fallback: string,
@@ -275,7 +281,9 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
           </div>
         </Card>
         <Collapse
-          activeKey={hasPendingJobs ? ['pending'] : []}
+          // 有无排队作业切换时重挂载以重新决定默认展开，其余时间由用户自由折叠
+          key={String(hasPendingJobs)}
+          defaultActiveKey={hasPendingJobs ? ['pending'] : []}
           items={[
             {
               key: 'pending',
@@ -353,7 +361,7 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
               {Object.entries(jobInfo.metrics ?? {}).length > 0 ? (
                 Object.entries(jobInfo.metrics ?? {}).map(([name, value]) => (
                   <Descriptions.Item key={name} label={name}>
-                    {display(value)}
+                    {metricText(value)}
                   </Descriptions.Item>
                 ))
               ) : (

@@ -46,6 +46,6 @@ class SeaTunnelJobControllerTest {
         SeaTunnelJobController controller = new SeaTunnelJobController(service, guard);
 
         assertThatThrownBy(() -> controller.overview(7, 8)).isSameAs(forbidden);
-        verify(service, never()).overview(7);
+        verify(service, never()).overview(7, 8);
     }
 }

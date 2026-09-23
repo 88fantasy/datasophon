@@ -221,7 +221,7 @@ class OtelAlertSchedulerTest {
         assertThat(query.calls).containsExactlyInAnyOrder(
                 new QueryCall("instant", "up", "^SeaTunnelMaster$", Map.of(), null),
                 new QueryCall("instant", "up", "^SeaTunnelWorker$", Map.of(), null),
-                new QueryCall("range", "job_count", "^SeaTunnelMaster$", Map.of("type", "failed"), "5m"));
+                new QueryCall("range", "job_count", "^SeaTunnelMaster$", Map.of("type", "failed"), null));
     }
 
     /**
@@ -275,7 +275,8 @@ class OtelAlertSchedulerTest {
                 "instance", "master-1:8080", "job", "SeaTunnelMaster", "type", "failed");
         Map<String, String> newMaster = Map.of(
                 "instance", "master-2:8080", "job", "SeaTunnelMaster", "type", "failed");
-        query.rangeByMetric.put("job_count", matrix(series(oldMaster), series(newMaster)));
+        // 新 master 只有一个基线样本，窗口内无增量
+        query.rangeByMetric.put("job_count", matrix(series(oldMaster), series(newMaster, point(100, "3.0"))));
         List<String> alerts = new ArrayList<>();
         OtelAlertScheduler scheduler = scheduler(query, alerts, List.of(quota(
                 "SeaTunnel作业失败", "SEATUNNEL", "job_count", AlertLevel.EXCEPTION,
@@ -283,12 +284,11 @@ class OtelAlertSchedulerTest {
 
         scheduler.checkMetricRules();
 
-        String rateSql = OtelMetricsQueryService.buildRangeRateSql(
-                true, true, Map.of("type", "failed"), null, List.of(), "otel_metrics_gauge");
-        assertThat(rateSql).contains("LAG(value) OVER(PARTITION BY instance, job, series_key ORDER BY ts)");
         assertThat(alerts).isEmpty();
 
-        query.rangeByMetric.put("job_count", matrix(series(newMaster, point(160, "1.0"))));
+        // 失败发生在较早的桶，最新桶已持平：rate 口径下这里为 0 会漏报，增量口径必须仍然告警
+        query.rangeByMetric.put("job_count", matrix(series(newMaster,
+                point(100, "3.0"), point(160, "4.0"), point(220, "4.0"))));
         scheduler.checkMetricRules();
 
         assertThat(alerts).singleElement().asString()

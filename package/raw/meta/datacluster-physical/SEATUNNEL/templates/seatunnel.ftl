@@ -1,3 +1,5 @@
+<#-- 占位符未解析（平台未配置 Rustfs）时直接失败，避免把字面量 ${...} 写进配置 -->
+<#if s3Endpoint?contains(r"${")><#stop "s3Endpoint is unresolved: ${s3Endpoint}"></#if>
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -50,15 +52,19 @@ seatunnel:
       port: <#if workerHttpPort??>${workerHttpPort}<#else>${masterHttpPort}</#if>
       enable-dynamic-port: false
     <#if lineageEnabled?string == "true">
-    <#if (lineageUrl!"")?trim?has_content>
+    <#-- DDL 不硬依赖 GRAVITINO：未安装时默认值里的占位符解析不了，按未配置处理 -->
+    <#if (lineageUrl!"")?trim?has_content && !lineageUrl?contains(r"${")>
     openlineage:
       enabled: ${lineageEnabled?string}
       url: ${lineageUrl}
       transport: http
+      <#-- 空值会渲染成 YAML null，SeaTunnel 启动即 Fatal（InvalidConfigurationException）；未配置 token 时整行省略 -->
+      <#if (lineageToken!"")?has_content>
       auth_token: ${lineageToken}
+      </#if>
       namespace: ${clusterName}
       job_name_per_output: true
     <#else>
-    <#stop "lineageUrl is required when lineageEnabled is true">
+    <#stop "lineageUrl is required when lineageEnabled is true (install GRAVITINO or set lineageUrl, or disable lineage)">
     </#if>
     </#if>

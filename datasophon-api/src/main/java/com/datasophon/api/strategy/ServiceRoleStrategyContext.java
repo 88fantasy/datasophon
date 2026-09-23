@@ -49,6 +49,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("ElasticSearch", new ElasticSearchHandlerStrategy());
         strategyMap.put("SeaTunnelMaster", new SeaTunnelMasterHandlerStrategy());
         strategyMap.put("SeaTunnelWorker", new SeaTunnelWorkerHandlerStrategy());
+        strategyMap.put("SEATUNNEL", new SeaTunnelHandlerStrategy());
         strategyMap.put("KyuubiServer", new KyuubiServerHandlerStrategy());
         strategyMap.put("RANGER", new RangerAdminHandlerStrategy());
         strategyMap.put("ZOOKEEPER", new ZkServerHandlerStrategy());

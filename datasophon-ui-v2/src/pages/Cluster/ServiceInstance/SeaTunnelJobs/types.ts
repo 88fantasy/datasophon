@@ -38,5 +38,6 @@ export interface SeaTunnelPendingJobs {
 }
 
 export interface SeaTunnelJobInfo extends SeaTunnelJob {
-  metrics?: Record<string, string | null | undefined> | null;
+  // 表级指标（TableSourceReceivedCount 等）是 { 表名: 值 } 形式的嵌套对象
+  metrics?: Record<string, unknown> | null;
 }

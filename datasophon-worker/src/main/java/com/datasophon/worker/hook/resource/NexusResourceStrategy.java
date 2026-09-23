@@ -54,11 +54,11 @@ public class NexusResourceStrategy implements HookAction {
         String toPath = PlaceholderUtils.replacePlaceholders(to, variables, Constants.REGEX_VARIABLE);
         String targetPath = toPath.startsWith("/") ? toPath : PathUtils.join(basePath, toPath).toString();
         File targetFile = new File(targetPath);
-        if (targetFile.exists() && FileUtils.md5(targetFile).equals(md5)) {
-            logger.info("资源 {} 已经存在, 无需下载", targetPath);
-            return ExecResult.success();
-        }
         try {
+            if (md5 != null && targetFile.isFile() && md5.equalsIgnoreCase(FileUtils.md5(targetFile))) {
+                logger.info("资源 {} 已经存在, 无需下载", targetPath);
+                return ExecResult.success();
+            }
             PackageStorage storage = StorageUtils.getPackageStorage();
             DownloadResult result = storage.downloadResourceToLocal(fromPath);
             String actualMd5 = FileUtils.md5(new File(result.getTarget()));

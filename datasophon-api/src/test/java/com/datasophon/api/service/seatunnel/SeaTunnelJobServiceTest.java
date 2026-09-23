@@ -28,11 +28,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
+import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ServiceInstancePortResolver;
 import com.datasophon.api.service.ServiceInstancePortResolver.RolePort;
+import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
 import java.io.IOException;
@@ -61,7 +64,7 @@ class SeaTunnelJobServiceTest {
             Fixture fixture = fixture(List.of(master(1, "127.0.0.1"), master(2, "127.0.0.1")),
                     Map.of(1, refusedPort, 2, second.port()));
 
-            JSONObject result = (JSONObject) fixture.service.overview(7);
+            JSONObject result = (JSONObject) fixture.service.overview(7, 8);
 
             assertThat(result.getString("source")).isEqualTo("second");
         }
@@ -78,7 +81,7 @@ class SeaTunnelJobServiceTest {
             Fixture fixture = fixture(List.of(master(1, "127.0.0.1"), master(2, "127.0.0.1")),
                     Map.of(1, first.port(), 2, second.port()));
 
-            JSONObject result = (JSONObject) fixture.service.overview(7);
+            JSONObject result = (JSONObject) fixture.service.overview(7, 8);
 
             assertThat(firstRequests).hasValue(1);
             assertThat(result.getString("source")).isEqualTo("second");
@@ -92,7 +95,7 @@ class SeaTunnelJobServiceTest {
         Fixture fixture = fixture(List.of(master(1, "127.0.0.1"), master(2, "127.0.0.1")),
                 Map.of(1, firstPort, 2, secondPort));
 
-        assertThatThrownBy(() -> fixture.service.overview(7))
+        assertThatThrownBy(() -> fixture.service.overview(7, 8))
                 .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
                     assertThat(exception.getStatusCode()).isEqualTo(BAD_GATEWAY);
                     assertThat(exception.getReason()).isEqualTo(
@@ -109,7 +112,7 @@ class SeaTunnelJobServiceTest {
         try (TestServer server = new TestServer(responding(200, body))) {
             Fixture fixture = fixture(List.of(master(1, "127.0.0.1")), Map.of(1, server.port()));
 
-            JSONObject result = (JSONObject) fixture.service.overview(7);
+            JSONObject result = (JSONObject) fixture.service.overview(7, 8);
 
             assertThat(result).containsEntry("projectVersion", "3.0.0")
                     .containsEntry("gitCommitAbbrev", "abc123")
@@ -130,11 +133,11 @@ class SeaTunnelJobServiceTest {
         })) {
             Fixture fixture = fixture(List.of(master(1, "127.0.0.1")), Map.of(1, server.port()));
 
-            fixture.service.workers(7);
-            fixture.service.pending(7);
-            fixture.service.jobs(7, "running");
-            fixture.service.jobs(7, "finished");
-            fixture.service.jobInfo(7, "job/1");
+            fixture.service.workers(7, 8);
+            fixture.service.pending(7, 8);
+            fixture.service.jobs(7, 8, "running");
+            fixture.service.jobs(7, 8, "finished");
+            fixture.service.jobInfo(7, 8, "job/1");
 
             assertThat(paths).containsExactly(
                     "/resource/workers", "/pending-jobs", "/running-jobs", "/finished-jobs", "/job-info/job%2F1");
@@ -153,13 +156,33 @@ class SeaTunnelJobServiceTest {
             Fixture fixture = fixture(List.of(master(1, "127.0.0.1"), master(2, "127.0.0.1")),
                     Map.of(1, first.port(), 2, second.port()));
 
-            assertThatThrownBy(() -> fixture.service.jobInfo(7, "missing"))
+            assertThatThrownBy(() -> fixture.service.jobInfo(7, 8, "missing"))
                     .isInstanceOfSatisfying(ResponseStatusException.class, exception -> {
                         assertThat(exception.getStatusCode()).isEqualTo(NOT_FOUND);
                         assertThat(exception.getReason()).isEqualTo("missing job");
                     });
             assertThat(secondRequests).hasValue(0);
         }
+    }
+
+    @Test
+    void rejectsInstanceFromOtherClusterOrServiceBeforeCallingMasters() {
+        Fixture fixture = fixture(List.of(master(1, "127.0.0.1")), Map.of());
+
+        for (int instanceId : new int[]{9, 10, 404}) {
+            assertThatThrownBy(() -> fixture.service.overview(7, instanceId))
+                    .isInstanceOfSatisfying(ResponseStatusException.class,
+                            exception -> assertThat(exception.getStatusCode()).isEqualTo(BAD_REQUEST));
+        }
+    }
+
+    @Test
+    void reportsNotFoundWhenClusterHasNoMaster() {
+        Fixture fixture = fixture(List.of(), Map.of());
+
+        assertThatThrownBy(() -> fixture.service.overview(7, 8))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        exception -> assertThat(exception.getStatusCode()).isEqualTo(NOT_FOUND));
     }
 
     @Test
@@ -181,7 +204,18 @@ class SeaTunnelJobServiceTest {
             Integer port = ports.get(role.getId());
             return port == null ? List.of() : List.of(new RolePort("masterHttpPort", "HTTP", port));
         });
-        return new Fixture(new SeaTunnelJobService(roleService, portResolver));
+        ClusterServiceInstanceService instanceService = mock(ClusterServiceInstanceService.class);
+        when(instanceService.getById(8)).thenReturn(instance(7, "SEATUNNEL"));
+        when(instanceService.getById(9)).thenReturn(instance(7, "DORIS"));
+        when(instanceService.getById(10)).thenReturn(instance(99, "SEATUNNEL"));
+        return new Fixture(new SeaTunnelJobService(instanceService, roleService, portResolver));
+    }
+
+    private static ClusterServiceInstanceEntity instance(int clusterId, String serviceName) {
+        ClusterServiceInstanceEntity instance = new ClusterServiceInstanceEntity();
+        instance.setClusterId(clusterId);
+        instance.setServiceName(serviceName);
+        return instance;
     }
 
     private static ClusterServiceRoleInstanceEntity master(int id, String hostname) {

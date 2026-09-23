@@ -1,3 +1,5 @@
+<#-- 占位符未解析（平台未配置 Rustfs）时直接失败，避免把字面量 ${...} 写进配置 -->
+<#if s3Endpoint?contains(r"${")><#stop "s3Endpoint is unresolved: ${s3Endpoint}"></#if>
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
