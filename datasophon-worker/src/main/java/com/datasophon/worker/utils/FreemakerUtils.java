@@ -78,9 +78,9 @@ public class FreemakerUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(FreemakerUtils.class);
 
-    // 匹配含 PASSWORD / SECRET 的 properties 或 YAML 行，日志脱敏用
+    // 匹配含 PASSWORD / SECRET / ACCESS_KEY 的 properties 或 YAML 行，日志脱敏用
     private static final Pattern CREDENTIAL_LINE =
-            Pattern.compile("(?im)^([^=:\n]*(?:PASSWORD|SECRET)[^=:\n]*[:=]\\s*)(.+)$");
+            Pattern.compile("(?im)^([^=:\n]*(?:PASSWORD|SECRET|ACCESS[._-]?KEY)[^=:\n]*[:=]\\s*)(.+)$");
 
     static String redactSecrets(String content) {
         return CREDENTIAL_LINE.matcher(content).replaceAll("$1<redacted>");
