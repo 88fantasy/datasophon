@@ -59,12 +59,6 @@ export const SEGMENT_PANEL_IDS: Record<SeaTunnelDashboardSegment, string[]> = {
 
 export const CLUSTER_PANEL_IDS = ['ST-M02', 'ST-M03', 'ST-M04', 'ST-M05'];
 
-export function getSeaTunnelSegmentPanelIds(
-  segment: SeaTunnelDashboardSegment,
-): string[] {
-  return SEGMENT_PANEL_IDS[segment];
-}
-
 export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   'ST-M01': { type: 'node-count', roleName: 'SeaTunnelMaster' },
   'ST-M02': {

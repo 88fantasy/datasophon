@@ -165,6 +165,21 @@ describe('SeaTunnelJobs', () => {
     });
   });
 
+  it('starts requesting data when its tab becomes visible', async () => {
+    const { container } = render(
+      <div role="tabpanel" aria-hidden="true">
+        <SeaTunnelJobs clusterId={7} instanceId={8} />
+      </div>,
+    );
+    expect(getSeaTunnelOverview).not.toHaveBeenCalled();
+
+    act(() => {
+      container.firstElementChild?.setAttribute('aria-hidden', 'false');
+    });
+
+    await waitFor(() => expect(getSeaTunnelOverview).toHaveBeenCalledTimes(1));
+  });
+
   it('loads the selected job into the details drawer', async () => {
     renderVisibleTab();
 
@@ -251,8 +266,10 @@ describe('SeaTunnelJobs', () => {
 
     const workerTable = await screen.findByTestId('seatunnel-workers-table');
     const jobsTable = screen.getByTestId('seatunnel-jobs-table');
-    expect(within(workerTable).getAllByRole('row')[1]).toHaveTextContent('–');
-    expect(within(jobsTable).getAllByRole('row')[1]).toHaveTextContent('–');
-    expect(screen.getByTestId('seatunnel-total-slot')).toHaveTextContent('–');
+    await waitFor(() => {
+      expect(within(workerTable).getAllByRole('row')[1]).toHaveTextContent('–');
+      expect(within(jobsTable).getAllByRole('row')[1]).toHaveTextContent('–');
+      expect(screen.getByTestId('seatunnel-total-slot')).toHaveTextContent('–');
+    });
   });
 });

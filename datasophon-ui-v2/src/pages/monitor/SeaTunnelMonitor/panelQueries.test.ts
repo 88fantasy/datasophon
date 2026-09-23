@@ -22,7 +22,6 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  getSeaTunnelSegmentPanelIds,
   PANEL_QUERIES,
   SEGMENT_PANEL_IDS,
   type SeaTunnelDashboardSegment,
@@ -68,7 +67,6 @@ describe('SeaTunnel panel descriptors', () => {
     [SeaTunnelDashboardSegment, string[]]
   >)('%s segment contains only its specified panels', (segment, expectedIds) => {
     expect(SEGMENT_PANEL_IDS[segment]).toEqual(expectedIds);
-    expect(getSeaTunnelSegmentPanelIds(segment)).toEqual(expectedIds);
   });
 
   it('keeps every sum-table metric name suffixed with _total', () => {

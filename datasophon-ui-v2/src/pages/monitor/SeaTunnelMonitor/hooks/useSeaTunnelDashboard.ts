@@ -26,9 +26,9 @@ import type { TimeSeriesPoint } from '../../_shared/types';
 import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
 import {
   CLUSTER_PANEL_IDS,
-  getSeaTunnelSegmentPanelIds,
   PANEL_QUERIES,
   SEATUNNEL_JOB_BY_SEGMENT,
+  SEGMENT_PANEL_IDS,
   type SeaTunnelDashboardSegment,
 } from '../panelQueries';
 
@@ -80,10 +80,7 @@ export function useSeaTunnelDashboard({
     };
   }, [clusterId, job, refreshKey]);
 
-  const segmentPanelIds = useMemo(
-    () => getSeaTunnelSegmentPanelIds(activeSegment),
-    [activeSegment],
-  );
+  const segmentPanelIds = SEGMENT_PANEL_IDS[activeSegment];
   const clusterPanelIds = useMemo(
     () => segmentPanelIds.filter((id) => CLUSTER_PANEL_IDS.includes(id)),
     [segmentPanelIds],

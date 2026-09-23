@@ -14,6 +14,7 @@ import {
 } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getApiFailureMessage } from '@/utils/apiResponse';
+import { useTabPanelActive } from '../useTabPanelActive';
 import {
   getSeaTunnelJobInfo,
   getSeaTunnelJobs,
@@ -35,35 +36,6 @@ interface SeaTunnelJobsProps {
 }
 
 const POLL_INTERVAL_MS = 10_000;
-
-function useTabPanelActive() {
-  const anchorRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    const panel = anchorRef.current?.closest<HTMLElement>('[role="tabpanel"]');
-    if (!panel) {
-      setActive(true);
-      return;
-    }
-
-    const update = () => {
-      setActive(
-        panel.getAttribute('aria-hidden') !== 'true' &&
-          !panel.classList.contains('ant-tabs-tabpane-hidden'),
-      );
-    };
-    update();
-    const observer = new MutationObserver(update);
-    observer.observe(panel, {
-      attributes: true,
-      attributeFilter: ['aria-hidden', 'class'],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  return { anchorRef, active };
-}
 
 function display(value?: string | null) {
   return value == null || value === '' ? '–' : value;
@@ -148,7 +120,7 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
     { title: t('job.createTime'), dataIndex: 'createTime', render: display },
     { title: t('job.finishTime'), dataIndex: 'finishTime', render: display },
   ];
-  const { anchorRef, active: tabActive } = useTabPanelActive();
+  const { anchorRef, active: tabActive } = useTabPanelActive(false);
   const [jobState, setJobState] = useState<SeaTunnelJobState>('running');
   const [overview, setOverview] = useState<SeaTunnelOverview>();
   const [workers, setWorkers] = useState<SeaTunnelWorker[]>([]);

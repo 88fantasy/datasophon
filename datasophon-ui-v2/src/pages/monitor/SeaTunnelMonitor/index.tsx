@@ -38,9 +38,9 @@ import TimeSeriesPanel, {
 } from '../_shared/panels/TimeSeriesPanel';
 import { useSeaTunnelDashboard } from './hooks/useSeaTunnelDashboard';
 import {
-  getSeaTunnelSegmentPanelIds,
   PANEL_QUERIES,
   SEATUNNEL_JOB_BY_SEGMENT,
+  SEGMENT_PANEL_IDS,
   type SeaTunnelDashboardSegment,
 } from './panelQueries';
 
@@ -102,7 +102,7 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
       clusterId,
       refreshKey,
     });
-  const panelIds = getSeaTunnelSegmentPanelIds(activeSegment);
+  const panelIds = SEGMENT_PANEL_IDS[activeSegment];
 
   return (
     <MonitorDashboardLayout
