@@ -178,6 +178,7 @@
         "includeParams": [
           "jobmanager.memory.process.size",
           "taskmanager.memory.process.size",
+          "env.java.opts.all",
           "state.backend",
           "state.checkpoints.dir",
           "state.savepoints.dir",
@@ -218,6 +219,17 @@
       "type": "input",
       "defaultValue": "1728m",
       "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "name": "env.java.opts.all",
+      "description": "Flink 1.18+ 在 Java 11/17 下所需的模块开放参数。缺失时 Flink 与 Kryo 反射 JDK 内部类会抛 InaccessibleObjectException，作业无法运行（SeaTunnel on Flink 场景下客户端与 TaskManager 两处均会触发）。取值与 Flink 官方默认一致，打头的 -XX:+IgnoreUnrecognizedVMOptions 用于跨 JDK 版本兜底，不要删。",
+      "label": "JVM 模块开放参数",
+      "hidden": false,
+      "required": false,
+      "type": "input",
+      "defaultValue": "-XX:+IgnoreUnrecognizedVMOptions --add-exports=java.base/sun.net.util=ALL-UNNAMED --add-exports=java.base/java.lang.invoke=ALL-UNNAMED --add-exports=java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED",
+      "configurableInWizard": false,
       "register": false
     },
     {
