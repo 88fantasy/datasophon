@@ -2,7 +2,7 @@
   "name": "SEATUNNEL",
   "type": "MIDDLEWARE",
   "label": "SeaTunnel",
-  "description": "本地 fork 88fantasy/seatunnel，bcdc44af1 构建，Zeta 引擎",
+  "description": "本地 fork 88fantasy/seatunnel，d030eb5af 构建，Zeta 引擎",
   "sortNum": 8,
   "version": "3.0.0-SNAPSHOT",
   "createDecompressDir": false,
@@ -109,7 +109,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
-            "md5": "798bad6cb5a10c7f93b0bf2096aa00ba"
+            "md5": "c776e856045444ddbaf7640f2f4fad39"
           }
         },
         {
@@ -118,7 +118,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "b369c4e9654f52d264be66a4972371f2"
+            "md5": "71babba08936af22ca7fe385d2d0e439"
           }
         },
         {
@@ -127,7 +127,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
-            "md5": "050fdcafa267457a2f576477a9687f66"
+            "md5": "7455d56ffbd4354c495a71099d5d25ad"
           }
         },
         {
@@ -221,7 +221,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
-            "md5": "798bad6cb5a10c7f93b0bf2096aa00ba"
+            "md5": "c776e856045444ddbaf7640f2f4fad39"
           }
         },
         {
@@ -230,7 +230,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "b369c4e9654f52d264be66a4972371f2"
+            "md5": "71babba08936af22ca7fe385d2d0e439"
           }
         },
         {
@@ -239,7 +239,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
-            "md5": "050fdcafa267457a2f576477a9687f66"
+            "md5": "7455d56ffbd4354c495a71099d5d25ad"
           }
         },
         {
@@ -278,7 +278,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-jdbc-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-jdbc-3.0.0-SNAPSHOT.jar",
-            "md5": "798bad6cb5a10c7f93b0bf2096aa00ba"
+            "md5": "c776e856045444ddbaf7640f2f4fad39"
           }
         },
         {
@@ -287,7 +287,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-cdc-mysql-3.0.0-SNAPSHOT.jar",
-            "md5": "b369c4e9654f52d264be66a4972371f2"
+            "md5": "71babba08936af22ca7fe385d2d0e439"
           }
         },
         {
@@ -296,7 +296,7 @@
           "params": {
             "from": "plugins/seatunnel/connector-doris-3.0.0-SNAPSHOT.jar",
             "to": "connectors/connector-doris-3.0.0-SNAPSHOT.jar",
-            "md5": "050fdcafa267457a2f576477a9687f66"
+            "md5": "7455d56ffbd4354c495a71099d5d25ad"
           }
         },
         {
@@ -319,7 +319,7 @@
         "outputDirectory": "config",
         "templateName": "seatunnel.ftl",
         "includeParams": [
-          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "masterHttpPort"
+          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "masterHttpPort", "clusterName", "lineageEnabled", "lineageUrl", "lineageToken"
         ]
       },
       {
@@ -328,7 +328,7 @@
         "outputDirectory": "config",
         "templateName": "seatunnel.ftl",
         "includeParams": [
-          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "workerHttpPort"
+          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "workerHttpPort", "clusterName", "lineageEnabled", "lineageUrl", "lineageToken"
         ]
       },
       {
@@ -382,7 +382,7 @@
         "outputDirectory": "config",
         "templateName": "seatunnel.ftl",
         "includeParams": [
-          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "masterHttpPort"
+          "historyJobExpireMinutes", "checkpointInterval", "checkpointTimeout", "stateBucket", "s3Endpoint", "s3AccessKey", "s3SecretKey", "masterHttpPort", "clusterName", "lineageEnabled", "lineageUrl", "lineageToken"
         ]
       }
     ]
@@ -611,6 +611,45 @@
       "type": "input",
       "defaultValue": "${SEATUNNEL.workerMembers}",
       "configurableInWizard": false,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "lineageEnabled",
+      "description": "是否启用 OpenLineage 血缘上报",
+      "label": "启用 OpenLineage",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "lineageUrl",
+      "description": "Gravitino OpenLineage 接收端点",
+      "label": "OpenLineage URL",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "http://${ROOT.GRAVITINO.__hostIp__}:${ROOT.GRAVITINO.__port__}/api/lineage",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "lineageToken",
+      "description": "Gravitino 静态 JWT；只在集群配置中设置，不要写入作业 env",
+      "label": "OpenLineage Token",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "password",
+      "defaultValue": "",
+      "configurableInWizard": true,
       "register": false
     }
   ]

@@ -49,3 +49,16 @@ seatunnel:
       enable-http: true
       port: <#if workerHttpPort??>${workerHttpPort}<#else>${masterHttpPort}</#if>
       enable-dynamic-port: false
+    <#if lineageEnabled?string == "true">
+    <#if (lineageUrl!"")?trim?has_content>
+    openlineage:
+      enabled: ${lineageEnabled?string}
+      url: ${lineageUrl}
+      transport: http
+      auth_token: ${lineageToken}
+      namespace: ${clusterName}
+      job_name_per_output: true
+    <#else>
+    <#stop "lineageUrl is required when lineageEnabled is true">
+    </#if>
+    </#if>
