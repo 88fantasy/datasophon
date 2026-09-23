@@ -9,6 +9,20 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SeaTunnelJobs from './index';
 
+const locale = vi.hoisted(() => ({ language: 'zh-CN' }));
+
+vi.mock('@umijs/max', async () => {
+  const zh = (await import('@/locales/zh-CN/seaTunnel')).default;
+  const en = (await import('@/locales/en-US/seaTunnel')).default;
+  const intl = {
+    formatMessage: ({ id }: { id: string }, values?: Record<string, string>) =>
+      ((locale.language === 'en-US' ? en : zh) as Record<string, string>)[
+        id
+      ]?.replace(/\{(\w+)\}/g, (_, key) => values?.[key] ?? '') ?? id,
+  };
+  return { useIntl: () => intl };
+});
+
 const {
   getSeaTunnelOverview,
   getSeaTunnelWorkers,
@@ -51,6 +65,7 @@ function renderVisibleTab() {
 
 describe('SeaTunnelJobs', () => {
   beforeEach(() => {
+    locale.language = 'zh-CN';
     vi.clearAllMocks();
     getSeaTunnelOverview.mockResolvedValue(
       apiResponse({
@@ -111,6 +126,14 @@ describe('SeaTunnelJobs', () => {
     expect(await screen.findByText('3.0.0')).toBeInTheDocument();
     expect(screen.getByText('动态 slot 模式')).toBeInTheDocument();
     expect(container.textContent?.toLowerCase()).not.toMatch(/free|unassigned/);
+  });
+
+  it('renders English labels in en-US', async () => {
+    locale.language = 'en-US';
+    renderVisibleTab();
+
+    expect(await screen.findByText('Dynamic slot mode')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Finished' })).toBeInTheDocument();
   });
 
   it('shows the all-masters-unavailable message verbatim', async () => {

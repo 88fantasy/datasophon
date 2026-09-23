@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+import { useIntl } from '@umijs/max';
 import { Alert, Row, Select, Tabs } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import { formatBytes, formatCompact } from '../_shared/charts/formatters';
@@ -44,23 +45,23 @@ import {
 } from './panelQueries';
 
 const PANEL_TITLES: Record<string, string> = {
-  'ST-M01': 'Master 节点数',
-  'ST-M02': '运行中作业数（集群级）',
-  'ST-M03': '作业状态分布（集群级）',
-  'ST-M04': '作业线程池（集群级）',
-  'ST-M05': 'slot 申请速率（集群级）',
-  'ST-W01': 'Worker 节点数',
-  'ST-W02': '指标上报结果/s',
-  'ST-W03': '上报延迟（ms）',
-  'ST-C01': 'Hazelcast 成员数',
-  'ST-C02': '集群分区安全',
-  'ST-C03': 'executor 队列积压',
-  'ST-C04': '堆内存',
-  'ST-C05': '非堆与 Direct',
-  'ST-C06': 'GC 次数/s',
-  'ST-C07': 'GC 耗时（ms/s）',
-  'ST-C08': '线程',
-  'ST-C09': 'CPU（核）',
+  'ST-M01': 'masterNodes',
+  'ST-M02': 'runningJobs',
+  'ST-M03': 'jobStates',
+  'ST-M04': 'jobThreadPool',
+  'ST-M05': 'slotRequestRate',
+  'ST-W01': 'workerNodes',
+  'ST-W02': 'metricReports',
+  'ST-W03': 'reportLatency',
+  'ST-C01': 'hazelcastMembers',
+  'ST-C02': 'partitionSafety',
+  'ST-C03': 'executorQueue',
+  'ST-C04': 'heapMemory',
+  'ST-C05': 'nonHeapDirect',
+  'ST-C06': 'gcCount',
+  'ST-C07': 'gcTime',
+  'ST-C08': 'threads',
+  'ST-C09': 'cpuCores',
 };
 
 export interface SeaTunnelDashboardProps {
@@ -72,6 +73,9 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
   clusterId,
   embedded = false,
 }) => {
+  const intl = useIntl();
+  const t = (key: string) =>
+    intl.formatMessage({ id: `pages.seatunnelMonitor.${key}` });
   const [activeSegment, setActiveSegment] =
     useState<SeaTunnelDashboardSegment>('master');
   const [selectedInstances, setSelectedInstances] = useState<string[]>([]);
@@ -102,7 +106,7 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
 
   return (
     <MonitorDashboardLayout
-      title="SeaTunnel 监控"
+      title={t('title')}
       embedded={embedded}
       toolbar={
         <DashboardToolbar
@@ -114,7 +118,7 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
         >
           <Select
             mode="multiple"
-            placeholder="实例"
+            placeholder={t('instance')}
             value={selectedInstances}
             onChange={setSelectedInstances}
             options={instances.map((value) => ({ label: value, value }))}
@@ -146,7 +150,10 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
         <Alert
           type="warning"
           showIcon
-          message={`部分面板加载失败：${failedPanelIds.join(', ')}`}
+          message={intl.formatMessage(
+            { id: 'pages.seatunnelMonitor.partialFailure' },
+            { panels: failedPanelIds.join(', ') },
+          )}
           style={{ marginBottom: 16 }}
         />
       )}
@@ -168,7 +175,7 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
               </PanelCol>,
               <PanelCol span={8} key="ST-C10-FD">
                 <TimeSeriesPanel
-                  title="FD 数量"
+                  title={t('fileDescriptors')}
                   data={panelData.filter(
                     (point) => baseSeriesLabel(point.series) !== 'RSS',
                   )}
@@ -185,12 +192,12 @@ const SeaTunnelDashboard: FC<SeaTunnelDashboardProps> = ({
             <PanelCol span={8} key={panelId}>
               {isStat ? (
                 <StatPanel
-                  title={PANEL_TITLES[panelId]}
+                  title={t(`panel.${PANEL_TITLES[panelId]}`)}
                   value={instant[panelId] ?? Number.NaN}
                 />
               ) : (
                 <TimeSeriesPanel
-                  title={PANEL_TITLES[panelId]}
+                  title={t(`panel.${PANEL_TITLES[panelId]}`)}
                   data={panelData}
                   yFormatter={
                     panelId === 'ST-C04' || panelId === 'ST-C05'

@@ -1,3 +1,4 @@
+import { useIntl } from '@umijs/max';
 import type { TableColumnsType } from 'antd';
 import {
   Alert,
@@ -78,7 +79,7 @@ function responseData<T>(
   return response.data;
 }
 
-function errorMessage(error: unknown) {
+function errorMessage(error: unknown, fallback: string) {
   if (error != null && typeof error === 'object') {
     const value = error as {
       data?: unknown;
@@ -95,7 +96,7 @@ function errorMessage(error: unknown) {
     if (typeof value.message === 'string' && value.message)
       return value.message;
   }
-  return 'SeaTunnel 作业数据加载失败';
+  return fallback;
 }
 
 const overviewFields: Array<{
@@ -103,45 +104,50 @@ const overviewFields: Array<{
   label: string;
   testId?: string;
 }> = [
-  { key: 'projectVersion', label: '集群版本' },
-  { key: 'gitCommitAbbrev', label: 'Git Commit' },
-  { key: 'totalSlot', label: '总 slot', testId: 'seatunnel-total-slot' },
-  { key: 'runningJobs', label: '运行中作业' },
-  { key: 'finishedJobs', label: '已完成作业' },
-  { key: 'failedJobs', label: '失败作业' },
-  { key: 'pendingJobs', label: '排队作业' },
-  { key: 'cancelledJobs', label: '已取消作业' },
-  { key: 'workers', label: 'Worker' },
-];
-
-const workerColumns: TableColumnsType<SeaTunnelWorker> = [
-  { title: 'Worker 地址', dataIndex: 'address', render: display },
-  { title: '已用 slot', dataIndex: 'usedSlots', render: display },
-  { title: '总 slot', dataIndex: 'totalSlots', render: display },
+  { key: 'projectVersion', label: 'overview.projectVersion' },
+  { key: 'gitCommitAbbrev', label: 'overview.gitCommitAbbrev' },
   {
-    title: '运行中 Job ID',
-    dataIndex: 'runningJobIds',
-    render: (ids?: string[] | null) => (ids?.length ? ids.join(', ') : '–'),
+    key: 'totalSlot',
+    label: 'overview.totalSlot',
+    testId: 'seatunnel-total-slot',
   },
-  {
-    title: '堆内存（字节）',
-    dataIndex: 'totalHeapMemoryBytes',
-    render: display,
-  },
-];
-
-const jobColumns: TableColumnsType<SeaTunnelJobInfo> = [
-  { title: '作业 ID', dataIndex: 'jobId', render: display },
-  { title: '作业名称', dataIndex: 'jobName', render: display },
-  { title: '状态', dataIndex: 'jobStatus', render: display },
-  { title: '提交时间', dataIndex: 'createTime', render: display },
-  { title: '完成时间', dataIndex: 'finishTime', render: display },
+  { key: 'runningJobs', label: 'overview.runningJobs' },
+  { key: 'finishedJobs', label: 'overview.finishedJobs' },
+  { key: 'failedJobs', label: 'overview.failedJobs' },
+  { key: 'pendingJobs', label: 'overview.pendingJobs' },
+  { key: 'cancelledJobs', label: 'overview.cancelledJobs' },
+  { key: 'workers', label: 'overview.workers' },
 ];
 
 const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
   clusterId,
   instanceId,
 }) => {
+  const intl = useIntl();
+  const t = (key: string) =>
+    intl.formatMessage({ id: `pages.seatunnelJobs.${key}` });
+  const workerColumns: TableColumnsType<SeaTunnelWorker> = [
+    { title: t('worker.address'), dataIndex: 'address', render: display },
+    { title: t('worker.usedSlots'), dataIndex: 'usedSlots', render: display },
+    { title: t('worker.totalSlots'), dataIndex: 'totalSlots', render: display },
+    {
+      title: t('worker.runningJobIds'),
+      dataIndex: 'runningJobIds',
+      render: (ids?: string[] | null) => (ids?.length ? ids.join(', ') : '–'),
+    },
+    {
+      title: t('worker.heapMemoryBytes'),
+      dataIndex: 'totalHeapMemoryBytes',
+      render: display,
+    },
+  ];
+  const jobColumns: TableColumnsType<SeaTunnelJobInfo> = [
+    { title: t('job.id'), dataIndex: 'jobId', render: display },
+    { title: t('job.name'), dataIndex: 'jobName', render: display },
+    { title: t('job.status'), dataIndex: 'jobStatus', render: display },
+    { title: t('job.createTime'), dataIndex: 'createTime', render: display },
+    { title: t('job.finishTime'), dataIndex: 'finishTime', render: display },
+  ];
   const { anchorRef, active: tabActive } = useTabPanelActive();
   const [jobState, setJobState] = useState<SeaTunnelJobState>('running');
   const [overview, setOverview] = useState<SeaTunnelOverview>();
@@ -169,10 +175,22 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
           getSeaTunnelPendingJobs(clusterId, instanceId),
           getSeaTunnelJobs(clusterId, instanceId, jobState),
         ]);
-      const nextOverview = responseData(overviewResponse, '集群概览加载失败');
-      const nextWorkers = responseData(workersResponse, 'Worker 资源加载失败');
-      const nextPending = responseData(pendingResponse, '排队作业加载失败');
-      const nextJobs = responseData(jobsResponse, '作业列表加载失败');
+      const nextOverview = responseData(
+        overviewResponse,
+        intl.formatMessage({ id: 'pages.seatunnelJobs.error.overview' }),
+      );
+      const nextWorkers = responseData(
+        workersResponse,
+        intl.formatMessage({ id: 'pages.seatunnelJobs.error.workers' }),
+      );
+      const nextPending = responseData(
+        pendingResponse,
+        intl.formatMessage({ id: 'pages.seatunnelJobs.error.pending' }),
+      );
+      const nextJobs = responseData(
+        jobsResponse,
+        intl.formatMessage({ id: 'pages.seatunnelJobs.error.jobs' }),
+      );
       if (requestId !== refreshRequestId.current) return;
       setOverview(nextOverview);
       setWorkers(nextWorkers.workers ?? []);
@@ -180,11 +198,16 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
       setJobs(nextJobs);
     } catch (requestError) {
       if (requestId === refreshRequestId.current)
-        setError(errorMessage(requestError));
+        setError(
+          errorMessage(
+            requestError,
+            intl.formatMessage({ id: 'pages.seatunnelJobs.error.load' }),
+          ),
+        );
     } finally {
       if (requestId === refreshRequestId.current) setLoading(false);
     }
-  }, [clusterId, instanceId, jobState]);
+  }, [clusterId, instanceId, jobState, intl]);
 
   useEffect(() => {
     if (!tabActive) return;
@@ -212,11 +235,11 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
     setJobInfoLoading(true);
     try {
       const response = await getSeaTunnelJobInfo(clusterId, instanceId, jobId);
-      const nextJobInfo = responseData(response, '作业详情加载失败');
+      const nextJobInfo = responseData(response, t('error.detail'));
       if (requestId === jobInfoRequestId.current) setJobInfo(nextJobInfo);
     } catch (requestError) {
       if (requestId === jobInfoRequestId.current)
-        setJobInfoError(errorMessage(requestError));
+        setJobInfoError(errorMessage(requestError, t('error.load')));
     } finally {
       if (requestId === jobInfoRequestId.current) setJobInfoLoading(false);
     }
@@ -234,7 +257,7 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
   const columns: TableColumnsType<SeaTunnelJobInfo> = [
     ...jobColumns,
     {
-      title: '操作',
+      title: t('action'),
       key: 'action',
       render: (_, job) => (
         <Button
@@ -242,7 +265,7 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
           disabled={!job.jobId}
           onClick={() => void openJobInfo(job.jobId)}
         >
-          详情
+          {t('detail')}
         </Button>
       ),
     },
@@ -252,7 +275,7 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
     <div ref={anchorRef} data-tab-active={tabActive}>
       <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         {error ? <Alert type="error" showIcon title={error} /> : null}
-        <Card title="SeaTunnel 集群概览" extra="动态 slot 模式">
+        <Card title={t('overview.title')} extra={t('overview.dynamicSlot')}>
           <div
             style={{
               display: 'grid',
@@ -262,12 +285,12 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
           >
             {overviewFields.map(({ key, label, testId }) => (
               <div key={key} data-testid={testId}>
-                <Statistic title={label} value={display(overview?.[key])} />
+                <Statistic title={t(label)} value={display(overview?.[key])} />
               </div>
             ))}
           </div>
         </Card>
-        <Card title="Worker 资源">
+        <Card title={t('workers.title')}>
           <div data-testid="seatunnel-workers-table">
             <Table<SeaTunnelWorker>
               columns={workerColumns}
@@ -284,7 +307,10 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
           items={[
             {
               key: 'pending',
-              label: `排队作业（${display(pendingCount)}）`,
+              label: intl.formatMessage(
+                { id: 'pages.seatunnelJobs.pending.title' },
+                { count: display(pendingCount) },
+              ),
               children: (
                 <Table<SeaTunnelJobInfo>
                   columns={jobColumns}
@@ -299,13 +325,13 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
           ]}
         />
         <Card
-          title="作业列表"
+          title={t('jobs.title')}
           extra={
             <Segmented
-              aria-label="作业状态"
+              aria-label={t('jobs.state')}
               options={[
-                { label: '运行中', value: 'running' },
-                { label: '已完成', value: 'finished' },
+                { label: t('jobs.running'), value: 'running' },
+                { label: t('jobs.finished'), value: 'finished' },
               ]}
               value={jobState}
               onChange={(value) => setJobState(value as SeaTunnelJobState)}
@@ -325,28 +351,31 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
         </Card>
         <Drawer
           open={selectedJobId != null}
-          title={`作业详情：${display(selectedJobId)}`}
+          title={intl.formatMessage(
+            { id: 'pages.seatunnelJobs.detailTitle' },
+            { jobId: display(selectedJobId) },
+          )}
           onClose={closeJobInfo}
         >
           {jobInfoError ? (
             <Alert type="error" showIcon title={jobInfoError} />
           ) : jobInfoLoading ? (
-            <span>加载中…</span>
+            <span>{t('loading')}</span>
           ) : jobInfo ? (
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="作业 ID">
+              <Descriptions.Item label={t('job.id')}>
                 {display(jobInfo.jobId)}
               </Descriptions.Item>
-              <Descriptions.Item label="作业名称">
+              <Descriptions.Item label={t('job.name')}>
                 {display(jobInfo.jobName)}
               </Descriptions.Item>
-              <Descriptions.Item label="状态">
+              <Descriptions.Item label={t('job.status')}>
                 {display(jobInfo.jobStatus)}
               </Descriptions.Item>
-              <Descriptions.Item label="提交时间">
+              <Descriptions.Item label={t('job.createTime')}>
                 {display(jobInfo.createTime)}
               </Descriptions.Item>
-              <Descriptions.Item label="完成时间">
+              <Descriptions.Item label={t('job.finishTime')}>
                 {display(jobInfo.finishTime)}
               </Descriptions.Item>
               {Object.entries(jobInfo.metrics ?? {}).length > 0 ? (
@@ -356,7 +385,7 @@ const SeaTunnelJobs: React.FC<SeaTunnelJobsProps> = ({
                   </Descriptions.Item>
                 ))
               ) : (
-                <Descriptions.Item label="指标">–</Descriptions.Item>
+                <Descriptions.Item label={t('metrics')}>–</Descriptions.Item>
               )}
             </Descriptions>
           ) : (

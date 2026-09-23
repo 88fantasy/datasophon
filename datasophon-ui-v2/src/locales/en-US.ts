@@ -18,6 +18,7 @@ import nginxMonitor from './en-US/nginxMonitor';
 import pages from './en-US/pages';
 import prometheusMonitor from './en-US/prometheusMonitor';
 import rustfsMonitor from './en-US/rustfsMonitor';
+import seaTunnel from './en-US/seaTunnel';
 import settingDrawer from './en-US/settingDrawer';
 import settings from './en-US/settings';
 import valkeyMonitor from './en-US/valkeyMonitor';
@@ -48,6 +49,7 @@ export default {
   ...valkeyMonitor,
   ...apisixMonitor,
   ...rustfsMonitor,
+  ...seaTunnel,
   ...juicefsMonitor,
   ...additionalMonitor,
   ...clusterDashboard,

@@ -25,6 +25,20 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SeaTunnelDashboard from './index';
 
+const locale = vi.hoisted(() => ({ language: 'zh-CN' }));
+
+vi.mock('@umijs/max', async () => {
+  const zh = (await import('@/locales/zh-CN/seaTunnel')).default;
+  const en = (await import('@/locales/en-US/seaTunnel')).default;
+  const intl = {
+    formatMessage: ({ id }: { id: string }, values?: Record<string, string>) =>
+      ((locale.language === 'en-US' ? en : zh) as Record<string, string>)[
+        id
+      ]?.replace(/\{(\w+)\}/g, (_, key) => values?.[key] ?? '') ?? id,
+  };
+  return { useIntl: () => intl };
+});
+
 const mocks = vi.hoisted(() => ({
   useSeaTunnelDashboard: vi.fn(),
   timeSeriesPanels: [] as Array<Record<string, unknown>>,
@@ -57,6 +71,7 @@ vi.mock('../_shared/panels/TimeSeriesPanel', async (importOriginal) => {
 
 describe('SeaTunnelDashboard resource metrics', () => {
   beforeEach(() => {
+    locale.language = 'zh-CN';
     mocks.timeSeriesPanels.length = 0;
     mocks.useSeaTunnelDashboard.mockReturnValue({
       instant: {},
@@ -93,5 +108,16 @@ describe('SeaTunnelDashboard resource metrics', () => {
       'max fds (master-1)',
     ]);
     expect(fileDescriptorPanel?.yFormatter?.(1024)).toBe('1,024');
+  });
+
+  it('renders English panel titles in en-US', () => {
+    locale.language = 'en-US';
+    render(<SeaTunnelDashboard clusterId={1} />);
+
+    expect(mocks.timeSeriesPanels).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'File Descriptors' }),
+      ]),
+    );
   });
 });
