@@ -139,8 +139,8 @@ packages:
     x86_64: "mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar"
     aarch64: "mysql-8.0.28-1.el8.aarch64.rpm-bundle.tar"
   rustfs:
-    x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
-    aarch64: "rustfs-linux-aarch64-musl-1.0.0.tar.gz"
+    x86_64: "rustfs-linux-x86_64-musl-v1.0.0.zip"
+    aarch64: "rustfs-linux-aarch64-musl-v1.0.0.zip"
   otelColContrib:
     x86_64: "otelcol-contrib_0.156.0_linux_amd64.tar.gz"
     aarch64: "otelcol-contrib_0.156.0_linux_arm64.tar.gz"

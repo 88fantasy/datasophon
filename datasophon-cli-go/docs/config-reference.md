@@ -267,8 +267,8 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 | `nexus.aarch64`       | string | `nexus-3.85.0-03-linux-aarch_64.tar.gz`     |
 | `mysql.x86_64`        | string | `mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar`  |
 | `mysql.aarch64`       | string | `mysql-8.0.28-1.el8.aarch64.rpm-bundle.tar` |
-| `rustfs.x86_64`       | string | `rustfs-linux-x86_64-musl-1.0.0.tar.gz`     |
-| `rustfs.aarch64`      | string | `rustfs-linux-aarch64-musl-1.0.0.tar.gz`    |
+| `rustfs.x86_64`       | string | `rustfs-linux-x86_64-musl-v1.0.0.zip`       |
+| `rustfs.aarch64`      | string | `rustfs-linux-aarch64-musl-v1.0.0.zip`      |
 | `otelColContrib.x86_64` | string | `otelcol-contrib_0.156.0_linux_amd64.tar.gz` |
 | `otelColContrib.aarch64` | string | `otelcol-contrib_0.156.0_linux_arm64.tar.gz` |
 | `mysqldExporter.x86_64` | string | `mysqld_exporter-0.16.0.linux-amd64.tar.gz` |

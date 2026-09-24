@@ -45,8 +45,8 @@ func stubCfg() *config.ClusterConfig {
 		},
 		Packages: config.Packages{
 			Rustfs: config.Package{
-				X86_64:  "rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
-				Aarch64: "rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+				X86_64:  "rustfs-linux-x86_64-musl-v1.0.0.zip",
+				Aarch64: "rustfs-linux-aarch64-musl-v1.0.0.zip",
 			},
 			OtelColContrib: config.Package{
 				X86_64:  "otelcol-contrib_0.156.0_linux_amd64.tar.gz",

@@ -453,7 +453,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 |---|---|---|---|
 | **MySQL** | 8.0.28 | **8.4.9 LTS** | ⚠️ 8.0.x 已于 2026-04 EOL，**强烈建议升级到 8.4 LTS** |
 | **Nexus Repository 3** | 3.85.0 | **3.92.3** | ⚠️ 可升级，Nexus 2 已于 2025-06-30 停服 |
-| **Rustfs** | 1.0.0 | 1.0.0-beta.6 | ℹ️ 仍在 Beta，GA 尚未正式发布；生产谨慎评估 |
+| **Rustfs** | **1.0.0** | **1.0.0** | ✅ 已升级至 1.0.0 GA（2026-09-16）；官方仅发布 .zip |
 
 ### 大数据服务组件（meta/datacluster）
 
