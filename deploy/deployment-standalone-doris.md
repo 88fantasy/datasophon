@@ -296,7 +296,7 @@ Doris 网络优先级固定 `fe_priority_networks=192.168.10.0/24`、`be_priorit
 | 停机的写入方 | 只有 SeaTunnel Zeta（master 的 IMap map-store 写入 `seatunnel` bucket）；其他消费方在窗口期内没有写入 |
 | 窗口 | 11:25:12 至 11:52:33（约 27 分钟，其中逐文件 md5 核对冷备约 9 分钟）；RustFS 从停止到重新监听约 25 分钟，主要耗在冷备上 |
 | `start.sh` 改动 | 只新增 `RUSTFS_OBS_ENDPOINT=http://192.168.10.131:4318`、`RUSTFS_OBS_SERVICE_NAME=rustfs` 两行，启动参数不变 |
-| 回滚素材 | `/data/rustfs-backup-beta8-20260924/data`（97,602 个文件，逐文件 md5 与源一致）、`/data/rustfs/rustfs.beta8`、`start.sh.beta8`、`logs/rustfs.log.beta8`，保留 7 天 |
+| 回滚素材 | 冷备 `/data/rustfs-backup-beta8-20260924/data`（97,602 个文件，逐文件 md5 与源一致）与 `logs/rustfs.log.beta8` 已于验收通过后按要求删除；仅保留 `/data/rustfs/rustfs.beta8`、`start.sh.beta8`（无冷备时不足以回滚数据） |
 
 ### 7.2 验收结果
 
