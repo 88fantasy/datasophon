@@ -78,7 +78,7 @@ datasophon-cli create rustfs \
 datasophon-cli create rustfs \
   --installPath /opt/rustfs \
   --node 192.168.1.10 \
-  -f /data/packages/rustfs-linux-x86_64-musl-1.0.0.tar.gz \
+  -f /data/packages/rustfs-linux-x86_64-musl-v1.0.0.zip \
   --webPort 9041 \
   --apiPort 9040 \
   -u admin \

@@ -341,19 +341,19 @@
   {
     "service": "RUSTFS",
     "arch": "x86_64",
-    "packageName": "rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
+    "packageName": "rustfs-linux-x86_64-musl-v1.0.0.zip",
     "decompressPackageName": null,
-    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.8/rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip",
+    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0/rustfs-linux-x86_64-musl-v1.0.0.zip",
     "status": "public",
     "repoType": "base",
-    "note": "RustFS 官方至今无 GA 1.0.0（全部 tag 均为 alpha/beta），当前最新 1.0.0-beta.8；发布格式为 .zip 而非 .tar.gz，与 rustfs.go 硬编码的 tar xvz 解压不兼容，需另行改造 CLI 后才可直接使用（跟踪为独立任务，本次只负责下载到位）"
+    "note": "RustFS 1.0.0 GA（2026-09-16）；官方仅发布 .zip，包内含 rustfs 与 rustfs-cli 两个二进制，CLI 以 unzip 解压到 <installPath>/rustfs。SHA-256 c30a95b76546f25122c9ca387090ddb30c391ca5605621b0d7c881703c0f21c8"
   },
   {
     "service": "RUSTFS",
     "arch": "aarch64",
-    "packageName": "rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+    "packageName": "rustfs-linux-aarch64-musl-v1.0.0.zip",
     "decompressPackageName": null,
-    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0-beta.8/rustfs-linux-aarch64-musl-v1.0.0-beta.8.zip",
+    "downloadUrl": "https://github.com/rustfs/rustfs/releases/download/1.0.0/rustfs-linux-aarch64-musl-v1.0.0.zip",
     "status": "public",
     "repoType": "base",
     "note": "同上，对应 packages.rustfs.aarch64"

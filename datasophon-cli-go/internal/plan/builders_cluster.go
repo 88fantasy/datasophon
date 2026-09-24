@@ -120,7 +120,7 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 		if err := ensurePackageOnTarget(exec, tarPath, "rustfs"); err != nil {
 			return err
 		}
-		// rustfs 官方发布物是 .zip，包内只有裸 rustfs 二进制（无版本号顶层目录，
+		// rustfs 官方发布物是 .zip，包内为裸 rustfs（1.0.0 起另含 rustfs-cli）二进制（无版本号顶层目录，
 		// 与 tar.gz 发布物的目录结构不同），直接解压到 home 即为 home/rustfs，无需 mv。
 		if result := exec.ExecShell("mkdir -p " + shellutil.Quote(home)); !result.Success {
 			return fmt.Errorf("创建 rustfs 目录失败: %s", result.ErrOutput)

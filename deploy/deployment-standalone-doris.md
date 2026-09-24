@@ -280,3 +280,49 @@ Doris 网络优先级固定 `fe_priority_networks=192.168.10.0/24`、`be_priorit
 3. **尚未接入平台自动分发。** `FLINK/service_ddl.json` 无 `metrics.reporter` 相关参数，Worker 侧无下发逻辑,`package/` 未纳入该 jar。当前只能人工将 jar 放入各节点 `$FLINK_HOME/plugins/metrics-otel/`；纳入平台受管部署需单独规划。
 
 **结论：`PASSED`(范围以 §6.2 表格所列检查项为准,不含 §6.3 所列未覆盖项)。** Flink 1.20.x reporter 可按 Flink 2.0 的 metrics OTLP 契约运行，并在本环境完成 Flink → OTLP/gRPC → OTel Collector → Doris 的真实链路验证。
+
+---
+
+## 7. RustFS 1.0.0 升级验证（2026-09-24）
+
+本节记录 ddh-01 上的 RustFS 从 `1.0.0-beta.8` 原地升级到 `1.0.0` GA 的过程和验收结果。
+
+### 7.1 方式与窗口
+
+| 项 | 值 |
+|---|---|
+| 方式 | 原地升级：停止写入方 → 冷备 → 替换二进制 → 使用原数据目录重启。beta.8 与 1.0.0 的 xl.meta / format.json 格式版本相同 |
+| 安装包 | `rustfs-linux-x86_64-musl-v1.0.0.zip`，SHA-256 `c30a95b76546f25122c9ca387090ddb30c391ca5605621b0d7c881703c0f21c8`（与官方 SHA256SUMS 一致） |
+| 停机的写入方 | 只有 SeaTunnel Zeta（master 的 IMap map-store 写入 `seatunnel` bucket）；其他消费方在窗口期内没有写入 |
+| 窗口 | 11:25:12 至 11:52:33（约 27 分钟，其中逐文件 md5 核对冷备约 9 分钟）；RustFS 从停止到重新监听约 25 分钟，主要耗在冷备上 |
+| `start.sh` 改动 | 只新增 `RUSTFS_OBS_ENDPOINT=http://192.168.10.131:4318`、`RUSTFS_OBS_SERVICE_NAME=rustfs` 两行，启动参数不变 |
+| 回滚素材 | 冷备 `/data/rustfs-backup-beta8-20260924/data`（97,602 个文件，逐文件 md5 与源一致）与 `logs/rustfs.log.beta8` 已于验收通过后按要求删除；仅保留 `/data/rustfs/rustfs.beta8`、`start.sh.beta8`（无冷备时不足以回滚数据） |
+
+### 7.2 验收结果
+
+| 检查项 | 结果 | 证据 |
+|---|---|---|
+| 启动 | PASSED | 10 秒内 9040 / 9041 开始监听；运行中的二进制与暂存包一致；日志中没有 `pool metadata recovery` 或 panic |
+| S3 基础读写 | PASSED | `mc` put/get/list/delete 均成功；Console `9041/rustfs/console/` 返回 200 |
+| DeleteObjects | PASSED | `mc rm --recursive` 只发出一次 `POST ?delete`，返回 200 |
+| 数据完整性 | PASSED | 5 个 bucket 的对象数（xl.meta 计数）与升级前逐一相同：0 / 2339 / 82724 / 10287 / 90 |
+| SeaTunnel（`seatunnel` bucket） | PASSED | 重启后 `workers=3`；作业历史计数（完成 5 / 失败 3 / 取消 4）与停机前一致，说明 IMap 已从 RustFS 回读；master 日志没有 S3 / IMap 报错 |
+| DS 资源中心（`dolphinscheduler` bucket） | PASSED | 通过 API 上传、下载（逐字节一致）、删除；RustFS 侧能看到对象出现并被删除 |
+| Gravitino Paimon（`paimon-warehouse` / `lineage-paimon-warehouse`） | PASSED | schema 数和表数与升级前一致（2/5、5/12），抽样 loadTable 成功 |
+| Spark 3.5 S3A（hadoop-aws 3.3.4） | PASSED | `multiobjectdelete` 开启时 16 次批量删除共删 50 个对象；parquet 写入后读回 1000 行；开、关两种情况都通过 |
+| Flink 1.20.4 / 2.2.1 S3（`flink-s3-fs-hadoop`、`flink-s3-fs-presto`） | PASSED | hadoop 插件开、关两种情况结果与 Spark 一致；presto 插件功能正常 |
+| `otel-bootstrap` 历史对象 | PASSED | 随机抽取 3 个对象可读 |
+| 指标进入 Doris | PASSED | `service_name=rustfs`，`service_instance_id=192.168.10.131`；gauge 266 个、sum 92 个指标名 |
+| `RustfsMonitor` 看板 | PASSED WITH DEVIATIONS | 18 个面板中 15 个有数据（该看板在本环境**首次**出数）；另外 3 个见 §7.3 |
+| API 侧配置 | PASSED | `api.local.properties` 中的 `rustfs.ip/port=192.168.10.131:9040` 未变化 |
+
+### 7.3 偏差与待跟进
+
+1. **"桶数量""对象数量"两个统计卡片暂时没有数据**：它们依赖数据用量扫描器，升级后 10 分钟内扫描器尚未开始第一轮（`scanner_bucket_scans_started=0`，失败计数也是 0）。需要择时复查。
+2. **"磁盘 IOPS（按盘）"面板为空**：`rustfs_system_drive_{reads,writes}_per_sec`、`io_errors_total` 只有拿到真实的 iostat 采样时才会上报（beta.8 和 1.0.0 代码相同），本环境没有产生这些指标。属于看板适配问题，不是升级引入的回退。
+3. **本地日志不再输出**：设置 OBS endpoint 后，RustFS 默认不写 stdout（`RUSTFS_OBS_USE_STDOUT=false`），日志只通过 OTLP 导出，默认级别为 `error`。beta.8 时期 `rustfs.log` 被 ERROR 级别的 `list_path_raw: revjob err canceled` 刷到了 1.3GB；升级后 Doris 的 `otel_logs` 里暂时没有 RustFS 日志，无法区分是"没有错误"还是"日志导出失败"。如需本地排障，可以临时设置 `RUSTFS_OBS_LOG_STDOUT_ENABLED=true`。
+4. W3 冷备的原判据 `du -sb` 会把目录项大小计入（ext4 目录不会收缩），导致副本比源少 1,740,800 字节。经用户批准，改为按"文件数 + 文件字节数 + 逐文件 md5"判定。
+5. aarch64 未做实机验证。
+6. DS 的 `admin` 账号仍在使用默认密码（与升级无关，验收时发现）。
+
+**结论：`PASSED WITH DEVIATIONS`**。RustFS 已运行在 1.0.0，5 个 bucket 的数据完整，所有消费方读写正常。偏差见 §7.3，均不影响数据面。
